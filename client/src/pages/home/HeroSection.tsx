@@ -1,14 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
+import { STATS } from "@/lib/constants";
 
 const HeroSection = () => {
-  const stats = [
-    { value: "41M+", label: "Resumes Created" },
-    { value: "1000+", label: "Resume Templates" },
-    { value: "400K+", label: "Cover Letters Built" },
-    { value: "110+", label: "Job Categories" },
-  ];
-
   return (
     <section className="bg-white py-12 md:py-20">
       <div className="container mx-auto px-4">
@@ -30,7 +24,7 @@ const HeroSection = () => {
 
             {/* Stats Counter */}
             <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6">
-              {stats.map((stat, index) => (
+              {STATS.map((stat, index) => (
                 <div key={index} className="text-center">
                   <p className="text-2xl md:text-3xl font-bold text-primary">{stat.value}</p>
                   <p className="text-sm text-gray-dark">{stat.label}</p>

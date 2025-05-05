@@ -1,4 +1,5 @@
 import { Award, Wand2, Bot, Clock } from "lucide-react";
+import { SectionContainer, SectionHeading, CardStyles } from "@/components/ui/CardStyles";
 
 const WhyRecommendedSection = () => {
   const features = [
@@ -25,28 +26,24 @@ const WhyRecommendedSection = () => {
   ];
 
   return (
-    <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Why Professionals Recommend Us</h2>
-          <p className="text-lg text-gray-dark max-w-2xl mx-auto">
-            Join millions of job seekers who've successfully landed their dream jobs
-          </p>
-        </div>
+    <SectionContainer background="white">
+      <SectionHeading
+        title="Why Professionals Recommend Us"
+        subtitle="Join millions of job seekers who've successfully landed their dream jobs"
+      />
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, index) => (
-            <div key={index} className="bg-gray-light rounded-lg p-6">
-              <div className="text-primary mb-4">
-                {feature.icon}
-              </div>
-              <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-              <p className="text-gray-dark">{feature.description}</p>
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {features.map((feature, index) => (
+          <CardStyles key={index} variant="feature">
+            <div className="text-primary mb-4">
+              {feature.icon}
             </div>
-          ))}
-        </div>
+            <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+            <p className="text-gray-dark">{feature.description}</p>
+          </CardStyles>
+        ))}
       </div>
-    </section>
+    </SectionContainer>
   );
 };
 
