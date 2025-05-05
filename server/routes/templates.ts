@@ -96,17 +96,36 @@ router.get("/:id/svg", async (req, res) => {
       return res.status(404).json({ message: "Template not found" });
     }
     
-    const content = templates[0].svgContent;
+    let content = templates[0].svgContent || '';
     
+    // Add security headers
+    res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'none';");
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
     // Check if content is SVG or HTML
     if (content.trim().startsWith('<svg') || content.trim().startsWith('<?xml')) {
       res.setHeader('Content-Type', 'image/svg+xml');
     } else if (content.trim().startsWith('<!DOCTYPE html>') || content.trim().startsWith('<html')) {
+      // Add CSP meta tag for HTML content if not present
+      if (!content.includes('<meta http-equiv="Content-Security-Policy"')) {
+        const metaTag = '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; img-src \'self\' data:; style-src \'self\' \'unsafe-inline\'; font-src \'self\'; script-src \'none\';">';
+        content = content.replace('<head>', '<head>' + metaTag);
+      }
+      
+      // Add proper viewport meta tag for responsive display if not present
+      if (!content.includes('<meta name="viewport"')) {
+        const viewportTag = '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
+        content = content.replace('<head>', '<head>' + viewportTag);
+      }
+      
       res.setHeader('Content-Type', 'text/html');
     } else {
       // Default to plain text if we can't determine the type
       res.setHeader('Content-Type', 'text/plain');
     }
+    
+    // Log content type for debugging
+    console.log(`Serving template ${templateId} as ${res.getHeader('Content-Type')}`);
     
     res.send(content);
   } catch (error) {

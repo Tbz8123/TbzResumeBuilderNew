@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTemplates } from "@/hooks/use-templates";
 import { AnimatedSection } from "@/components/AnimatedSection";
 import { useLocation } from "wouter";
@@ -37,12 +37,77 @@ type TemplateCardProps = {
   onClick: () => void;
 };
 
+// Direct HTML viewer component
+const HtmlTemplatePreview = ({ templateId }: { templateId: number }) => {
+  const [content, setContent] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const fetchTemplate = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/templates/${templateId}/svg`);
+        if (!response.ok) throw new Error('Failed to fetch template');
+
+        // Get the content directly as text
+        const htmlContent = await response.text();
+        setContent(htmlContent);
+        setError(false);
+      } catch (err) {
+        setError(true);
+        console.error('Error fetching template:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTemplate();
+  }, [templateId]);
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error || !content) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded">
+        <div className="text-center p-4">
+          <p className="font-medium text-red-500">Failed to load template</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If the content starts with SVG, render it as an image
+  if (content.trim().startsWith('<svg') || content.trim().startsWith('<?xml')) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <img
+          src={`/api/templates/${templateId}/svg`}
+          alt="Template Preview"
+          className="w-full h-full object-contain"
+        />
+      </div>
+    );
+  }
+
+  // Otherwise render as HTML in an iframe with sandbox for security
+  return (
+    <iframe
+      srcDoc={content}
+      title="Template Preview"
+      className="w-full h-full border-0"
+      sandbox="allow-same-origin"
+    />
+  );
+};
+
 const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
-  const [useIframe, setUseIframe] = useState(false);
-  const [imgError, setImgError] = useState(false);
-  
-  // Try to load the template content as an image first
-  // If it fails, switch to iframe for HTML content
   return (
     <div
       className="group rounded-xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer"
@@ -51,39 +116,8 @@ const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
       <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-full h-full flex items-center justify-center p-4 scale-90 group-hover:scale-95 transition-all duration-300">
-            <div className="w-full h-full overflow-auto relative">
-              {!useIframe && !imgError ? (
-                <img 
-                  src={`/api/templates/${template.id}/svg`} 
-                  alt={template.name}
-                  className="w-full object-contain rounded border border-gray-100"
-                  onError={() => {
-                    // If image fails, try iframe
-                    setImgError(true);
-                    setUseIframe(true);
-                  }}
-                />
-              ) : useIframe ? (
-                <iframe
-                  src={`/api/templates/${template.id}/svg`}
-                  className="w-full h-full border-0"
-                  title={template.name}
-                  sandbox="allow-same-origin"
-                  onError={() => {
-                    // If iframe also fails, show fallback
-                    setUseIframe(false);
-                    setImgError(true);
-                  }}
-                />
-              ) : (
-                // Fallback display if both img and iframe fail
-                <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded">
-                  <div className="text-center p-4">
-                    <p className="font-medium text-lg">{template.name}</p>
-                    <p className="text-sm text-gray-500 mt-2">{template.description}</p>
-                  </div>
-                </div>
-              )}
+            <div className="w-full h-full overflow-hidden relative border border-gray-100 rounded">
+              <HtmlTemplatePreview templateId={template.id} />
             </div>
           </div>
         </div>
