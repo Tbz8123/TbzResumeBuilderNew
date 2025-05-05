@@ -4,30 +4,22 @@ import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import { Menu, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { NAV_ITEMS } from "@/lib/constants";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
-
-  const navItems = [
-    { name: "Templates", href: "#templates" },
-    { name: "Resume Builder", href: "#resume-builder" },
-    { name: "Cover Letter", href: "#cover-letter" },
-    { name: "Blog", href: "#blog" },
-  ];
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         {/* Logo */}
         <Link href="/">
-          <a className="flex items-center">
-            <Logo />
-          </a>
+          <Logo />
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex space-x-8">
-          {navItems.map((item) => (
+          {NAV_ITEMS.map((item) => (
             <a 
               key={item.name}
               href={item.href}
@@ -65,7 +57,7 @@ const Header = () => {
                 </Button>
               </div>
               <nav className="flex flex-col space-y-4">
-                {navItems.map((item) => (
+                {NAV_ITEMS.map((item) => (
                   <a 
                     key={item.name}
                     href={item.href}
