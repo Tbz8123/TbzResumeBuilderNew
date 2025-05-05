@@ -24,7 +24,7 @@ const ResumeTemplatesSection = () => {
       imageUrl: "https://images.unsplash.com/photo-1586281380117-5a60ae2050cc?w=500&q=80",
       category: "professional",
       popular: true,
-      colors: ["bg-blue-500", "bg-blue-700"]
+      colors: ["#3b82f6", "#1d4ed8"]
     },
     {
       id: "executive-premium",
@@ -33,7 +33,7 @@ const ResumeTemplatesSection = () => {
       imageUrl: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=500&q=80",
       category: "executive",
       popular: true,
-      colors: ["bg-gray-700", "bg-gray-900"]
+      colors: ["#374151", "#111827"]
     },
     {
       id: "creative-bold",
@@ -42,7 +42,7 @@ const ResumeTemplatesSection = () => {
       imageUrl: "https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=500&q=80",
       category: "creative",
       popular: false,
-      colors: ["bg-purple-500", "bg-indigo-700"]
+      colors: ["#a855f7", "#4338ca"]
     },
     {
       id: "tech-innovator",
@@ -51,7 +51,7 @@ const ResumeTemplatesSection = () => {
       imageUrl: "https://images.unsplash.com/photo-1516383740770-fbcc5ccbece0?w=500&q=80",
       category: "tech",
       popular: true,
-      colors: ["bg-cyan-500", "bg-blue-700"]
+      colors: ["#06b6d4", "#1d4ed8"]
     },
     {
       id: "minimal-elegant",
@@ -60,7 +60,7 @@ const ResumeTemplatesSection = () => {
       imageUrl: "https://images.unsplash.com/photo-1586282391129-76a6df230234?w=500&q=80",
       category: "minimal",
       popular: false,
-      colors: ["bg-gray-200", "bg-gray-400"]
+      colors: ["#e5e7eb", "#9ca3af"]
     },
     {
       id: "corporate-classic",
@@ -69,7 +69,7 @@ const ResumeTemplatesSection = () => {
       imageUrl: "https://images.unsplash.com/photo-1586282023708-7163cafee0c5?w=500&q=80",
       category: "professional",
       popular: true,
-      colors: ["bg-slate-600", "bg-slate-800"]
+      colors: ["#64748b", "#1e293b"]
     },
     {
       id: "startup-dynamic",
@@ -78,7 +78,7 @@ const ResumeTemplatesSection = () => {
       imageUrl: "https://images.unsplash.com/photo-1586473219010-2ffc57b0d282?w=500&q=80",
       category: "tech",
       popular: false,
-      colors: ["bg-emerald-500", "bg-teal-700"]
+      colors: ["#10b981", "#0f766e"]
     },
     {
       id: "graduate-fresh",
@@ -87,7 +87,7 @@ const ResumeTemplatesSection = () => {
       imageUrl: "https://images.unsplash.com/photo-1586282391160-9a2cd84bd74e?w=500&q=80",
       category: "entry",
       popular: true,
-      colors: ["bg-amber-500", "bg-orange-700"]
+      colors: ["#f59e0b", "#c2410c"]
     },
     {
       id: "consultant-expert",
@@ -96,7 +96,7 @@ const ResumeTemplatesSection = () => {
       imageUrl: "https://images.unsplash.com/photo-1587613864521-9ef8dfe617cc?w=500&q=80",
       category: "executive",
       popular: false,
-      colors: ["bg-indigo-600", "bg-indigo-800"]
+      colors: ["#4f46e5", "#312e81"]
     },
     {
       id: "futuristic-tech",
@@ -105,7 +105,7 @@ const ResumeTemplatesSection = () => {
       imageUrl: "https://images.unsplash.com/photo-1587613865763-4b8b0d19e8ab?w=500&q=80",
       category: "creative",
       popular: true,
-      colors: ["bg-primary", "bg-primary-dark"]
+      colors: ["#5E17EB", "#4A11C0"]
     },
   ];
 
@@ -172,7 +172,11 @@ const ResumeTemplatesSection = () => {
                 whileHover={{ y: -8 }}
               >
                 <div className="relative aspect-[3/4] overflow-hidden">
-                  <div className={`absolute inset-0 bg-gradient-to-br from-${template.colors[0]} to-${template.colors[1]} opacity-10`}></div>
+                  <div className={`absolute inset-0 bg-gradient-to-br opacity-10`} 
+                       style={{
+                         background: `linear-gradient(to bottom right, ${template.colors[0]}, ${template.colors[1]})`
+                       }}
+                  ></div>
                   <img 
                     src={template.imageUrl} 
                     alt={template.name} 
@@ -192,7 +196,11 @@ const ResumeTemplatesSection = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex space-x-2">
                       {template.colors.map((color, i) => (
-                        <div key={i} className={`w-6 h-6 rounded-full ${color}`}></div>
+                        <div 
+                          key={i} 
+                          className="w-6 h-6 rounded-full" 
+                          style={{ backgroundColor: color }}
+                        ></div>
                       ))}
                     </div>
                     

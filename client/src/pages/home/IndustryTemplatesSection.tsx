@@ -12,16 +12,16 @@ type TemplateCategory = {
 
 const IndustryTemplatesSection = () => {
   const categories: TemplateCategory[] = [
-    { id: "accounting", name: "Accounting", icon: <Briefcase className="h-8 w-8 text-primary" /> },
-    { id: "engineering", name: "Engineering", icon: <Wrench className="h-8 w-8 text-primary" /> },
-    { id: "marketing", name: "Marketing", icon: <LineChart className="h-8 w-8 text-primary" /> },
-    { id: "education", name: "Education", icon: <Book className="h-8 w-8 text-primary" /> },
-    { id: "healthcare", name: "Healthcare", icon: <Heart className="h-8 w-8 text-primary" /> },
-    { id: "sales", name: "Sales", icon: <ShoppingBag className="h-8 w-8 text-primary" /> },
-    { id: "customer-service", name: "Customer Service", icon: <Headphones className="h-8 w-8 text-primary" /> },
-    { id: "it-software", name: "IT & Software", icon: <Code className="h-8 w-8 text-primary" /> },
-    { id: "food-service", name: "Food Service", icon: <Utensils className="h-8 w-8 text-primary" /> },
-    { id: "management", name: "Management", icon: <Users className="h-8 w-8 text-primary" /> },
+    { id: "accounting", name: "Accounting", icon: <Briefcase className="h-10 w-10 text-primary" /> },
+    { id: "engineering", name: "Engineering", icon: <Wrench className="h-10 w-10 text-primary" /> },
+    { id: "marketing", name: "Marketing", icon: <LineChart className="h-10 w-10 text-primary" /> },
+    { id: "education", name: "Education", icon: <Book className="h-10 w-10 text-primary" /> },
+    { id: "healthcare", name: "Healthcare", icon: <Heart className="h-10 w-10 text-primary" /> },
+    { id: "sales", name: "Sales", icon: <ShoppingBag className="h-10 w-10 text-primary" /> },
+    { id: "customer-service", name: "Customer Service", icon: <Headphones className="h-10 w-10 text-primary" /> },
+    { id: "it-software", name: "IT & Software", icon: <Code className="h-10 w-10 text-primary" /> },
+    { id: "food-service", name: "Food Service", icon: <Utensils className="h-10 w-10 text-primary" /> },
+    { id: "management", name: "Management", icon: <Users className="h-10 w-10 text-primary" /> },
   ];
 
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);

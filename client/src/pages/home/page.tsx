@@ -1,9 +1,9 @@
 import HeroSection from "./HeroSection";
 import HowItWorksSection from "./HowItWorksSection";
 import WhyRecommendedSection from "./WhyRecommendedSection";
-import StartWithTemplateSection from "./StartWithTemplateSection";
+import IndustryTemplatesSection from "./IndustryTemplatesSection";
+import ResumeTemplatesSection from "./ResumeTemplatesSection";
 import CreateTogetherSection from "./CreateTogetherSection";
-import TemplateShowcaseSection from "./TemplateShowcaseSection";
 import FreshLooksSection from "./FreshLooksSection";
 import JobCategoriesSection from "./JobCategoriesSection";
 import ResumeWritingTipsSection from "./ResumeWritingTipsSection";
@@ -15,9 +15,9 @@ const HomePage = () => {
       <HeroSection />
       <HowItWorksSection />
       <WhyRecommendedSection />
-      <StartWithTemplateSection />
+      <IndustryTemplatesSection />
+      <ResumeTemplatesSection />
       <CreateTogetherSection />
-      <TemplateShowcaseSection />
       <FreshLooksSection />
       <JobCategoriesSection />
       <ResumeWritingTipsSection />
