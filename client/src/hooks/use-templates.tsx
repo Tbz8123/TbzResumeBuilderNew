@@ -43,7 +43,18 @@ export const useCreateTemplate = () => {
   
   return useMutation({
     mutationFn: async (template: Omit<ResumeTemplate, "id" | "createdAt" | "updatedAt">) => {
-      const res = await apiRequest("POST", "/api/templates", template);
+      // Remove any undefined fields that might cause validation errors
+      const cleanedTemplate = Object.fromEntries(
+        Object.entries(template).filter(([_, v]) => v !== undefined)
+      );
+      
+      const res = await apiRequest("POST", "/api/templates", cleanedTemplate);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to create template");
+      }
+      
       return await res.json();
     },
     onSuccess: () => {
@@ -58,7 +69,22 @@ export const useUpdateTemplate = (id: number | string | undefined) => {
   
   return useMutation({
     mutationFn: async (template: Partial<ResumeTemplate> & { changelog?: string }) => {
-      const res = await apiRequest("PUT", `/api/templates/${id}`, template);
+      if (!id) {
+        throw new Error("Template ID is required for updates");
+      }
+      
+      // Remove any undefined fields that might cause validation errors
+      const cleanedTemplate = Object.fromEntries(
+        Object.entries(template).filter(([_, v]) => v !== undefined)
+      );
+      
+      const res = await apiRequest("PUT", `/api/templates/${id}`, cleanedTemplate);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to update template");
+      }
+      
       return await res.json();
     },
     onSuccess: () => {

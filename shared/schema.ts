@@ -64,6 +64,7 @@ export const resumeTemplateSchema = createInsertSchema(resumeTemplates, {
   description: (schema) => schema.min(10, "Description must be at least 10 characters"),
   category: (schema) => schema.min(2, "Category must be at least 2 characters"),
   svgContent: (schema) => schema.min(50, "SVG content must be valid"),
+  thumbnailUrl: (schema) => schema.optional(),
 });
 
 export const resumeTemplateVersionSchema = createInsertSchema(resumeTemplateVersions, {

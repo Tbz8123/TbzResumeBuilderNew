@@ -109,7 +109,22 @@ router.get("/:id/svg", async (req, res) => {
 // Create a new template (admin only)
 router.post("/", isAdmin, async (req, res) => {
   try {
-    const validatedData = resumeTemplateSchema.parse(req.body);
+    console.log("Creating template with data:", req.body);
+    
+    // Create a clean object with only the needed fields
+    const templateData = {
+      name: req.body.name,
+      description: req.body.description,
+      category: req.body.category,
+      svgContent: req.body.svgContent,
+      isActive: req.body.isActive !== undefined ? req.body.isActive : true,
+      isPopular: req.body.isPopular !== undefined ? req.body.isPopular : false,
+      primaryColor: req.body.primaryColor || "#5E17EB",
+      secondaryColor: req.body.secondaryColor || "#4A11C0",
+      thumbnailUrl: req.body.thumbnailUrl || null,
+    };
+    
+    const validatedData = resumeTemplateSchema.parse(templateData);
     
     const [template] = await db.insert(resumeTemplates)
       .values(validatedData)
@@ -127,6 +142,7 @@ router.post("/", isAdmin, async (req, res) => {
     res.status(201).json(template);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error("Validation error:", error.errors);
       return res.status(400).json({ message: "Validation error", errors: error.errors });
     }
     console.error("Error creating template:", error);
@@ -142,7 +158,22 @@ router.put("/:id", isAdmin, async (req, res) => {
       return res.status(400).json({ message: "Invalid template ID" });
     }
     
-    const validatedData = resumeTemplateSchema.parse(req.body);
+    console.log("Updating template with ID:", templateId, "and data:", req.body);
+    
+    // Create a clean object with only the needed fields
+    const templateData = {
+      name: req.body.name,
+      description: req.body.description,
+      category: req.body.category,
+      svgContent: req.body.svgContent,
+      isActive: req.body.isActive !== undefined ? req.body.isActive : true,
+      isPopular: req.body.isPopular !== undefined ? req.body.isPopular : false,
+      primaryColor: req.body.primaryColor || "#5E17EB",
+      secondaryColor: req.body.secondaryColor || "#4A11C0",
+      thumbnailUrl: req.body.thumbnailUrl || null,
+    };
+    
+    const validatedData = resumeTemplateSchema.parse(templateData);
     
     // Check if the template exists
     const existingTemplate = await db.select({ id: resumeTemplates.id })
@@ -186,6 +217,7 @@ router.put("/:id", isAdmin, async (req, res) => {
     res.json(updatedTemplate);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error("Validation error:", error.errors);
       return res.status(400).json({ message: "Validation error", errors: error.errors });
     }
     console.error("Error updating template:", error);
