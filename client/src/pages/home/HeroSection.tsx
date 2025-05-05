@@ -34,7 +34,7 @@ const HeroSection = () => {
           
           <AnimatedSection animation="fadeInUp" delay={0.6}>
             <AppleButton 
-              href="#get-started" 
+              href="/experience-level" 
               variant="primary" 
               size="large"
               className="bg-primary hover:bg-primary-dark text-white"

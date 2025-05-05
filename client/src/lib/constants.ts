@@ -1,12 +1,12 @@
 // Brand Information
 export const BRAND = {
-  name: "bzResumeBuilder",
-  fullName: "bzResumeBuilder",
+  name: "TbzResumeBuilder",
+  fullName: "TbzResumeBuilder",
   description: "Professional resume and cover letter builder to help you land your dream job.",
   logo: {
-    symbol: "b", // The letter in the logo square
-    bgColor: "bg-primary", // Logo background color
-    textColor: "text-white", // Logo text color
+    symbol: "", // The logo is now completely text-based with gradient
+    bgColor: "", // No background color needed
+    textColor: "", // Text color is handled with gradients in the component
   },
   social: {
     facebook: "#",
