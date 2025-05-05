@@ -96,10 +96,21 @@ router.get("/:id/svg", async (req, res) => {
       return res.status(404).json({ message: "Template not found" });
     }
     
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.send(templates[0].svgContent);
+    const content = templates[0].svgContent;
+    
+    // Check if content is SVG or HTML
+    if (content.trim().startsWith('<svg') || content.trim().startsWith('<?xml')) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+    } else if (content.trim().startsWith('<!DOCTYPE html>') || content.trim().startsWith('<html')) {
+      res.setHeader('Content-Type', 'text/html');
+    } else {
+      // Default to plain text if we can't determine the type
+      res.setHeader('Content-Type', 'text/plain');
+    }
+    
+    res.send(content);
   } catch (error) {
-    console.error("Error fetching SVG content:", error);
+    console.error("Error fetching template content:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });

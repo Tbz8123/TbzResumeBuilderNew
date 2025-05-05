@@ -38,6 +38,11 @@ type TemplateCardProps = {
 };
 
 const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
+  const [useIframe, setUseIframe] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  
+  // Try to load the template content as an image first
+  // If it fails, switch to iframe for HTML content
   return (
     <div
       className="group rounded-xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer"
@@ -45,12 +50,42 @@ const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
         <div className="absolute inset-0 flex items-center justify-center">
-          <iframe
-            src={`/api/templates/${template.id}/svg`}
-            className="w-full h-full transform scale-90 group-hover:scale-95 transition-all duration-300"
-            style={{ pointerEvents: "none" }}
-            title={template.name}
-          />
+          <div className="w-full h-full flex items-center justify-center p-4 scale-90 group-hover:scale-95 transition-all duration-300">
+            <div className="w-full h-full overflow-auto relative">
+              {!useIframe && !imgError ? (
+                <img 
+                  src={`/api/templates/${template.id}/svg`} 
+                  alt={template.name}
+                  className="w-full object-contain rounded border border-gray-100"
+                  onError={() => {
+                    // If image fails, try iframe
+                    setImgError(true);
+                    setUseIframe(true);
+                  }}
+                />
+              ) : useIframe ? (
+                <iframe
+                  src={`/api/templates/${template.id}/svg`}
+                  className="w-full h-full border-0"
+                  title={template.name}
+                  sandbox="allow-same-origin"
+                  onError={() => {
+                    // If iframe also fails, show fallback
+                    setUseIframe(false);
+                    setImgError(true);
+                  }}
+                />
+              ) : (
+                // Fallback display if both img and iframe fail
+                <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded">
+                  <div className="text-center p-4">
+                    <p className="font-medium text-lg">{template.name}</p>
+                    <p className="text-sm text-gray-500 mt-2">{template.description}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
         {template.isPopular && (
           <span className="absolute top-2 right-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded">
