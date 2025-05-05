@@ -5,6 +5,7 @@ import { useLocation } from "wouter";
 import { LargeHeading, Subheading, FullWidthSection, AppleButton } from "@/components/ui/AppleStyles";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ResumeTemplate } from "@shared/schema";
+import { Loader2 } from "lucide-react";
 
 type TemplateFilterProps = {
   categories: { id: string; label: string }[];

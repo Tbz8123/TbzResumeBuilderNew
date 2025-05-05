@@ -142,8 +142,11 @@ router.get("/:id/preview", async (req, res) => {
       return res.status(400).json({ message: "Invalid template ID" });
     }
 
+    // Get template with both thumbnailUrl and svgContent
     const templates = await db.select({
       thumbnailUrl: resumeTemplates.thumbnailUrl,
+      svgContent: resumeTemplates.svgContent,
+      name: resumeTemplates.name
     })
     .from(resumeTemplates)
     .where(
@@ -160,13 +163,42 @@ router.get("/:id/preview", async (req, res) => {
     if (templates.length === 0) {
       return res.status(404).json({ message: "Template not found" });
     }
+
+    const template = templates[0];
     
     // If template has a thumbnailUrl, redirect to it
-    if (templates[0].thumbnailUrl) {
-      return res.redirect(templates[0].thumbnailUrl);
+    if (template.thumbnailUrl) {
+      return res.redirect(template.thumbnailUrl);
     }
     
-    // Otherwise, serve a default placeholder image
+    // If the template has SVG content, convert to a simpler SVG preview
+    if (template.svgContent) {
+      // Create a simple preview image based on the template name
+      const previewSvg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+        <rect width="100%" height="100%" fill="#f1f5f9" />
+        <rect x="40" y="40" width="320" height="120" fill="#ffffff" rx="8" stroke="#e2e8f0" stroke-width="2" />
+        <text x="200" y="100" font-family="Arial" font-size="24" text-anchor="middle" fill="#0f172a" font-weight="bold">${template.name}</text>
+        
+        <rect x="40" y="180" width="320" height="40" fill="#ffffff" rx="6" stroke="#e2e8f0" stroke-width="2" />
+        <rect x="40" y="230" width="320" height="40" fill="#ffffff" rx="6" stroke="#e2e8f0" stroke-width="2" />
+        <rect x="40" y="280" width="320" height="40" fill="#ffffff" rx="6" stroke="#e2e8f0" stroke-width="2" />
+        
+        <rect x="40" y="340" width="150" height="180" fill="#ffffff" rx="6" stroke="#e2e8f0" stroke-width="2" />
+        <rect x="210" y="340" width="150" height="180" fill="#ffffff" rx="6" stroke="#e2e8f0" stroke-width="2" />
+        
+        <rect x="40" y="540" width="320" height="40" fill="#ffffff" rx="6" stroke="#e2e8f0" stroke-width="2" />
+        
+        <text x="200" y="570" font-family="Arial" font-size="14" text-anchor="middle" fill="#64748b">Resume Template</text>
+      </svg>
+      `;
+      
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.send(previewSvg);
+      return;
+    }
+    
+    // If all else fails, serve a default placeholder image
     const placeholderSvg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
       <rect width="100%" height="100%" fill="#f8f9fa" />
