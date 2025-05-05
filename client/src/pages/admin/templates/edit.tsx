@@ -44,6 +44,7 @@ type FormData = {
   isPopular: boolean;
   primaryColor: string;
   secondaryColor: string;
+  thumbnailUrl: string | null;
   changelog?: string;
 };
 
@@ -203,6 +204,7 @@ const AdminTemplateEditPage = () => {
         isPopular: template.isPopular ?? false,
         primaryColor: template.primaryColor || "#5E17EB",
         secondaryColor: template.secondaryColor || "#4A11C0",
+        thumbnailUrl: template.thumbnailUrl,
         changelog: "",
       });
     }
