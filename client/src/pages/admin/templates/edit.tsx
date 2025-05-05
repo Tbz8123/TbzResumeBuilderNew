@@ -235,13 +235,19 @@ const AdminTemplateEditPage = () => {
     e.preventDefault();
     
     try {
+      console.log("Saving template:", isEditing ? "update" : "create", formData);
+      
       if (isEditing) {
+        if (!id) {
+          throw new Error("Template ID is required for updates");
+        }
         await updateTemplateMutation.mutateAsync(formData);
         toast({
           title: "Template Updated",
           description: "The template has been successfully updated",
         });
       } else {
+        // When creating a new template
         await createTemplateMutation.mutateAsync(formData);
         toast({
           title: "Template Created",
@@ -250,6 +256,7 @@ const AdminTemplateEditPage = () => {
         navigate("/admin/templates");
       }
     } catch (error) {
+      console.error("Template save error:", error);
       toast({
         title: "Error",
         description: `Failed to ${isEditing ? "update" : "create"} template: ${(error as Error).message}`,

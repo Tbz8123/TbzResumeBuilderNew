@@ -73,10 +73,17 @@ export const useUpdateTemplate = (id: number | string | undefined) => {
         throw new Error("Template ID is required for updates");
       }
       
+      // For better error handling in case id is not a valid number or string
+      if (typeof id !== 'number' && typeof id !== 'string') {
+        throw new Error("Invalid template ID format");
+      }
+      
       // Remove any undefined fields that might cause validation errors
       const cleanedTemplate = Object.fromEntries(
         Object.entries(template).filter(([_, v]) => v !== undefined)
       );
+      
+      console.log(`Updating template with ID: ${id}, data:`, cleanedTemplate);
       
       const res = await apiRequest("PUT", `/api/templates/${id}`, cleanedTemplate);
       
@@ -88,8 +95,10 @@ export const useUpdateTemplate = (id: number | string | undefined) => {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/templates", id] });
-      queryClient.invalidateQueries({ queryKey: ["/api/templates", id, "versions"] });
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: ["/api/templates", id] });
+        queryClient.invalidateQueries({ queryKey: ["/api/templates", id, "versions"] });
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/templates"] });
     },
   });
