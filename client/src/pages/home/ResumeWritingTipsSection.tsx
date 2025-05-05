@@ -1,5 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { SectionContainer, SectionHeading, CardStyles } from "@/components/ui/CardStyles";
+import { Image } from "@/components/ui/ImageComponents";
+import { AppButton } from "@/components/ui/ButtonStyles";
 
 const ResumeWritingTipsSection = () => {
   const articles = [
@@ -26,23 +28,21 @@ const ResumeWritingTipsSection = () => {
   ];
 
   return (
-    <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Resume Writing Tips and Guidance</h2>
-          <p className="text-lg text-gray-dark max-w-2xl mx-auto">
-            Expert advice to help you create a resume that gets results
-          </p>
-        </div>
-        
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {articles.map((article, index) => (
-            <a key={index} href="#" className="bg-gray-light rounded-lg overflow-hidden shadow-sm hover:shadow-md transition">
+    <SectionContainer background="white">
+      <SectionHeading
+        title="Resume Writing Tips and Guidance"
+        subtitle="Expert advice to help you create a resume that gets results"
+      />
+      
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {articles.map((article, index) => (
+          <CardStyles key={index} variant="blog">
+            <a href="#" className="block">
               <div className="h-40 bg-gray-200">
-                <img 
+                <Image 
                   src={article.image} 
                   alt={article.title} 
-                  className="w-full h-full object-cover"
+                  aspectRatio="video"
                 />
               </div>
               <div className="p-4">
@@ -54,16 +54,16 @@ const ResumeWritingTipsSection = () => {
                 </span>
               </div>
             </a>
-          ))}
-        </div>
-        
-        <div className="text-center mt-8">
-          <Button asChild variant="default" className="py-2 px-6">
-            <a href="#blog">Visit Our Blog</a>
-          </Button>
-        </div>
+          </CardStyles>
+        ))}
       </div>
-    </section>
+      
+      <div className="text-center mt-8">
+        <AppButton variant="primary" href="#blog">
+          Visit Our Blog
+        </AppButton>
+      </div>
+    </SectionContainer>
   );
 };
 

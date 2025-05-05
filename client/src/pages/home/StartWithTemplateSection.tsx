@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -7,6 +6,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
+import { SectionContainer, SectionHeading, CardStyles } from "@/components/ui/CardStyles";
+import { CTAButton } from "@/components/ui/ButtonStyles";
 
 const StartWithTemplateSection = () => {
   const [jobTitle, setJobTitle] = useState("");
@@ -38,73 +39,68 @@ const StartWithTemplateSection = () => {
   ];
 
   return (
-    <section className="bg-gray-light py-16">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold mb-4">Start Your Resume with a Template</h2>
-          <p className="text-lg text-gray-dark max-w-2xl mx-auto">
-            Select your job details to find the perfect template for your career
-          </p>
-        </div>
+    <SectionContainer background="light">
+      <SectionHeading
+        title="Start Your Resume with a Template"
+        subtitle="Select your job details to find the perfect template for your career"
+        className="mb-10"
+      />
 
-        <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
-            {/* Job Title Dropdown */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Job Title</label>
-              <Select value={jobTitle} onValueChange={setJobTitle}>
-                <SelectTrigger className="w-full border border-gray-300 rounded-lg p-3 bg-gray-light focus:border-primary focus:ring-1 focus:ring-primary">
-                  <SelectValue placeholder="Select Job Title" />
-                </SelectTrigger>
-                <SelectContent>
-                  {jobTitles.map((job) => (
-                    <SelectItem key={job.value} value={job.value}>{job.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Industry Dropdown */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Industry</label>
-              <Select value={industry} onValueChange={setIndustry}>
-                <SelectTrigger className="w-full border border-gray-300 rounded-lg p-3 bg-gray-light focus:border-primary focus:ring-1 focus:ring-primary">
-                  <SelectValue placeholder="Select Industry" />
-                </SelectTrigger>
-                <SelectContent>
-                  {industries.map((ind) => (
-                    <SelectItem key={ind.value} value={ind.value}>{ind.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Experience Level Dropdown */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Experience Level</label>
-              <Select value={experience} onValueChange={setExperience}>
-                <SelectTrigger className="w-full border border-gray-300 rounded-lg p-3 bg-gray-light focus:border-primary focus:ring-1 focus:ring-primary">
-                  <SelectValue placeholder="Select Experience" />
-                </SelectTrigger>
-                <SelectContent>
-                  {experienceLevels.map((exp) => (
-                    <SelectItem key={exp.value} value={exp.value}>{exp.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <CardStyles variant="default" className="max-w-3xl mx-auto p-8">
+        <div className="grid md:grid-cols-3 gap-6 mb-6">
+          {/* Job Title Dropdown */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Job Title</label>
+            <Select value={jobTitle} onValueChange={setJobTitle}>
+              <SelectTrigger className="w-full border border-gray-300 rounded-lg p-3 bg-gray-light focus:border-primary focus:ring-1 focus:ring-primary">
+                <SelectValue placeholder="Select Job Title" />
+              </SelectTrigger>
+              <SelectContent>
+                {jobTitles.map((job) => (
+                  <SelectItem key={job.value} value={job.value}>{job.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="text-center">
-            <Button
-              className="bg-secondary hover:bg-yellow-500 text-black font-bold py-3 px-8 text-lg shadow-md"
-            >
-              Start Resume
-            </Button>
+          {/* Industry Dropdown */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Industry</label>
+            <Select value={industry} onValueChange={setIndustry}>
+              <SelectTrigger className="w-full border border-gray-300 rounded-lg p-3 bg-gray-light focus:border-primary focus:ring-1 focus:ring-primary">
+                <SelectValue placeholder="Select Industry" />
+              </SelectTrigger>
+              <SelectContent>
+                {industries.map((ind) => (
+                  <SelectItem key={ind.value} value={ind.value}>{ind.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Experience Level Dropdown */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Experience Level</label>
+            <Select value={experience} onValueChange={setExperience}>
+              <SelectTrigger className="w-full border border-gray-300 rounded-lg p-3 bg-gray-light focus:border-primary focus:ring-1 focus:ring-primary">
+                <SelectValue placeholder="Select Experience" />
+              </SelectTrigger>
+              <SelectContent>
+                {experienceLevels.map((exp) => (
+                  <SelectItem key={exp.value} value={exp.value}>{exp.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </div>
-    </section>
+
+        <div className="text-center">
+          <CTAButton>
+            Start Resume
+          </CTAButton>
+        </div>
+      </CardStyles>
+    </SectionContainer>
   );
 };
 
