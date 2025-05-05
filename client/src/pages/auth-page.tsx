@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { 
@@ -47,11 +47,12 @@ const AuthPage = () => {
   const [_, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
   
-  // Redirect if already logged in
-  if (user) {
-    navigate("/");
-    return null;
-  }
+  useEffect(() => {
+    // Redirect if already logged in
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
