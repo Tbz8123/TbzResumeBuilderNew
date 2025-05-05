@@ -134,6 +134,61 @@ router.get("/:id/svg", async (req, res) => {
   }
 });
 
+// Get template preview image
+router.get("/:id/preview", async (req, res) => {
+  try {
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({ message: "Invalid template ID" });
+    }
+
+    const templates = await db.select({
+      thumbnailUrl: resumeTemplates.thumbnailUrl,
+    })
+    .from(resumeTemplates)
+    .where(
+      and(
+        eq(resumeTemplates.id, templateId),
+        // If not admin, only show active templates
+        req.isAuthenticated() && req.user && req.user.isAdmin 
+          ? undefined 
+          : eq(resumeTemplates.isActive, true)
+      )
+    )
+    .limit(1);
+    
+    if (templates.length === 0) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    
+    // If template has a thumbnailUrl, redirect to it
+    if (templates[0].thumbnailUrl) {
+      return res.redirect(templates[0].thumbnailUrl);
+    }
+    
+    // Otherwise, serve a default placeholder image
+    const placeholderSvg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+      <rect width="100%" height="100%" fill="#f8f9fa" />
+      <rect x="50" y="50" width="300" height="80" fill="#e9ecef" rx="4" />
+      <rect x="50" y="150" width="300" height="30" fill="#e9ecef" rx="4" />
+      <rect x="50" y="190" width="300" height="30" fill="#e9ecef" rx="4" />
+      <rect x="50" y="230" width="300" height="30" fill="#e9ecef" rx="4" />
+      <rect x="50" y="290" width="140" height="180" fill="#e9ecef" rx="4" />
+      <rect x="210" y="290" width="140" height="180" fill="#e9ecef" rx="4" />
+      <rect x="50" y="490" width="300" height="60" fill="#e9ecef" rx="4" />
+      <text x="200" y="320" font-family="Arial" font-size="20" text-anchor="middle" fill="#6c757d">Template Preview</text>
+    </svg>
+    `;
+    
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.send(placeholderSvg);
+  } catch (error) {
+    console.error("Error fetching template preview:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // ADMIN ROUTES
 
 // Create a new template (admin only)

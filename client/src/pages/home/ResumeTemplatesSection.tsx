@@ -37,73 +37,38 @@ type TemplateCardProps = {
   onClick: () => void;
 };
 
-// Direct HTML viewer component
-const HtmlTemplatePreview = ({ templateId }: { templateId: number }) => {
-  const [content, setContent] = useState<string | null>(null);
+// Simple template preview component using direct image
+const TemplatePreview = ({ templateId }: { templateId: number }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
-    const fetchTemplate = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/templates/${templateId}/svg`);
-        if (!response.ok) throw new Error('Failed to fetch template');
-
-        // Get the content directly as text
-        const htmlContent = await response.text();
-        setContent(htmlContent);
-        setError(false);
-      } catch (err) {
-        setError(true);
-        console.error('Error fetching template:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTemplate();
-  }, [templateId]);
-
-  if (isLoading) {
-    return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (error || !content) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded">
-        <div className="text-center p-4">
-          <p className="font-medium text-red-500">Failed to load template</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If the content starts with SVG, render it as an image
-  if (content.trim().startsWith('<svg') || content.trim().startsWith('<?xml')) {
-    return (
-      <div className="w-full h-full flex items-center justify-center">
-        <img
-          src={`/api/templates/${templateId}/svg`}
-          alt="Template Preview"
-          className="w-full h-full object-contain"
-        />
-      </div>
-    );
-  }
-
-  // Otherwise render as HTML in an iframe with sandbox for security
   return (
-    <iframe
-      srcDoc={content}
-      title="Template Preview"
-      className="w-full h-full border-0"
-      sandbox="allow-same-origin"
-    />
+    <div className="w-full h-full flex items-center justify-center">
+      <img
+        src={`/api/templates/${templateId}/preview`}
+        alt="Template Preview"
+        className="w-full h-full object-contain"
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setIsLoading(false);
+          setError(true);
+        }}
+      />
+      
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-75">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      )}
+      
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-90">
+          <div className="text-center p-4">
+            <p className="font-medium text-red-500">Failed to load preview</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -117,7 +82,7 @@ const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-full h-full flex items-center justify-center p-4 scale-90 group-hover:scale-95 transition-all duration-300">
             <div className="w-full h-full overflow-hidden relative border border-gray-100 rounded">
-              <HtmlTemplatePreview templateId={template.id} />
+              <TemplatePreview templateId={template.id} />
             </div>
           </div>
         </div>
