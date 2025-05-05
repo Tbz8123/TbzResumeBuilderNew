@@ -6,7 +6,7 @@ import { apiRequest, getQueryFn } from "@/lib/queryClient";
 export const useTemplates = () => {
   return useQuery({
     queryKey: ["/api/templates"],
-    queryFn: getQueryFn({ on401: "throw" }),
+    queryFn: getQueryFn({ on401: "returnNull" }), // Allow non-authenticated access for public display
   });
 };
 
@@ -14,7 +14,7 @@ export const useTemplates = () => {
 export const useTemplate = (id: number | string | undefined) => {
   return useQuery({
     queryKey: ["/api/templates", id],
-    queryFn: getQueryFn({ on401: "throw" }),
+    queryFn: getQueryFn({ on401: "returnNull" }), // Allow non-authenticated access for public display
     enabled: !!id, // Only run query if id is provided
   });
 };

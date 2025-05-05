@@ -1,127 +1,120 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { FullWidthSection, LargeHeading, Subheading, AppleButton } from "@/components/ui/AppleStyles";
-import { AnimatedSection, AnimatedImage } from "@/components/AnimationComponents";
+import { useTemplates } from "@/hooks/use-templates";
+import { AnimatedSection } from "@/components/AnimatedSection";
+import { useLocation } from "wouter";
+import { LargeHeading, Subheading, FullWidthSection, AppleButton } from "@/components/ui/AppleStyles";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ResumeTemplate } from "@shared/schema";
 
-type TemplateType = {
-  id: string;
-  name: string;
-  description: string;
-  imageUrl: string;
-  category: string;
-  popular: boolean;
-  colors: string[];
+type TemplateFilterProps = {
+  categories: { id: string; label: string }[];
+  activeFilter: string;
+  onFilterChange: (filter: string) => void;
+};
+
+const TemplateFilter = ({ categories, activeFilter, onFilterChange }: TemplateFilterProps) => {
+  return (
+    <div className="flex flex-wrap justify-center gap-2 mb-10">
+      {categories.map((category) => (
+        <button
+          key={category.id}
+          onClick={() => onFilterChange(category.id)}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+            activeFilter === category.id
+              ? "bg-primary text-white shadow-md"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          {category.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+type TemplateCardProps = {
+  template: ResumeTemplate;
+  onClick: () => void;
+};
+
+const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
+  return (
+    <div
+      className="group rounded-xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer"
+      onClick={onClick}
+    >
+      <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <iframe
+            src={`/api/templates/${template.id}/svg`}
+            className="w-full h-full transform scale-90 group-hover:scale-95 transition-all duration-300"
+            style={{ pointerEvents: "none" }}
+            title={template.name}
+          />
+        </div>
+        {template.isPopular && (
+          <span className="absolute top-2 right-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded">
+            Popular
+          </span>
+        )}
+      </div>
+      <div className="p-4">
+        <h3 className="font-bold text-gray-900">{template.name}</h3>
+        <p className="text-sm text-gray-600 mt-1">{template.description}</p>
+        <div 
+          className="w-full h-1 mt-3 rounded-full"
+          style={{ 
+            background: `linear-gradient(to right, ${template.primaryColor}, ${template.secondaryColor})` 
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const TemplateCardSkeleton = () => {
+  return (
+    <div className="rounded-xl overflow-hidden bg-white shadow-md">
+      <div className="aspect-[4/5] overflow-hidden bg-gray-100">
+        <Skeleton className="w-full h-full" />
+      </div>
+      <div className="p-4 space-y-2">
+        <Skeleton className="h-6 w-2/3" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-1 w-full mt-3 rounded-full" />
+      </div>
+    </div>
+  );
 };
 
 const ResumeTemplatesSection = () => {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [, navigate] = useLocation();
   
-  const templates: TemplateType[] = [
-    {
-      id: "modern-professional",
-      name: "Modern Professional",
-      description: "Clean and modern design with a focus on skills and accomplishments.",
-      imageUrl: "https://images.unsplash.com/photo-1586281380117-5a60ae2050cc?w=500&q=80",
-      category: "professional",
-      popular: true,
-      colors: ["#3b82f6", "#1d4ed8"]
-    },
-    {
-      id: "executive-premium",
-      name: "Executive Premium",
-      description: "Sophisticated design for senior professionals and executives.",
-      imageUrl: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=500&q=80",
-      category: "executive",
-      popular: true,
-      colors: ["#374151", "#111827"]
-    },
-    {
-      id: "creative-bold",
-      name: "Creative Bold",
-      description: "Stand out with this bold, creative design for artistic professionals.",
-      imageUrl: "https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=500&q=80",
-      category: "creative",
-      popular: false,
-      colors: ["#a855f7", "#4338ca"]
-    },
-    {
-      id: "tech-innovator",
-      name: "Tech Innovator",
-      description: "Modern design highlighting technical skills and achievements.",
-      imageUrl: "https://images.unsplash.com/photo-1516383740770-fbcc5ccbece0?w=500&q=80",
-      category: "tech",
-      popular: true,
-      colors: ["#06b6d4", "#1d4ed8"]
-    },
-    {
-      id: "minimal-elegant",
-      name: "Minimal Elegant",
-      description: "Clean, minimalist design with elegant typography and layout.",
-      imageUrl: "https://images.unsplash.com/photo-1586282391129-76a6df230234?w=500&q=80",
-      category: "minimal",
-      popular: false,
-      colors: ["#e5e7eb", "#9ca3af"]
-    },
-    {
-      id: "corporate-classic",
-      name: "Corporate Classic",
-      description: "Traditional format preferred by corporate recruiters and ATS systems.",
-      imageUrl: "https://images.unsplash.com/photo-1586282023708-7163cafee0c5?w=500&q=80",
-      category: "professional",
-      popular: true,
-      colors: ["#64748b", "#1e293b"]
-    },
-    {
-      id: "startup-dynamic",
-      name: "Startup Dynamic",
-      description: "Bold, dynamic layout for startup and tech industry professionals.",
-      imageUrl: "https://images.unsplash.com/photo-1586473219010-2ffc57b0d282?w=500&q=80",
-      category: "tech",
-      popular: false,
-      colors: ["#10b981", "#0f766e"]
-    },
-    {
-      id: "graduate-fresh",
-      name: "Graduate Fresh",
-      description: "Perfect for recent graduates and entry-level positions.",
-      imageUrl: "https://images.unsplash.com/photo-1586282391160-9a2cd84bd74e?w=500&q=80",
-      category: "entry",
-      popular: true,
-      colors: ["#f59e0b", "#c2410c"]
-    },
-    {
-      id: "consultant-expert",
-      name: "Consultant Expert",
-      description: "Showcase your expertise with this consultant-focused template.",
-      imageUrl: "https://images.unsplash.com/photo-1587613864521-9ef8dfe617cc?w=500&q=80",
-      category: "executive",
-      popular: false,
-      colors: ["#4f46e5", "#312e81"]
-    },
-    {
-      id: "futuristic-tech",
-      name: "Futuristic Tech",
-      description: "Ultra-modern design for cutting-edge tech professionals.",
-      imageUrl: "https://images.unsplash.com/photo-1587613865763-4b8b0d19e8ab?w=500&q=80",
-      category: "creative",
-      popular: true,
-      colors: ["#5E17EB", "#4A11C0"]
-    },
-  ];
-
+  // Fetch templates from the API
+  const { data: templatesData, isLoading, error } = useTemplates();
+  
   const categories = [
     { id: "all", label: "All Templates" },
     { id: "professional", label: "Professional" },
     { id: "creative", label: "Creative" },
-    { id: "tech", label: "Tech" },
+    { id: "simple", label: "Simple" },
+    { id: "modern", label: "Modern" },
     { id: "executive", label: "Executive" },
-    { id: "minimal", label: "Minimal" },
-    { id: "entry", label: "Entry Level" },
+    { id: "tech", label: "Tech" },
   ];
 
-  const filteredTemplates = activeFilter === "all" 
-    ? templates 
-    : templates.filter(template => template.category === activeFilter);
+  // Filter templates based on active filter
+  const filteredTemplates = templatesData && Array.isArray(templatesData) 
+    ? (activeFilter === "all" 
+        ? templatesData 
+        : templatesData.filter(template => template.category === activeFilter))
+    : [];
+
+  const handleTemplateClick = (template: ResumeTemplate) => {
+    // Navigate to the template detail page or start the resume builder
+    navigate("/experience-level");
+  };
 
   return (
     <FullWidthSection
@@ -138,85 +131,37 @@ const ResumeTemplatesSection = () => {
           </Subheading>
         </AnimatedSection>
 
-        {/* Filter Tabs */}
-        <AnimatedSection animation="fadeIn" className="mb-12">
-          <div className="flex flex-wrap justify-center gap-2 md:gap-4">
-            {categories.map((category) => (
-              <motion.button
-                key={category.id}
-                onClick={() => setActiveFilter(category.id)}
-                className={`px-4 py-2 rounded-full text-sm md:text-base font-medium transition-all ${
-                  activeFilter === category.id
-                    ? "bg-primary text-white shadow-md"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {category.label}
-              </motion.button>
+        <TemplateFilter 
+          categories={categories} 
+          activeFilter={activeFilter} 
+          onFilterChange={setActiveFilter} 
+        />
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-16">
+            {[...Array(8)].map((_, index) => (
+              <TemplateCardSkeleton key={index} />
             ))}
           </div>
-        </AnimatedSection>
-
-        {/* Templates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          {filteredTemplates.map((template, index) => (
-            <AnimatedSection 
-              key={template.id} 
-              animation="fadeInUp"
-              delay={0.1 * index}
-            >
-              <motion.div 
-                className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all border border-gray-100"
-                whileHover={{ y: -8 }}
-              >
-                <div className="relative aspect-[3/4] overflow-hidden">
-                  <div className={`absolute inset-0 bg-gradient-to-br opacity-10`} 
-                       style={{
-                         background: `linear-gradient(to bottom right, ${template.colors[0]}, ${template.colors[1]})`
-                       }}
-                  ></div>
-                  <img 
-                    src={template.imageUrl} 
-                    alt={template.name} 
-                    className="w-full h-full object-cover transition-transform hover:scale-105"
-                  />
-                  {template.popular && (
-                    <div className="absolute top-4 right-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">
-                      POPULAR
-                    </div>
-                  )}
-                </div>
-                
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2">{template.name}</h3>
-                  <p className="text-gray-600 mb-4">{template.description}</p>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex space-x-2">
-                      {template.colors.map((color, i) => (
-                        <div 
-                          key={i} 
-                          className="w-6 h-6 rounded-full" 
-                          style={{ backgroundColor: color }}
-                        ></div>
-                      ))}
-                    </div>
-                    
-                    <AppleButton
-                      variant="text"
-                      href={`/templates/${template.id}`}
-                      className="text-primary font-medium"
-                    >
-                      Use Template
-                    </AppleButton>
-                  </div>
-                </div>
-              </motion.div>
-            </AnimatedSection>
-          ))}
-        </div>
+        ) : error ? (
+          <div className="text-center py-10">
+            <p className="text-red-500">Failed to load templates. Please try again later.</p>
+          </div>
+        ) : filteredTemplates.length === 0 ? (
+          <div className="text-center py-10">
+            <p>No templates available in this category yet. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-16">
+            {filteredTemplates.map((template) => (
+              <TemplateCard 
+                key={template.id} 
+                template={template} 
+                onClick={() => handleTemplateClick(template)} 
+              />
+            ))}
+          </div>
+        )}
 
         {/* CTA Button */}
         <div className="text-center">
