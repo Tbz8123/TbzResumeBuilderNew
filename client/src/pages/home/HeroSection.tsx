@@ -39,7 +39,7 @@ const HeroSection = () => {
               size="large"
               className="bg-primary hover:bg-primary-dark text-white"
             >
-              Get Started
+              Create My Resume
             </AppleButton>
           </AnimatedSection>
 

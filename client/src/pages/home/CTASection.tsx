@@ -13,9 +13,9 @@ const CTASection = () => {
         variant="outline" 
         className="bg-white text-primary hover:bg-gray-100 font-bold shadow-md"
         size="lg"
-        href="#get-started"
+        href="/experience-level"
       >
-        Get Started Now
+        Create Your Resume Now
       </AppButton>
     </SectionContainer>
   );
