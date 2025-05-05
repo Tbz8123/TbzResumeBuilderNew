@@ -187,14 +187,17 @@ const AdminTemplateEditPage = () => {
     changelog: "",
   });
   
-  const isEditing = id !== "new";
+  // Explicitly check URL path (more reliable than derived state)
+  const isNewTemplate = id === "new";
+  const isEditingTemplate = !isNewTemplate;
   
-  const { data: template, isLoading } = useTemplate(isEditing ? id : undefined);
-  const updateTemplateMutation = useUpdateTemplate(isEditing ? id : undefined);
+  // Only load template data if we're editing an existing template
+  const { data: template, isLoading } = useTemplate(isEditingTemplate ? id : undefined);
+  const updateTemplateMutation = useUpdateTemplate(isEditingTemplate ? id : undefined);
   const createTemplateMutation = useCreateTemplate();
   
   useEffect(() => {
-    if (template && isEditing) {
+    if (template && isEditingTemplate) {
       setFormData({
         name: template.name || "",
         description: template.description || "",
@@ -208,7 +211,7 @@ const AdminTemplateEditPage = () => {
         changelog: "",
       });
     }
-  }, [template, isEditing]);
+  }, [template, isEditingTemplate]);
   
   const refreshPreview = () => {
     setPreviewKey(prev => prev + 1);
@@ -235,9 +238,23 @@ const AdminTemplateEditPage = () => {
     e.preventDefault();
     
     try {
-      console.log("Saving template:", isEditing ? "update" : "create", formData);
+      // Check which path we're on - new or edit
+      const isCreatingTemplate = id === "new";
       
-      if (isEditing) {
+      console.log(`Template action: ${isCreatingTemplate ? "CREATE" : "UPDATE"}`, formData);
+      
+      if (isCreatingTemplate) {
+        // CREATE NEW TEMPLATE
+        console.log("Creating new template with data:", formData);
+        await createTemplateMutation.mutateAsync(formData);
+        toast({
+          title: "Template Created",
+          description: "The new template has been successfully created",
+        });
+        navigate("/admin/templates");
+      } else {
+        // UPDATE EXISTING TEMPLATE
+        console.log(`Updating template ID: ${id} with data:`, formData);
         if (!id) {
           throw new Error("Template ID is required for updates");
         }
@@ -246,20 +263,13 @@ const AdminTemplateEditPage = () => {
           title: "Template Updated",
           description: "The template has been successfully updated",
         });
-      } else {
-        // When creating a new template
-        await createTemplateMutation.mutateAsync(formData);
-        toast({
-          title: "Template Created",
-          description: "The new template has been successfully created",
-        });
-        navigate("/admin/templates");
       }
     } catch (error) {
-      console.error("Template save error:", error);
+      const action = id === "new" ? "create" : "update";
+      console.error(`Failed to ${action} template:`, error);
       toast({
         title: "Error",
-        description: `Failed to ${isEditing ? "update" : "create"} template: ${(error as Error).message}`,
+        description: `Failed to ${action} template: ${(error as Error).message}`,
         variant: "destructive",
       });
     }
@@ -278,7 +288,7 @@ const AdminTemplateEditPage = () => {
             Back
           </Button>
           <h1 className="text-3xl font-bold">
-            {isEditing ? "Edit Resume Template" : "Create New Template"}
+            {isEditingTemplate ? "Edit Resume Template" : "Create New Template"}
           </h1>
         </div>
         <Button 
@@ -420,7 +430,7 @@ const AdminTemplateEditPage = () => {
                   </div>
                 </div>
 
-                {isEditing && (
+                {isEditingTemplate && (
                   <div className="space-y-2">
                     <Label htmlFor="changelog">
                       Changelog <span className="text-gray-500 text-sm">(Optional)</span>
