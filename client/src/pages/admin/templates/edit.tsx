@@ -190,7 +190,7 @@ const AdminTemplateEditPage = () => {
   const isEditing = id !== "new";
   
   const { data: template, isLoading } = useTemplate(isEditing ? id : undefined);
-  const updateTemplateMutation = useUpdateTemplate(id);
+  const updateTemplateMutation = useUpdateTemplate(isEditing ? id : undefined);
   const createTemplateMutation = useCreateTemplate();
   
   useEffect(() => {
@@ -204,7 +204,7 @@ const AdminTemplateEditPage = () => {
         isPopular: template.isPopular ?? false,
         primaryColor: template.primaryColor || "#5E17EB",
         secondaryColor: template.secondaryColor || "#4A11C0",
-        thumbnailUrl: template.thumbnailUrl,
+        thumbnailUrl: template.thumbnailUrl || null,
         changelog: "",
       });
     }
