@@ -49,6 +49,9 @@ export function setupAuth(app: Express) {
         connectionString: process.env.DATABASE_URL,
       },
       createTableIfMissing: true,
+      tableName: 'session', // Explicitly define the table name
+      // Force table creation on startup to fix missing table issue
+      createTable: true 
     }),
   };
 
