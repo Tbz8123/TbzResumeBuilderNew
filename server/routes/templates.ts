@@ -112,406 +112,1078 @@ router.get("/:id/svg", async (req, res) => {
     const getRandomTemplate = () => {
       // Templates collection based on template's characteristics
       const templates = [
-        // Purple-themed "Cascade" style template - for creative roles
+        // Sleek dark template with golden accents - "Brian"
         `<!DOCTYPE html>
         <html>
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-            .cascade-template { display: flex; width: 100%; height: 100vh; }
-            .sidebar { background-color: ${template.primaryColor || '#5E17EB'}; width: 220px; color: white; padding: 30px 20px; }
-            .main-content { flex: 1; padding: 40px; background: white; }
-            h1, h2, h3 { margin: 0; }
-            h1 { font-size: 24px; margin-bottom: 5px; }
-            h2 { font-size: 18px; margin: 25px 0 10px; color: ${template.primaryColor || '#5E17EB'}; border-bottom: 2px solid ${template.secondaryColor || '#4A11C0'}; padding-bottom: 5px; }
-            h3 { font-size: 16px; margin-bottom: 5px; }
-            .sidebar h2 { color: white; border-bottom: 2px solid rgba(255,255,255,0.3); }
-            p { margin: 0 0 5px; font-size: 14px; line-height: 1.5; }
-            .contact-item { display: flex; align-items: center; margin-bottom: 10px; font-size: 14px; }
-            .skill-bar { height: 6px; background: #e0e0e0; margin-bottom: 15px; border-radius: 3px; }
-            .skill-level { height: 100%; background: ${template.secondaryColor || '#4A11C0'}; border-radius: 3px; }
-            .job { margin-bottom: 20px; }
-            .job-title { display: flex; justify-content: space-between; margin-bottom: 5px; }
-            .date { color: #666; font-style: italic; font-size: 14px; }
-            .bullet { margin-left: 20px; position: relative; }
-            .bullet:before { content: "•"; position: absolute; left: -15px; }
-          </style>
-          <title>${template.name} Resume Template</title>
-        </head>
-        <body>
-          <div class="cascade-template">
-            <div class="sidebar">
-              <div style="text-align: center; margin-bottom: 30px;">
-                <div style="width: 120px; height: 120px; border-radius: 60px; background-color: #eee; margin: 0 auto 15px; overflow: hidden;">
-                  <div style="width: 100%; height: 100%; background-color: #ddd; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #999;">JD</div>
-                </div>
-                <h1>John Doe</h1>
-                <p>Senior UX Designer</p>
-              </div>
-              
-              <h2>CONTACT</h2>
-              <div class="contact-item">Email: john@example.com</div>
-              <div class="contact-item">Phone: (123) 456-7890</div>
-              <div class="contact-item">Location: San Francisco, CA</div>
-              
-              <h2>SKILLS</h2>
-              <p>UX Design</p>
-              <div class="skill-bar"><div class="skill-level" style="width: 95%;"></div></div>
-              <p>UI/Visual Design</p>
-              <div class="skill-bar"><div class="skill-level" style="width: 90%;"></div></div>
-              <p>Prototyping</p>
-              <div class="skill-bar"><div class="skill-level" style="width: 85%;"></div></div>
-              <p>User Research</p>
-              <div class="skill-bar"><div class="skill-level" style="width: 80%;"></div></div>
-              <p>Figma</p>
-              <div class="skill-bar"><div class="skill-level" style="width: 95%;"></div></div>
-              
-              <h2>EDUCATION</h2>
-              <h3>Design University</h3>
-              <p>B.A. Interactive Design</p>
-              <p class="date">2014 - 2018</p>
-            </div>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
             
-            <div class="main-content">
-              <h2>EXPERIENCE</h2>
-              
-              <div class="job">
-                <div class="job-title">
-                  <h3>Senior UX Designer at TechCorp</h3>
-                  <span class="date">2020 - Present</span>
-                </div>
-                <p class="bullet">Led redesign of flagship product resulting in 30% increase in user engagement</p>
-                <p class="bullet">Conducted user research sessions to identify pain points and opportunities</p>
-                <p class="bullet">Collaborated with engineers to implement design system across platforms</p>
-                <p class="bullet">Mentored junior designers and facilitated design thinking workshops</p>
-              </div>
-              
-              <div class="job">
-                <div class="job-title">
-                  <h3>UX Designer at InnovateCo</h3>
-                  <span class="date">2018 - 2020</span>
-                </div>
-                <p class="bullet">Created user flows, wireframes, and prototypes for mobile applications</p>
-                <p class="bullet">Developed style guides and component libraries to ensure consistency</p>
-                <p class="bullet">Collaborated with product managers to define feature requirements</p>
-              </div>
-              
-              <h2>PROJECTS</h2>
-              
-              <div class="job">
-                <div class="job-title">
-                  <h3>HealthTracker App Redesign</h3>
-                </div>
-                <p class="bullet">Redesigned health tracking app with focus on accessibility and simplicity</p>
-                <p class="bullet">Increased user retention by 25% through improved onboarding flow</p>
-              </div>
-              
-              <div class="job">
-                <div class="job-title">
-                  <h3>E-commerce Website Optimization</h3>
-                </div>
-                <p class="bullet">Streamlined checkout process reducing cart abandonment by 15%</p>
-                <p class="bullet">Implemented responsive design principles for mobile-first approach</p>
-              </div>
-              
-              <h2>CERTIFICATIONS</h2>
-              <p class="bullet">Google UX Design Professional Certificate</p>
-              <p class="bullet">Interaction Design Foundation UX Master Certification</p>
-            </div>
-          </div>
-        </body>
-        </html>`,
-
-        // Clean minimal "Crisp" style template with teal accents - for corporate roles
-        `<!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            body { margin: 0; padding: 0; font-family: 'Arial', sans-serif; color: #333; }
-            .crisp-template { max-width: 800px; margin: 0 auto; padding: 40px; }
-            .header { margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
-            h1 { font-size: 28px; margin: 0; color: #333; }
-            h2 { font-size: 18px; color: ${template.primaryColor || '#0ca789'}; margin: 25px 0 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-            h3 { font-size: 16px; margin: 0 0 5px; color: #444; }
-            .subheader { color: #666; margin: 5px 0; }
-            .contact-info { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 10px; }
-            .contact-info div { display: flex; align-items: center; color: #666; font-size: 14px; }
-            .contact-item:before { content: "•"; margin-right: 5px; color: ${template.secondaryColor || '#0a8c72'}; }
-            .timeline-item { margin-bottom: 20px; position: relative; }
-            .timeline-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
-            .timeline-date { color: #888; font-size: 14px; text-align: right; }
-            .timeline-content { margin-left: 15px; }
-            .timeline-content p { margin: 5px 0; font-size: 14px; line-height: 1.4; }
-            .skills-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .skill-item { background: #f5f5f5; padding: 8px 12px; border-radius: 4px; font-size: 14px; }
-            .bullet { position: relative; padding-left: 15px; font-size: 14px; margin-bottom: 5px; line-height: 1.4; }
-            .bullet:before { content: "•"; position: absolute; left: 0; color: ${template.primaryColor || '#0ca789'}; }
-          </style>
-          <title>${template.name} Resume Template</title>
-        </head>
-        <body>
-          <div class="crisp-template">
-            <div class="header">
-              <h1>Alex Johnson</h1>
-              <div class="subheader">Marketing Specialist</div>
-              <div class="contact-info">
-                <div class="contact-item">alex@example.com</div>
-                <div class="contact-item">(555) 123-4567</div>
-                <div class="contact-item">Boston, MA</div>
-                <div class="contact-item">linkedin.com/in/alexjohnson</div>
-              </div>
-            </div>
-            
-            <h2>Professional Experience</h2>
-            
-            <div class="timeline-item">
-              <div class="timeline-header">
-                <h3>Senior Marketing Specialist</h3>
-                <div class="timeline-date">Mar 2020 - Present</div>
-              </div>
-              <div class="subheader">Global Marketing Solutions</div>
-              <div class="timeline-content">
-                <p class="bullet">Developed comprehensive marketing campaigns that increased customer engagement by 45%</p>
-                <p class="bullet">Managed social media strategy across 5 platforms, growing follower base by 10,000+ annually</p>
-                <p class="bullet">Collaborated with product teams to create targeted messaging strategies for new features</p>
-                <p class="bullet">Led email marketing initiatives with a 25% average open rate and 3.5% CTR</p>
-              </div>
-            </div>
-            
-            <div class="timeline-item">
-              <div class="timeline-header">
-                <h3>Marketing Coordinator</h3>
-                <div class="timeline-date">Jun 2018 - Feb 2020</div>
-              </div>
-              <div class="subheader">Innovative Marketing Inc.</div>
-              <div class="timeline-content">
-                <p class="bullet">Assisted in creating content calendar for blog posts, social media, and email campaigns</p>
-                <p class="bullet">Conducted market research to identify trends and opportunities for growth</p>
-                <p class="bullet">Maintained and updated CRM database of 5,000+ contacts</p>
-              </div>
-            </div>
-            
-            <h2>Education</h2>
-            
-            <div class="timeline-item">
-              <div class="timeline-header">
-                <h3>Bachelor of Science in Marketing</h3>
-                <div class="timeline-date">2014 - 2018</div>
-              </div>
-              <div class="subheader">State University</div>
-              <div class="timeline-content">
-                <p class="bullet">Graduated with honors (3.8 GPA)</p>
-                <p class="bullet">Marketing Club President</p>
-              </div>
-            </div>
-            
-            <h2>Skills</h2>
-            
-            <div class="skills-grid">
-              <div class="skill-item">Social Media Marketing</div>
-              <div class="skill-item">Content Strategy</div>
-              <div class="skill-item">Google Analytics</div>
-              <div class="skill-item">SEO/SEM</div>
-              <div class="skill-item">Email Marketing</div>
-              <div class="skill-item">Project Management</div>
-              <div class="skill-item">Copywriting</div>
-              <div class="skill-item">Data Analysis</div>
-              <div class="skill-item">Adobe Creative Suite</div>
-              <div class="skill-item">CRM Software</div>
-            </div>
-            
-            <h2>Certifications</h2>
-            <p class="bullet">Google Analytics Individual Qualification</p>
-            <p class="bullet">HubSpot Content Marketing Certification</p>
-            <p class="bullet">Facebook Blueprint Certification</p>
-          </div>
-        </body>
-        </html>`,
-
-        // Geometric "Cubic" style template with gold accents - for professional/executive roles
-        `<!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            body { 
-              margin: 0; padding: 0; 
-              font-family: 'Georgia', serif; 
-              color: #333;
-              background-color: #fbfbfb;
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             }
-            .cubic-template { 
-              width: 100%; 
-              max-width: 800px; 
-              margin: 0 auto; 
-              background-color: white;
-              box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+            
+            body {
+              margin: 0;
+              padding: 0;
+              background: #000;
+              color: #fff;
+              overflow-x: hidden;
+              max-width: 100vw;
+            }
+            
+            .resume-container {
               display: flex;
+              width: 100%;
+              height: 100vh;
+              position: relative;
             }
-            .cubic-template .sidebar {
-              width: 33%;
-              padding: 40px 20px;
-              background-color: ${template.primaryColor || '#84754e'};
-              color: white;
+            
+            .left-column {
+              width: 40%;
+              background: #000;
+              padding: 30px;
+              position: relative;
             }
-            .cubic-template .main {
-              width: 67%;
-              padding: 40px;
+            
+            .right-column {
+              width: 60%;
+              padding: 30px 40px;
+              background: #0a0a0a;
+              overflow-y: auto;
             }
-            h1 { font-size: 24px; font-weight: normal; margin: 0 0 5px; letter-spacing: 1px; }
-            h2 { 
-              font-size: 14px; 
-              text-transform: uppercase; 
-              letter-spacing: 2px; 
-              color: ${template.primaryColor || '#84754e'}; 
-              margin: 30px 0 15px; 
-              padding-bottom: 5px; 
-              border-bottom: 1px solid ${template.secondaryColor || '#e0d5b3'};
-              font-weight: bold;
+            
+            .photo-container {
+              width: 150px;
+              height: 150px;
+              border-radius: 50%;
+              background: #1a1a1a;
+              margin: 20px auto 30px;
+              position: relative;
+              overflow: hidden;
+              border: 2px solid #333;
             }
-            .sidebar h2 { color: white; border-bottom-color: rgba(255,255,255,0.3); }
-            h3 { font-size: 16px; margin: 0 0 5px; font-weight: normal; }
-            p { margin: 0 0 10px; font-size: 14px; line-height: 1.5; }
-            .contact-item { margin-bottom: 8px; font-size: 14px; }
-            .job { margin-bottom: 25px; }
-            .job-title { display: flex; justify-content: space-between; font-style: italic; color: #666; margin-bottom: 10px; }
-            .job-details { margin-left: 0; }
-            .job-details p { position: relative; padding-left: 15px; margin-bottom: 5px; }
-            .job-details p:before { content: "•"; position: absolute; left: 0; color: ${template.primaryColor || '#84754e'}; }
-            .profile { margin-bottom: 30px; }
-            .skill-item { margin-bottom: 10px; }
-            .skill-name { margin-bottom: 3px; }
-            .skill-bar { height: 4px; background: rgba(255,255,255,0.2); position: relative; }
-            .skill-level { height: 100%; background: white; position: absolute; top: 0; left: 0; }
+            
+            .photo-placeholder {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 50px;
+              color: #444;
+              text-transform: uppercase;
+            }
+            
+            .name {
+              font-size: 32px;
+              font-weight: 700;
+              margin-bottom: 5px;
+              letter-spacing: -0.5px;
+              position: relative;
+              text-align: right;
+            }
+            
+            .job-title {
+              font-size: 16px;
+              color: #aaa;
+              margin-bottom: 40px;
+              text-align: right;
+            }
+            
+            .section-title {
+              font-size: 16px;
+              text-transform: uppercase;
+              color: #e2b52d;
+              font-weight: 600;
+              margin-bottom: 15px;
+              position: relative;
+              letter-spacing: 1px;
+              text-align: right;
+            }
+            
+            .section-title::before {
+              content: "";
+              position: absolute;
+              bottom: -5px;
+              right: 0;
+              width: 30px;
+              height: 2px;
+              background: #e2b52d;
+            }
+            
+            .contact-item {
+              margin-bottom: 12px;
+              display: flex;
+              justify-content: flex-end;
+              align-items: center;
+              text-align: right;
+            }
+            
+            .contact-item-text {
+              color: #ccc;
+              font-size: 14px;
+            }
+            
+            .contact-item::before {
+              content: "•";
+              color: #e2b52d;
+              margin-left: 10px;
+              font-size: 18px;
+            }
+            
+            .section-content {
+              margin-bottom: 30px;
+            }
+            
+            .section-right {
+              margin-bottom: 40px;
+            }
+            
+            .right-section-title {
+              font-size: 16px;
+              text-transform: uppercase;
+              color: #e2b52d;
+              font-weight: 600;
+              margin-bottom: 15px;
+              position: relative;
+              letter-spacing: 1px;
+            }
+            
+            .right-section-title::before {
+              content: "";
+              position: absolute;
+              bottom: -5px;
+              left: 0;
+              width: 30px;
+              height: 2px;
+              background: #e2b52d;
+            }
+            
+            .job-item {
+              margin-bottom: 15px;
+              animation: fadeIn 0.5s ease-out;
+            }
+            
+            .job-header {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 5px;
+            }
+            
+            .job-role {
+              font-weight: 600;
+              color: #eee;
+              font-size: 15px;
+            }
+            
+            .job-date {
+              color: #888;
+              font-size: 14px;
+            }
+            
+            .job-company {
+              margin-bottom: 8px;
+              color: #bbb;
+              font-size: 14px;
+            }
+            
+            .job-description {
+              color: #aaa;
+              font-size: 14px;
+              line-height: 1.4;
+              margin-left: 15px;
+              position: relative;
+            }
+            
+            .job-description::before {
+              content: "";
+              position: absolute;
+              left: -15px;
+              top: 8px;
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background: #e2b52d;
+            }
+            
+            .skill-item {
+              margin-bottom: 8px;
+              color: #ccc;
+              font-size: 14px;
+              text-align: right;
+            }
+            
+            .skill-bar {
+              margin-top: 5px;
+              width: 100%;
+              height: 4px;
+              background: #222;
+              border-radius: 2px;
+              overflow: hidden;
+              position: relative;
+            }
+            
+            .skill-level {
+              position: absolute;
+              top: 0;
+              right: 0;
+              height: 100%;
+              background: #e2b52d;
+              transition: width 0.8s ease-out;
+              animation: skillFill 1.5s ease-out forwards;
+            }
+            
+            .references-item {
+              margin-bottom: 15px;
+              color: #ccc;
+              font-size: 14px;
+              text-align: right;
+            }
+            
+            .references-name {
+              font-weight: 600;
+              color: #ddd;
+              font-size: 14px;
+            }
+            
+            .references-contact {
+              color: #999;
+              font-size: 13px;
+            }
+            
+            @keyframes fadeIn {
+              from { opacity: 0; transform: translateY(10px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            
+            @keyframes skillFill {
+              from { width: 0; }
+              to { width: var(--skill-width); }
+            }
+            
+            .glow {
+              position: absolute;
+              top: -20%;
+              left: -20%;
+              width: 120%;
+              height: 50%;
+              background: radial-gradient(ellipse at center, rgba(226,181,45,0.15) 0%, rgba(226,181,45,0) 70%);
+              pointer-events: none;
+              transform: rotate(-20deg);
+              opacity: 0.8;
+              filter: blur(40px);
+              z-index: 0;
+            }
+            
+            .section-right {
+              position: relative;
+              z-index: 1;
+            }
+            
+            .section-content {
+              position: relative;
+              z-index: 1;
+            }
+            
+            .about-text {
+              font-size: 14px;
+              line-height: 1.6;
+              color: #aaa;
+              margin-bottom: 30px;
+            }
+            
+            .education-item {
+              margin-bottom: 15px;
+            }
+            
+            .education-degree {
+              font-weight: 600;
+              color: #eee;
+              font-size: 15px;
+              margin-bottom: 5px;
+            }
+            
+            .education-school {
+              color: #bbb;
+              font-size: 14px;
+              margin-bottom: 3px;
+            }
+            
+            .education-date {
+              color: #888;
+              font-size: 13px;
+            }
           </style>
           <title>${template.name} Resume Template</title>
         </head>
         <body>
-          <div class="cubic-template">
-            <div class="sidebar">
-              <div style="margin-bottom: 30px;">
-                <h1>ASHLEY MCLEOD</h1>
-                <p>Financial Analyst</p>
+          <div class="resume-container">
+            <div class="left-column">
+              <div class="glow"></div>
+              
+              <div class="photo-container">
+                <div class="photo-placeholder">B</div>
               </div>
               
-              <div>
-                <h2>Contact</h2>
-                <div class="contact-item">ashley@example.com</div>
-                <div class="contact-item">(555) 987-6543</div>
-                <div class="contact-item">Chicago, IL</div>
-                <div class="contact-item">linkedin.com/in/ashleym</div>
-              </div>
-              
-              <div>
-                <h2>Skills</h2>
-                <div class="skill-item">
-                  <div class="skill-name">Financial Modeling</div>
-                  <div class="skill-bar"><div class="skill-level" style="width: 95%;"></div></div>
+              <div class="section-content">
+                <h2 class="section-title">Contact Me</h2>
+                <div class="contact-item">
+                  <span class="contact-item-text">+1-718-310-5658</span>
                 </div>
-                <div class="skill-item">
-                  <div class="skill-name">Data Analysis</div>
-                  <div class="skill-bar"><div class="skill-level" style="width: 90%;"></div></div>
+                <div class="contact-item">
+                  <span class="contact-item-text">brian@example.com</span>
                 </div>
-                <div class="skill-item">
-                  <div class="skill-name">Financial Reporting</div>
-                  <div class="skill-bar"><div class="skill-level" style="width: 85%;"></div></div>
+                <div class="contact-item">
+                  <span class="contact-item-text">linkedin.com/in/brian</span>
                 </div>
-                <div class="skill-item">
-                  <div class="skill-name">Forecasting</div>
-                  <div class="skill-bar"><div class="skill-level" style="width: 80%;"></div></div>
-                </div>
-                <div class="skill-item">
-                  <div class="skill-name">Excel/VBA</div>
-                  <div class="skill-bar"><div class="skill-level" style="width: 95%;"></div></div>
-                </div>
-                <div class="skill-item">
-                  <div class="skill-name">Power BI</div>
-                  <div class="skill-bar"><div class="skill-level" style="width: 85%;"></div></div>
-                </div>
-                <div class="skill-item">
-                  <div class="skill-name">SQL</div>
-                  <div class="skill-bar"><div class="skill-level" style="width: 80%;"></div></div>
+                <div class="contact-item">
+                  <span class="contact-item-text">769 Providence Street, Lincoln Park, MI 48146</span>
                 </div>
               </div>
               
-              <div>
-                <h2>Certifications</h2>
-                <div class="contact-item">CFA Level II Candidate</div>
-                <div class="contact-item">Financial Modeling Certificate</div>
-                <div class="contact-item">Bloomberg Market Concepts</div>
+              <div class="section-content">
+                <h2 class="section-title">Skills</h2>
+                <div class="skill-item">
+                  Photoshop
+                  <div class="skill-bar">
+                    <div class="skill-level" style="--skill-width: 95%"></div>
+                  </div>
+                </div>
+                <div class="skill-item">
+                  Illustrator
+                  <div class="skill-bar">
+                    <div class="skill-level" style="--skill-width: 80%"></div>
+                  </div>
+                </div>
+                <div class="skill-item">
+                  InDesign
+                  <div class="skill-bar">
+                    <div class="skill-level" style="--skill-width: 85%"></div>
+                  </div>
+                </div>
+                <div class="skill-item">
+                  After Effects
+                  <div class="skill-bar">
+                    <div class="skill-level" style="--skill-width: 75%"></div>
+                  </div>
+                </div>
+                <div class="skill-item">
+                  HTML/CSS
+                  <div class="skill-bar">
+                    <div class="skill-level" style="--skill-width: 90%"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="section-content">
+                <h2 class="section-title">References</h2>
+                <div class="references-item">
+                  <div class="references-name">Darren H. Nguyen</div>
+                  <div class="references-contact">+1-555-123-4567</div>
+                </div>
+                <div class="references-item">
+                  <div class="references-name">Robert J. Bolton</div>
+                  <div class="references-contact">+1-555-987-6543</div>
+                </div>
               </div>
             </div>
             
-            <div class="main">
-              <div class="profile">
-                <h2>Professional Profile</h2>
-                <p>Dedicated Financial Analyst with 5+ years of experience in financial modeling, forecasting, and data analysis. Adept at providing strategic insights to inform business decisions and optimize financial performance.</p>
-              </div>
+            <div class="right-column">
+              <div class="name">BRIAN</div>
+              <div class="job-title">Graphic & Web Designer</div>
               
-              <div>
-                <h2>Experience</h2>
-                
-                <div class="job">
-                  <h3>Senior Financial Analyst</h3>
-                  <div class="job-title">
-                    <span>Global Financial Group</span>
-                    <span>2020 - Present</span>
-                  </div>
-                  <div class="job-details">
-                    <p>Developed complex financial models that improved forecast accuracy by 15%</p>
-                    <p>Generated monthly financial reports and presented findings to executive leadership</p>
-                    <p>Led budget planning process for department with $5M annual budget</p>
-                    <p>Performed variance analysis to identify performance trends and opportunities</p>
-                    <p>Collaborated with cross-functional teams to implement cost-saving initiatives</p>
-                  </div>
-                </div>
-                
-                <div class="job">
-                  <h3>Financial Analyst</h3>
-                  <div class="job-title">
-                    <span>Business Solutions Inc.</span>
-                    <span>2017 - 2020</span>
-                  </div>
-                  <div class="job-details">
-                    <p>Conducted financial analysis to assess investment opportunities and risks</p>
-                    <p>Created automated dashboards to track key performance indicators</p>
-                    <p>Assisted in preparing quarterly financial statements and investor presentations</p>
-                    <p>Supported annual budgeting and quarterly forecasting processes</p>
-                  </div>
+              <div class="section-right">
+                <h2 class="right-section-title">About Me</h2>
+                <div class="about-text">
+                  Creative and detail-oriented Graphic Designer with over 7 years of experience creating visual concepts that communicate ideas that inspire, inform, and captivate consumers. Proficient in Adobe Creative Suite with a strong background in both print and digital media design.
                 </div>
               </div>
               
-              <div>
-                <h2>Education</h2>
+              <div class="section-right">
+                <h2 class="right-section-title">Experience</h2>
                 
-                <div class="job">
-                  <h3>Master of Science in Finance</h3>
-                  <div class="job-title">
-                    <span>University of Finance</span>
-                    <span>2015 - 2017</span>
+                <div class="job-item">
+                  <div class="job-header">
+                    <div class="job-role">Senior Web Designer</div>
+                    <div class="job-date">2020 - Present</div>
                   </div>
-                  <div class="job-details">
-                    <p>GPA: 3.9/4.0</p>
-                    <p>Finance Club Treasurer</p>
+                  <div class="job-company">Creative Agency XYZ</div>
+                  <div class="job-description">Led UI/UX design for multiple high-profile client websites and applications</div>
+                  <div class="job-description">Managed a team of 3 junior designers and provided mentorship</div>
+                  <div class="job-description">Increased client satisfaction ratings by 35% through improved design processes</div>
+                </div>
+                
+                <div class="job-item">
+                  <div class="job-header">
+                    <div class="job-role">Graphic Designer</div>
+                    <div class="job-date">2017 - 2020</div>
+                  </div>
+                  <div class="job-company">Design Studio ABC</div>
+                  <div class="job-description">Created brand identities, marketing materials, and digital assets for clients</div>
+                  <div class="job-description">Collaborated with marketing team to develop cohesive visual strategies</div>
+                  <div class="job-description">Designed 20+ successful advertising campaigns for both print and digital media</div>
+                </div>
+              </div>
+              
+              <div class="section-right">
+                <h2 class="right-section-title">Education</h2>
+                
+                <div class="education-item">
+                  <div class="education-degree">Bachelor of Fine Arts in Graphic Design</div>
+                  <div class="education-school">School of Visual Arts</div>
+                  <div class="education-date">2013 - 2017</div>
+                </div>
+                
+                <div class="education-item">
+                  <div class="education-degree">Certificate in UI/UX Design</div>
+                  <div class="education-school">Design Academy Online</div>
+                  <div class="education-date">2018</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>`,
+
+        // Modern yellow-accented template with skills list - "Tbz"
+        `<!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+            
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+              font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            }
+            
+            body {
+              margin: 0;
+              padding: 0;
+              background: #222;
+              color: #333;
+              overflow-x: hidden;
+              max-width: 100vw;
+            }
+            
+            .resume-container {
+              display: flex;
+              width: 100%;
+              height: 100vh;
+              position: relative;
+            }
+            
+            .left-column {
+              width: 35%;
+              background: #111;
+              padding: 30px;
+              position: relative;
+              overflow: hidden;
+            }
+            
+            .right-column {
+              width: 65%;
+              padding: 40px;
+              background: #f9f9f9;
+              position: relative;
+              overflow-y: auto;
+            }
+            
+            .photo-container {
+              width: 120px;
+              height: 120px;
+              border-radius: 50%;
+              background: #222;
+              margin: 0 auto 30px;
+              position: relative;
+              overflow: hidden;
+            }
+            
+            .photo-placeholder {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 40px;
+              color: #777;
+              background: #2a2a2a;
+            }
+            
+            .section-title {
+              font-size: 18px;
+              font-weight: 600;
+              text-transform: uppercase;
+              color: #ffb400;
+              margin-bottom: 20px;
+              letter-spacing: 1px;
+              position: relative;
+              display: flex;
+              align-items: center;
+            }
+            
+            .section-title::before {
+              content: "";
+              width: 6px;
+              height: 6px;
+              background: #ffb400;
+              margin-right: 10px;
+              display: inline-block;
+            }
+            
+            .contact-item {
+              margin-bottom: 15px;
+              display: flex;
+              color: #ddd;
+              font-size: 14px;
+              align-items: center;
+            }
+            
+            .contact-item::before {
+              content: "•";
+              color: #ffb400;
+              margin-right: 10px;
+              font-size: 18px;
+            }
+            
+            .skill-item {
+              margin-bottom: 20px;
+              color: #ddd;
+            }
+            
+            .skill-name {
+              font-size: 14px;
+              margin-bottom: 5px;
+            }
+            
+            .skill-bar {
+              height: 6px;
+              background: rgba(255,255,255,0.1);
+              position: relative;
+              border-radius: 3px;
+              overflow: hidden;
+            }
+            
+            .skill-level {
+              position: absolute;
+              top: 0;
+              left: 0;
+              height: 100%;
+              background: #ffb400;
+              transition: width 1s ease-out;
+              animation: skillFill 1.5s ease-out forwards;
+            }
+            
+            .references-item {
+              margin-bottom: 15px;
+              color: #ddd;
+            }
+            
+            .references-name {
+              font-weight: 600;
+              font-size: 14px;
+              margin-bottom: 3px;
+            }
+            
+            .references-position {
+              color: #aaa;
+              font-size: 12px;
+              margin-bottom: 3px;
+            }
+            
+            .references-contact {
+              font-size: 12px;
+              color: #999;
+            }
+            
+            .name-container {
+              position: relative;
+              z-index: 2;
+              margin: 30px 0;
+            }
+            
+            .name {
+              font-size: 36px;
+              font-weight: 700;
+              font-family: 'Poppins', sans-serif;
+              margin-bottom: 5px;
+              color: #222;
+              position: relative;
+            }
+            
+            .job-title {
+              font-size: 16px;
+              color: #555;
+              font-weight: 500;
+            }
+            
+            .right-section-title {
+              font-size: 22px;
+              color: #333;
+              font-weight: 600;
+              margin-bottom: 20px;
+              position: relative;
+              padding-bottom: 10px;
+              font-family: 'Poppins', sans-serif;
+            }
+            
+            .right-section-title::after {
+              content: "";
+              position: absolute;
+              left: 0;
+              bottom: 0;
+              width: 40px;
+              height: 3px;
+              background: #ffb400;
+            }
+            
+            .about-text {
+              font-size: 15px;
+              line-height: 1.6;
+              color: #555;
+              margin-bottom: 30px;
+            }
+            
+            .experience-item {
+              margin-bottom: 25px;
+              position: relative;
+              padding-left: 20px;
+            }
+            
+            .experience-item::before {
+              content: "";
+              position: absolute;
+              left: 0;
+              top: 8px;
+              width: 8px;
+              height: 8px;
+              border-radius: 50%;
+              background: #ffb400;
+            }
+            
+            .experience-title {
+              font-weight: 600;
+              font-size: 17px;
+              color: #333;
+              margin-bottom: 5px;
+            }
+            
+            .experience-company {
+              font-size: 15px;
+              color: #444;
+              margin-bottom: 5px;
+            }
+            
+            .experience-date {
+              font-size: 14px;
+              color: #666;
+              margin-bottom: 10px;
+            }
+            
+            .experience-description {
+              font-size: 14px;
+              color: #555;
+              line-height: 1.5;
+            }
+            
+            .education-item {
+              margin-bottom: 20px;
+            }
+            
+            .education-degree {
+              font-weight: 600;
+              font-size: 16px;
+              color: #333;
+              margin-bottom: 5px;
+            }
+            
+            .education-school {
+              font-size: 15px;
+              color: #444;
+              margin-bottom: 3px;
+            }
+            
+            .education-date {
+              font-size: 14px;
+              color: #666;
+            }
+            
+            .section-right {
+              margin-bottom: 40px;
+            }
+            
+            @keyframes skillFill {
+              from { width: 0; }
+              to { width: var(--skill-width); }
+            }
+            
+            .left-glow {
+              position: absolute;
+              top: -30%;
+              left: -30%;
+              width: 150%;
+              height: 100%;
+              background: radial-gradient(ellipse at center, rgba(255,180,0,0.1) 0%, rgba(255,180,0,0) 70%);
+              transform: rotate(-30deg);
+              pointer-events: none;
+              z-index: 1;
+            }
+            
+            .right-glow {
+              position: absolute;
+              top: 10%;
+              right: -10%;
+              width: 40%;
+              height: 40%;
+              background: radial-gradient(ellipse at center, rgba(255,180,0,0.05) 0%, rgba(255,180,0,0) 70%);
+              pointer-events: none;
+              z-index: 1;
+            }
+            
+            .decoration-line {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 8px;
+              background: #ffb400;
+            }
+          </style>
+          <title>${template.name} Resume Template</title>
+        </head>
+        <body>
+          <div class="resume-container">
+            <div class="left-column">
+              <div class="left-glow"></div>
+              
+              <div class="photo-container">
+                <div class="photo-placeholder">T</div>
+              </div>
+              
+              <div class="section-title">Contact Me</div>
+              <div class="contact-item">+1-734-310-5050</div>
+              <div class="contact-item">example@gmail.com</div>
+              <div class="contact-item">www.yourwebsite.com</div>
+              <div class="contact-item">789 Providence Street, Lincoln Park, MI 48146</div>
+              
+              <div class="section-title" style="margin-top: 30px;">References</div>
+              <div class="references-item">
+                <div class="references-name">Darren H. Nguyen</div>
+                <div class="references-position">Design Director, XYZ Co.</div>
+                <div class="references-contact">+1-555-123-4567</div>
+              </div>
+              <div class="references-item">
+                <div class="references-name">Robert J. Bolton</div>
+                <div class="references-position">Creative Lead, ABC Inc.</div>
+                <div class="references-contact">+1-555-987-6543</div>
+              </div>
+              
+              <div class="section-title" style="margin-top: 30px;">Education</div>
+              <div class="references-item">
+                <div class="references-name">Bachelor of Design</div>
+                <div class="references-position">University of Design Arts</div>
+                <div class="references-contact">2014 - 2018</div>
+              </div>
+            </div>
+            
+            <div class="right-column">
+              <div class="decoration-line"></div>
+              <div class="right-glow"></div>
+              
+              <div class="name-container">
+                <div class="name">TBZ</div>
+                <div class="job-title">Senior Web Designer & Creative Specialist</div>
+              </div>
+              
+              <div class="section-right">
+                <div class="right-section-title">About Me</div>
+                <div class="about-text">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl at tincidunt commodo, purus nisi lacinia est, eu auctor magna nisi eu nulla. Nam euismod magna sit amet magna tincidunt, eu aliquet magna tempus.
+                </div>
+              </div>
+              
+              <div class="section-right">
+                <div class="right-section-title">Experience</div>
+                
+                <div class="experience-item">
+                  <div class="experience-title">Senior Web Designer</div>
+                  <div class="experience-company">Creative Solutions Agency</div>
+                  <div class="experience-date">2021 - Present</div>
+                  <div class="experience-description">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl at tincidunt commodo, purus nisi lacinia est, eu auctor magna nisi eu nulla.
                   </div>
                 </div>
                 
-                <div class="job">
-                  <h3>Bachelor of Business Administration</h3>
-                  <div class="job-title">
-                    <span>State University</span>
-                    <span>2011 - 2015</span>
-                  </div>
-                  <div class="job-details">
-                    <p>Major: Finance, Minor: Economics</p>
-                    <p>Dean's List: All semesters</p>
+                <div class="experience-item">
+                  <div class="experience-title">UI/UX Designer</div>
+                  <div class="experience-company">Digital Marketing Studio</div>
+                  <div class="experience-date">2018 - 2021</div>
+                  <div class="experience-description">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl at tincidunt commodo, purus nisi lacinia est, eu auctor magna nisi eu nulla.
                   </div>
                 </div>
+              </div>
+              
+              <div class="section-right">
+                <div class="right-section-title">Skills</div>
+                
+                <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                  <div style="flex: 1; min-width: 200px;">
+                    <div class="skill-item">
+                      <div class="skill-name">Adobe Photoshop</div>
+                      <div class="skill-bar">
+                        <div class="skill-level" style="--skill-width: 95%"></div>
+                      </div>
+                    </div>
+                    
+                    <div class="skill-item">
+                      <div class="skill-name">HTML/CSS</div>
+                      <div class="skill-bar">
+                        <div class="skill-level" style="--skill-width: 90%"></div>
+                      </div>
+                    </div>
+                    
+                    <div class="skill-item">
+                      <div class="skill-name">JavaScript</div>
+                      <div class="skill-bar">
+                        <div class="skill-level" style="--skill-width: 80%"></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style="flex: 1; min-width: 200px;">
+                    <div class="skill-item">
+                      <div class="skill-name">Illustrator</div>
+                      <div class="skill-bar">
+                        <div class="skill-level" style="--skill-width: 85%"></div>
+                      </div>
+                    </div>
+                    
+                    <div class="skill-item">
+                      <div class="skill-name">Figma</div>
+                      <div class="skill-bar">
+                        <div class="skill-level" style="--skill-width: 90%"></div>
+                      </div>
+                    </div>
+                    
+                    <div class="skill-item">
+                      <div class="skill-name">After Effects</div>
+                      <div class="skill-bar">
+                        <div class="skill-level" style="--skill-width: 75%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>`,
+        
+        // Apple-inspired minimal template with sleek design - similar to your reference
+        `<!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700&display=swap');
+            
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+              font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            }
+            
+            body {
+              margin: 0;
+              padding: 0;
+              background: #f5f5f7;
+              color: #333;
+              overflow-x: hidden;
+              max-width: 100vw;
+            }
+            
+            .resume-card {
+              width: 100%;
+              height: 100vh;
+              position: relative;
+              display: flex;
+              flex-direction: column;
+              border-radius: 8px;
+              background: #000;
+              box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+              overflow: hidden;
+              animation: cardFadeIn 0.8s ease-out forwards;
+            }
+            
+            .header {
+              padding: 30px;
+              position: relative;
+              z-index: 2;
+            }
+            
+            .product-name {
+              font-size: 32px;
+              font-weight: 600;
+              color: #f5f5f7;
+              letter-spacing: -0.5px;
+              margin-bottom: 5px;
+            }
+            
+            .tagline {
+              font-size: 16px;
+              font-weight: 400;
+              color: #9765f6;
+              margin-bottom: 10px;
+              position: relative;
+              display: inline-block;
+            }
+            
+            .tagline::after {
+              content: "®";
+              position: absolute;
+              top: 0;
+              right: -12px;
+              font-size: 10px;
+            }
+            
+            .price {
+              font-size: 16px;
+              font-weight: 500;
+              color: #aaa;
+              margin-top: 10px;
+            }
+            
+            .body {
+              flex: 1;
+              display: flex;
+              position: relative;
+              overflow: hidden;
+            }
+            
+            .product-image {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              position: relative;
+              flex: 1;
+            }
+            
+            .product-image::before {
+              content: "";
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: radial-gradient(circle at 40% 40%, rgba(151, 101, 246, 0.5) 0%, rgba(151, 101, 246, 0.1) 40%, rgba(0,0,0,0) 65%);
+              pointer-events: none;
+              animation: glowPulse 4s ease-in-out infinite alternate;
+            }
+            
+            .product-placeholder {
+              position: relative;
+              transform-style: preserve-3d;
+              transform: perspective(1000px) rotateY(-5deg) rotateX(5deg);
+              animation: float 6s ease-in-out infinite;
+              z-index: 2;
+            }
+            
+            .product-text {
+              color: #f5f5f7;
+              font-size: 140px;
+              font-weight: 700;
+              text-shadow: 0 0 20px rgba(151, 101, 246, 0.7), 0 0 40px rgba(151, 101, 246, 0.4);
+              letter-spacing: -6px;
+              animation: pulse 4s ease-in-out infinite alternate;
+            }
+            
+            .features {
+              position: absolute;
+              bottom: 0;
+              width: 100%;
+              display: flex;
+              flex-wrap: wrap;
+              padding: 20px;
+              gap: 10px;
+              z-index: 3;
+            }
+            
+            .feature {
+              padding: 8px 15px;
+              background: rgba(255,255,255,0.1);
+              border-radius: 20px;
+              font-size: 14px;
+              color: #f5f5f7;
+              backdrop-filter: blur(5px);
+              animation: fadeUp 0.5s ease-out forwards;
+              animation-delay: calc(var(--index) * 0.1s);
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            
+            @keyframes cardFadeIn {
+              from { opacity: 0; transform: translateY(20px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            
+            @keyframes float {
+              0%, 100% { transform: perspective(1000px) rotateY(-5deg) rotateX(5deg) translateY(0); }
+              50% { transform: perspective(1000px) rotateY(2deg) rotateX(-2deg) translateY(-15px); }
+            }
+            
+            @keyframes pulse {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.7; }
+            }
+            
+            @keyframes glowPulse {
+              0%, 100% { opacity: 0.5; }
+              50% { opacity: 0.8; }
+            }
+            
+            @keyframes fadeUp {
+              from { opacity: 0; transform: translateY(10px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          </style>
+          <title>${template.name} Resume Template</title>
+        </head>
+        <body>
+          <div class="resume-card">
+            <div class="header">
+              <div class="product-name">${template.name}</div>
+              <div class="tagline">TbzResumeBuilder</div>
+              <div class="price">Professional Resume Template</div>
+            </div>
+            
+            <div class="body">
+              <div class="product-image">
+                <div class="product-placeholder">
+                  <div class="product-text">PRO</div>
+                </div>
+              </div>
+              
+              <div class="features">
+                <div class="feature" style="--index: 1">ATS-Optimized</div>
+                <div class="feature" style="--index: 2">Professional Design</div>
+                <div class="feature" style="--index: 3">Customizable</div>
+                <div class="feature" style="--index: 4">Modern Layout</div>
+                <div class="feature" style="--index: 5">Eye-Catching</div>
               </div>
             </div>
           </div>

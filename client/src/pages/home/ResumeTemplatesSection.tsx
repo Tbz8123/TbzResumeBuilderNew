@@ -38,7 +38,7 @@ type TemplateCardProps = {
   onClick: () => void;
 };
 
-// Enhanced template preview component using iframe
+// Enhanced template preview component using iframe with better scaling
 const TemplatePreview = ({ templateId }: { templateId: number }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -64,16 +64,18 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
   const templateUrl = `/api/templates/${templateId}/svg?_t=${Date.now()}_${retries}`;
   
   return (
-    <div className="w-full h-full relative overflow-hidden rounded">
+    <div className="w-full h-full relative overflow-hidden rounded shadow-sm">
+      <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-white/0 z-20 pointer-events-none rounded"></div>
+      
       <iframe
         src={templateUrl}
         title={`Template Preview ${templateId}`}
-        className="w-full h-full border-0 absolute inset-0 z-10 bg-white scale-[0.63] origin-top-left"
+        className="w-full h-full border-0 absolute inset-0 z-10 bg-transparent"
         style={{ 
-          transform: 'scale(0.63)',
+          transform: 'scale(0.5)',
           transformOrigin: 'top left',
-          width: '159%', 
-          height: '159%'
+          width: '200%', 
+          height: '200%'
         }}
         onLoad={handleLoad}
         onError={handleError}
@@ -82,13 +84,13 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
       />
       
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-20">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-30">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
       
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-90 z-20">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-90 z-30">
           <div className="text-center p-4">
             <p className="font-medium text-red-500">Failed to load preview</p>
           </div>
