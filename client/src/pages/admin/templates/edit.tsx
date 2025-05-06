@@ -80,6 +80,7 @@ type FormData = {
   primaryColor: string;
   secondaryColor: string;
   thumbnailUrl: string | null;
+  displayScale: string;  // Scale factor for template display
   changelog?: string;
 };
 
@@ -223,6 +224,7 @@ const AdminTemplateEditPage = () => {
     primaryColor: "#5E17EB",
     secondaryColor: "#4A11C0",
     thumbnailUrl: null,
+    displayScale: "0.22",
     changelog: "",
   });
   
@@ -254,6 +256,7 @@ const AdminTemplateEditPage = () => {
         primaryColor: template.primaryColor || "#5E17EB",
         secondaryColor: template.secondaryColor || "#4A11C0",
         thumbnailUrl: template.thumbnailUrl || null,
+        displayScale: template.displayScale || "0.22",
         changelog: "",
       });
     }
@@ -473,7 +476,7 @@ const AdminTemplateEditPage = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="primaryColor">Primary Color</Label>
                     <div className="flex space-x-2">
@@ -510,6 +513,32 @@ const AdminTemplateEditPage = () => {
                         value={formData.secondaryColor}
                         onChange={handleChange}
                         placeholder="#4A11C0"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="displayScale">
+                      Display Scale
+                      <span className="text-xs text-gray-500 ml-1">(Controls preview size)</span>
+                    </Label>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        id="displayScale"
+                        name="displayScale"
+                        type="range"
+                        min="0.1"
+                        max="0.5"
+                        step="0.01"
+                        value={formData.displayScale}
+                        onChange={handleChange}
+                        className="w-full"
+                      />
+                      <Input
+                        name="displayScale"
+                        value={formData.displayScale}
+                        onChange={handleChange}
+                        className="w-20"
                       />
                     </div>
                   </div>
