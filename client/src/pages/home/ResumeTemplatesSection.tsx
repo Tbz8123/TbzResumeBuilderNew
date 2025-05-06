@@ -112,7 +112,8 @@ const TemplatePreview = ({
   const templateUrl = `/api/templates/${templateId}/svg?_t=${Date.now()}_${retries}`;
   
   // Calculate custom scale if available from template data
-  const scale = templateData?.displayScale ? parseFloat(templateData.displayScale) : 0.22;
+  // Increased the default scale to ensure templates fill the container better
+  const scale = templateData?.displayScale ? parseFloat(templateData.displayScale) : 0.28;
   
   // Calculate dimensions if available from template data
   const width = templateData?.width || 800;
@@ -122,12 +123,16 @@ const TemplatePreview = ({
   // Create custom style with scaling and dimensions
   const customStyle = {
     transform: `scale(${scale})`,
-    transformOrigin: "center center",
+    transformOrigin: "top center", // Use top center for better alignment
     width: `${width}px`,
     height: `${height}px`,
     maxWidth: '100%',
     maxHeight: '100%',
-    margin: '0 auto',
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   };
   
   return (
@@ -209,7 +214,7 @@ const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
     cursor: 'pointer',
     width: '100%',
     aspectRatio: aspectRatio,
-    padding: '1rem'
+    // Removed padding to allow template to fill the entire card
   };
   
   // Style for the document inside the container
@@ -277,7 +282,7 @@ const TemplateCardSkeleton = () => {
     overflow: 'hidden',
     width: '100%',
     aspectRatio: aspectRatio,
-    padding: '1rem'
+    // Removed padding to allow template to fill the entire card
   };
   
   return (
