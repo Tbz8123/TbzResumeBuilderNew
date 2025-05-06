@@ -1,0 +1,96 @@
+Here’s a revised and **developer-friendly version** of your instructions, with **clarified logic**, **corrected language**, and **actionable tasks** to ensure smooth execution:
+
+---
+
+## ✅ Feature Request & Bug Report Summary for Developer Panel & Resume Templates
+
+---
+
+### **🧩 Step 1: Fix TemplateEngine Error (Screenshot 1 Reference)**
+
+**Issue:** The `TemplateEngine.tsx` component is throwing an error (shared in Screenshot 1).
+**Action:**
+
+* Investigate the runtime or type error in the file.
+* Ensure proper props and types are passed.
+* Confirm any custom hooks or components used inside `TemplateEngine.tsx` are functioning correctly.
+
+---
+
+### **💾 Step 2: Fix Data Save Issue in Developer Mode**
+
+**Issue:** Data entered in developer mode is **not saving properly**. When navigating away and returning to the template page, it resets to default data instead of showing saved input.
+**Expected Behavior:**
+
+* The developer’s entered content (HTML, CSS, meta info, etc.) should persist.
+* On return to the template page, the last-saved data should load, not default placeholders.
+  **Action:**
+* Verify that the save function writes to the correct backend or state.
+* Fix the state restore mechanism on template load.
+
+---
+
+### **🔘 Step 3: Enable/Disable Code Blocks with Developer Control**
+
+**Issue:** Multiple code blocks (HTML, CSS, JS, etc.) are visible in developer mode, but there’s no way to control their visibility individually.
+**Request:**
+
+* Add toggle switches for each code section (HTML, CSS, JS).
+* Only **enabled code blocks** should be used for the template display.
+* Developer should be able to enable/disable any code section dynamically.
+  **Action:**
+* Add a toggle (e.g., checkbox or switch) next to each code editor.
+* Store and reflect the enabled/disabled state.
+* Ensure the frontend only uses enabled sections for rendering.
+
+---
+
+### **📎 Step 4: Add PDF Upload & Control in Developer Mode**
+
+**Issue:** There is **no option to remove or disable** uploaded PDFs in developer mode. Currently, only a greyed-out preview is shown.
+**Request:**
+
+* Allow developers to:
+
+  * Upload a new PDF.
+  * Remove an existing one.
+  * Enable or disable PDF preview.
+    **Action:**
+* Add buttons: "Upload PDF", "Remove PDF", "Enable/Disable Preview".
+* If disabled, PDF should not appear on the homepage.
+* Reflect enabled PDFs in the frontend template cards.
+
+---
+
+### **📏 Step 5: Add Advanced Scaling Controls for Resume Preview Cards**
+
+**Issue:** The resume preview card on the homepage does not scale correctly. Scrollbars appear, and the layout is clipped.
+**Request:**
+
+* Provide **advanced scaling controls** in the developer mode:
+
+  * Set **custom width and height** for the preview.
+  * Adjust **scaling (zoom/transform)** factor.
+  * Choose **cross-axis scaling** behavior (maintain aspect ratio vs. fill container).
+    **Action:**
+* Add inputs or sliders in developer mode for:
+
+  * `width`, `height`, `scale`, and `aspectRatio`
+* Apply those settings to the preview container (`transform: scale()` or CSS `zoom`).
+* Store settings and reflect them in both backend preview and homepage frontend.
+
+---
+
+### ✅ Summary of Key Features to Implement:
+
+| Feature              | Description                                            |
+| -------------------- | ------------------------------------------------------ |
+| Error Fix            | Resolve the issue in TemplateEngine.tsx                |
+| Save Bug             | Ensure data persistence in dev mode                    |
+| Toggle Code Sections | Developer-controlled enable/disable for HTML, CSS, JS  |
+| PDF Controls         | Upload, remove, and toggle PDF previews                |
+| Advanced Scaling     | Custom width, height, scale controls for preview cards |
+
+---
+
+Would you like me to draft the **UI wireframe or mockup suggestions** for how these toggles and controls should appear in developer mode?

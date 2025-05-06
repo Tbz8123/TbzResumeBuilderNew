@@ -58,6 +58,12 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
   const [cssContent, setCssContent] = useState<string>(template.cssContent || '');
   const [jsContent, setJsContent] = useState<string>(template.jsContent || '');
   const [svgContent, setSvgContent] = useState<string>(template.svgContent || '');
+  const [displayScale, setDisplayScale] = useState<string>(template.displayScale || '0.22');
+  
+  // Code section visibility controls
+  const [htmlEnabled, setHtmlEnabled] = useState<boolean>(true);
+  const [cssEnabled, setCssEnabled] = useState<boolean>(true);
+  const [jsEnabled, setJsEnabled] = useState<boolean>(true);
   
   // Derived states
   const [previewMode, setPreviewMode] = useState<'html' | 'svg'>('html');
@@ -73,18 +79,26 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
     setCssContent(template.cssContent || '');
     setJsContent(template.jsContent || '');
     setSvgContent(template.svgContent || '');
+    setDisplayScale(template.displayScale || '0.22');
   }, [template]);
   
   // Compiled template for preview
   const compiledTemplate = useCallback(() => {
+    // Only include enabled code sections
+    const compiledHtmlContent = htmlEnabled ? htmlContent : '';
+    const compiledCssContent = cssEnabled ? cssContent : '';
+    const compiledJsContent = jsEnabled ? jsContent : '';
+    
     return {
       ...template,
-      htmlContent,
-      cssContent,
-      jsContent,
-      svgContent
+      htmlContent: compiledHtmlContent,
+      cssContent: compiledCssContent,
+      jsContent: compiledJsContent,
+      svgContent,
+      displayScale
     };
-  }, [template, htmlContent, cssContent, jsContent, svgContent]);
+  }, [template, htmlContent, cssContent, jsContent, svgContent, displayScale, 
+      htmlEnabled, cssEnabled, jsEnabled]);
   
   // Set up editor tabs
   const editorTabs: EditorTab[] = [
@@ -147,7 +161,8 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
         htmlContent,
         cssContent,
         jsContent,
-        svgContent
+        svgContent,
+        displayScale
       };
       
       await onSave(updatedTemplate);
@@ -288,72 +303,141 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
         {/* Preview Panel */}
         <ResizablePanel defaultSize={50} minSize={30}>
           <div className="h-full flex flex-col">
-            <div className="border-b p-4 flex justify-between items-center">
-              <h3 className="text-lg font-medium">Template Preview</h3>
-              <div className="flex items-center space-x-2">
-                <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'html' | 'svg')}>
-                  <TabsList>
-                    <TabsTrigger value="html">
-                      <FileText className="h-4 w-4 mr-1" />
-                      HTML
-                    </TabsTrigger>
-                    <TabsTrigger value="svg">
-                      <Image className="h-4 w-4 mr-1" />
-                      SVG
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+            <div className="border-b p-4 flex flex-col gap-3">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Template Preview</h3>
+                <div className="flex items-center space-x-2">
+                  <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'html' | 'svg')}>
+                    <TabsList>
+                      <TabsTrigger value="html">
+                        <FileText className="h-4 w-4 mr-1" />
+                        HTML
+                      </TabsTrigger>
+                      <TabsTrigger value="svg">
+                        <Image className="h-4 w-4 mr-1" />
+                        SVG
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={() => setPreviewScale(ps => Math.min(ps + 0.1, 1.5))}
+                        >
+                          <PlusCircle className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Zoom in</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={() => setPreviewScale(ps => Math.max(ps - 0.1, 0.3))}
+                        >
+                          <MinusCircle className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Zoom out</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={() => setPreviewScale(0.8)}
+                        >
+                          <Maximize2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Reset zoom</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+              
+              {/* Code Section Toggles */}
+              <div className="flex items-center gap-4 border-t pt-3">
+                <div className="flex items-center space-x-2">
+                  <label htmlFor="html-toggle" className="text-sm font-medium">
+                    HTML
+                  </label>
+                  <input 
+                    type="checkbox"
+                    id="html-toggle"
+                    checked={htmlEnabled}
+                    onChange={(e) => setHtmlEnabled(e.target.checked)}
+                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                </div>
                 
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => setPreviewScale(ps => Math.min(ps + 0.1, 1.5))}
-                      >
-                        <PlusCircle className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Zoom in</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <div className="flex items-center space-x-2">
+                  <label htmlFor="css-toggle" className="text-sm font-medium">
+                    CSS
+                  </label>
+                  <input 
+                    type="checkbox"
+                    id="css-toggle"
+                    checked={cssEnabled}
+                    onChange={(e) => setCssEnabled(e.target.checked)}
+                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                </div>
                 
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => setPreviewScale(ps => Math.max(ps - 0.1, 0.3))}
-                      >
-                        <MinusCircle className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Zoom out</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <div className="flex items-center space-x-2">
+                  <label htmlFor="js-toggle" className="text-sm font-medium">
+                    JavaScript
+                  </label>
+                  <input 
+                    type="checkbox"
+                    id="js-toggle"
+                    checked={jsEnabled}
+                    onChange={(e) => setJsEnabled(e.target.checked)}
+                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                </div>
                 
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => setPreviewScale(0.8)}
-                      >
-                        <Maximize2 className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Reset zoom</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <div className="flex items-center space-x-2 ml-auto">
+                  <label htmlFor="display-scale" className="text-sm font-medium">
+                    Display Scale:
+                  </label>
+                  <input 
+                    type="number"
+                    id="display-scale"
+                    min="0.1" 
+                    max="0.5" 
+                    step="0.01"
+                    value={displayScale}
+                    onChange={(e) => setDisplayScale(e.target.value)}
+                    className="w-16 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="0.5"
+                    step="0.01"
+                    value={displayScale}
+                    onChange={(e) => setDisplayScale(e.target.value)}
+                    className="w-32"
+                  />
+                </div>
               </div>
             </div>
             
