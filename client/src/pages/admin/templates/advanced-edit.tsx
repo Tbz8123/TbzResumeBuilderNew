@@ -9,7 +9,7 @@ import { ResumeTemplate } from '@shared/schema';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
-import TemplateBuilder from '@/components/resume/TemplateBuilder';
+import TemplateBuilder, { defaultResumeTemplate } from '@/components/resume/TemplateBuilder';
 
 const defaultTemplate = {
   id: 0, // This will be assigned by the server when created
@@ -546,6 +546,11 @@ const AdvancedTemplateEditPage = () => {
     );
   }
   
+  // Create final template for editing based on new/existing state
+  const finalTemplate = isNewTemplate 
+    ? defaultResumeTemplate 
+    : (templateData || defaultResumeTemplate);
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center mb-4">
@@ -560,7 +565,7 @@ const AdvancedTemplateEditPage = () => {
       </div>
       
       <TemplateBuilder 
-        template={templateData || emptyTemplate}
+        template={finalTemplate}
         onSave={handleSaveTemplate}
         isNew={isNewTemplate}
       />

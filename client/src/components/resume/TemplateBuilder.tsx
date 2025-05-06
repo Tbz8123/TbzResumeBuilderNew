@@ -11,7 +11,7 @@ import { FileText, Palette, Code, Image, Save, Eye, RefreshCw, Download, RotateC
 import { ResumeData, defaultResumeData } from './TemplateEngine';
 import TemplateEngine from './TemplateEngine';
 
-const defaultResumeTemplate: ResumeTemplate = {
+export const defaultResumeTemplate: ResumeTemplate = {
   id: 0,
   name: 'New Template',
   description: 'A new resume template',
