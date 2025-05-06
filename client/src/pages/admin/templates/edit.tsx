@@ -5,6 +5,7 @@ import {
   useUpdateTemplate, 
   useCreateTemplate 
 } from "@/hooks/use-templates";
+import { ResumeTemplate } from "@shared/schema";
 import { Editor } from "@monaco-editor/react";
 import {
   Card,
@@ -194,9 +195,12 @@ const AdminTemplateEditPage = () => {
   const isEditingTemplate = !isNewTemplate;
   
   // Only load template data if we're editing an existing template
-  const { data: template, isLoading } = useTemplate(isEditingTemplate ? id : undefined);
+  const { data: templateData, isLoading } = useTemplate(isEditingTemplate ? id : undefined);
   const updateTemplateMutation = useUpdateTemplate(isEditingTemplate ? id : undefined);
   const createTemplateMutation = useCreateTemplate();
+  
+  // Cast the template data to match the expected schema
+  const template = templateData as any;
   
   useEffect(() => {
     if (template && isEditingTemplate) {
