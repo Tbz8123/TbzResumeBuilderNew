@@ -1,0 +1,64 @@
+I want to build a modular, centralized resume template engine like Zety’s, with the following features:
+
+🧩 Component Structure
+Create a reusable, centralized resume template rendering component.
+
+Each template should be built using editable HTML and CSS, not static images.
+
+Make sure templates support live preview with editable fields (e.g., name, job title, summary, etc.).
+
+Use scalable CSS classes (e.g., template-skin-01, template-skin-02) to easily apply different design themes.
+
+🔄 Preview Functionality
+Implement live template previews using actual HTML and CSS.
+
+Use CSS transforms (e.g., scale()) to display thumbnail versions of full templates in a selection UI.
+
+Include a template switcher – users should be able to apply a different template with a loading animation/transition.
+
+Preload all template assets (CSS, fonts, background images) for instant switching and smooth UX.
+
+✍️ Editable Fields & Real-time Updates
+Allow users to input data (name, experience, education, etc.) through a form or editor.
+
+Sync user input in real time with the template preview using two-way data binding or DOM updates.
+
+Make each text block in the resume (e.g., <span class="field">) dynamic and data-driven.
+
+📄 Export Capability
+Build an endpoint to export the live HTML template into:
+
+PDF using a server-side tool (like wkhtmltopdf, Puppeteer, or PDFKit).
+
+DOCX using a server-side library (e.g., python-docx, OpenXML, or DocRaptor).
+
+Optionally support TXT or JSON export of raw resume data.
+
+📦 Asset & Layout Management
+Store templates, CSS styles, and background images in a CDN or static asset folder.
+
+Use modular SCSS or CSS-in-JS (if using React) for easy theming and layout control.
+
+Optionally include Google Fonts or web-safe fonts for typography customization.
+
+💻 Stack Suggestions (optional)
+Frontend: React, Vue, or plain JavaScript + Bootstrap/Tailwind.
+
+Backend: Node.js, Python (Flask/Django), or ASP.NET for PDF/DOCX export.
+
+PDF Generator: Puppeteer, wkhtmltopdf, or Playwright.
+
+DOC Generator: docx for Python/Node, or OpenXML for .NET.
+
+♻️ Reusability
+Design the template engine as a central module that can be embedded or reused on:
+
+Resume Builder Page
+
+Template Gallery Page
+
+User Resume Preview Page
+
+Admin/Moderation Panel
+
+Ensure all styles and scripts are scoped and optimized for performance.
