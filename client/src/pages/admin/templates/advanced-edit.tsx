@@ -25,6 +25,23 @@ const AdvancedTemplateEditPage = () => {
     isNewTemplate ? undefined : id
   );
   
+  // Debug log template data
+  useEffect(() => {
+    if (templateData) {
+      console.log("Template data loaded:", {
+        id: templateData.id,
+        name: templateData.name,
+        htmlContent: templateData.htmlContent ? templateData.htmlContent.substring(0, 100) + '...' : null,
+        svgContent: templateData.svgContent ? templateData.svgContent.substring(0, 100) + '...' : null,
+        cssContent: templateData.cssContent ? templateData.cssContent.substring(0, 100) + '...' : null,
+        jsContent: templateData.jsContent ? templateData.jsContent.substring(0, 100) + '...' : null,
+        displayScale: templateData.displayScale,
+        width: templateData.width,
+        height: templateData.height
+      });
+    }
+  }, [templateData]);
+  
   // Set up mutations for create/update
   const updateTemplateMutation = useUpdateTemplate(isNewTemplate ? undefined : id);
   const createTemplateMutation = useCreateTemplate();
