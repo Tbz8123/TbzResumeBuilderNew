@@ -47,7 +47,7 @@
   height: 297mm; /* A4 height */
   background-color: white;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  transform: scale(0.22);
+  /* Transform scale is now controlled by inline styles based on template.displayScale */
   transform-origin: center;
   position: absolute;
   pointer-events: none;
@@ -130,19 +130,14 @@
   overflow: hidden;
 }
 
-.admin-preview .resume-content {
-  transform: scale(0.4);
-}
+/* Admin preview scale is now controlled by displayScale property */
 
 /* Media query for smaller screens */
 @media (max-width: 640px) {
   .template-card-container {
     max-height: 360px;
   }
-  
-  .resume-content {
-    transform: scale(0.18);
-  }
+  /* Mobile scale is now controlled by inline styles */
   
   .template-title {
     font-size: 1rem;

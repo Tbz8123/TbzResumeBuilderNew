@@ -45,6 +45,7 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
   const [retries, setRetries] = useState(0);
   const [hasPdf, setHasPdf] = useState(false);
   const [pdfContent, setPdfContent] = useState<string | null>(null);
+  const [templateData, setTemplateData] = useState<ResumeTemplate | null>(null);
   
   const handleLoad = () => {
     setIsLoading(false);
@@ -61,6 +62,23 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
       setIsLoading(false);
     }
   };
+
+  // Fetch full template data to get displayScale
+  useEffect(() => {
+    const fetchTemplateData = async () => {
+      try {
+        const response = await fetch(`/api/templates/${templateId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setTemplateData(data);
+        }
+      } catch (err) {
+        console.error("Error fetching template data:", err);
+      }
+    };
+    
+    fetchTemplateData();
+  }, [templateId]);
 
   // Check if there's a PDF version available
   useEffect(() => {
@@ -84,10 +102,18 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
   // Create the URL to the template with a cache-busting parameter
   const templateUrl = `/api/templates/${templateId}/svg?_t=${Date.now()}_${retries}`;
   
+  // Calculate custom scale if available from template data
+  const scale = templateData?.displayScale ? parseFloat(templateData.displayScale) : 0.22;
+  
+  const customStyle = {
+    transform: `scale(${scale})`,
+    transformOrigin: "center center",
+  };
+  
   return (
     <>
       {hasPdf && pdfContent ? (
-        <div className="resume-content">
+        <div className="resume-content" style={customStyle}>
           <iframe
             src={`data:application/pdf;base64,${pdfContent}`}
             title={`PDF Template Preview ${templateId}`}
@@ -97,7 +123,7 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
           />
         </div>
       ) : (
-        <div className="resume-content">
+        <div className="resume-content" style={customStyle}>
           <iframe
             src={templateUrl}
             title={`Template Preview ${templateId}`}
