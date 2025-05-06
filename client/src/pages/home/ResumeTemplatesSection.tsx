@@ -39,7 +39,13 @@ type TemplateCardProps = {
 };
 
 // Enhanced template preview that supports both SVG and PDF rendering
-const TemplatePreview = ({ templateId }: { templateId: number }) => {
+const TemplatePreview = ({ 
+  templateId, 
+  onError 
+}: { 
+  templateId: number,
+  onError?: () => void 
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retries, setRetries] = useState(0);
@@ -60,6 +66,9 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
     } else {
       setError(true);
       setIsLoading(false);
+      if (onError) {
+        onError();
+      }
     }
   };
 
@@ -156,6 +165,22 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
 };
 
 const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
+  const [previewError, setPreviewError] = useState(false);
+  
+  // Log template data for debugging
+  useEffect(() => {
+    console.log(`Template card for ID ${template.id}:`, {
+      name: template.name,
+      htmlContent: template.htmlContent?.length > 0,
+      svgContent: template.svgContent?.length > 0,
+      dimensions: {
+        width: template.width,
+        height: template.height,
+        aspectRatio: template.aspectRatio
+      }
+    });
+  }, [template]);
+  
   return (
     <div 
       className="template-card-container"
@@ -163,7 +188,18 @@ const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
     >
       <div className="template-preview-container">
         <div className="resume-document">
-          <TemplatePreview templateId={template.id} />
+          {previewError ? (
+            <div className="h-full w-full flex items-center justify-center bg-gray-100">
+              <p className="text-gray-500 text-sm">
+                Preview unavailable
+              </p>
+            </div>
+          ) : (
+            <TemplatePreview 
+              templateId={template.id} 
+              onError={() => setPreviewError(true)}
+            />
+          )}
         </div>
         
         {template.isPopular && (
@@ -226,8 +262,8 @@ const ResumeTemplatesSection = () => {
   
   // Helper to check if a template is A4 sized
   const isA4Size = (template: ResumeTemplate): boolean => {
-    // If no dimensions are set, assume it's not A4
-    if (!template.width || !template.height) return false;
+    // If no dimensions are set, assume it's valid (for backward compatibility)
+    if (!template.width || !template.height) return true;
     
     // Check if dimensions are within tolerance of A4 size
     return (
@@ -236,12 +272,14 @@ const ResumeTemplatesSection = () => {
     );
   };
   
+  // For debugging
+  console.log("Available templates:", templatesData);
+  
   // Filter templates based on active filter and A4 size
+  // For now, we're disabling the A4 size filter to allow all templates to be displayed
   const filteredTemplates = templatesData && Array.isArray(templatesData) 
     ? (templatesData
-        // First filter for A4 size only
-        .filter(template => isA4Size(template))
-        // Then filter by category if not "all"
+        // Filter by category if not "all"
         .filter(template => activeFilter === "all" || template.category === activeFilter))
     : [];
 

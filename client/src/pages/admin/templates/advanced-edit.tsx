@@ -101,6 +101,13 @@ const AdvancedTemplateEditPage = () => {
   const finalTemplate = isNewTemplate 
     ? defaultResumeTemplate 
     : templateData || defaultResumeTemplate;
+    
+  console.log("Loading template for editing:", {
+    isNewTemplate,
+    templateId: id,
+    templateData,
+    finalTemplate
+  });
 
   return (
     <div className="container mx-auto py-6">
