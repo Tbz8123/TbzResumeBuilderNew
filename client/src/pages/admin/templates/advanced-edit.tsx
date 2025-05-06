@@ -96,9 +96,9 @@ const AdvancedTemplateEditPage = () => {
   }
   
   // Create final template for editing based on new/existing state
-  const finalTemplate: ResumeTemplate = isNewTemplate 
+  const finalTemplate = isNewTemplate 
     ? defaultResumeTemplate 
-    : (templateData as ResumeTemplate || defaultResumeTemplate);
+    : templateData || defaultResumeTemplate;
 
   return (
     <div className="container mx-auto py-6">

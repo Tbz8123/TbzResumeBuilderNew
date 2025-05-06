@@ -12,7 +12,7 @@ export const useTemplates = () => {
 
 // Hook to fetch a single template by ID
 export const useTemplate = (id: number | string | undefined) => {
-  return useQuery({
+  return useQuery<ResumeTemplate>({
     queryKey: ["/api/templates", id],
     queryFn: getQueryFn({ on401: "returnNull" }), // Allow non-authenticated access for public display
     enabled: !!id, // Only run query if id is provided
@@ -21,7 +21,7 @@ export const useTemplate = (id: number | string | undefined) => {
 
 // Hook to fetch template versions
 export const useTemplateVersions = (id: number | string | undefined) => {
-  return useQuery({
+  return useQuery<ResumeTemplateVersion[]>({
     queryKey: ["/api/templates", id, "versions"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!id, // Only run query if id is provided
