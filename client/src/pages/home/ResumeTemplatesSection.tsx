@@ -85,122 +85,91 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
   const templateUrl = `/api/templates/${templateId}/svg?_t=${Date.now()}_${retries}`;
   
   return (
-    <div className="w-full h-full relative overflow-hidden rounded shadow-sm bg-white flex justify-center items-center preview-wrapper" style={{ position: 'relative' }}>
-      {/* Container with the scaling transformation */}
-      <div className="w-full h-full flex justify-center items-center overflow-hidden" style={{ position: 'relative' }}>
-        {hasPdf && pdfContent ? (
-          // PDF Preview with transform: scale for perfect scaling
-          <div className="resume-content" style={{ 
-            width: '794px', // A4 width in pixels at 96 DPI
-            height: '1123px', // A4 height in pixels at 96 DPI
-            transform: 'scale(0.3)', // Scale down to fit in container
-            transformOrigin: 'center center',
-            pointerEvents: 'none', // Prevent scrolling
-            position: 'absolute',
-          }}>
-            <iframe
-              src={`data:application/pdf;base64,${pdfContent}`}
-              title={`PDF Template Preview ${templateId}`}
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-              }}
-              onLoad={handleLoad}
-              onError={handleError}
-            />
-          </div>
-        ) : (
-          // SVG with transform: scale for perfect scaling
-          <div className="resume-content" style={{ 
-            width: '794px', // A4 width in pixels at 96 DPI
-            height: '1123px', // A4 height in pixels at 96 DPI
-            transform: 'scale(0.3)', // Scale down to fit in container
-            transformOrigin: 'center center',
-            pointerEvents: 'none', // Prevent scrolling
-            position: 'absolute',
-          }}>
-            <iframe
-              src={templateUrl}
-              title={`Template Preview ${templateId}`}
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-              }}
-              onLoad={handleLoad}
-              onError={handleError}
-              sandbox="allow-same-origin"
-              loading="lazy"
-            />
-          </div>
-        )}
-      </div>
+    <>
+      {hasPdf && pdfContent ? (
+        <div className="resume-content">
+          <iframe
+            src={`data:application/pdf;base64,${pdfContent}`}
+            title={`PDF Template Preview ${templateId}`}
+            style={{width: '100%', height: '100%', border: 'none'}}
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        </div>
+      ) : (
+        <div className="resume-content">
+          <iframe
+            src={templateUrl}
+            title={`Template Preview ${templateId}`}
+            style={{width: '100%', height: '100%', border: 'none'}}
+            onLoad={handleLoad}
+            onError={handleError}
+            sandbox="allow-same-origin"
+            loading="lazy"
+          />
+        </div>
+      )}
       
       {/* Loading state */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-30">
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-30">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
       
       {/* Error state */}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-90 z-30">
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-30">
           <div className="text-center p-4">
             <p className="font-medium text-red-500">Failed to load preview</p>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
 const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
   return (
-    <div
-      className="group rounded-xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer template-card"
+    <div 
+      className="template-card-container"
       onClick={onClick}
     >
-      <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-full h-full flex items-center justify-center p-4 scale-90 group-hover:scale-95 transition-all duration-300">
-            <div className="w-full h-full overflow-hidden relative border border-gray-100 rounded">
-              <TemplatePreview templateId={template.id} />
-            </div>
-          </div>
+      <div className="template-preview-container">
+        <div className="resume-document">
+          <TemplatePreview templateId={template.id} />
         </div>
+        
         {template.isPopular && (
-          <span className="absolute top-2 right-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded">
-            Popular
-          </span>
+          <div className="popular-badge">Popular</div>
         )}
+        
+        <button className="use-template-btn">
+          Use This Template
+        </button>
       </div>
-      <div className="p-4">
-        <h3 className="font-bold text-gray-900">{template.name}</h3>
-        <p className="text-sm text-gray-600 mt-1">{template.description}</p>
-        <div 
-          className="w-full h-1 mt-3 rounded-full"
-          style={{ 
-            background: `linear-gradient(to right, ${template.primaryColor}, ${template.secondaryColor})` 
-          }}
-        />
+      
+      <div className="template-info">
+        <h3 className="template-title">{template.name}</h3>
+        <p className="template-description">{template.description}</p>
       </div>
+      
+      <div className="template-accent"></div>
     </div>
   );
 };
 
 const TemplateCardSkeleton = () => {
   return (
-    <div className="rounded-xl overflow-hidden bg-white shadow-md">
-      <div className="aspect-[4/5] overflow-hidden bg-gray-100">
+    <div className="template-card-container">
+      <div className="template-preview-container">
         <Skeleton className="w-full h-full" />
       </div>
-      <div className="p-4 space-y-2">
+      <div className="template-info">
         <Skeleton className="h-6 w-2/3" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-1 w-full mt-3 rounded-full" />
+        <Skeleton className="h-4 w-full mt-2" />
       </div>
+      <div className="template-accent"></div>
     </div>
   );
 };
