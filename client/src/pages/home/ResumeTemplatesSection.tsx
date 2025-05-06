@@ -106,8 +106,25 @@ const TemplatePreview = ({
             height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
-            transform: scale(0.3) !important;
+            transform: scale(0.22) !important;
             transform-origin: center !important;
+          }
+          
+          /* Adjust the resume layout */
+          .resume {
+            flex-direction: row !important;
+            width: 100% !important;
+          }
+          
+          /* Adjust widths of left and right sections */
+          .left {
+            width: 35% !important;
+            flex-shrink: 0 !important;
+          }
+          
+          .right {
+            width: 65% !important;
+            flex-shrink: 0 !important;
           }
           
           /* Remove background color from resume body */
