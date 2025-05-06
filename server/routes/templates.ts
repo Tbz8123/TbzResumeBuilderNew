@@ -69,6 +69,52 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Get template PDF content
+router.get("/:id/pdf", async (req, res) => {
+  try {
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({ message: "Invalid template ID" });
+    }
+    
+    // Get the template PDF content
+    const templates = await db.select({
+      pdfContent: resumeTemplates.pdfContent,
+      name: resumeTemplates.name,
+    })
+    .from(resumeTemplates)
+    .where(
+      and(
+        eq(resumeTemplates.id, templateId),
+        // If not admin, only show active templates
+        req.isAuthenticated() && req.user && req.user.isAdmin 
+          ? undefined 
+          : eq(resumeTemplates.isActive, true)
+      )
+    )
+    .limit(1);
+    
+    if (templates.length === 0) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    
+    const template = templates[0];
+    const pdfContent = template.pdfContent;
+    
+    if (!pdfContent) {
+      return res.status(404).json({ message: "No PDF content available for this template" });
+    }
+    
+    // Return the PDF content as base64
+    res.setHeader('Content-Type', 'text/plain'); // Using text/plain for base64 content
+    res.send(pdfContent);
+    
+  } catch (error) {
+    console.error("Error fetching template PDF:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // Get template SVG content
 router.get("/:id/svg", async (req, res) => {
   try {
@@ -1422,6 +1468,7 @@ router.put("/:id", isAdmin, async (req, res) => {
       description: req.body.description,
       category: req.body.category,
       svgContent: req.body.svgContent,
+      pdfContent: req.body.pdfContent || null, // Add PDF content support
       isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       isPopular: req.body.isPopular !== undefined ? req.body.isPopular : false,
       primaryColor: req.body.primaryColor || "#5E17EB",
