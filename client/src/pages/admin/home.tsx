@@ -28,7 +28,12 @@ const AdminHomePage = () => {
   }
 
   if (!user || !user.isAdmin) {
-    return null; // Will redirect via the useEffect
+    // Instead of null, return a loading state which will redirect via the useEffect
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+      </div>
+    );
   }
 
   // Define admin page categories and features

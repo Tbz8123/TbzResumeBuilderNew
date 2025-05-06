@@ -287,28 +287,35 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
       );
     }
 
+    // Calculate optimal scale based on resume dimensions
+    const resumeWidth = 800;   // Standard resume width
+    const resumeHeight = 1130; // Standard resume height
+    const defaultScale = 0.45; // Default scale if dynamic calculation fails
+    
+    // Use passed scale or default
+    const finalScale = scale || defaultScale;
+
     switch (previewMode) {
       case 'html':
         return (
-          <div className="w-full h-full flex items-center justify-center overflow-hidden">
-            <div className="transform-container" style={{ 
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'flex-start'
-            }}>
+          <div className="preview-wrapper">
+            <div 
+              className="resume-content" 
+              style={{
+                transform: `scale(${finalScale})`,
+                transformOrigin: 'top center',
+                width: `${resumeWidth}px`, 
+                height: `${resumeHeight}px`,
+                pointerEvents: 'none'
+              }}
+            >
               <iframe
                 srcDoc={processedContent}
                 title="Resume Preview"
                 style={{ 
-                  transform: `scale(${scale})`, 
-                  transformOrigin: 'center top',
                   width: '100%',
                   height: '100%',
                   border: 'none',
-                  maxHeight: `${100/scale}%`,
-                  maxWidth: `${100/scale}%`
                 }}
               />
             </div>
@@ -317,13 +324,15 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
 
       case 'svg':
         return (
-          <div className="w-full h-full flex items-center justify-center overflow-hidden">
+          <div className="preview-wrapper">
             <div 
-              style={{ 
-                transform: `scale(${scale})`, 
-                transformOrigin: 'center top',
-                maxWidth: `${100/scale}%`,
-                maxHeight: `${100/scale}%`
+              className="resume-content"
+              style={{
+                transform: `scale(${finalScale})`,
+                transformOrigin: 'top center',
+                width: `${resumeWidth}px`, 
+                height: `${resumeHeight}px`,
+                pointerEvents: 'none'
               }}
               dangerouslySetInnerHTML={{ __html: processedContent }}
             />
@@ -332,18 +341,17 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
 
       case 'pdf':
         return (
-          <div className="w-full h-full flex items-center justify-center overflow-hidden">
-            <div style={{ 
-              width: '100%', 
-              height: '100%', 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              maxWidth: `${100/scale}%`,
-              maxHeight: `${100/scale}%`,
-              transform: `scale(${scale})`,
-              transformOrigin: 'center center'
-            }}>
+          <div className="preview-wrapper">
+            <div 
+              className="resume-content"
+              style={{
+                transform: `scale(${finalScale})`,
+                transformOrigin: 'center center',
+                width: `${resumeWidth}px`, 
+                height: `${resumeHeight}px`,
+                pointerEvents: 'none'
+              }}
+            >
               <object
                 data={`data:application/pdf;base64,${processedContent}`}
                 type="application/pdf"

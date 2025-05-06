@@ -1,0 +1,26 @@
+/* Resume template preview styles */
+
+.preview-wrapper {
+  width: 100%;
+  height: 350px; /* Fixed preview height, adjust as needed */
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.resume-content {
+  /* Base styling for resume content */
+  background-color: white;
+  /* Scale is applied via inline styles based on container size */
+  /* Default dimensions for A4 size resume */
+  /* pointer-events: none is applied inline to disable scrolling */
+}
+
+/* Media queries for responsive design */
+@media (max-width: 640px) {
+  .preview-wrapper {
+    height: 280px; /* Smaller height on mobile */
+  }
+}
