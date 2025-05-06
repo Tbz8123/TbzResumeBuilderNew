@@ -329,6 +329,14 @@ const AdminTemplateManagementPage = () => {
                                 </Button>
                                 <Button
                                   variant="ghost"
+                                  size="icon" 
+                                  onClick={() => navigate(`/admin/templates/${template.id}/advanced-edit`)}
+                                  title="Advanced Edit"
+                                >
+                                  <Code className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
                                   size="icon"
                                   onClick={() => handleExport('pdf', template.id)}
                                   title="Export Template"
@@ -454,6 +462,13 @@ const AdminTemplateManagementPage = () => {
               >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Template
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate(`/admin/templates/${previewTemplate?.id}/advanced-edit`)}
+              >
+                <Code className="h-4 w-4 mr-2" />
+                Advanced Edit
               </Button>
               <Button
                 variant="outline"
