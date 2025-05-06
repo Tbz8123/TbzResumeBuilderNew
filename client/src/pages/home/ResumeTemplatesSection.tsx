@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTemplates } from "@/hooks/use-templates";
 import { AnimatedSection } from "@/components/AnimatedSection";
 import { useLocation } from "wouter";
@@ -38,11 +38,13 @@ type TemplateCardProps = {
   onClick: () => void;
 };
 
-// Simple, perfectly optimized template preview with proven flex-container approach
+// Enhanced template preview that supports both SVG and PDF rendering
 const TemplatePreview = ({ templateId }: { templateId: number }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retries, setRetries] = useState(0);
+  const [hasPdf, setHasPdf] = useState(false);
+  const [pdfContent, setPdfContent] = useState<string | null>(null);
   
   const handleLoad = () => {
     setIsLoading(false);
@@ -60,6 +62,25 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
     }
   };
 
+  // Check if there's a PDF version available
+  useEffect(() => {
+    const checkPdf = async () => {
+      try {
+        const response = await fetch(`/api/templates/${templateId}/pdf?_t=${Date.now()}`);
+        if (response.ok) {
+          const data = await response.text();
+          setPdfContent(data);
+          setHasPdf(true);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.log("No PDF version available, using SVG");
+      }
+    };
+    
+    checkPdf();
+  }, [templateId]);
+
   // Create the URL to the template with a cache-busting parameter
   const templateUrl = `/api/templates/${templateId}/svg?_t=${Date.now()}_${retries}`;
   
@@ -67,21 +88,37 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
     <div className="w-full h-full relative overflow-hidden rounded shadow-sm bg-white flex justify-center items-center">
       {/* Container with flexbox centering */}
       <div className="w-full h-full flex justify-center items-center overflow-hidden">
-        {/* The iframe is treated like an image with object-fit:contain */}
-        <iframe
-          src={templateUrl}
-          title={`Template Preview ${templateId}`}
-          className="max-w-full max-h-full object-contain border-0 z-10"
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'block',
-          }}
-          onLoad={handleLoad}
-          onError={handleError}
-          sandbox="allow-same-origin"
-          loading="lazy"
-        />
+        {hasPdf && pdfContent ? (
+          // PDF Preview with object-fit:contain for best display
+          <iframe
+            src={`data:application/pdf;base64,${pdfContent}`}
+            title={`PDF Template Preview ${templateId}`}
+            className="max-w-full max-h-full object-contain border-0 z-10"
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+            }}
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        ) : (
+          // SVG Fallback if no PDF is available
+          <iframe
+            src={templateUrl}
+            title={`Template Preview ${templateId}`}
+            className="max-w-full max-h-full object-contain border-0 z-10"
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+            }}
+            onLoad={handleLoad}
+            onError={handleError}
+            sandbox="allow-same-origin"
+            loading="lazy"
+          />
+        )}
       </div>
       
       {/* Loading state */}

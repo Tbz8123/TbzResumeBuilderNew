@@ -40,7 +40,7 @@ type FormData = {
   description: string;
   category: string;
   svgContent: string;
-  pdfContent?: string;  // Base64 encoded PDF content
+  pdfContent: string | null;  // Base64 encoded PDF content
   isActive: boolean;
   isPopular: boolean;
   primaryColor: string;
@@ -439,6 +439,36 @@ const AdminTemplateEditPage = () => {
                   </div>
                 </div>
 
+                <div className="space-y-3">
+                  <Label htmlFor="pdfUpload">
+                    PDF Template (Optional) <span className="text-gray-500 text-sm">Recommended for consistent rendering</span>
+                  </Label>
+                  <Input
+                    id="pdfUpload"
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const base64Content = event.target?.result as string;
+                          // Remove prefix like "data:application/pdf;base64," to store just the content
+                          const base64Data = base64Content.split(',')[1];
+                          setFormData(prev => ({ ...prev, pdfContent: base64Data }));
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="cursor-pointer"
+                  />
+                  {formData.pdfContent && (
+                    <div className="text-sm text-green-600 font-medium">
+                      PDF file uploaded successfully!
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -503,9 +533,10 @@ const AdminTemplateEditPage = () => {
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="editor">SVG Code Editor</TabsTrigger>
-                  <TabsTrigger value="preview">Preview</TabsTrigger>
+                  <TabsTrigger value="preview">SVG Preview</TabsTrigger>
+                  <TabsTrigger value="pdf-preview" disabled={!formData.pdfContent}>PDF Preview</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="editor" className="border rounded-md mt-4">
@@ -544,6 +575,25 @@ const AdminTemplateEditPage = () => {
                       dangerouslySetInnerHTML={{ __html: formData.svgContent }} 
                     />
                   </div>
+                </TabsContent>
+                
+                <TabsContent value="pdf-preview" className="mt-4">
+                  {formData.pdfContent ? (
+                    <div className="flex justify-center border rounded-md p-4 bg-gray-50 min-h-[800px] overflow-auto">
+                      <iframe
+                        src={`data:application/pdf;base64,${formData.pdfContent}`}
+                        className="w-full h-[800px] border-0"
+                        title="PDF Preview"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex justify-center items-center border rounded-md p-4 bg-gray-50 min-h-[800px]">
+                      <div className="text-center p-8">
+                        <p className="text-lg font-medium text-gray-500 mb-4">No PDF version uploaded yet</p>
+                        <p className="text-gray-400">Upload a PDF version of your template for consistent rendering across devices</p>
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </CardContent>
