@@ -13,10 +13,12 @@ import TemplateBuilder, { defaultResumeTemplate } from '@/components/resume/Temp
 
 const AdvancedTemplateEditPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
   
-  const isNewTemplate = id === 'new';
+  // Check if we're creating a new template - either via /admin/templates/new (no id) 
+  // or via /admin/templates/:id/advanced where id is 'new'
+  const isNewTemplate = id === 'new' || location === '/admin/templates/new';
   
   // Fetch template data if editing an existing template
   const { data: templateData, isLoading, error } = useTemplate(

@@ -38,7 +38,8 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminHomePage} adminOnly />
       <ProtectedRoute path="/admin/templates" component={AdminTemplatesPage} adminOnly />
       <ProtectedRoute path="/admin/templates/management" component={AdminTemplateManagementPage} adminOnly />
-      <ProtectedRoute path="/admin/templates/new" component={CreateNewTemplateAdminPage} adminOnly />
+      <ProtectedRoute path="/admin/templates/new/basic" component={CreateNewTemplateAdminPage} adminOnly />
+      <ProtectedRoute path="/admin/templates/new" component={AdvancedTemplateEditPage} adminOnly />
       <ProtectedRoute path="/admin/templates/:id/advanced" component={AdvancedTemplateEditPage} adminOnly />
       <ProtectedRoute path="/admin/templates/:id/versions" component={TemplateVersionsPage} adminOnly />
       <ProtectedRoute path="/admin/templates/:id" component={AdminTemplateEditPage} adminOnly />
