@@ -114,52 +114,89 @@ const AdvancedTemplateEditPage = () => {
     );
   }
   
-  // Create a properly typed template for editing
-  let editableTemplate: ResumeTemplate;
-  
-  if (isNewTemplate) {
-    // If creating a new template, use the default template
-    editableTemplate = defaultResumeTemplate;
-  } else if (templateData) {
-    // If editing an existing template, start with the default and override with the data
-    // We need to create a clean copy with proper types
-    editableTemplate = {
-      ...defaultResumeTemplate,
-      id: templateData.id,
-      name: templateData.name || '',
-      description: templateData.description || '',
-      category: templateData.category || 'professional',
-      isActive: templateData.isActive ?? true,
-      isPopular: templateData.isPopular ?? false,
-      primaryColor: templateData.primaryColor || '#5E17EB',
-      secondaryColor: templateData.secondaryColor || '#4A11C0',
-      
-      // Content fields
-      htmlContent: templateData.htmlContent || '',
-      cssContent: templateData.cssContent || '',
-      jsContent: templateData.jsContent || '',
-      svgContent: templateData.svgContent || '',
-      pdfContent: templateData.pdfContent,
-      
-      // Dimension fields (must be numbers for the schema)
-      width: templateData.width || 800,
-      height: templateData.height || 1100,
-      displayScale: templateData.displayScale || '0.22',
-      aspectRatio: templateData.aspectRatio || '0.73',
-      
-      // Thumbnail
-      thumbnailUrl: templateData.thumbnailUrl,
-      
-      // Dates
-      createdAt: templateData.createdAt || new Date(),
-      updatedAt: templateData.updatedAt || new Date(),
-    };
-  } else {
-    // Fallback to default if no data
-    editableTemplate = defaultResumeTemplate;
+  // Check for error state
+  if (error) {
+    console.error("Error loading template:", error);
+    return (
+      <div className="container mx-auto py-6">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+          <h3 className="text-red-800 font-semibold">Error loading template</h3>
+          <p className="text-red-600">{error.message || "Failed to load template data. Please try again."}</p>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/admin/templates/management')}
+            className="mt-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Templates
+          </Button>
+        </div>
+      </div>
+    );
   }
-  
-  const finalTemplate = editableTemplate;
+
+  // Handle loading state with skeleton
+  if (isLoading && !isNewTemplate) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="flex items-center mb-4">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/admin/templates/management')}
+            className="mr-2"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
+          </Button>
+        </div>
+        
+        <div className="p-6 bg-white shadow-md rounded-lg animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-10 bg-gray-200 rounded w-full"></div>
+              <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-32 bg-gray-200 rounded w-full"></div>
+            </div>
+            <div className="space-y-4">
+              <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-64 bg-gray-200 rounded w-full"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Prepare the template for editing
+  const finalTemplate = isNewTemplate 
+    ? defaultResumeTemplate 
+    : templateData 
+      ? {
+          // We create a complete and typed object that merges default values with the server data
+          id: templateData.id,
+          name: templateData.name || 'Untitled Template',
+          description: templateData.description || '',
+          category: templateData.category || 'professional',
+          svgContent: templateData.svgContent || defaultResumeTemplate.svgContent,
+          htmlContent: templateData.htmlContent || defaultResumeTemplate.htmlContent,
+          cssContent: templateData.cssContent || defaultResumeTemplate.cssContent,
+          jsContent: templateData.jsContent || defaultResumeTemplate.jsContent,
+          pdfContent: templateData.pdfContent,
+          isActive: templateData.isActive ?? true,
+          isPopular: templateData.isPopular ?? false,
+          thumbnailUrl: templateData.thumbnailUrl,
+          primaryColor: templateData.primaryColor || '#5E17EB',
+          secondaryColor: templateData.secondaryColor || '#4A11C0',
+          displayScale: templateData.displayScale || '0.22',
+          width: templateData.width || 800,
+          height: templateData.height || 1100,
+          aspectRatio: templateData.aspectRatio || '0.73',
+          createdAt: templateData.createdAt || new Date(),
+          updatedAt: templateData.updatedAt || new Date()
+        } as ResumeTemplate
+      : defaultResumeTemplate;
     
   console.log("Loading template for editing:", {
     isNewTemplate,
