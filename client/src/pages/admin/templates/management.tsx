@@ -48,8 +48,8 @@ import {
   History, 
   Download, 
   FileText, 
-  AlertTriangle,
-  Code
+  Code, 
+  AlertTriangle
 } from 'lucide-react';
 import {
   Dialog,
@@ -330,7 +330,7 @@ const AdminTemplateManagementPage = () => {
                                 <Button
                                   variant="ghost"
                                   size="icon" 
-                                  onClick={() => navigate(`/admin/templates/${template.id}/advanced-edit`)}
+                                  onClick={() => navigate(`/admin/templates/${template.id}/advanced`)}
                                   title="Advanced Edit"
                                 >
                                   <Code className="h-4 w-4" />
@@ -465,7 +465,7 @@ const AdminTemplateManagementPage = () => {
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => navigate(`/admin/templates/${previewTemplate?.id}/advanced-edit`)}
+                onClick={() => navigate(`/admin/templates/${previewTemplate?.id}/advanced`)}
               >
                 <Code className="h-4 w-4 mr-2" />
                 Advanced Edit
