@@ -8,6 +8,7 @@ import { AnimatedSection, AnimatedItem } from '@/components/AnimatedSection';
 import { FileText, Users, Settings, Code, Layers, LayoutGrid, FileEdit, Plus, Database, Palette, Server, Shield } from 'lucide-react';
 
 const AdminHomePage = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setLocation] = useLocation();
   const { user, isLoading } = useAuth();
 

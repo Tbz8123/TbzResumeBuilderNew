@@ -34,6 +34,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}
+      <ProtectedRoute path="/admin" component={AdminHomePage} adminOnly />
       <ProtectedRoute path="/admin/templates" component={AdminTemplatesPage} adminOnly />
       <ProtectedRoute path="/admin/templates/management" component={AdminTemplateManagementPage} adminOnly />
       <ProtectedRoute path="/admin/templates/new" component={CreateNewTemplateAdminPage} adminOnly />
