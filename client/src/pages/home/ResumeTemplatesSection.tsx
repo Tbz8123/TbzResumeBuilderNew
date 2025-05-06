@@ -94,15 +94,35 @@ const TemplatePreview = ({
             margin: 0 !important;
             padding: 0 !important;
             overflow: hidden !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            background: white !important;
           }
           
           .resume, body > div {
             width: 100% !important;
-            height: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
-            max-width: none !important;
-            transform-origin: top left !important;
+            transform: scale(0.3) !important;
+            transform-origin: center !important;
+          }
+          
+          /* Remove background color from resume body */
+          body {
+            background: white !important;
+          }
+          
+          /* Adjust layout to show full template */
+          .left, .right {
+            padding: 5px !important;
+          }
+          
+          /* Adjust margins to center content */
+          .resume {
+            margin: 0 auto !important;
           }
         </style>
         </head>
