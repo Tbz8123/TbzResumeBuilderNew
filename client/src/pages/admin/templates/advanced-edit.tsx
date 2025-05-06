@@ -179,20 +179,27 @@ const AdvancedTemplateEditPage = () => {
           name: templateData.name || 'Untitled Template',
           description: templateData.description || '',
           category: templateData.category || 'professional',
+          
+          // IMPORTANT: Preserve the actual content - only use defaults if truly missing
+          // Empty strings are valid template content
           svgContent: templateData.svgContent || defaultResumeTemplate.svgContent,
-          htmlContent: templateData.htmlContent || defaultResumeTemplate.htmlContent,
-          cssContent: templateData.cssContent || defaultResumeTemplate.cssContent,
-          jsContent: templateData.jsContent || defaultResumeTemplate.jsContent,
+          htmlContent: templateData.htmlContent || "",
+          cssContent: templateData.cssContent || "", 
+          jsContent: templateData.jsContent || "",
+          
           pdfContent: templateData.pdfContent,
           isActive: templateData.isActive ?? true,
           isPopular: templateData.isPopular ?? false,
           thumbnailUrl: templateData.thumbnailUrl,
           primaryColor: templateData.primaryColor || '#5E17EB',
           secondaryColor: templateData.secondaryColor || '#4A11C0',
+          
+          // Use proper scaling values from server data
           displayScale: templateData.displayScale || '0.22',
           width: templateData.width || 800,
           height: templateData.height || 1100,
           aspectRatio: templateData.aspectRatio || '0.73',
+          
           createdAt: templateData.createdAt || new Date(),
           updatedAt: templateData.updatedAt || new Date()
         } as ResumeTemplate
