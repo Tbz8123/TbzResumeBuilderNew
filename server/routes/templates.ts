@@ -150,6 +150,8 @@ router.get("/:id/svg", async (req, res) => {
     const template = templates[0];
     let content = template.svgContent || '';
     
+    console.log(`Serving template ${templateId} as text/html`); // Log for debugging
+    
     // Add security headers
     res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'none';");
     res.setHeader('X-Content-Type-Options', 'nosniff');

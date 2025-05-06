@@ -207,7 +207,7 @@ const AdminTemplateEditPage = () => {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("editor");
+  const [activeTab, setActiveTab] = useState("svg-editor");
   const [previewKey, setPreviewKey] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -601,97 +601,298 @@ const AdminTemplateEditPage = () => {
                     <RotateCw className="h-4 w-4 mr-1" />
                     Refresh Preview
                   </Button>
+                  {autoSaveTimerRef.current && (
+                    <Badge variant="outline" className="ml-2 bg-amber-50 text-amber-800 border-amber-200">
+                      Auto-saving...
+                    </Badge>
+                  )}
                 </div>
               </div>
               <CardDescription>
-                Edit the SVG code directly to customize the template design
+                Edit template code using different editors for better control and flexibility
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="editor">SVG Code Editor</TabsTrigger>
-                  <TabsTrigger value="preview">SVG Preview</TabsTrigger>
-                  <TabsTrigger value="pdf-preview" disabled={!formData.pdfContent}>PDF Preview</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="editor" className="border rounded-md mt-4">
-                  <div className="h-[800px] w-full">
-                    <Editor
-                      height="100%"
-                      defaultLanguage="html"
-                      value={formData.svgContent}
-                      onChange={handleEditorChange}
-                      options={{
-                        minimap: { enabled: false },
-                        automaticLayout: true,
-                        wordWrap: "on",
-                        scrollBeyondLastLine: false,
-                        lineNumbers: "on",
-                        renderWhitespace: "boundary",
-                        folding: true,
-                        formatOnPaste: true,
-                        fontSize: 14,
-                        tabSize: 2,
-                      }}
-                      onMount={(editor, monaco) => {
-                        // Auto-format on mount for cleaner code view
-                        setTimeout(() => {
-                          editor.getAction('editor.action.formatDocument')?.run();
-                        }, 300);
-                      }}
-                    />
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="preview" className="mt-4">
-                  <div className="flex justify-center border rounded-md p-4 bg-gray-50 min-h-[800px] overflow-auto">
-                    <div 
-                      key={previewKey}
-                      dangerouslySetInnerHTML={{ __html: formData.svgContent }} 
-                    />
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="pdf-preview" className="mt-4">
-                  {formData.pdfContent ? (
-                    <div className="flex justify-center border rounded-md p-4 bg-gray-50 min-h-[800px] overflow-auto">
-                      <iframe
-                        src={`data:application/pdf;base64,${formData.pdfContent}`}
-                        className="w-full h-[800px] border-0"
-                        title="PDF Preview"
-                      />
+              <Accordion type="single" collapsible defaultValue="code-editors" className="w-full">
+                <AccordionItem value="code-editors" className="border-none">
+                  <AccordionTrigger className="py-2 hover:no-underline">
+                    <div className="flex items-center">
+                      <Code className="h-4 w-4 mr-2" />
+                      <span className="font-medium">Code Editors</span>
                     </div>
-                  ) : (
-                    <div className="flex justify-center items-center border rounded-md p-4 bg-gray-50 min-h-[800px]">
-                      <div className="text-center p-8">
-                        <p className="text-lg font-medium text-gray-500 mb-4">No PDF version uploaded yet</p>
-                        <p className="text-gray-400">Upload a PDF version of your template for consistent rendering across devices</p>
-                      </div>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                      <TabsList className="grid w-full grid-cols-6">
+                        <TabsTrigger value="svg-editor" className="flex items-center">
+                          <Image className="h-4 w-4 mr-1" />
+                          SVG
+                        </TabsTrigger>
+                        <TabsTrigger value="html-editor" className="flex items-center">
+                          <FileText className="h-4 w-4 mr-1" />
+                          HTML
+                        </TabsTrigger>
+                        <TabsTrigger value="css-editor" className="flex items-center">
+                          <Palette className="h-4 w-4 mr-1" />
+                          CSS
+                        </TabsTrigger>
+                        <TabsTrigger value="js-editor" className="flex items-center">
+                          <Code className="h-4 w-4 mr-1" />
+                          JavaScript
+                        </TabsTrigger>
+                        <TabsTrigger value="combined-editor" className="flex items-center">
+                          <Layers className="h-4 w-4 mr-1" />
+                          HTML+CSS
+                        </TabsTrigger>
+                        <TabsTrigger value="preview" className="flex items-center">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Preview
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      {/* SVG Editor */}
+                      <TabsContent value="svg-editor" className="border rounded-md mt-4">
+                        <div className="h-[700px] w-full">
+                          <Editor
+                            height="100%"
+                            defaultLanguage="xml"
+                            value={formData.svgContent}
+                            onChange={(value) => {
+                              handleSvgEditorChange(value);
+                              autoSaveChanges();
+                            }}
+                            options={{
+                              minimap: { enabled: false },
+                              automaticLayout: true,
+                              wordWrap: "on",
+                              scrollBeyondLastLine: false,
+                              lineNumbers: "on",
+                              renderWhitespace: "boundary",
+                              folding: true,
+                              formatOnPaste: true,
+                              fontSize: 14,
+                              tabSize: 2,
+                            }}
+                            onMount={(editor, monaco) => {
+                              // Auto-format on mount for cleaner code view
+                              setTimeout(() => {
+                                editor.getAction('editor.action.formatDocument')?.run();
+                              }, 300);
+                            }}
+                          />
+                        </div>
+                      </TabsContent>
+                      
+                      {/* HTML Editor */}
+                      <TabsContent value="html-editor" className="border rounded-md mt-4">
+                        <div className="h-[700px] w-full">
+                          <Editor
+                            height="100%"
+                            defaultLanguage="html"
+                            value={formData.htmlContent}
+                            onChange={(value) => {
+                              handleHtmlEditorChange(value);
+                              autoSaveChanges();
+                            }}
+                            options={{
+                              minimap: { enabled: false },
+                              automaticLayout: true,
+                              wordWrap: "on",
+                              scrollBeyondLastLine: false,
+                              lineNumbers: "on",
+                              renderWhitespace: "boundary",
+                              folding: true,
+                              formatOnPaste: true,
+                              fontSize: 14,
+                              tabSize: 2,
+                            }}
+                          />
+                        </div>
+                      </TabsContent>
+                      
+                      {/* CSS Editor */}
+                      <TabsContent value="css-editor" className="border rounded-md mt-4">
+                        <div className="h-[700px] w-full">
+                          <Editor
+                            height="100%"
+                            defaultLanguage="css"
+                            value={formData.cssContent}
+                            onChange={(value) => {
+                              handleCssEditorChange(value);
+                              autoSaveChanges();
+                            }}
+                            options={{
+                              minimap: { enabled: false },
+                              automaticLayout: true,
+                              wordWrap: "on",
+                              scrollBeyondLastLine: false,
+                              lineNumbers: "on",
+                              renderWhitespace: "boundary",
+                              folding: true,
+                              formatOnPaste: true,
+                              fontSize: 14,
+                              tabSize: 2,
+                            }}
+                          />
+                        </div>
+                      </TabsContent>
+                      
+                      {/* JavaScript Editor */}
+                      <TabsContent value="js-editor" className="border rounded-md mt-4">
+                        <div className="h-[700px] w-full">
+                          <Editor
+                            height="100%"
+                            defaultLanguage="javascript"
+                            value={formData.jsContent}
+                            onChange={(value) => {
+                              handleJsEditorChange(value);
+                              autoSaveChanges();
+                            }}
+                            options={{
+                              minimap: { enabled: false },
+                              automaticLayout: true,
+                              wordWrap: "on",
+                              scrollBeyondLastLine: false,
+                              lineNumbers: "on",
+                              renderWhitespace: "boundary",
+                              folding: true,
+                              formatOnPaste: true,
+                              fontSize: 14,
+                              tabSize: 2,
+                            }}
+                          />
+                        </div>
+                      </TabsContent>
+                      
+                      {/* Combined HTML+CSS Editor */}
+                      <TabsContent value="combined-editor" className="border rounded-md mt-4">
+                        <div className="h-[700px] w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="border-r pr-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">HTML</label>
+                            <Editor
+                              height="calc(100% - 30px)"
+                              defaultLanguage="html"
+                              value={formData.htmlContent}
+                              onChange={(value) => {
+                                handleHtmlEditorChange(value);
+                                autoSaveChanges();
+                              }}
+                              options={{
+                                minimap: { enabled: false },
+                                automaticLayout: true,
+                                wordWrap: "on",
+                                scrollBeyondLastLine: false,
+                                lineNumbers: "on",
+                                renderWhitespace: "boundary",
+                                folding: true,
+                                formatOnPaste: true,
+                                fontSize: 14,
+                                tabSize: 2,
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">CSS</label>
+                            <Editor
+                              height="calc(100% - 30px)"
+                              defaultLanguage="css"
+                              value={formData.cssContent}
+                              onChange={(value) => {
+                                handleCssEditorChange(value);
+                                autoSaveChanges();
+                              }}
+                              options={{
+                                minimap: { enabled: false },
+                                automaticLayout: true,
+                                wordWrap: "on",
+                                scrollBeyondLastLine: false,
+                                lineNumbers: "on",
+                                renderWhitespace: "boundary",
+                                folding: true,
+                                formatOnPaste: true,
+                                fontSize: 14,
+                                tabSize: 2,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </TabsContent>
+                      
+                      {/* Preview Tab */}
+                      <TabsContent value="preview" className="mt-4 border rounded-md p-4">
+                        <Tabs defaultValue="svg-preview" className="w-full">
+                          <TabsList>
+                            <TabsTrigger value="svg-preview">SVG Preview</TabsTrigger>
+                            <TabsTrigger value="html-preview">HTML Preview</TabsTrigger>
+                            <TabsTrigger value="pdf-preview">PDF Preview</TabsTrigger>
+                          </TabsList>
+                          
+                          <TabsContent value="svg-preview" className="mt-4 flex justify-center">
+                            <div 
+                              className="resume-preview max-w-full"
+                              key={`svg-${previewKey}`}
+                              dangerouslySetInnerHTML={{ __html: formData.svgContent }}
+                            />
+                          </TabsContent>
+                          
+                          <TabsContent value="html-preview" className="mt-4">
+                            <div className="border rounded-md p-4 bg-white">
+                              <iframe
+                                srcDoc={`${formData.htmlContent.replace('</head>', `<style>${formData.cssContent}</style></head>`).replace('</body>', `<script>${formData.jsContent}</script></body>`)}`}
+                                style={{ width: '100%', height: '700px', border: 'none' }}
+                                title="HTML Preview"
+                                key={`html-${previewKey}`}
+                                sandbox="allow-scripts"
+                              />
+                            </div>
+                          </TabsContent>
+                          
+                          <TabsContent value="pdf-preview" className="mt-4">
+                            {formData.pdfContent ? (
+                              <div className="border rounded-md p-4 bg-white">
+                                <iframe
+                                  src={`data:application/pdf;base64,${formData.pdfContent}`}
+                                  style={{ width: '100%', height: '700px', border: 'none' }}
+                                  title="PDF Preview"
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center p-8 text-center">
+                                <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+                                <h3 className="text-lg font-medium">No PDF Content Available</h3>
+                                <p className="text-sm text-gray-500 mt-2 max-w-md">
+                                  Upload a PDF file using the PDF upload option above to see the preview here.
+                                </p>
+                              </div>
+                            )}
+                          </TabsContent>
+                        </Tabs>
+                      </TabsContent>
+                    </Tabs>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </CardContent>
-            <CardFooter className="flex justify-end space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={() => navigate("/admin/templates")}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSubmit}
-                className="bg-primary"
-                disabled={updateTemplateMutation.isPending || createTemplateMutation.isPending}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {updateTemplateMutation.isPending || createTemplateMutation.isPending
-                  ? "Saving..."
-                  : "Save Template"}
-              </Button>
-            </CardFooter>
           </Card>
+
+          {isEditingTemplate && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Version History</CardTitle>
+                <CardDescription>
+                  View and manage previous versions of this template
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/admin/templates/${id}/versions`)}
+                >
+                  View Version History
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>

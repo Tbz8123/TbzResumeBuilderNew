@@ -17,7 +17,10 @@ export const resumeTemplates = pgTable("resume_templates", {
   description: text("description").notNull(),
   category: text("category").notNull(),
   svgContent: text("svg_content").notNull(),
-  pdfContent: text("pdf_content"),  // Base64 encoded PDF content
+  htmlContent: text("html_content"),  // HTML template content
+  cssContent: text("css_content"),    // CSS for styling the HTML template
+  jsContent: text("js_content"),      // Optional JavaScript for the template
+  pdfContent: text("pdf_content"),    // Base64 encoded PDF content
   thumbnailUrl: text("thumbnail_url"),
   isPopular: boolean("is_popular").default(false),
   isActive: boolean("is_active").default(true),
@@ -32,7 +35,10 @@ export const resumeTemplateVersions = pgTable("resume_template_versions", {
   templateId: integer("template_id").references(() => resumeTemplates.id).notNull(),
   versionNumber: integer("version_number").notNull(),
   svgContent: text("svg_content").notNull(),
-  pdfContent: text("pdf_content"),  // Add PDF content to version history
+  htmlContent: text("html_content"),  // HTML template content
+  cssContent: text("css_content"),    // CSS for styling the HTML template
+  jsContent: text("js_content"),      // Optional JavaScript for the template
+  pdfContent: text("pdf_content"),    // PDF content for version history
   createdAt: timestamp("created_at").defaultNow().notNull(),
   createdById: integer("created_by_id").references(() => users.id),
   changelog: text("changelog"),
@@ -66,12 +72,18 @@ export const resumeTemplateSchema = createInsertSchema(resumeTemplates, {
   description: (schema) => schema.min(10, "Description must be at least 10 characters"),
   category: (schema) => schema.min(2, "Category must be at least 2 characters"),
   svgContent: (schema) => schema.min(50, "SVG content must be valid"),
+  htmlContent: (schema) => schema.optional(),
+  cssContent: (schema) => schema.optional(),
+  jsContent: (schema) => schema.optional(),
   pdfContent: (schema) => schema.optional(),
   thumbnailUrl: (schema) => schema.optional(),
 });
 
 export const resumeTemplateVersionSchema = createInsertSchema(resumeTemplateVersions, {
   svgContent: (schema) => schema.min(50, "SVG content must be valid"),
+  htmlContent: (schema) => schema.optional(),
+  cssContent: (schema) => schema.optional(),
+  jsContent: (schema) => schema.optional(),
   pdfContent: (schema) => schema.optional(),
 });
 
