@@ -292,8 +292,10 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
     const resumeHeight = 1123; // A4 height in pixels at 96 DPI
     const defaultScale = 0.35; // Default scale if dynamic calculation fails
     
-    // Use passed scale or default
-    const finalScale = scale || defaultScale;
+    // First try to use the template's displayScale if available
+    // Otherwise use passed scale or default
+    const templateScale = template.displayScale ? parseFloat(template.displayScale) : null;
+    const finalScale = scale || templateScale || defaultScale;
 
     switch (previewMode) {
       case 'html':
