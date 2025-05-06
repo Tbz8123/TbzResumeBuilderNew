@@ -290,33 +290,68 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
     switch (previewMode) {
       case 'html':
         return (
-          <iframe
-            srcDoc={processedContent}
-            className="w-full h-full border-0"
-            title="Resume Preview"
-            style={{ transform: `scale(${scale})`, transformOrigin: 'center top' }}
-          />
+          <div className="w-full h-full flex items-center justify-center overflow-hidden">
+            <div className="transform-container" style={{ 
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'flex-start'
+            }}>
+              <iframe
+                srcDoc={processedContent}
+                title="Resume Preview"
+                style={{ 
+                  transform: `scale(${scale})`, 
+                  transformOrigin: 'center top',
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  maxHeight: `${100/scale}%`,
+                  maxWidth: `${100/scale}%`
+                }}
+              />
+            </div>
+          </div>
         );
 
       case 'svg':
         return (
-          <div
-            className="flex items-center justify-center h-full"
-            style={{ transform: `scale(${scale})`, transformOrigin: 'center top' }}
-            dangerouslySetInnerHTML={{ __html: processedContent }}
-          />
+          <div className="w-full h-full flex items-center justify-center overflow-hidden">
+            <div 
+              style={{ 
+                transform: `scale(${scale})`, 
+                transformOrigin: 'center top',
+                maxWidth: `${100/scale}%`,
+                maxHeight: `${100/scale}%`
+              }}
+              dangerouslySetInnerHTML={{ __html: processedContent }}
+            />
+          </div>
         );
 
       case 'pdf':
         return (
-          <div className="flex items-center justify-center h-full">
-            <object
-              data={`data:application/pdf;base64,${processedContent}`}
-              type="application/pdf"
-              className="w-full h-full"
-            >
-              <p>PDF cannot be displayed in your browser.</p>
-            </object>
+          <div className="w-full h-full flex items-center justify-center overflow-hidden">
+            <div style={{ 
+              width: '100%', 
+              height: '100%', 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              maxWidth: `${100/scale}%`,
+              maxHeight: `${100/scale}%`,
+              transform: `scale(${scale})`,
+              transformOrigin: 'center center'
+            }}>
+              <object
+                data={`data:application/pdf;base64,${processedContent}`}
+                type="application/pdf"
+                style={{ width: '100%', height: '100%' }}
+              >
+                <p>PDF cannot be displayed in your browser.</p>
+              </object>
+            </div>
           </div>
         );
 
@@ -326,7 +361,14 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
   };
 
   return (
-    <div className={`template-engine relative ${className}`}>
+    <div className={`template-engine relative ${className}`} style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      overflow: 'hidden',
+      height: '100%',
+      width: '100%'
+    }}>
       {renderPreview()}
     </div>
   );

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ResumeTemplate } from "@shared/schema";
+import { ResumeTemplate, ResumeTemplateVersion } from "@shared/schema";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
 
 // Hook to fetch all templates
@@ -30,7 +30,7 @@ export const useTemplateVersions = (id: number | string | undefined) => {
 
 // Hook to fetch a specific template version
 export const useTemplateVersion = (id: number | string | undefined, versionNumber: number | undefined) => {
-  return useQuery({
+  return useQuery<ResumeTemplateVersion>({
     queryKey: ["/api/templates", id, "versions", versionNumber],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!id && !!versionNumber, // Only run query if both params are provided

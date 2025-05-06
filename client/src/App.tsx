@@ -15,6 +15,7 @@ import AdvancedTemplateEditPage from "@/pages/admin/templates/advanced-edit";
 import CreateNewTemplateAdminPage from "@/pages/admin/templates/new";
 import TemplateVersionsPage from "@/pages/admin/templates/versions";
 import AdminTemplateManagementPage from "@/pages/admin/templates/management";
+import AdminHomePage from "@/pages/admin/home";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
