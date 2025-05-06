@@ -38,58 +38,15 @@ type TemplateCardProps = {
   onClick: () => void;
 };
 
-// Perfectly optimized template preview component with centered display
+// Simple, perfectly optimized template preview with proven flex-container approach
 const TemplatePreview = ({ templateId }: { templateId: number }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retries, setRetries] = useState(0);
   
-  // Reference to the iframe for scaling calculation
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Handle iframe load event
-  const handleLoad = useCallback(() => {
+  const handleLoad = () => {
     setIsLoading(false);
-    
-    // Add a slight delay to ensure content is fully loaded
-    setTimeout(() => {
-      if (iframeRef.current && containerRef.current) {
-        try {
-          // Set appropriate styles for optimal display
-          const iframe = iframeRef.current;
-          const container = containerRef.current;
-          
-          // Reset any previous transformations
-          iframe.style.transform = 'none';
-          iframe.style.width = '100%';
-          iframe.style.height = '100%';
-          
-          // Calculate the optimal scale and position to fit the content
-          const containerWidth = container.clientWidth;
-          const containerHeight = container.clientHeight;
-          
-          // Use a fixed aspect ratio that looks good for resume templates
-          const scale = Math.min(
-            containerWidth / 600, // Ideal width
-            containerHeight / 850  // Ideal height
-          ) * 0.95; // 95% to add a small margin
-          
-          // Apply the transformation
-          iframe.style.transform = `scale(${scale})`;
-          iframe.style.transformOrigin = 'center';
-          iframe.style.width = `${100 / scale}%`;
-          iframe.style.height = `${100 / scale}%`;
-          iframe.style.position = 'absolute';
-          iframe.style.left = '50%';
-          iframe.style.top = '50%';
-          iframe.style.translate = '-50% -50%';
-        } catch (err) {
-          console.error('Error scaling template:', err);
-        }
-      }
-    }, 100);
-  }, []);
+  };
   
   const handleError = () => {
     // If we haven't retried, try once more
@@ -103,34 +60,38 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
     }
   };
 
-  // Create the URL to the template with a cache-busting parameter that changes on retry
+  // Create the URL to the template with a cache-busting parameter
   const templateUrl = `/api/templates/${templateId}/svg?_t=${Date.now()}_${retries}`;
   
   return (
-    <div 
-      ref={containerRef}
-      className="w-full h-full relative overflow-hidden rounded shadow-sm"
-    >
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-white/0 z-20 pointer-events-none rounded"></div>
+    <div className="w-full h-full relative overflow-hidden rounded shadow-sm bg-white flex justify-center items-center">
+      {/* Container with flexbox centering */}
+      <div className="w-full h-full flex justify-center items-center overflow-hidden">
+        {/* The iframe is treated like an image with object-fit:contain */}
+        <iframe
+          src={templateUrl}
+          title={`Template Preview ${templateId}`}
+          className="max-w-full max-h-full object-contain border-0 z-10"
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'block',
+          }}
+          onLoad={handleLoad}
+          onError={handleError}
+          sandbox="allow-same-origin"
+          loading="lazy"
+        />
+      </div>
       
-      <iframe
-        ref={iframeRef}
-        src={templateUrl}
-        title={`Template Preview ${templateId}`}
-        className="border-0 z-10 bg-transparent"
-        onLoad={handleLoad}
-        onError={handleError}
-        sandbox="allow-same-origin"
-        loading="lazy"
-      />
-      
+      {/* Loading state */}
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-30">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
       
+      {/* Error state */}
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-90 z-30">
           <div className="text-center p-4">
