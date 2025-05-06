@@ -26,6 +26,7 @@ export const defaultResumeTemplate: ResumeTemplate = {
   thumbnailUrl: null,
   primaryColor: '#0070f3',
   secondaryColor: '#ffffff',
+  displayScale: '0.22',
   createdAt: new Date(),
   updatedAt: new Date()
 };

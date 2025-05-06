@@ -26,6 +26,7 @@ export const resumeTemplates = pgTable("resume_templates", {
   isActive: boolean("is_active").default(true),
   primaryColor: text("primary_color").default("#5E17EB"),
   secondaryColor: text("secondary_color").default("#4A11C0"),
+  displayScale: text("display_scale").default("0.22"),  // Scale factor for template display
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -77,6 +78,7 @@ export const resumeTemplateSchema = createInsertSchema(resumeTemplates, {
   jsContent: (schema) => schema.optional(),
   pdfContent: (schema) => schema.optional(),
   thumbnailUrl: (schema) => schema.optional(),
+  displayScale: (schema) => schema.optional(),
 });
 
 export const resumeTemplateVersionSchema = createInsertSchema(resumeTemplateVersions, {
