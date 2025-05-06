@@ -184,6 +184,8 @@ interface TemplateEngineProps {
   onDataChange?: (data: ResumeData) => void;
   previewMode?: 'html' | 'svg' | 'pdf';
   className?: string;
+  showDimensionControls?: boolean;
+  onDimensionsChange?: (width: number, height: number) => void;
 }
 
 const TemplateEngine: React.FC<TemplateEngineProps> = ({
@@ -194,9 +196,19 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
   onDataChange,
   previewMode = 'html',
   className = '',
+  showDimensionControls = false,
+  onDimensionsChange,
 }) => {
   const [processedContent, setProcessedContent] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [previewWidth, setPreviewWidth] = useState<number>(template.width || 794); // Default A4 width
+  const [previewHeight, setPreviewHeight] = useState<number>(template.height || 1123); // Default A4 height
+  
+  // Update local state when template dimensions change
+  useEffect(() => {
+    setPreviewWidth(template.width || 794);
+    setPreviewHeight(template.height || 1123);
+  }, [template.width, template.height]);
 
   const injectDataIntoTemplate = useCallback((html: string, data: ResumeData): string => {
     let processedHtml = html;
@@ -287,9 +299,9 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
       );
     }
 
-    // Use template dimensions if available, otherwise use A4 size as fallback
-    const resumeWidth = template.width || 794;   // Use template width or A4 width in pixels at 96 DPI
-    const resumeHeight = template.height || 1123; // Use template height or A4 height in pixels at 96 DPI
+    // Use local dimensions if available, otherwise fallback to template dimensions or A4 size
+    const resumeWidth = previewWidth || template.width || 794;   // Use width or A4 width in pixels at 96 DPI
+    const resumeHeight = previewHeight || template.height || 1123; // Use height or A4 height in pixels at 96 DPI
     const defaultScale = 0.35; // Default scale if dynamic calculation fails
     
     // First try to use the template's displayScale if available
@@ -367,9 +379,43 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
     }
   };
 
+  // Handle dimension changes
+  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newWidth = Number(e.target.value);
+    setPreviewWidth(newWidth);
+    
+    // Notify parent component if callback is provided
+    if (onDimensionsChange) {
+      onDimensionsChange(newWidth, previewHeight);
+    }
+  };
+
+  const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHeight = Number(e.target.value);
+    setPreviewHeight(newHeight);
+    
+    // Notify parent component if callback is provided
+    if (onDimensionsChange) {
+      onDimensionsChange(previewWidth, newHeight);
+    }
+  };
+  
+  // Create A4 dimensions preset
+  const setToA4 = () => {
+    const a4Width = 794;
+    const a4Height = 1123;
+    setPreviewWidth(a4Width);
+    setPreviewHeight(a4Height);
+    
+    if (onDimensionsChange) {
+      onDimensionsChange(a4Width, a4Height);
+    }
+  };
+  
   return (
     <div className={`template-engine preview-wrapper relative ${className}`} style={{ 
       display: 'flex', 
+      flexDirection: 'column',
       alignItems: 'center', 
       justifyContent: 'center', 
       overflow: 'hidden',
@@ -377,7 +423,83 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
       width: '100%',
       position: 'relative'
     }}>
-      {renderPreview()}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        overflow: 'hidden',
+        flex: 1,
+        width: '100%',
+        position: 'relative'
+      }}>
+        {renderPreview()}
+      </div>
+      
+      {/* Dimension Controls */}
+      {showDimensionControls && (
+        <div className="dimension-controls mt-4 p-4 bg-gray-50 rounded-md border shadow-sm w-full">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Width (px)</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="500"
+                  max="1200"
+                  step="1"
+                  value={previewWidth}
+                  onChange={handleWidthChange}
+                  className="w-32"
+                />
+                <input
+                  type="number"
+                  min="500"
+                  max="1200"
+                  value={previewWidth}
+                  onChange={handleWidthChange}
+                  className="w-16 text-sm p-1 border rounded"
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Height (px)</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="700"
+                  max="1800"
+                  step="1"
+                  value={previewHeight}
+                  onChange={handleHeightChange}
+                  className="w-32"
+                />
+                <input
+                  type="number"
+                  min="700"
+                  max="1800"
+                  value={previewHeight}
+                  onChange={handleHeightChange}
+                  className="w-16 text-sm p-1 border rounded"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-500">
+                Current: {previewWidth} × {previewHeight} px
+              </span>
+              <button
+                type="button"
+                onClick={setToA4}
+                className="text-xs bg-primary text-white py-1 px-2 rounded hover:bg-primary/90 transition-colors"
+              >
+                Reset to A4
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

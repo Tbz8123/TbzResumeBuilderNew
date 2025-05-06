@@ -217,11 +217,32 @@ const ResumeTemplatesSection = () => {
     { id: "tech", label: "Tech" },
   ];
 
-  // Filter templates based on active filter
+  // A4 size in pixels (at 96 DPI) is approximately 794 × 1123
+  const A4_WIDTH = 794;
+  const A4_HEIGHT = 1123;
+  // Allow some tolerance for A4 sizes (±5%)
+  const WIDTH_TOLERANCE = 40;
+  const HEIGHT_TOLERANCE = 56;
+  
+  // Helper to check if a template is A4 sized
+  const isA4Size = (template: ResumeTemplate): boolean => {
+    // If no dimensions are set, assume it's not A4
+    if (!template.width || !template.height) return false;
+    
+    // Check if dimensions are within tolerance of A4 size
+    return (
+      Math.abs(template.width - A4_WIDTH) <= WIDTH_TOLERANCE &&
+      Math.abs(template.height - A4_HEIGHT) <= HEIGHT_TOLERANCE
+    );
+  };
+  
+  // Filter templates based on active filter and A4 size
   const filteredTemplates = templatesData && Array.isArray(templatesData) 
-    ? (activeFilter === "all" 
-        ? templatesData 
-        : templatesData.filter(template => template.category === activeFilter))
+    ? (templatesData
+        // First filter for A4 size only
+        .filter(template => isA4Size(template))
+        // Then filter by category if not "all"
+        .filter(template => activeFilter === "all" || template.category === activeFilter))
     : [];
 
   const handleTemplateClick = (template: ResumeTemplate) => {
