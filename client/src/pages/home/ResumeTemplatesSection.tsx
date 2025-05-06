@@ -85,39 +85,55 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
   const templateUrl = `/api/templates/${templateId}/svg?_t=${Date.now()}_${retries}`;
   
   return (
-    <div className="w-full h-full relative overflow-hidden rounded shadow-sm bg-white flex justify-center items-center">
-      {/* Container with flexbox centering */}
-      <div className="w-full h-full flex justify-center items-center overflow-hidden">
+    <div className="w-full h-full relative overflow-hidden rounded shadow-sm bg-white flex justify-center items-center preview-wrapper" style={{ position: 'relative' }}>
+      {/* Container with the scaling transformation */}
+      <div className="w-full h-full flex justify-center items-center overflow-hidden" style={{ position: 'relative' }}>
         {hasPdf && pdfContent ? (
-          // PDF Preview with object-fit:contain for best display
-          <iframe
-            src={`data:application/pdf;base64,${pdfContent}`}
-            title={`PDF Template Preview ${templateId}`}
-            className="max-w-full max-h-full object-contain border-0 z-10"
-            style={{
-              width: '100%',
-              height: '100%',
-              display: 'block',
-            }}
-            onLoad={handleLoad}
-            onError={handleError}
-          />
+          // PDF Preview with transform: scale for perfect scaling
+          <div className="resume-content" style={{ 
+            width: '794px', // A4 width in pixels at 96 DPI
+            height: '1123px', // A4 height in pixels at 96 DPI
+            transform: 'scale(0.3)', // Scale down to fit in container
+            transformOrigin: 'center center',
+            pointerEvents: 'none', // Prevent scrolling
+            position: 'absolute',
+          }}>
+            <iframe
+              src={`data:application/pdf;base64,${pdfContent}`}
+              title={`PDF Template Preview ${templateId}`}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+              }}
+              onLoad={handleLoad}
+              onError={handleError}
+            />
+          </div>
         ) : (
-          // SVG Fallback if no PDF is available
-          <iframe
-            src={templateUrl}
-            title={`Template Preview ${templateId}`}
-            className="max-w-full max-h-full object-contain border-0 z-10"
-            style={{
-              width: '100%',
-              height: '100%',
-              display: 'block',
-            }}
-            onLoad={handleLoad}
-            onError={handleError}
-            sandbox="allow-same-origin"
-            loading="lazy"
-          />
+          // SVG with transform: scale for perfect scaling
+          <div className="resume-content" style={{ 
+            width: '794px', // A4 width in pixels at 96 DPI
+            height: '1123px', // A4 height in pixels at 96 DPI
+            transform: 'scale(0.3)', // Scale down to fit in container
+            transformOrigin: 'center center',
+            pointerEvents: 'none', // Prevent scrolling
+            position: 'absolute',
+          }}>
+            <iframe
+              src={templateUrl}
+              title={`Template Preview ${templateId}`}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+              }}
+              onLoad={handleLoad}
+              onError={handleError}
+              sandbox="allow-same-origin"
+              loading="lazy"
+            />
+          </div>
         )}
       </div>
       
