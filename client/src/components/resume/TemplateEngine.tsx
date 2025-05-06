@@ -287,9 +287,9 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
       );
     }
 
-    // Calculate optimal scale based on resume dimensions - A4 paper size
-    const resumeWidth = 794;   // A4 width in pixels at 96 DPI
-    const resumeHeight = 1123; // A4 height in pixels at 96 DPI
+    // Use template dimensions if available, otherwise use A4 size as fallback
+    const resumeWidth = template.width || 794;   // Use template width or A4 width in pixels at 96 DPI
+    const resumeHeight = template.height || 1123; // Use template height or A4 height in pixels at 96 DPI
     const defaultScale = 0.35; // Default scale if dynamic calculation fails
     
     // First try to use the template's displayScale if available

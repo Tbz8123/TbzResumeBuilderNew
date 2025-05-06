@@ -27,6 +27,9 @@ export const defaultResumeTemplate: ResumeTemplate = {
   primaryColor: '#0070f3',
   secondaryColor: '#ffffff',
   displayScale: '0.22',
+  width: 800,
+  height: 1100,
+  aspectRatio: '0.73',
   createdAt: new Date(),
   updatedAt: new Date()
 };
@@ -113,16 +116,36 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
     const compiledCssContent = cssEnabled ? cssContent : '';
     const compiledJsContent = jsEnabled ? jsContent : '';
     
+    // Convert dimension values to numbers
+    const widthNum = parseInt(width);
+    const heightNum = parseInt(height);
+    
     return {
       ...template,
+      // Template content
       htmlContent: compiledHtmlContent,
       cssContent: compiledCssContent,
       jsContent: compiledJsContent,
       svgContent,
-      displayScale
+      
+      // Template metadata
+      name,
+      description,
+      category,
+      
+      // Template dimensions
+      displayScale,
+      width: widthNum || 800,
+      height: heightNum || 1100,
+      aspectRatio
     };
-  }, [template, htmlContent, cssContent, jsContent, svgContent, displayScale, 
-      htmlEnabled, cssEnabled, jsEnabled]);
+  }, [
+    template, 
+    htmlContent, cssContent, jsContent, svgContent, 
+    htmlEnabled, cssEnabled, jsEnabled,
+    name, description, category,
+    displayScale, width, height, aspectRatio
+  ]);
   
   // Set up editor tabs
   const editorTabs: EditorTab[] = [
