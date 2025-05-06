@@ -199,9 +199,74 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
     }
   }, [htmlContent, cssContent, jsContent, svgContent, autoApply]);
   
+  // Validate form before saving
+  const validateForm = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    // Check required fields based on schema validation requirements
+    if (!name || name.length < 3) {
+      errors.push('Name must be at least 3 characters');
+    }
+    
+    if (!description || description.length < 10) {
+      errors.push('Description must be at least 10 characters');
+    }
+    
+    if (!svgContent || svgContent.length < 50) {
+      errors.push('SVG content must be at least 50 characters');
+    }
+    
+    if (!category || category.length < 2) {
+      errors.push('Category must be at least 2 characters');
+    }
+
+    // Additional SVG content validation
+    if (svgContent && svgContent.length > 0) {
+      if (!svgContent.includes('<svg')) {
+        errors.push('SVG content must contain an <svg> tag');
+      }
+    }
+    
+    return { 
+      isValid: errors.length === 0,
+      errors 
+    };
+  };
+
+  // Helper to check editor content status
+  const getEditorStatus = (content: string, minLength: number): 'empty' | 'invalid' | 'valid' => {
+    if (!content || content.trim().length === 0) return 'empty';
+    if (content.length < minLength) return 'invalid';
+    return 'valid';
+  }
+  
+  // SVG content status for UI feedback
+  const svgContentStatus = getEditorStatus(svgContent, 50);
+  
   // Save template changes
   const handleSave = async () => {
     try {
+      // Validate form before proceeding
+      const { isValid, errors } = validateForm();
+      
+      if (!isValid) {
+        toast({
+          title: 'Validation Error',
+          description: (
+            <div className="space-y-2">
+              <p>Please fix the following errors:</p>
+              <ul className="list-disc pl-4">
+                {errors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          ),
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       setSaving(true);
       
       // Convert string values to numbers for database
@@ -336,8 +401,18 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                   value={tab.id}
                   className="flex-1 overflow-hidden px-4 pb-4 h-[calc(100%-48px)]"
                 >
-                  <Card className="h-full">
-                    <CardContent className="p-0 h-full">
+                  <Card className="h-full flex flex-col">
+                    {/* Show validation notification for SVG editor tab */}
+                    {tab.id === 'svg-editor' && svgContentStatus !== 'valid' && (
+                      <div className={`px-4 py-2 text-sm ${svgContentStatus === 'empty' ? 'bg-blue-50 text-blue-800' : 'bg-amber-50 text-amber-800'}`}>
+                        {svgContentStatus === 'empty' ? (
+                          <p>SVG content is required. Please add an SVG template with at least 50 characters.</p>
+                        ) : (
+                          <p>SVG content must be at least 50 characters and contain an &lt;svg&gt; tag.</p>
+                        )}
+                      </div>
+                    )}
+                    <CardContent className="p-0 flex-1">
                       <MonacoEditor
                         height="100%"
                         language={tab.language}
@@ -441,22 +516,27 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
               {/* Template Metadata Section */}
               <div className="flex flex-wrap gap-4 border-t pt-3">
                 <div className="flex flex-col space-y-1 w-full md:w-1/3">
-                  <label htmlFor="template-name" className="text-sm font-medium">
-                    Template Name:
+                  <label htmlFor="template-name" className="text-sm font-medium flex items-center">
+                    Template Name: 
+                    <span className="text-red-500 ml-1">*</span>
                   </label>
                   <input 
                     type="text"
                     id="template-name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="rounded border-gray-300 text-primary focus:ring-primary"
-                    placeholder="Enter template name"
+                    className={`rounded ${name.length < 3 ? 'border-red-500' : 'border-gray-300'} text-primary focus:ring-primary`}
+                    placeholder="Enter template name (min 3 chars)"
                   />
+                  {name.length > 0 && name.length < 3 && (
+                    <p className="text-red-500 text-xs">Name must be at least 3 characters</p>
+                  )}
                 </div>
                 
                 <div className="flex flex-col space-y-1 w-full md:w-1/3">
-                  <label htmlFor="template-category" className="text-sm font-medium">
+                  <label htmlFor="template-category" className="text-sm font-medium flex items-center">
                     Category:
+                    <span className="text-red-500 ml-1">*</span>
                   </label>
                   <select
                     id="template-category"
@@ -474,17 +554,21 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                 </div>
                 
                 <div className="flex flex-col space-y-1 w-full">
-                  <label htmlFor="template-description" className="text-sm font-medium">
+                  <label htmlFor="template-description" className="text-sm font-medium flex items-center">
                     Description:
+                    <span className="text-red-500 ml-1">*</span>
                   </label>
                   <input 
                     type="text"
                     id="template-description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="rounded border-gray-300 text-primary focus:ring-primary"
-                    placeholder="Brief description of this template"
+                    className={`rounded ${description.length < 10 ? 'border-red-500' : 'border-gray-300'} text-primary focus:ring-primary`}
+                    placeholder="Brief description of this template (min 10 chars)"
                   />
+                  {description.length > 0 && description.length < 10 && (
+                    <p className="text-red-500 text-xs">Description must be at least 10 characters</p>
+                  )}
                 </div>
               </div>
                             
