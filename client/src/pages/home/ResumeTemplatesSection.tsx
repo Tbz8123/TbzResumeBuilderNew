@@ -38,29 +38,43 @@ type TemplateCardProps = {
   onClick: () => void;
 };
 
-// Simpler template preview component using iframe directly
+// Enhanced template preview component using iframe
 const TemplatePreview = ({ templateId }: { templateId: number }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [retries, setRetries] = useState(0);
   
   const handleLoad = () => {
     setIsLoading(false);
   };
   
   const handleError = () => {
-    setError(true);
-    setIsLoading(false);
+    // If we haven't retried, try once more
+    if (retries < 2) {
+      setTimeout(() => {
+        setRetries(retries + 1);
+      }, 1000);
+    } else {
+      setError(true);
+      setIsLoading(false);
+    }
   };
 
-  // Create the URL to the SVG template with a cache-busting parameter
-  const templateUrl = `/api/templates/${templateId}/svg?_t=${Date.now()}`;
+  // Create the URL to the template with a cache-busting parameter that changes on retry
+  const templateUrl = `/api/templates/${templateId}/svg?_t=${Date.now()}_${retries}`;
   
   return (
-    <div className="w-full h-full relative overflow-hidden">
+    <div className="w-full h-full relative overflow-hidden rounded">
       <iframe
         src={templateUrl}
-        title="Template Preview"
-        className="w-full h-full border-0 absolute inset-0 z-10 bg-white"
+        title={`Template Preview ${templateId}`}
+        className="w-full h-full border-0 absolute inset-0 z-10 bg-white scale-[0.63] origin-top-left"
+        style={{ 
+          transform: 'scale(0.63)',
+          transformOrigin: 'top left',
+          width: '159%', 
+          height: '159%'
+        }}
         onLoad={handleLoad}
         onError={handleError}
         sandbox="allow-same-origin"
