@@ -287,10 +287,10 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
       );
     }
 
-    // Calculate optimal scale based on resume dimensions
-    const resumeWidth = 800;   // Standard resume width
-    const resumeHeight = 1130; // Standard resume height
-    const defaultScale = 0.45; // Default scale if dynamic calculation fails
+    // Calculate optimal scale based on resume dimensions - A4 paper size
+    const resumeWidth = 794;   // A4 width in pixels at 96 DPI
+    const resumeHeight = 1123; // A4 height in pixels at 96 DPI
+    const defaultScale = 0.35; // Default scale if dynamic calculation fails
     
     // Use passed scale or default
     const finalScale = scale || defaultScale;
@@ -298,68 +298,65 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
     switch (previewMode) {
       case 'html':
         return (
-          <div className="preview-wrapper">
-            <div 
-              className="resume-content" 
-              style={{
-                transform: `scale(${finalScale})`,
-                transformOrigin: 'top center',
-                width: `${resumeWidth}px`, 
-                height: `${resumeHeight}px`,
-                pointerEvents: 'none'
+          <div 
+            className="resume-content" 
+            style={{
+              transform: `scale(${finalScale})`,
+              transformOrigin: 'center center',
+              width: `${resumeWidth}px`, 
+              height: `${resumeHeight}px`,
+              pointerEvents: 'none',
+              position: 'absolute'
+            }}
+          >
+            <iframe
+              srcDoc={processedContent}
+              title="Resume Preview"
+              style={{ 
+                width: '100%',
+                height: '100%',
+                border: 'none',
               }}
-            >
-              <iframe
-                srcDoc={processedContent}
-                title="Resume Preview"
-                style={{ 
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                }}
-              />
-            </div>
+            />
           </div>
         );
 
       case 'svg':
         return (
-          <div className="preview-wrapper">
-            <div 
-              className="resume-content"
-              style={{
-                transform: `scale(${finalScale})`,
-                transformOrigin: 'top center',
-                width: `${resumeWidth}px`, 
-                height: `${resumeHeight}px`,
-                pointerEvents: 'none'
-              }}
-              dangerouslySetInnerHTML={{ __html: processedContent }}
-            />
-          </div>
+          <div 
+            className="resume-content"
+            style={{
+              transform: `scale(${finalScale})`,
+              transformOrigin: 'center center',
+              width: `${resumeWidth}px`, 
+              height: `${resumeHeight}px`,
+              pointerEvents: 'none',
+              position: 'absolute'
+            }}
+            dangerouslySetInnerHTML={{ __html: processedContent }}
+          />
         );
 
       case 'pdf':
         return (
-          <div className="preview-wrapper">
-            <div 
-              className="resume-content"
-              style={{
-                transform: `scale(${finalScale})`,
-                transformOrigin: 'center center',
-                width: `${resumeWidth}px`, 
-                height: `${resumeHeight}px`,
-                pointerEvents: 'none'
-              }}
+          <div 
+            className="resume-content"
+            style={{
+              transform: `scale(${finalScale})`,
+              transformOrigin: 'center center',
+              width: `${resumeWidth}px`, 
+              height: `${resumeHeight}px`,
+              pointerEvents: 'none',
+              position: 'absolute'
+            }}
+          >
+            <object
+              data={`data:application/pdf;base64,${processedContent}`}
+              type="application/pdf"
+              style={{ width: '100%', height: '100%' }}
             >
-              <object
-                data={`data:application/pdf;base64,${processedContent}`}
-                type="application/pdf"
-                style={{ width: '100%', height: '100%' }}
-              >
-                <p>PDF cannot be displayed in your browser.</p>
-              </object>
-            </div>
+              <p>PDF cannot be displayed in your browser.</p>
+            </object>
           </div>
         );
 
@@ -369,13 +366,14 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
   };
 
   return (
-    <div className={`template-engine relative ${className}`} style={{ 
+    <div className={`template-engine preview-wrapper relative ${className}`} style={{ 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center', 
       overflow: 'hidden',
       height: '100%',
-      width: '100%'
+      width: '100%',
+      position: 'relative'
     }}>
       {renderPreview()}
     </div>

@@ -4,23 +4,51 @@
   width: 100%;
   height: 350px; /* Fixed preview height, adjust as needed */
   overflow: hidden;
-  position: relative;
+  position: relative !important;
   display: flex;
   justify-content: center;
   align-items: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
 }
 
 .resume-content {
   /* Base styling for resume content */
   background-color: white;
-  /* Scale is applied via inline styles based on container size */
-  /* Default dimensions for A4 size resume */
-  /* pointer-events: none is applied inline to disable scrolling */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  width: 794px; /* A4 width in pixels at 96 DPI */
+  height: 1123px; /* A4 height in pixels at 96 DPI */
+  transform-origin: center center;
+  position: absolute !important;
+  pointer-events: none; /* Disable scrolling and interactions */
+}
+
+/* Template card specific styling */
+.template-card .preview-wrapper {
+  height: 280px;
+}
+
+.template-card .resume-content {
+  transform: scale(0.25) !important; /* Smaller scale for cards */
+}
+
+/* Admin preview specific styling */
+.admin-preview .preview-wrapper {
+  height: 500px;
+}
+
+.admin-preview .resume-content {
+  transform: scale(0.4) !important; /* Larger scale for admin view */
 }
 
 /* Media queries for responsive design */
 @media (max-width: 640px) {
   .preview-wrapper {
     height: 280px; /* Smaller height on mobile */
+  }
+  
+  .resume-content {
+    transform: scale(0.2) !important; /* Even smaller scale on mobile */
   }
 }

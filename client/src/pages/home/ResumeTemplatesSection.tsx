@@ -159,7 +159,7 @@ const TemplatePreview = ({ templateId }: { templateId: number }) => {
 const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
   return (
     <div
-      className="group rounded-xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer"
+      className="group rounded-xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer template-card"
       onClick={onClick}
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
