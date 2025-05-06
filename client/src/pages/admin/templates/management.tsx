@@ -141,7 +141,7 @@ const AdminTemplateManagementPage = () => {
   };
 
   // Filter templates based on search, category, and active status
-  const filteredTemplates = templates && templates.length > 0 
+  const filteredTemplates = Array.isArray(templates) && templates.length > 0 
     ? templates.filter((template: ResumeTemplate) => {
         const matchesSearch = 
           searchTerm === '' || 

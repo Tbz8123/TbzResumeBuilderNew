@@ -50,6 +50,7 @@ export interface ResumeData {
   }[];
 }
 
+// Sample data for templates
 export const defaultResumeData: ResumeData = {
   personalInfo: {
     name: 'John Doe',
