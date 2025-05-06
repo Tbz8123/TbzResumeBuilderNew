@@ -1590,9 +1590,10 @@ router.post("/", isAdmin, async (req, res) => {
       templateId: template.id,
       versionNumber: 1,
       svgContent: template.svgContent,
-      htmlContent: template.htmlContent || null,
-      cssContent: template.cssContent || null,
-      jsContent: template.jsContent || null,
+      // Preserve empty strings in version history too
+      htmlContent: template.htmlContent !== undefined ? template.htmlContent : null,
+      cssContent: template.cssContent !== undefined ? template.cssContent : null,
+      jsContent: template.jsContent !== undefined ? template.jsContent : null,
       pdfContent: template.pdfContent || null,
       createdById: req.user?.id,
       changelog: "Initial version",
