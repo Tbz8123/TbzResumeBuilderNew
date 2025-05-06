@@ -11,8 +11,10 @@ import ExperienceLevelPage from "@/pages/experience-level/page";
 import AuthPage from "@/pages/auth-page";
 import AdminTemplatesPage from "@/pages/admin/templates/page";
 import AdminTemplateEditPage from "@/pages/admin/templates/edit";
+import AdvancedTemplateEditPage from "@/pages/admin/templates/advanced-edit";
 import CreateNewTemplateAdminPage from "@/pages/admin/templates/new";
 import TemplateVersionsPage from "@/pages/admin/templates/versions";
+import AdminTemplateManagementPage from "@/pages/admin/templates/management";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -32,9 +34,11 @@ function Router() {
       
       {/* Admin Routes - Protected + Admin Only */}
       <ProtectedRoute path="/admin/templates" component={AdminTemplatesPage} adminOnly />
+      <ProtectedRoute path="/admin/templates/management" component={AdminTemplateManagementPage} adminOnly />
       <ProtectedRoute path="/admin/templates/new" component={CreateNewTemplateAdminPage} adminOnly />
-      <ProtectedRoute path="/admin/templates/:id" component={AdminTemplateEditPage} adminOnly />
+      <ProtectedRoute path="/admin/templates/:id/advanced" component={AdvancedTemplateEditPage} adminOnly />
       <ProtectedRoute path="/admin/templates/:id/versions" component={TemplateVersionsPage} adminOnly />
+      <ProtectedRoute path="/admin/templates/:id" component={AdminTemplateEditPage} adminOnly />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

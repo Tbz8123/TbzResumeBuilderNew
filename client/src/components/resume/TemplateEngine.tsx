@@ -1,15 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ResumeTemplate } from '@shared/schema';
-
-interface TemplateEngineProps {
-  template: ResumeTemplate;
-  data?: ResumeData;
-  scale?: number;
-  editable?: boolean;
-  onDataChange?: (data: ResumeData) => void;
-  previewMode?: 'html' | 'svg' | 'pdf';
-  className?: string;
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { EyeIcon, Code, FileText, Download } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export interface ResumeData {
   personalInfo: {
@@ -60,63 +55,131 @@ export interface ResumeData {
   }[];
 }
 
-// Default resume data for previews
-const defaultResumeData: ResumeData = {
+// Default resume data for previews or new resumes
+export const defaultResumeData: ResumeData = {
   personalInfo: {
-    name: 'John Doe',
-    title: 'Software Engineer',
-    email: 'john.doe@example.com',
-    phone: '(123) 456-7890',
-    address: 'New York, NY',
-    linkedin: 'linkedin.com/in/johndoe',
-    summary: 'Experienced software engineer with a passion for creating elegant solutions to complex problems. Proficient in multiple programming languages and frameworks.',
+    name: "Jane Smith",
+    title: "Senior Frontend Developer",
+    email: "jane.smith@example.com",
+    phone: "(555) 123-4567",
+    address: "San Francisco, CA",
+    website: "janesmith.dev",
+    linkedin: "linkedin.com/in/janesmith",
+    summary: "Experienced frontend developer with 5+ years specializing in React and modern JavaScript frameworks. Passionate about creating intuitive user interfaces and optimizing web performance."
   },
   workExperience: [
     {
-      company: 'Tech Company Inc.',
-      position: 'Senior Software Engineer',
-      startDate: '2020-01',
-      endDate: 'Present',
-      description: 'Led development of web applications using React and Node.js.',
+      company: "Tech Innovations Inc.",
+      position: "Senior Frontend Developer",
+      startDate: "2020-03",
+      endDate: "Present",
+      description: "Lead developer for the company's flagship SaaS product",
       achievements: [
-        'Implemented CI/CD pipeline that reduced deployment time by 75%',
-        'Mentored junior developers, improving team productivity by 30%',
-        'Refactored legacy codebase, reducing technical debt by 40%'
+        "Redesigned the UI/UX increasing user engagement by 40%",
+        "Implemented performance optimizations resulting in 30% faster load times",
+        "Mentored junior developers and conducted code reviews"
       ]
     },
     {
-      company: 'Digital Solutions LLC',
-      position: 'Software Developer',
-      startDate: '2017-06',
-      endDate: '2019-12',
-      description: 'Developed and maintained web applications for clients in various industries.',
+      company: "Digital Solutions LLC",
+      position: "Frontend Developer",
+      startDate: "2018-01",
+      endDate: "2020-02",
+      description: "Developed responsive web applications for enterprise clients",
       achievements: [
-        'Created responsive web interfaces using modern frontend frameworks',
-        'Optimized database queries, improving application performance by 60%'
+        "Built 15+ responsive web applications using React",
+        "Collaborated with designers to implement pixel-perfect interfaces",
+        "Received an award for engineering excellence"
       ]
     }
   ],
   education: [
     {
-      institution: 'University of Technology',
-      degree: 'Bachelor of Science',
-      field: 'Computer Science',
-      startDate: '2013-09',
-      endDate: '2017-05',
-      gpa: '3.8/4.0',
-      achievements: ['Dean\'s List', 'Computer Science Club President']
+      institution: "University of California, Berkeley",
+      degree: "Master's",
+      field: "Computer Science",
+      startDate: "2016",
+      endDate: "2018",
+      gpa: "3.8",
+      achievements: [
+        "Graduated with honors",
+        "Published research on web accessibility"
+      ]
+    },
+    {
+      institution: "Stanford University",
+      degree: "Bachelor's",
+      field: "Web Development",
+      startDate: "2012",
+      endDate: "2016",
+      gpa: "3.7",
+      achievements: [
+        "Dean's List 2012-2016",
+        "Web Development Club President"
+      ]
     }
   ],
   skills: [
-    { name: 'JavaScript', level: 90 },
-    { name: 'React', level: 85 },
-    { name: 'Node.js', level: 80 },
-    { name: 'TypeScript', level: 75 },
-    { name: 'HTML/CSS', level: 85 },
-    { name: 'Python', level: 70 },
-    { name: 'SQL', level: 75 }
+    { name: "React", level: 95 },
+    { name: "JavaScript", level: 90 },
+    { name: "TypeScript", level: 85 },
+    { name: "HTML/CSS", level: 95 },
+    { name: "Node.js", level: 80 },
+    { name: "GraphQL", level: 75 },
+    { name: "Redux", level: 85 },
+    { name: "Webpack", level: 70 }
+  ],
+  certifications: [
+    {
+      name: "AWS Certified Developer",
+      issuer: "Amazon Web Services",
+      date: "2021"
+    },
+    {
+      name: "Google Professional Web Developer",
+      issuer: "Google",
+      date: "2020"
+    }
+  ],
+  languages: [
+    {
+      language: "English",
+      proficiency: "Native"
+    },
+    {
+      language: "Spanish",
+      proficiency: "Fluent"
+    },
+    {
+      language: "French",
+      proficiency: "Intermediate"
+    }
+  ],
+  projects: [
+    {
+      name: "E-commerce Platform",
+      description: "Developed a full-stack e-commerce platform with React and Node.js",
+      technologies: ["React", "Node.js", "Express", "MongoDB"],
+      link: "github.com/janesmith/ecommerce"
+    },
+    {
+      name: "Task Management App",
+      description: "Built a task management application with drag-and-drop functionality",
+      technologies: ["React", "Redux", "Material-UI", "Firebase"],
+      link: "github.com/janesmith/taskmanager"
+    }
   ]
 };
+
+interface TemplateEngineProps {
+  template: ResumeTemplate;
+  data?: ResumeData;
+  scale?: number;
+  editable?: boolean;
+  onDataChange?: (data: ResumeData) => void;
+  previewMode?: 'html' | 'svg' | 'pdf';
+  className?: string;
+}
 
 const TemplateEngine: React.FC<TemplateEngineProps> = ({
   template,
@@ -125,180 +188,245 @@ const TemplateEngine: React.FC<TemplateEngineProps> = ({
   editable = false,
   onDataChange,
   previewMode = 'html',
-  className = ''
+  className = '',
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [zoomLevel, setZoomLevel] = useState(scale);
-  const [resumeData, setResumeData] = useState<ResumeData>(data);
-
-  // Handle data changes if the component is editable
-  const handleDataChange = (newData: Partial<ResumeData>) => {
-    const updatedData = { ...resumeData, ...newData };
-    setResumeData(updatedData);
-    if (onDataChange) {
-      onDataChange(updatedData);
-    }
-  };
-
-  // Replace placeholders in template with actual data
-  const processTemplate = (templateContent: string): string => {
-    if (!templateContent) return '';
-
-    let processedContent = templateContent;
-
-    // Process personal information
-    processedContent = processedContent
-      .replace(/{{name}}/g, resumeData.personalInfo.name)
-      .replace(/{{title}}/g, resumeData.personalInfo.title)
-      .replace(/{{email}}/g, resumeData.personalInfo.email)
-      .replace(/{{phone}}/g, resumeData.personalInfo.phone)
-      .replace(/{{address}}/g, resumeData.personalInfo.address || '')
-      .replace(/{{website}}/g, resumeData.personalInfo.website || '')
-      .replace(/{{linkedin}}/g, resumeData.personalInfo.linkedin || '')
-      .replace(/{{summary}}/g, resumeData.personalInfo.summary || '');
-
-    // More complex data like work experience, education, and skills
-    // would need more sophisticated templating or be handled via JavaScript
-    // in the rendered template
-
-    return processedContent;
-  };
-
-  // Generate HTML content with inlined CSS and JS
-  const generateHtmlContent = (): string => {
-    if (!template) return '';
-
-    let baseHtml = template.htmlContent || '';
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<'preview' | 'code'>(previewMode === 'svg' ? 'code' : 'preview');
+  
+  // For SVG preview
+  const [svgContent, setSvgContent] = useState<string>('');
+  
+  // For HTML preview with compiled HTML/CSS/JS
+  const [compiledHtml, setCompiledHtml] = useState<string>('');
+  
+  // For PDF preview (using iframe or object tag)
+  const [pdfUrl, setPdfUrl] = useState<string>('');
+  
+  useEffect(() => {
+    // Initialize based on preview mode
+    setLoading(true);
+    setError(null);
     
-    // If there's no HTML content but there is SVG content, we'll wrap the SVG
-    if (!baseHtml && template.svgContent) {
-      baseHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Resume Template</title>
-        <style>
-          body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            font-family: Arial, sans-serif;
+    const initializeTemplate = async () => {
+      try {
+        if (previewMode === 'svg') {
+          // For SVG preview, we can use the template's SVG content directly
+          setSvgContent(template.svgContent || '');
+          setActiveView('code');
+        } 
+        else if (previewMode === 'html') {
+          // For HTML preview, we need to compile HTML, CSS, and JS
+          if (template.htmlContent) {
+            // Combine HTML, CSS, and JS
+            let html = template.htmlContent || '';
+            const css = template.cssContent || '';
+            const js = template.jsContent || '';
+            
+            // Process html to include CSS and JS
+            if (css) {
+              html = html.replace('</head>', `<style>${css}</style></head>`);
+            }
+            
+            if (js) {
+              html = html.replace('</body>', `<script>${js}</script></body>`);
+            }
+            
+            // Replace placeholders with actual data
+            // This is a simplistic approach, you might want to use a templating engine
+            // to properly inject the data
+            html = injectDataIntoTemplate(html, data);
+            
+            setCompiledHtml(html);
+          } else {
+            setError('No HTML content available for this template');
           }
-          .resume-container {
-            width: 8.5in;
-            height: 11in;
-            position: relative;
-            overflow: hidden;
+        } 
+        else if (previewMode === 'pdf') {
+          // For PDF preview
+          if (template.pdfContent) {
+            // Convert base64 to Blob and create URL
+            const byteCharacters = atob(template.pdfContent);
+            const byteNumbers = new Array(byteCharacters.length);
+            
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            
+            setPdfUrl(url);
+          } else {
+            // If no PDF content, fallback to API endpoint
+            setPdfUrl(`/api/export/templates/${template.id}/export/pdf`);
           }
-        </style>
-      </head>
-      <body>
-        <div class="resume-container">
-          ${template.svgContent}
-        </div>
-      </body>
-      </html>
-      `;
-    }
-
-    // Process content with actual data
-    let processedHtml = processTemplate(baseHtml);
+        }
+      } catch (err) {
+        console.error('Error initializing template:', err);
+        setError(`Failed to load template: ${(err as Error).message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    // Inject CSS
-    if (template.cssContent) {
-      processedHtml = processedHtml.replace('</head>', `<style>${template.cssContent}</style></head>`);
-    }
+    initializeTemplate();
     
-    // Inject JS
-    if (template.jsContent) {
-      processedHtml = processedHtml.replace('</body>', `<script>${template.jsContent}</script></body>`);
-    }
+    // Cleanup function for PDF URL
+    return () => {
+      if (pdfUrl && pdfUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [template, data, previewMode]);
+  
+  // Function to inject resume data into template
+  const injectDataIntoTemplate = (html: string, data: ResumeData): string => {
+    // Basic template variable replacement
+    // This is a simple example; in a real app, you might use a more robust templating solution
+    
+    let processedHtml = html;
+    
+    // Replace personal info
+    processedHtml = processedHtml.replace(/{{personalInfo\.name}}/g, data.personalInfo.name);
+    processedHtml = processedHtml.replace(/{{personalInfo\.title}}/g, data.personalInfo.title);
+    processedHtml = processedHtml.replace(/{{personalInfo\.email}}/g, data.personalInfo.email);
+    processedHtml = processedHtml.replace(/{{personalInfo\.phone}}/g, data.personalInfo.phone);
+    processedHtml = processedHtml.replace(/{{personalInfo\.address}}/g, data.personalInfo.address || '');
+    processedHtml = processedHtml.replace(/{{personalInfo\.website}}/g, data.personalInfo.website || '');
+    processedHtml = processedHtml.replace(/{{personalInfo\.linkedin}}/g, data.personalInfo.linkedin || '');
+    processedHtml = processedHtml.replace(/{{personalInfo\.summary}}/g, data.personalInfo.summary || '');
+    
+    // For arrays like workExperience, education, etc., you'd need to loop through and create HTML
+    // This would be better handled by a proper templating engine
     
     return processedHtml;
   };
-
-  const renderPreview = () => {
-    switch (previewMode) {
-      case 'pdf':
-        if (template.pdfContent) {
-          return (
-            <iframe
-              src={`data:application/pdf;base64,${template.pdfContent}`}
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-                transform: `scale(${zoomLevel})`,
-                transformOrigin: 'top center'
-              }}
-              title="PDF Resume Preview"
-            />
-          );
-        } else {
-          // Fallback to HTML if no PDF
-          return renderHtmlPreview();
-        }
-      
-      case 'svg':
-        if (template.svgContent) {
-          return (
-            <div 
-              className="svg-container"
-              style={{
-                transform: `scale(${zoomLevel})`,
-                transformOrigin: 'top center',
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'center'
-              }}
-              dangerouslySetInnerHTML={{ __html: processTemplate(template.svgContent) }}
-            />
-          );
-        } else {
-          // Fallback to HTML if no SVG
-          return renderHtmlPreview();
-        }
-      
-      case 'html':
-      default:
-        return renderHtmlPreview();
-    }
-  };
-
-  const renderHtmlPreview = () => {
+  
+  if (loading) {
     return (
-      <iframe
-        srcDoc={generateHtmlContent()}
-        style={{
-          width: '100%',
-          height: '100%',
-          border: 'none',
-          transform: `scale(${zoomLevel})`,
-          transformOrigin: 'top center'
-        }}
-        title="HTML Resume Preview"
-      />
+      <div className={`flex items-center justify-center h-full w-full ${className}`}>
+        <div className="flex flex-col items-center space-y-4">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
     );
-  };
-
+  }
+  
+  if (error) {
+    return (
+      <div className={`flex items-center justify-center h-full w-full ${className}`}>
+        <div className="text-center p-6 bg-red-50 rounded-lg border border-red-200">
+          <p className="text-red-600 font-medium">{error}</p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => window.location.reload()}
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
+  // Render based on preview mode
   return (
-    <div 
-      ref={containerRef}
-      className={`template-engine-container relative ${className}`}
-      style={{ 
-        overflow: 'hidden',
-        width: '100%',
-        height: '100%',
-        minHeight: '500px'
-      }}
-    >
-      {renderPreview()}
+    <div className={`template-engine ${className}`} style={{ height: '100%', width: '100%' }}>
+      {previewMode === 'svg' && (
+        <div className="flex flex-col h-full">
+          <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'preview' | 'code')} className="w-full">
+            <div className="flex justify-between items-center mb-4">
+              <TabsList>
+                <TabsTrigger value="preview">
+                  <EyeIcon className="h-4 w-4 mr-2" />
+                  Preview
+                </TabsTrigger>
+                <TabsTrigger value="code">
+                  <Code className="h-4 w-4 mr-2" />
+                  SVG Code
+                </TabsTrigger>
+              </TabsList>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' });
+                  const url = URL.createObjectURL(svgBlob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `template-${template.id}.svg`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download SVG
+              </Button>
+            </div>
+            
+            <TabsContent value="preview" className="flex-grow overflow-auto">
+              <div 
+                className="flex items-center justify-center bg-gray-50 rounded-lg h-full"
+                style={{ transform: `scale(${scale})`, transformOrigin: 'center' }}
+              >
+                <div 
+                  dangerouslySetInnerHTML={{ __html: svgContent }} 
+                  className="overflow-hidden h-fit"
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="code" className="flex-grow overflow-auto">
+              <Card>
+                <CardContent className="p-4">
+                  <pre className="text-xs bg-gray-50 p-4 rounded-md overflow-auto" style={{ maxHeight: 'calc(100vh - 250px)' }}>
+                    {svgContent}
+                  </pre>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
       
-      {/* Add edit overlay if editable */}
-      {editable && (
-        <div className="edit-overlay absolute inset-0 pointer-events-none">
-          {/* Add overlay controls here if needed */}
+      {previewMode === 'html' && (
+        <div 
+          className="flex items-center justify-center bg-gray-50 rounded-lg h-full overflow-hidden"
+          style={{ transform: `scale(${scale})`, transformOrigin: 'center' }}
+        >
+          <iframe
+            srcDoc={compiledHtml}
+            title="Template Preview"
+            className="border-0 w-full h-full bg-white"
+            sandbox="allow-scripts"
+          />
+        </div>
+      )}
+      
+      {previewMode === 'pdf' && (
+        <div className="h-full w-full flex items-center justify-center">
+          <object
+            data={pdfUrl}
+            type="application/pdf"
+            className="w-full h-full"
+          >
+            <div className="flex flex-col items-center justify-center h-full">
+              <p className="text-gray-500 mb-4">PDF preview not available in your browser</p>
+              <Button 
+                variant="outline"
+                onClick={() => window.open(pdfUrl, '_blank')}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+              </Button>
+            </div>
+          </object>
         </div>
       )}
     </div>

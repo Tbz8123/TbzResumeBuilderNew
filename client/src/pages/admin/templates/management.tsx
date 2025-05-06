@@ -141,24 +141,26 @@ const AdminTemplateManagementPage = () => {
   };
 
   // Filter templates based on search, category, and active status
-  const filteredTemplates = templates?.filter(template => {
-    const matchesSearch = 
-      searchTerm === '' || 
-      template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = 
-      categoryFilter === 'all' || 
-      template.category === categoryFilter;
-    
-    const matchesStatus = 
-      activeTab === 'all' || 
-      (activeTab === 'active' && template.isActive) || 
-      (activeTab === 'inactive' && !template.isActive) ||
-      (activeTab === 'popular' && template.isPopular);
-    
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  const filteredTemplates = templates && templates.length > 0 
+    ? templates.filter((template: ResumeTemplate) => {
+        const matchesSearch = 
+          searchTerm === '' || 
+          template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          template.description.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesCategory = 
+          categoryFilter === 'all' || 
+          template.category === categoryFilter;
+        
+        const matchesStatus = 
+          activeTab === 'all' || 
+          (activeTab === 'active' && template.isActive) || 
+          (activeTab === 'inactive' && !template.isActive) ||
+          (activeTab === 'popular' && template.isPopular);
+        
+        return matchesSearch && matchesCategory && matchesStatus;
+      })
+    : [];
 
   return (
     <div className="container mx-auto py-10">
@@ -245,7 +247,7 @@ const AdminTemplateManagementPage = () => {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredTemplates?.map((template) => (
+                        filteredTemplates?.map((template: ResumeTemplate) => (
                           <TableRow key={template.id}>
                             <TableCell>{template.id}</TableCell>
                             <TableCell className="p-2">
