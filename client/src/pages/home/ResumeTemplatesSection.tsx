@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTemplates } from "@/hooks/use-templates";
 import { AnimatedSection } from "@/components/AnimatedSection";
 import { useLocation } from "wouter";
@@ -38,22 +38,31 @@ type TemplateCardProps = {
   onClick: () => void;
 };
 
-// Template preview component with iframe for HTML content
+// Simpler template preview component using iframe directly
 const TemplatePreview = ({ templateId }: { templateId: number }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
+  
+  const handleLoad = () => {
+    setIsLoading(false);
+  };
+  
+  const handleError = () => {
+    setError(true);
+    setIsLoading(false);
+  };
 
+  // Create the URL to the SVG template with a cache-busting parameter
+  const templateUrl = `/api/templates/${templateId}/svg?_t=${Date.now()}`;
+  
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative overflow-hidden">
       <iframe
-        src={`/api/templates/${templateId}/svg`}
+        src={templateUrl}
         title="Template Preview"
-        className="w-full h-full border-0 absolute inset-0 z-10"
-        onLoad={() => setIsLoading(false)}
-        onError={() => {
-          setIsLoading(false);
-          setError(true);
-        }}
+        className="w-full h-full border-0 absolute inset-0 z-10 bg-white"
+        onLoad={handleLoad}
+        onError={handleError}
         sandbox="allow-same-origin"
         loading="lazy"
       />

@@ -238,15 +238,44 @@ const AdminTemplateEditPage = () => {
     e.preventDefault();
     
     try {
+      // Basic validation
+      if (!formData.name.trim() || !formData.description.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Template name and description are required",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!formData.svgContent || formData.svgContent.trim().length < 50) {
+        toast({
+          title: "Invalid Template Content",
+          description: "Template content is too short or missing. Please add valid HTML/SVG content.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Check which path we're on - new or edit
       const isCreatingTemplate = id === "new";
       
-      console.log(`Template action: ${isCreatingTemplate ? "CREATE" : "UPDATE"}`, formData);
+      // Create a clean submission to avoid validation issues
+      const submissionData = {
+        ...formData,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        // Keep SVG content as is (whitespace may be important in HTML/SVG)
+        category: formData.category || "professional",
+        changelog: formData.changelog?.trim() || "Updated template"
+      };
+      
+      console.log(`Template action: ${isCreatingTemplate ? "CREATE" : "UPDATE"}`);
       
       if (isCreatingTemplate) {
         // CREATE NEW TEMPLATE
-        console.log("Creating new template with data:", formData);
-        await createTemplateMutation.mutateAsync(formData);
+        console.log("Creating new template");
+        await createTemplateMutation.mutateAsync(submissionData);
         toast({
           title: "Template Created",
           description: "The new template has been successfully created",
@@ -254,15 +283,16 @@ const AdminTemplateEditPage = () => {
         navigate("/admin/templates");
       } else {
         // UPDATE EXISTING TEMPLATE
-        console.log(`Updating template ID: ${id} with data:`, formData);
+        console.log(`Updating template ID: ${id}`);
         if (!id) {
           throw new Error("Template ID is required for updates");
         }
-        await updateTemplateMutation.mutateAsync(formData);
+        await updateTemplateMutation.mutateAsync(submissionData);
         toast({
           title: "Template Updated",
           description: "The template has been successfully updated",
         });
+        navigate("/admin/templates");
       }
     } catch (error) {
       const action = id === "new" ? "create" : "update";
@@ -479,7 +509,7 @@ const AdminTemplateEditPage = () => {
                   <div className="h-[800px] w-full">
                     <Editor
                       height="100%"
-                      defaultLanguage="xml"
+                      defaultLanguage="html"
                       value={formData.svgContent}
                       onChange={handleEditorChange}
                       options={{
@@ -487,6 +517,18 @@ const AdminTemplateEditPage = () => {
                         automaticLayout: true,
                         wordWrap: "on",
                         scrollBeyondLastLine: false,
+                        lineNumbers: "on",
+                        renderWhitespace: "boundary",
+                        folding: true,
+                        formatOnPaste: true,
+                        fontSize: 14,
+                        tabSize: 2,
+                      }}
+                      onMount={(editor, monaco) => {
+                        // Auto-format on mount for cleaner code view
+                        setTimeout(() => {
+                          editor.getAction('editor.action.formatDocument')?.run();
+                        }, 300);
                       }}
                     />
                   </div>

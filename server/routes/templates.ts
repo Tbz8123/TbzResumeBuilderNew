@@ -76,9 +76,13 @@ router.get("/:id/svg", async (req, res) => {
     if (isNaN(templateId)) {
       return res.status(400).json({ message: "Invalid template ID" });
     }
-
+    
+    // Get the complete template to include name for fallback preview
     const templates = await db.select({
       svgContent: resumeTemplates.svgContent,
+      name: resumeTemplates.name,
+      primaryColor: resumeTemplates.primaryColor,
+      secondaryColor: resumeTemplates.secondaryColor,
     })
     .from(resumeTemplates)
     .where(
@@ -96,12 +100,93 @@ router.get("/:id/svg", async (req, res) => {
       return res.status(404).json({ message: "Template not found" });
     }
     
-    let content = templates[0].svgContent || '';
+    // Extract template details for possible fallback
+    const template = templates[0];
+    let content = template.svgContent || '';
     
     // Add security headers
     res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'none';");
     res.setHeader('X-Content-Type-Options', 'nosniff');
-
+    
+    // If content is empty or too short, provide a fallback
+    if (!content || content.trim().length < 20) {
+      const fallbackSvg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="595" height="842" viewBox="0 0 595 842">
+        <rect width="100%" height="100%" fill="#ffffff" />
+        
+        <!-- Header section -->
+        <rect x="40" y="40" width="515" height="120" fill="${template.primaryColor || '#5E17EB'}" />
+        <text x="60" y="100" font-family="Arial" font-size="30" fill="#ffffff" font-weight="bold">${template.name}</text>
+        <text x="60" y="130" font-family="Arial" font-size="14" fill="#ffffff">Resume Template Preview</text>
+        
+        <!-- Left column -->
+        <rect x="40" y="180" width="170" height="620" fill="#f8f9fa" />
+        
+        <!-- Contact info section -->
+        <text x="50" y="210" font-family="Arial" font-size="14" font-weight="bold" fill="#333333">CONTACT</text>
+        <rect x="50" y="220" width="40" height="2" fill="${template.secondaryColor || '#4A11C0'}" />
+        <text x="50" y="245" font-family="Arial" font-size="12" fill="#666666">Email: user@example.com</text>
+        <text x="50" y="265" font-family="Arial" font-size="12" fill="#666666">Phone: (555) 123-4567</text>
+        <text x="50" y="285" font-family="Arial" font-size="12" fill="#666666">Location: New York, NY</text>
+        
+        <!-- Education section -->
+        <text x="50" y="330" font-family="Arial" font-size="14" font-weight="bold" fill="#333333">EDUCATION</text>
+        <rect x="50" y="340" width="40" height="2" fill="${template.secondaryColor || '#4A11C0'}" />
+        <text x="50" y="365" font-family="Arial" font-size="12" font-weight="bold" fill="#555555">University Name</text>
+        <text x="50" y="385" font-family="Arial" font-size="12" fill="#666666">Degree Program</text>
+        <text x="50" y="405" font-family="Arial" font-size="12" fill="#888888">2018 - 2022</text>
+        
+        <!-- Skills section -->
+        <text x="50" y="450" font-family="Arial" font-size="14" font-weight="bold" fill="#333333">SKILLS</text>
+        <rect x="50" y="460" width="40" height="2" fill="${template.secondaryColor || '#4A11C0'}" />
+        <text x="50" y="485" font-family="Arial" font-size="12" fill="#666666">• Professional Skill 1</text>
+        <text x="50" y="505" font-family="Arial" font-size="12" fill="#666666">• Professional Skill 2</text>
+        <text x="50" y="525" font-family="Arial" font-size="12" fill="#666666">• Professional Skill 3</text>
+        <text x="50" y="545" font-family="Arial" font-size="12" fill="#666666">• Professional Skill 4</text>
+        
+        <!-- Right column - Experience -->
+        <text x="230" y="210" font-family="Arial" font-size="14" font-weight="bold" fill="#333333">EXPERIENCE</text>
+        <rect x="230" y="220" width="40" height="2" fill="${template.secondaryColor || '#4A11C0'}" />
+        
+        <!-- Job 1 -->
+        <text x="230" y="245" font-family="Arial" font-size="12" font-weight="bold" fill="#555555">Company Name 1</text>
+        <text x="230" y="265" font-family="Arial" font-size="12" font-style="italic" fill="#777777">Job Title</text>
+        <text x="470" y="265" font-family="Arial" font-size="12" text-anchor="end" fill="#888888">2020 - Present</text>
+        <text x="230" y="285" font-family="Arial" font-size="12" fill="#666666">• Accomplishment description goes here</text>
+        <text x="230" y="305" font-family="Arial" font-size="12" fill="#666666">• Another key achievement description</text>
+        <text x="230" y="325" font-family="Arial" font-size="12" fill="#666666">• Additional responsibility or achievement</text>
+        
+        <!-- Job 2 -->
+        <text x="230" y="365" font-family="Arial" font-size="12" font-weight="bold" fill="#555555">Company Name 2</text>
+        <text x="230" y="385" font-family="Arial" font-size="12" font-style="italic" fill="#777777">Previous Role</text>
+        <text x="470" y="385" font-family="Arial" font-size="12" text-anchor="end" fill="#888888">2018 - 2020</text>
+        <text x="230" y="405" font-family="Arial" font-size="12" fill="#666666">• Accomplishment description goes here</text>
+        <text x="230" y="425" font-family="Arial" font-size="12" fill="#666666">• Another key achievement description</text>
+        
+        <!-- Projects section -->
+        <text x="230" y="465" font-family="Arial" font-size="14" font-weight="bold" fill="#333333">PROJECTS</text>
+        <rect x="230" y="475" width="40" height="2" fill="${template.secondaryColor || '#4A11C0'}" />
+        
+        <!-- Project 1 -->
+        <text x="230" y="500" font-family="Arial" font-size="12" font-weight="bold" fill="#555555">Project Name 1</text>
+        <text x="230" y="520" font-family="Arial" font-size="12" fill="#666666">• Description of the project and technologies used</text>
+        <text x="230" y="540" font-family="Arial" font-size="12" fill="#666666">• Key achievements and contributions</text>
+        
+        <!-- Project 2 -->
+        <text x="230" y="580" font-family="Arial" font-size="12" font-weight="bold" fill="#555555">Project Name 2</text>
+        <text x="230" y="600" font-family="Arial" font-size="12" fill="#666666">• Description of the project and technologies used</text>
+        <text x="230" y="620" font-family="Arial" font-size="12" fill="#666666">• Key achievements and contributions</text>
+        
+        <!-- Footer -->
+        <text x="297.5" y="800" font-family="Arial" font-size="10" text-anchor="middle" fill="#999999">TbzResumeBuilder Template</text>
+      </svg>
+      `;
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.send(fallbackSvg);
+      console.log(`Serving fallback template for ${templateId} as image/svg+xml`);
+      return;
+    }
+    
     // Check if content is SVG or HTML
     if (content.trim().startsWith('<svg') || content.trim().startsWith('<?xml')) {
       res.setHeader('Content-Type', 'image/svg+xml');
@@ -120,8 +205,37 @@ router.get("/:id/svg", async (req, res) => {
       
       res.setHeader('Content-Type', 'text/html');
     } else {
-      // Default to plain text if we can't determine the type
-      res.setHeader('Content-Type', 'text/plain');
+      // If content doesn't look like SVG or HTML, try to wrap it in an HTML document
+      content = `<!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'none';">
+        <title>${template.name} Template</title>
+        <style>
+          body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #fff;
+            color: #333;
+          }
+          .container {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          ${content}
+        </div>
+      </body>
+      </html>`;
+      
+      res.setHeader('Content-Type', 'text/html');
     }
     
     // Log content type for debugging
