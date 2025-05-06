@@ -12,6 +12,7 @@ import { ArrowLeft } from 'lucide-react';
 import TemplateBuilder from '@/components/resume/TemplateBuilder';
 
 const defaultTemplate = {
+  id: 0, // This will be assigned by the server when created
   name: 'New Template',
   description: 'A professional modern resume template',
   category: 'professional',
@@ -437,6 +438,8 @@ document.addEventListener('DOMContentLoaded', function() {
   primaryColor: '#5E17EB',
   secondaryColor: '#4A11C0',
   thumbnailUrl: null,
+  createdAt: new Date(),
+  updatedAt: new Date()
 };
 
 const AdvancedTemplateEditPage = () => {
@@ -455,8 +458,25 @@ const AdvancedTemplateEditPage = () => {
   const updateTemplateMutation = useUpdateTemplate(isNewTemplate ? undefined : id);
   const createTemplateMutation = useCreateTemplate();
   
-  // Empty template to use when creating a new one
-  const emptyTemplate = defaultTemplate;
+  // Template to use when creating a new one
+  const emptyTemplate: ResumeTemplate = {
+    id: 0,
+    name: 'New Template',
+    description: 'A professional modern resume template',
+    category: 'professional',
+    svgContent: defaultTemplate.svgContent,
+    htmlContent: defaultTemplate.htmlContent,
+    cssContent: defaultTemplate.cssContent,
+    jsContent: defaultTemplate.jsContent,
+    pdfContent: null,
+    isActive: true,
+    isPopular: false,
+    primaryColor: '#5E17EB',
+    secondaryColor: '#4A11C0',
+    thumbnailUrl: null,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
   
   // Handle template save
   const handleSaveTemplate = async (templateData: Partial<ResumeTemplate>) => {
@@ -540,7 +560,7 @@ const AdvancedTemplateEditPage = () => {
       </div>
       
       <TemplateBuilder 
-        template={templateData || emptyTemplate as ResumeTemplate}
+        template={templateData || emptyTemplate}
         onSave={handleSaveTemplate}
         isNew={isNewTemplate}
       />
