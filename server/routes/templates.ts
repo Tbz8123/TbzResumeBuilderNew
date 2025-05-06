@@ -1513,6 +1513,7 @@ router.put("/:id", isAdmin, async (req, res) => {
       templateId: templateId,
       versionNumber: nextVersionNumber,
       svgContent: validatedData.svgContent,
+      pdfContent: validatedData.pdfContent || null, // Include PDF content in version history
       createdById: req.user?.id,
       changelog: req.body.changelog || `Version ${nextVersionNumber}`,
     });
@@ -1623,6 +1624,7 @@ router.post("/:id/versions/:versionNumber/restore", isAdmin, async (req, res) =>
     // Get the version to restore
     const versions = await db.select({
       svgContent: resumeTemplateVersions.svgContent,
+      pdfContent: resumeTemplateVersions.pdfContent,
     })
     .from(resumeTemplateVersions)
     .where(
@@ -1637,10 +1639,11 @@ router.post("/:id/versions/:versionNumber/restore", isAdmin, async (req, res) =>
       return res.status(404).json({ message: "Version not found" });
     }
     
-    // Update the template with the old version's SVG content
+    // Update the template with the old version's content (both SVG and PDF)
     const [updatedTemplate] = await db.update(resumeTemplates)
       .set({
         svgContent: versions[0].svgContent,
+        pdfContent: versions[0].pdfContent, // Also restore PDF content if available
         updatedAt: new Date(),
       })
       .where(eq(resumeTemplates.id, templateId))
@@ -1662,6 +1665,7 @@ router.post("/:id/versions/:versionNumber/restore", isAdmin, async (req, res) =>
       templateId: templateId,
       versionNumber: nextVersionNumber,
       svgContent: versions[0].svgContent,
+      pdfContent: versions[0].pdfContent, // Include PDF content in version history
       createdById: req.user?.id,
       changelog: `Restored from version ${versionNumber}`,
     });

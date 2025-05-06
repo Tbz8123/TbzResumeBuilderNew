@@ -32,6 +32,7 @@ export const resumeTemplateVersions = pgTable("resume_template_versions", {
   templateId: integer("template_id").references(() => resumeTemplates.id).notNull(),
   versionNumber: integer("version_number").notNull(),
   svgContent: text("svg_content").notNull(),
+  pdfContent: text("pdf_content"),  // Add PDF content to version history
   createdAt: timestamp("created_at").defaultNow().notNull(),
   createdById: integer("created_by_id").references(() => users.id),
   changelog: text("changelog"),
@@ -71,6 +72,7 @@ export const resumeTemplateSchema = createInsertSchema(resumeTemplates, {
 
 export const resumeTemplateVersionSchema = createInsertSchema(resumeTemplateVersions, {
   svgContent: (schema) => schema.min(50, "SVG content must be valid"),
+  pdfContent: (schema) => schema.optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
