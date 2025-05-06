@@ -38,7 +38,7 @@ type TemplateCardProps = {
   onClick: () => void;
 };
 
-// Enhanced template preview that supports both SVG and PDF rendering
+// Enhanced template preview that directly renders HTML templates
 const TemplatePreview = ({ 
   templateId, 
   onError 
@@ -48,118 +48,98 @@ const TemplatePreview = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [retries, setRetries] = useState(0);
-  const [hasPdf, setHasPdf] = useState(false);
-  const [pdfContent, setPdfContent] = useState<string | null>(null);
-  const [templateData, setTemplateData] = useState<ResumeTemplate | null>(null);
+  const [template, setTemplate] = useState<ResumeTemplate | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
-  const handleLoad = () => {
-    setIsLoading(false);
-  };
-  
-  const handleError = () => {
-    // If we haven't retried, try once more
-    if (retries < 2) {
-      setTimeout(() => {
-        setRetries(retries + 1);
-      }, 1000);
-    } else {
-      setError(true);
-      setIsLoading(false);
-      if (onError) {
-        onError();
-      }
-    }
-  };
-
-  // Fetch full template data to get displayScale
+  // Fetch full template data
   useEffect(() => {
     const fetchTemplateData = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch(`/api/templates/${templateId}`);
         if (response.ok) {
           const data = await response.json();
-          setTemplateData(data);
+          setTemplate(data);
+          setIsLoading(false);
+        } else {
+          throw new Error('Failed to fetch template');
         }
       } catch (err) {
         console.error("Error fetching template data:", err);
+        setError(true);
+        setIsLoading(false);
+        if (onError) {
+          onError();
+        }
       }
     };
     
     fetchTemplateData();
-  }, [templateId]);
+  }, [templateId, onError]);
 
-  // Check if there's a PDF version available
+  // When template data is available, render it
   useEffect(() => {
-    const checkPdf = async () => {
-      try {
-        const response = await fetch(`/api/templates/${templateId}/pdf?_t=${Date.now()}`);
-        if (response.ok) {
-          const data = await response.text();
-          setPdfContent(data);
-          setHasPdf(true);
-          setIsLoading(false);
-        }
-      } catch (err) {
-        console.log("No PDF version available, using SVG");
-      }
-    };
+    if (!template || !template.htmlContent || !containerRef.current) return;
     
-    checkPdf();
-  }, [templateId]);
-
-  // Create the URL to the template with a cache-busting parameter
-  const templateUrl = `/api/templates/${templateId}/svg?_t=${Date.now()}_${retries}`;
-  
-  // Calculate custom scale if available from template data
-  // Increased the default scale to ensure templates fill the container better
-  const scale = templateData?.displayScale ? parseFloat(templateData.displayScale) : 0.28;
-  
-  // Calculate dimensions if available from template data
-  const width = templateData?.width || 800;
-  const height = templateData?.height || 1100;
-  const aspectRatio = templateData?.aspectRatio || '0.73';
-  
-  // Create custom style with scaling and dimensions
-  const customStyle = {
-    transform: `scale(${scale})`,
-    transformOrigin: "top center", // Use top center for better alignment
-    width: `${width}px`,
-    height: `${height}px`,
-    maxWidth: '100%',
-    maxHeight: '100%',
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  };
+    try {
+      // Create the full HTML document with template content
+      const htmlContent = template.htmlContent;
+      
+      // Add specific styling to make sure it fits edge-to-edge
+      const styledHtml = htmlContent.replace('</head>', `
+        <style>
+          body, html {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+          }
+          
+          .resume, body > div {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: none !important;
+            transform-origin: top left !important;
+          }
+        </style>
+        </head>
+      `);
+      
+      // Create a data URL with the HTML content
+      const encodedHtml = encodeURIComponent(styledHtml);
+      const dataUrl = `data:text/html;charset=utf-8,${encodedHtml}`;
+      
+      // Create an iframe to display the template
+      const iframe = document.createElement('iframe');
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.border = 'none';
+      iframe.style.overflow = 'hidden';
+      iframe.src = dataUrl;
+      
+      // Clear the container and append the iframe
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+        containerRef.current.appendChild(iframe);
+      }
+    } catch (err) {
+      console.error("Error rendering template:", err);
+      setError(true);
+      if (onError) {
+        onError();
+      }
+    }
+  }, [template, onError]);
   
   return (
     <>
-      {hasPdf && pdfContent ? (
-        <div className="resume-content" style={customStyle}>
-          <iframe
-            src={`data:application/pdf;base64,${pdfContent}`}
-            title={`PDF Template Preview ${templateId}`}
-            style={{width: '100%', height: '100%', border: 'none'}}
-            onLoad={handleLoad}
-            onError={handleError}
-          />
-        </div>
-      ) : (
-        <div className="resume-content" style={customStyle}>
-          <iframe
-            src={templateUrl}
-            title={`Template Preview ${templateId}`}
-            style={{width: '100%', height: '100%', border: 'none'}}
-            onLoad={handleLoad}
-            onError={handleError}
-            sandbox="allow-same-origin"
-            loading="lazy"
-          />
-        </div>
-      )}
+      <div 
+        ref={containerRef} 
+        className="w-full h-full absolute inset-0 bg-white overflow-hidden"
+      />
       
       {/* Loading state */}
       {isLoading && (
