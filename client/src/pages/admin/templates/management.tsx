@@ -414,29 +414,32 @@ const AdminTemplateManagementPage = () => {
                 )}
               </TabsList>
               
-              <TabsContent value="html-preview" className="border rounded-md h-[calc(80vh-200px)] overflow-hidden">
+              <TabsContent value="html-preview" className="border rounded-md h-[calc(80vh-200px)] overflow-hidden admin-preview">
                 {previewTemplate && (
                   <TemplateEngine 
                     template={previewTemplate} 
                     previewMode="html"
+                    scale={0.4}
                   />
                 )}
               </TabsContent>
               
-              <TabsContent value="svg-preview" className="border rounded-md h-[calc(80vh-200px)] overflow-hidden">
+              <TabsContent value="svg-preview" className="border rounded-md h-[calc(80vh-200px)] overflow-hidden admin-preview">
                 {previewTemplate && (
                   <TemplateEngine 
                     template={previewTemplate} 
                     previewMode="svg"
+                    scale={0.4}
                   />
                 )}
               </TabsContent>
               
               {previewTemplate?.pdfContent && (
-                <TabsContent value="pdf-preview" className="border rounded-md h-[calc(80vh-200px)] overflow-hidden">
+                <TabsContent value="pdf-preview" className="border rounded-md h-[calc(80vh-200px)] overflow-hidden admin-preview">
                   <TemplateEngine 
                     template={previewTemplate} 
                     previewMode="pdf"
+                    scale={0.4}
                   />
                 </TabsContent>
               )}

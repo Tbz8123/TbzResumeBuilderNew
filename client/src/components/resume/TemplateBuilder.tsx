@@ -359,7 +359,7 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
             <div className="flex-1 overflow-auto p-4 bg-gray-50">
               <Card className="h-full">
                 <CardContent className="p-2 h-full relative">
-                  <div className="w-full h-full overflow-auto bg-white">
+                  <div className="w-full h-full overflow-hidden bg-white admin-preview">
                     <TemplateEngine
                       key={previewKey}
                       template={compiledTemplate()}
