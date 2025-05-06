@@ -69,6 +69,144 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Get template HTML content
+router.get("/:id/html", async (req, res) => {
+  try {
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({ message: "Invalid template ID" });
+    }
+    
+    // Get the template HTML content
+    const templates = await db.select({
+      htmlContent: resumeTemplates.htmlContent,
+      name: resumeTemplates.name,
+    })
+    .from(resumeTemplates)
+    .where(
+      and(
+        eq(resumeTemplates.id, templateId),
+        // If not admin, only show active templates
+        req.isAuthenticated() && req.user && req.user.isAdmin 
+          ? undefined 
+          : eq(resumeTemplates.isActive, true)
+      )
+    )
+    .limit(1);
+    
+    if (templates.length === 0) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    
+    const template = templates[0];
+    const htmlContent = template.htmlContent;
+    
+    if (!htmlContent) {
+      return res.status(404).json({ message: "No HTML content available for this template" });
+    }
+    
+    // Return the HTML content
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(htmlContent);
+    
+  } catch (error) {
+    console.error("Error fetching template HTML:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Get template CSS content
+router.get("/:id/css", async (req, res) => {
+  try {
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({ message: "Invalid template ID" });
+    }
+    
+    // Get the template CSS content
+    const templates = await db.select({
+      cssContent: resumeTemplates.cssContent,
+      name: resumeTemplates.name,
+    })
+    .from(resumeTemplates)
+    .where(
+      and(
+        eq(resumeTemplates.id, templateId),
+        // If not admin, only show active templates
+        req.isAuthenticated() && req.user && req.user.isAdmin 
+          ? undefined 
+          : eq(resumeTemplates.isActive, true)
+      )
+    )
+    .limit(1);
+    
+    if (templates.length === 0) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    
+    const template = templates[0];
+    const cssContent = template.cssContent;
+    
+    if (!cssContent) {
+      return res.status(404).json({ message: "No CSS content available for this template" });
+    }
+    
+    // Return the CSS content
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(cssContent);
+    
+  } catch (error) {
+    console.error("Error fetching template CSS:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Get template JavaScript content
+router.get("/:id/js", async (req, res) => {
+  try {
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({ message: "Invalid template ID" });
+    }
+    
+    // Get the template JavaScript content
+    const templates = await db.select({
+      jsContent: resumeTemplates.jsContent,
+      name: resumeTemplates.name,
+    })
+    .from(resumeTemplates)
+    .where(
+      and(
+        eq(resumeTemplates.id, templateId),
+        // If not admin, only show active templates
+        req.isAuthenticated() && req.user && req.user.isAdmin 
+          ? undefined 
+          : eq(resumeTemplates.isActive, true)
+      )
+    )
+    .limit(1);
+    
+    if (templates.length === 0) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    
+    const template = templates[0];
+    const jsContent = template.jsContent;
+    
+    if (!jsContent) {
+      return res.status(404).json({ message: "No JavaScript content available for this template" });
+    }
+    
+    // Return the JavaScript content
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(jsContent);
+    
+  } catch (error) {
+    console.error("Error fetching template JavaScript:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // Get template PDF content
 router.get("/:id/pdf", async (req, res) => {
   try {
@@ -1421,6 +1559,10 @@ router.post("/", isAdmin, async (req, res) => {
       description: req.body.description,
       category: req.body.category,
       svgContent: req.body.svgContent,
+      htmlContent: req.body.htmlContent || null,
+      cssContent: req.body.cssContent || null,
+      jsContent: req.body.jsContent || null,
+      pdfContent: req.body.pdfContent || null,
       isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       isPopular: req.body.isPopular !== undefined ? req.body.isPopular : false,
       primaryColor: req.body.primaryColor || "#5E17EB",
@@ -1439,6 +1581,10 @@ router.post("/", isAdmin, async (req, res) => {
       templateId: template.id,
       versionNumber: 1,
       svgContent: template.svgContent,
+      htmlContent: template.htmlContent || null,
+      cssContent: template.cssContent || null,
+      jsContent: template.jsContent || null,
+      pdfContent: template.pdfContent || null,
       createdById: req.user?.id,
       changelog: "Initial version",
     });
@@ -1470,7 +1616,10 @@ router.put("/:id", isAdmin, async (req, res) => {
       description: req.body.description,
       category: req.body.category,
       svgContent: req.body.svgContent,
-      pdfContent: req.body.pdfContent || null, // Add PDF content support
+      htmlContent: req.body.htmlContent || null,
+      cssContent: req.body.cssContent || null,
+      jsContent: req.body.jsContent || null,
+      pdfContent: req.body.pdfContent || null,
       isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       isPopular: req.body.isPopular !== undefined ? req.body.isPopular : false,
       primaryColor: req.body.primaryColor || "#5E17EB",
@@ -1515,7 +1664,10 @@ router.put("/:id", isAdmin, async (req, res) => {
       templateId: templateId,
       versionNumber: nextVersionNumber,
       svgContent: validatedData.svgContent,
-      pdfContent: validatedData.pdfContent || null, // Include PDF content in version history
+      htmlContent: validatedData.htmlContent || null,
+      cssContent: validatedData.cssContent || null,
+      jsContent: validatedData.jsContent || null,
+      pdfContent: validatedData.pdfContent || null,
       createdById: req.user?.id,
       changelog: req.body.changelog || `Version ${nextVersionNumber}`,
     });
