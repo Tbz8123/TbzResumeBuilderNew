@@ -1,122 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ResumeTemplate } from '@shared/schema';
+import MonacoEditor from '@monaco-editor/react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { useToast } from '@/hooks/use-toast';
-import { ResumeData } from './TemplateEngine';
-import { Editor } from '@monaco-editor/react';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable';
-import {
-  Button,
-  ButtonProps
-} from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Save, 
-  RotateCw, 
-  Code, 
-  Palette, 
-  Eye, 
-  FileText, 
-  Image, 
-  Settings, 
-  Download, 
-  Upload, 
-  Plus,
-  PlusCircle,
-  Layers,
-  RefreshCw
-} from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { FileText, Palette, Code, Image, Save, Eye, RefreshCw, Download, RotateCw, PlusCircle, MinusCircle, Maximize2 } from 'lucide-react';
+import { ResumeData, defaultResumeData } from './TemplateEngine';
 import TemplateEngine from './TemplateEngine';
-import TemplateForm from './TemplateForm';
 
-// Default sample data for quick testing
-const defaultResumeData: ResumeData = {
-  personalInfo: {
-    name: 'John Doe',
-    title: 'Software Engineer',
-    email: 'john.doe@example.com',
-    phone: '(123) 456-7890',
-    address: 'New York, NY',
-    linkedin: 'linkedin.com/in/johndoe',
-    summary: 'Experienced software engineer with a passion for creating elegant solutions to complex problems.',
-  },
-  workExperience: [
-    {
-      company: 'Tech Company Inc.',
-      position: 'Senior Software Engineer',
-      startDate: '2020-01',
-      endDate: 'Present',
-      description: 'Led development of web applications using React and Node.js.',
-      achievements: [
-        'Implemented CI/CD pipeline that reduced deployment time by 75%',
-        'Mentored junior developers, improving team productivity by 30%'
-      ]
-    },
-    {
-      company: 'Digital Solutions LLC',
-      position: 'Software Developer',
-      startDate: '2017-06',
-      endDate: '2019-12',
-      description: 'Developed and maintained web applications for clients.',
-      achievements: [
-        'Created responsive web interfaces using modern frontend frameworks'
-      ]
-    }
-  ],
-  education: [
-    {
-      institution: 'University of Technology',
-      degree: 'Bachelor of Science',
-      field: 'Computer Science',
-      startDate: '2013-09',
-      endDate: '2017-05',
-      gpa: '3.8/4.0',
-      achievements: ['Dean\'s List', 'Computer Science Club President']
-    }
-  ],
-  skills: [
-    { name: 'JavaScript', level: 90 },
-    { name: 'React', level: 85 },
-    { name: 'Node.js', level: 80 },
-    { name: 'TypeScript', level: 75 },
-    { name: 'HTML/CSS', level: 85 }
-  ]
+const defaultResumeTemplate: ResumeTemplate = {
+  id: 0,
+  name: 'New Template',
+  description: 'A new resume template',
+  category: 'professional',
+  svgContent: '<svg width="210mm" height="297mm" viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="white" /><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="16">Create your template here</text></svg>',
+  htmlContent: '<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="utf-8">\n  <title>Resume Template</title>\n</head>\n<body>\n  <div class="resume">\n    <header>\n      <h1>{{personalInfo.name}}</h1>\n      <p class="title">{{personalInfo.title}}</p>\n      <div class="contact-info">\n        <p>Email: {{personalInfo.email}}</p>\n        <p>Phone: {{personalInfo.phone}}</p>\n      </div>\n    </header>\n    <main>\n      <p>Create your template here</p>\n    </main>\n  </div>\n</body>\n</html>',
+  cssContent: '* {\n  margin: 0;\n  padding: 0;\n  box-sizing: border-box;\n}\n\nbody {\n  font-family: Arial, sans-serif;\n  line-height: 1.6;\n  color: #333;\n  background-color: white;\n}\n\n.resume {\n  max-width: 800px;\n  margin: 0 auto;\n  padding: 20px;\n}\n\nheader {\n  text-align: center;\n  margin-bottom: 30px;\n}\n\nh1 {\n  font-size: 28px;\n  margin-bottom: 5px;\n}\n\n.title {\n  font-size: 18px;\n  color: #666;\n  margin-bottom: 15px;\n}\n\n.contact-info {\n  display: flex;\n  justify-content: center;\n  gap: 20px;\n}\n\nmain {\n  display: grid;\n  grid-template-columns: 1fr;\n  gap: 20px;\n}',
+  jsContent: 'document.addEventListener("DOMContentLoaded", function() {\n  console.log("Resume template loaded");\n  \n  // You can add dynamic functionality to your template here\n});\n',
+  pdfContent: null,
+  isActive: true,
+  isPopular: false,
+  thumbnailUrl: null,
+  primaryColor: '#0070f3',
+  secondaryColor: '#ffffff',
+  createdAt: new Date(),
+  updatedAt: new Date()
 };
 
 interface TemplateBuilderProps {
@@ -131,41 +42,48 @@ interface EditorTab {
   icon: React.ReactNode;
   language: string;
   getValue: (template: ResumeTemplate) => string;
-  setValue: (value: string | undefined) => void;
+  setValue: (value: string) => void;
 }
 
 const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
-  template,
+  template = defaultResumeTemplate,
   onSave,
   isNew = false
 }) => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('html-editor');
-  const [previewTab, setPreviewTab] = useState('html-preview');
-  const [previewKey, setPreviewKey] = useState(0);
-  const [resumeData, setResumeData] = useState<ResumeData>(defaultResumeData);
   
-  // Template content state
-  const [htmlContent, setHtmlContent] = useState(template.htmlContent || '');
-  const [cssContent, setCssContent] = useState(template.cssContent || '');
-  const [jsContent, setJsContent] = useState(template.jsContent || '');
-  const [svgContent, setSvgContent] = useState(template.svgContent || '');
-  const [pdfContent, setPdfContent] = useState<string | null>(template.pdfContent);
+  // Template content states
+  const [htmlContent, setHtmlContent] = useState<string>(template.htmlContent || '');
+  const [cssContent, setCssContent] = useState<string>(template.cssContent || '');
+  const [jsContent, setJsContent] = useState<string>(template.jsContent || '');
+  const [svgContent, setSvgContent] = useState<string>(template.svgContent || '');
   
-  // Template metadata
-  const [name, setName] = useState(template.name || '');
-  const [description, setDescription] = useState(template.description || '');
-  const [category, setCategory] = useState(template.category || 'professional');
-  const [isActive, setIsActive] = useState(template.isActive);
-  const [isPopular, setIsPopular] = useState(template.isPopular);
-  const [primaryColor, setPrimaryColor] = useState(template.primaryColor || '#5E17EB');
-  const [secondaryColor, setSecondaryColor] = useState(template.secondaryColor || '#4A11C0');
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(template.thumbnailUrl);
-  const [changelog, setChangelog] = useState('');
+  // Derived states
+  const [previewMode, setPreviewMode] = useState<'html' | 'svg'>('html');
+  const [previewKey, setPreviewKey] = useState<number>(0);
+  const [previewScale, setPreviewScale] = useState<number>(0.8);
+  const [activeTab, setActiveTab] = useState<string>('html-editor');
+  const [saving, setSaving] = useState<boolean>(false);
+  const [autoApply, setAutoApply] = useState<boolean>(true);
   
-  // Auto-save functionality
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  // Reset state when template changes
+  useEffect(() => {
+    setHtmlContent(template.htmlContent || '');
+    setCssContent(template.cssContent || '');
+    setJsContent(template.jsContent || '');
+    setSvgContent(template.svgContent || '');
+  }, [template]);
+  
+  // Compiled template for preview
+  const compiledTemplate = useCallback(() => {
+    return {
+      ...template,
+      htmlContent,
+      cssContent,
+      jsContent,
+      svgContent
+    };
+  }, [template, htmlContent, cssContent, jsContent, svgContent]);
   
   // Set up editor tabs
   const editorTabs: EditorTab[] = [
@@ -175,7 +93,7 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
       icon: <FileText className="h-4 w-4 mr-1" />,
       language: 'html',
       getValue: (t) => t.htmlContent || '',
-      setValue: setHtmlContent
+      setValue: (value: string) => setHtmlContent(value)
     },
     {
       id: 'css-editor',
@@ -183,7 +101,7 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
       icon: <Palette className="h-4 w-4 mr-1" />,
       language: 'css',
       getValue: (t) => t.cssContent || '',
-      setValue: setCssContent
+      setValue: (value: string) => setCssContent(value)
     },
     {
       id: 'js-editor',
@@ -191,7 +109,7 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
       icon: <Code className="h-4 w-4 mr-1" />,
       language: 'javascript',
       getValue: (t) => t.jsContent || '',
-      setValue: setJsContent
+      setValue: (value: string) => setJsContent(value)
     },
     {
       id: 'svg-editor',
@@ -199,7 +117,7 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
       icon: <Image className="h-4 w-4 mr-1" />,
       language: 'xml',
       getValue: (t) => t.svgContent || '',
-      setValue: setSvgContent
+      setValue: (value: string) => setSvgContent(value)
     }
   ];
   
@@ -208,168 +126,121 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
     setPreviewKey((prev) => prev + 1);
   };
   
-  // Function to handle uploading PDF files
-  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64Content = event.target?.result as string;
-        // Remove prefix like "data:application/pdf;base64," to store just the content
-        const base64Data = base64Content.split(',')[1];
-        setPdfContent(base64Data);
-        toast({
-          title: "PDF Uploaded",
-          description: "PDF file has been uploaded successfully.",
-        });
-      };
-      reader.readAsDataURL(file);
+  // Auto-apply changes to preview
+  useEffect(() => {
+    if (autoApply) {
+      const timeout = setTimeout(() => {
+        refreshPreview();
+      }, 1000);
+      
+      return () => clearTimeout(timeout);
     }
-  };
+  }, [htmlContent, cssContent, jsContent, svgContent, autoApply]);
   
-  // Handle auto-saving changes
-  const autoSaveChanges = () => {
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-    
-    setIsAutoSaving(true);
-    
-    autoSaveTimerRef.current = setTimeout(async () => {
-      if (!isNew) {
-        try {
-          await handleSave(true);
-        } catch (error) {
-          console.error("Auto-save failed:", error);
-        } finally {
-          setIsAutoSaving(false);
-        }
-      } else {
-        setIsAutoSaving(false);
-      }
-    }, 3000); // 3 second debounce
-  };
-  
-  // Handle saving template changes
-  const handleSave = async (isAutoSave: boolean = false) => {
+  // Save template changes
+  const handleSave = async () => {
     try {
-      const templateData: Partial<ResumeTemplate> = {
-        name,
-        description,
-        category,
-        svgContent,
+      setSaving(true);
+      
+      const updatedTemplate: Partial<ResumeTemplate> = {
         htmlContent,
         cssContent,
         jsContent,
-        pdfContent,
-        isActive,
-        isPopular,
-        primaryColor,
-        secondaryColor,
-        thumbnailUrl,
-        changelog: isAutoSave ? 'Auto-saved changes' : (changelog || 'Updated template')
+        svgContent
       };
       
-      await onSave(templateData);
+      await onSave(updatedTemplate);
       
-      if (!isAutoSave) {
-        toast({
-          title: "Template Saved",
-          description: isNew ? "Template created successfully." : "Template updated successfully.",
-        });
-        setChangelog('');
-      }
+      toast({
+        title: isNew ? 'Template created' : 'Template saved',
+        description: `Template "${template.name}" has been ${isNew ? 'created' : 'updated'} successfully.`,
+      });
     } catch (error) {
       toast({
-        title: "Save Failed",
-        description: `Error: ${(error as Error).message}`,
-        variant: "destructive"
+        title: 'Error saving template',
+        description: `Failed to save template: ${(error as Error).message}`,
+        variant: 'destructive',
       });
-      throw error; // Re-throw to handle in the auto-save logic
+    } finally {
+      setSaving(false);
     }
   };
   
-  // Combine HTML, CSS, and JS for rendering
-  const getCombinedPreview = (): ResumeTemplate => {
-    return {
-      ...template,
-      htmlContent,
-      cssContent,
-      jsContent,
-      svgContent,
-      pdfContent
-    } as ResumeTemplate;
+  const getCurrentEditorValue = (tabId: string): string => {
+    const tab = editorTabs.find(t => t.id === tabId);
+    if (!tab) return '';
+    return tab.getValue(template);
   };
   
-  // Generate thumbnail from template content
-  const generateThumbnail = () => {
-    // This would typically capture current preview and convert to image
-    // For simplicity, we're just notifying the user
-    toast({
-      title: "Thumbnail Generation",
-      description: "Thumbnail generation will be implemented soon.",
-    });
-  };
-  
-  // Reset form to original template
-  const resetToOriginal = () => {
-    setHtmlContent(template.htmlContent || '');
-    setCssContent(template.cssContent || '');
-    setJsContent(template.jsContent || '');
-    setSvgContent(template.svgContent || '');
-    setPdfContent(template.pdfContent);
-    setName(template.name);
-    setDescription(template.description);
-    setCategory(template.category);
-    setIsActive(template.isActive);
-    setIsPopular(template.isPopular);
-    setPrimaryColor(template.primaryColor || '#5E17EB');
-    setSecondaryColor(template.secondaryColor || '#4A11C0');
-    setThumbnailUrl(template.thumbnailUrl);
+  const handleEditorChange = (value: string | undefined, tabId: string) => {
+    const tab = editorTabs.find(t => t.id === tabId);
+    if (!tab || !value) return;
     
-    toast({
-      title: "Form Reset",
-      description: "Template has been reset to its original state.",
-    });
+    tab.setValue(value);
   };
   
+  // Return rendered component
   return (
-    <div className="template-builder w-full h-full">
-      <div className="flex justify-between items-center mb-6">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold">
-            {isNew ? "Create New Template" : `Edit Template: ${template.name}`}
-          </h2>
-          <p className="text-gray-500">
-            Use the editor to modify the template code and preview changes in real-time
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          {isAutoSaving && (
-            <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">
-              Auto-saving...
-            </Badge>
-          )}
-          <Button
-            variant="outline"
-            onClick={refreshPreview}
-          >
-            <RotateCw className="h-4 w-4 mr-1" />
-            Refresh Preview
-          </Button>
-          <Button onClick={() => handleSave()}>
-            <Save className="h-4 w-4 mr-1" />
-            Save Template
-          </Button>
-        </div>
-      </div>
-      
-      <ResizablePanelGroup direction="horizontal" className="min-h-[800px] border rounded-lg">
-        {/* Left Panel: Editors */}
-        <ResizablePanel defaultSize={50}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <div className="px-4 pt-4">
-              <TabsList className="grid w-full grid-cols-4">
+    <div className="template-builder h-full">
+      <ResizablePanelGroup
+        direction="horizontal"
+        className="h-full border rounded-lg"
+      >
+        {/* Editor Panel */}
+        <ResizablePanel defaultSize={50} minSize={30}>
+          <div className="h-full flex flex-col">
+            <div className="border-b p-4 flex justify-between items-center">
+              <h3 className="text-lg font-medium">Template Editor</h3>
+              <div className="flex items-center space-x-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={refreshPreview}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-1" />
+                        Refresh
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Refresh preview</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={handleSave}
+                        disabled={saving}
+                      >
+                        {saving ? (
+                          <RotateCw className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4 mr-1" />
+                        )}
+                        Save
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Save template changes</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+            
+            <Tabs 
+              value={activeTab} 
+              onValueChange={setActiveTab}
+              className="flex-1 flex flex-col h-[calc(100%-60px)]"
+            >
+              <TabsList className="mx-4 mt-2">
                 {editorTabs.map((tab) => (
                   <TabsTrigger key={tab.id} value={tab.id} className="flex items-center">
                     {tab.icon}
@@ -377,350 +248,131 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                   </TabsTrigger>
                 ))}
               </TabsList>
-            </div>
-            
-            {editorTabs.map((tab) => (
-              <TabsContent key={tab.id} value={tab.id} className="flex-grow p-4">
-                <div className="h-full border rounded">
-                  <Editor
-                    height="100%"
-                    defaultLanguage={tab.language}
-                    value={tab.getValue(getCombinedPreview() as ResumeTemplate)}
-                    onChange={(value) => {
-                      tab.setValue(value);
-                      autoSaveChanges();
-                    }}
-                    options={{
-                      minimap: { enabled: false },
-                      automaticLayout: true,
-                      wordWrap: "on",
-                      scrollBeyondLastLine: false,
-                      lineNumbers: "on",
-                      renderWhitespace: "boundary",
-                      folding: true,
-                      formatOnPaste: true,
-                      fontSize: 14,
-                      tabSize: 2,
-                    }}
-                  />
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+              
+              {editorTabs.map((tab) => (
+                <TabsContent 
+                  key={tab.id} 
+                  value={tab.id}
+                  className="flex-1 overflow-hidden px-4 pb-4 h-[calc(100%-48px)]"
+                >
+                  <Card className="h-full">
+                    <CardContent className="p-0 h-full">
+                      <MonacoEditor
+                        height="100%"
+                        language={tab.language}
+                        value={
+                          tab.id === 'html-editor' ? htmlContent :
+                          tab.id === 'css-editor' ? cssContent :
+                          tab.id === 'js-editor' ? jsContent :
+                          tab.id === 'svg-editor' ? svgContent :
+                          ''
+                        }
+                        onChange={(value) => handleEditorChange(value, tab.id)}
+                        options={{
+                          minimap: { enabled: false },
+                          scrollBeyondLastLine: false,
+                          automaticLayout: true,
+                          tabSize: 2,
+                          wordWrap: 'on'
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
         </ResizablePanel>
         
-        <ResizableHandle />
-        
-        {/* Right Panel: Preview and Settings */}
-        <ResizablePanel defaultSize={50}>
-          <Tabs value={activeTab === 'settings' ? 'settings' : 'preview'} className="h-full flex flex-col">
-            <div className="px-4 pt-4">
-              <TabsList>
-                <TabsTrigger value="preview" onClick={() => setActiveTab('html-editor')}>
-                  <Eye className="h-4 w-4 mr-1" />
-                  Preview
-                </TabsTrigger>
-                <TabsTrigger value="settings" onClick={() => setActiveTab('settings')}>
-                  <Settings className="h-4 w-4 mr-1" />
-                  Template Settings
-                </TabsTrigger>
-              </TabsList>
+        {/* Preview Panel */}
+        <ResizablePanel defaultSize={50} minSize={30}>
+          <div className="h-full flex flex-col">
+            <div className="border-b p-4 flex justify-between items-center">
+              <h3 className="text-lg font-medium">Template Preview</h3>
+              <div className="flex items-center space-x-2">
+                <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'html' | 'svg')}>
+                  <TabsList>
+                    <TabsTrigger value="html">
+                      <FileText className="h-4 w-4 mr-1" />
+                      HTML
+                    </TabsTrigger>
+                    <TabsTrigger value="svg">
+                      <Image className="h-4 w-4 mr-1" />
+                      SVG
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setPreviewScale(ps => Math.min(ps + 0.1, 1.5))}
+                      >
+                        <PlusCircle className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Zoom in</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setPreviewScale(ps => Math.max(ps - 0.1, 0.3))}
+                      >
+                        <MinusCircle className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Zoom out</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setPreviewScale(0.8)}
+                      >
+                        <Maximize2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Reset zoom</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
             
-            <TabsContent value="preview" className="flex-grow p-4">
-              <Card className="h-full flex flex-col">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg">Template Preview</CardTitle>
-                    <Tabs value={previewTab} onValueChange={setPreviewTab} className="mt-0">
-                      <TabsList>
-                        <TabsTrigger value="html-preview">HTML</TabsTrigger>
-                        <TabsTrigger value="svg-preview">SVG</TabsTrigger>
-                        <TabsTrigger value="pdf-preview">PDF</TabsTrigger>
-                        <TabsTrigger value="data-form">Data Form</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-                  <CardDescription>
-                    View how the template will appear to users
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <div className="h-full">
-                    <TabsContent value="html-preview" className="h-full">
-                      <TemplateEngine 
-                        template={getCombinedPreview()}
-                        data={resumeData}
-                        previewMode="html"
-                        key={`html-${previewKey}`}
-                      />
-                    </TabsContent>
-                    
-                    <TabsContent value="svg-preview" className="h-full">
-                      <TemplateEngine 
-                        template={getCombinedPreview()}
-                        data={resumeData}
-                        previewMode="svg"
-                        key={`svg-${previewKey}`}
-                      />
-                    </TabsContent>
-                    
-                    <TabsContent value="pdf-preview" className="h-full">
-                      {pdfContent ? (
-                        <TemplateEngine 
-                          template={getCombinedPreview()}
-                          data={resumeData}
-                          previewMode="pdf"
-                          key={`pdf-${previewKey}`}
-                        />
-                      ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-center p-6 border-2 border-dashed rounded-md">
-                          <div className="mb-4 p-3 rounded-full bg-gray-100">
-                            <Upload className="h-10 w-10 text-gray-400" />
-                          </div>
-                          <h3 className="text-lg font-medium mb-2">No PDF Available</h3>
-                          <p className="text-sm text-gray-500 mb-4 max-w-md">
-                            Upload a PDF version of this template for better rendering and download options.
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              id="pdf-upload"
-                              type="file"
-                              accept=".pdf"
-                              onChange={handlePdfUpload}
-                              className="hidden"
-                            />
-                            <Label 
-                              htmlFor="pdf-upload" 
-                              className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                            >
-                              <PlusCircle className="h-4 w-4 mr-2" />
-                              Upload PDF
-                            </Label>
-                            <Button variant="outline" onClick={refreshPreview}>
-                              <RefreshCw className="h-4 w-4 mr-2" />
-                              Refresh
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </TabsContent>
-                    
-                    <TabsContent value="data-form" className="h-full overflow-auto">
-                      <TemplateForm data={resumeData} onChange={setResumeData} />
-                    </TabsContent>
+            <div className="flex-1 overflow-auto p-4 bg-gray-50">
+              <Card className="h-full">
+                <CardContent className="p-2 h-full relative">
+                  <div className="w-full h-full overflow-auto bg-white">
+                    <TemplateEngine
+                      key={previewKey}
+                      template={compiledTemplate()}
+                      data={defaultResumeData}
+                      previewMode={previewMode}
+                      scale={previewScale}
+                      className="h-full"
+                    />
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-            
-            <TabsContent value="settings" className="flex-grow p-4">
-              <Card className="h-full overflow-auto">
-                <CardHeader>
-                  <CardTitle>Template Settings</CardTitle>
-                  <CardDescription>
-                    Configure template metadata and display options
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="template-name">Template Name</Label>
-                    <Input
-                      id="template-name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Enter template name"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="template-description">Description</Label>
-                    <Textarea
-                      id="template-description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Brief description of this template"
-                      rows={3}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="template-category">Category</Label>
-                      <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger id="template-category">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="professional">Professional</SelectItem>
-                          <SelectItem value="creative">Creative</SelectItem>
-                          <SelectItem value="tech">Tech</SelectItem>
-                          <SelectItem value="executive">Executive</SelectItem>
-                          <SelectItem value="minimal">Minimal</SelectItem>
-                          <SelectItem value="entry">Entry Level</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="changelog">Changelog</Label>
-                      <Input
-                        id="changelog"
-                        value={changelog}
-                        onChange={(e) => setChangelog(e.target.value)}
-                        placeholder="Description of changes (optional)"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="primary-color">Primary Color</Label>
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          id="primary-color"
-                          type="color"
-                          value={primaryColor}
-                          onChange={(e) => setPrimaryColor(e.target.value)}
-                          className="w-12 h-10 p-1"
-                        />
-                        <Input
-                          value={primaryColor}
-                          onChange={(e) => setPrimaryColor(e.target.value)}
-                          placeholder="#RRGGBB"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="secondary-color">Secondary Color</Label>
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          id="secondary-color"
-                          type="color"
-                          value={secondaryColor}
-                          onChange={(e) => setSecondaryColor(e.target.value)}
-                          className="w-12 h-10 p-1"
-                        />
-                        <Input
-                          value={secondaryColor}
-                          onChange={(e) => setSecondaryColor(e.target.value)}
-                          placeholder="#RRGGBB"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          id="is-active"
-                          type="checkbox"
-                          checked={isActive}
-                          onChange={(e) => setIsActive(e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <Label htmlFor="is-active">
-                          Active (visible to users)
-                        </Label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <input
-                          id="is-popular"
-                          type="checkbox"
-                          checked={isPopular}
-                          onChange={(e) => setIsPopular(e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <Label htmlFor="is-popular">
-                          Featured (marked as popular)
-                        </Label>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="pdf-upload-settings">PDF Template</Label>
-                      <Input
-                        id="pdf-upload-settings"
-                        type="file"
-                        accept=".pdf"
-                        onChange={handlePdfUpload}
-                        className="cursor-pointer"
-                      />
-                      {pdfContent && (
-                        <p className="text-sm text-green-600 font-medium">
-                          PDF file uploaded successfully!
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="thumbnail">Thumbnail Preview</Label>
-                    <div className="border rounded-md p-4 flex flex-col items-center">
-                      {thumbnailUrl ? (
-                        <img 
-                          src={thumbnailUrl} 
-                          alt={name} 
-                          className="max-h-32 object-contain mb-4"
-                        />
-                      ) : (
-                        <div className="w-full h-32 bg-gray-100 flex items-center justify-center mb-4">
-                          <FileText className="h-10 w-10 text-gray-400" />
-                        </div>
-                      )}
-                      
-                      <div className="flex space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={generateThumbnail}
-                        >
-                          <Image className="h-4 w-4 mr-1" />
-                          Generate Thumbnail
-                        </Button>
-                        <Input
-                          id="thumbnail-upload"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                setThumbnailUrl(event.target?.result as string);
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                        <Label
-                          htmlFor="thumbnail-upload"
-                          className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
-                        >
-                          <Upload className="h-4 w-4 mr-1" />
-                          Upload Image
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between pt-4">
-                    <Button variant="outline" onClick={resetToOriginal}>
-                      Reset to Original
-                    </Button>
-                    <Button onClick={() => handleSave()}>
-                      <Save className="h-4 w-4 mr-1" />
-                      Save Template
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

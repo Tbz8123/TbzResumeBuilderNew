@@ -189,7 +189,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ data, onChange }) => {
 
   // Helper function to remove a certification
   const removeCertification = (index: number) => {
-    const currentCertifications = form.getValues('certifications');
+    const currentCertifications = form.getValues('certifications') || [];
     form.setValue(
       'certifications',
       currentCertifications.filter((_, i) => i !== index)
@@ -210,7 +210,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ data, onChange }) => {
 
   // Helper function to remove a language
   const removeLanguage = (index: number) => {
-    const currentLanguages = form.getValues('languages');
+    const currentLanguages = form.getValues('languages') || [];
     form.setValue(
       'languages',
       currentLanguages.filter((_, i) => i !== index)
@@ -233,7 +233,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ data, onChange }) => {
 
   // Helper function to remove a project
   const removeProject = (index: number) => {
-    const currentProjects = form.getValues('projects');
+    const currentProjects = form.getValues('projects') || [];
     form.setValue(
       'projects',
       currentProjects.filter((_, i) => i !== index)
