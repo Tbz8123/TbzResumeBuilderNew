@@ -17,6 +17,7 @@ export const resumeTemplates = pgTable("resume_templates", {
   description: text("description").notNull(),
   category: text("category").notNull(),
   svgContent: text("svg_content").notNull(),
+  pdfContent: text("pdf_content"),  // Base64 encoded PDF content
   thumbnailUrl: text("thumbnail_url"),
   isPopular: boolean("is_popular").default(false),
   isActive: boolean("is_active").default(true),
@@ -64,6 +65,7 @@ export const resumeTemplateSchema = createInsertSchema(resumeTemplates, {
   description: (schema) => schema.min(10, "Description must be at least 10 characters"),
   category: (schema) => schema.min(2, "Category must be at least 2 characters"),
   svgContent: (schema) => schema.min(50, "SVG content must be valid"),
+  pdfContent: (schema) => schema.optional(),
   thumbnailUrl: (schema) => schema.optional(),
 });
 

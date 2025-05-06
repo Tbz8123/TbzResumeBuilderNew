@@ -40,6 +40,7 @@ type FormData = {
   description: string;
   category: string;
   svgContent: string;
+  pdfContent?: string;  // Base64 encoded PDF content
   isActive: boolean;
   isPopular: boolean;
   primaryColor: string;
@@ -179,6 +180,7 @@ const AdminTemplateEditPage = () => {
     description: "",
     category: "professional",
     svgContent: defaultTemplate,
+    pdfContent: null,
     isActive: true,
     isPopular: false,
     primaryColor: "#5E17EB",
@@ -203,6 +205,7 @@ const AdminTemplateEditPage = () => {
         description: template.description || "",
         category: template.category || "professional",
         svgContent: template.svgContent || defaultTemplate,
+        pdfContent: template.pdfContent || null,
         isActive: template.isActive ?? true,
         isPopular: template.isPopular ?? false,
         primaryColor: template.primaryColor || "#5E17EB",
