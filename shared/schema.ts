@@ -27,6 +27,9 @@ export const resumeTemplates = pgTable("resume_templates", {
   primaryColor: text("primary_color").default("#5E17EB"),
   secondaryColor: text("secondary_color").default("#4A11C0"),
   displayScale: text("display_scale").default("0.22"),  // Scale factor for template display
+  width: integer("width").default(800),                 // Width in pixels
+  height: integer("height").default(1100),              // Height in pixels
+  aspectRatio: text("aspect_ratio").default("0.73"),    // Width/height ratio
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -79,6 +82,9 @@ export const resumeTemplateSchema = createInsertSchema(resumeTemplates, {
   pdfContent: (schema) => schema.optional(),
   thumbnailUrl: (schema) => schema.optional(),
   displayScale: (schema) => schema.optional(),
+  width: (schema) => schema.optional(),
+  height: (schema) => schema.optional(),
+  aspectRatio: (schema) => schema.optional(),
 });
 
 export const resumeTemplateVersionSchema = createInsertSchema(resumeTemplateVersions, {

@@ -349,7 +349,12 @@ const AdminTemplateEditPage = () => {
         description: formData.description.trim(),
         // Keep SVG content as is (whitespace may be important in HTML/SVG)
         category: formData.category || "professional",
-        changelog: formData.changelog?.trim() || "Updated template"
+        changelog: formData.changelog?.trim() || "Updated template",
+        // Add dimension fields with defaults
+        width: 800,
+        height: 1100,
+        aspectRatio: "0.73",
+        displayScale: "0.22"
       };
       
       console.log(`Template action: ${isCreatingTemplate ? "CREATE" : "UPDATE"}`);

@@ -53,12 +53,23 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
 }) => {
   const { toast } = useToast();
   
+  // Template metadata states
+  const [name, setName] = useState<string>(template.name || '');
+  const [description, setDescription] = useState<string>(template.description || '');
+  const [category, setCategory] = useState<string>(template.category || 'professional');
+  
   // Template content states
   const [htmlContent, setHtmlContent] = useState<string>(template.htmlContent || '');
   const [cssContent, setCssContent] = useState<string>(template.cssContent || '');
   const [jsContent, setJsContent] = useState<string>(template.jsContent || '');
   const [svgContent, setSvgContent] = useState<string>(template.svgContent || '');
   const [displayScale, setDisplayScale] = useState<string>(template.displayScale || '0.22');
+  
+  // Dimension controls
+  const [width, setWidth] = useState<string>(template.width?.toString() || '800');
+  const [height, setHeight] = useState<string>(template.height?.toString() || '1100');
+  const [aspectRatio, setAspectRatio] = useState<string>(template.aspectRatio || '0.73');
+  const [preserveRatio, setPreserveRatio] = useState<boolean>(true);
   
   // Code section visibility controls
   const [htmlEnabled, setHtmlEnabled] = useState<boolean>(true);
@@ -75,11 +86,24 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
   
   // Reset state when template changes
   useEffect(() => {
+    // Metadata fields
+    setName(template.name || '');
+    setDescription(template.description || '');
+    setCategory(template.category || 'professional');
+    
+    // Content fields
     setHtmlContent(template.htmlContent || '');
     setCssContent(template.cssContent || '');
     setJsContent(template.jsContent || '');
     setSvgContent(template.svgContent || '');
     setDisplayScale(template.displayScale || '0.22');
+    
+    // Dimension fields
+    setWidth(template.width?.toString() || '800');
+    setHeight(template.height?.toString() || '1100');
+    setAspectRatio(template.aspectRatio || '0.73');
+    
+    console.log("Template loaded:", template);
   }, [template]);
   
   // Compiled template for preview
@@ -157,21 +181,39 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
     try {
       setSaving(true);
       
+      // Convert string values to numbers for database
+      const widthVal = parseInt(width);
+      const heightVal = parseInt(height);
+      
       const updatedTemplate: Partial<ResumeTemplate> = {
+        // Metadata
+        name,
+        description,
+        category,
+        
+        // Content
         htmlContent,
         cssContent,
         jsContent,
         svgContent,
-        displayScale
+        
+        // Display settings
+        displayScale,
+        width: widthVal || 800,
+        height: heightVal || 1100,
+        aspectRatio,
       };
+      
+      console.log("Saving template:", updatedTemplate);
       
       await onSave(updatedTemplate);
       
       toast({
         title: isNew ? 'Template created' : 'Template saved',
-        description: `Template "${template.name}" has been ${isNew ? 'created' : 'updated'} successfully.`,
+        description: `Template "${name}" has been ${isNew ? 'created' : 'updated'} successfully.`,
       });
     } catch (error) {
+      console.error("Save error:", error);
       toast({
         title: 'Error saving template',
         description: `Failed to save template: ${(error as Error).message}`,
@@ -373,6 +415,159 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                 </div>
               </div>
               
+              {/* Template Metadata Section */}
+              <div className="flex flex-wrap gap-4 border-t pt-3">
+                <div className="flex flex-col space-y-1 w-full md:w-1/3">
+                  <label htmlFor="template-name" className="text-sm font-medium">
+                    Template Name:
+                  </label>
+                  <input 
+                    type="text"
+                    id="template-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                    placeholder="Enter template name"
+                  />
+                </div>
+                
+                <div className="flex flex-col space-y-1 w-full md:w-1/3">
+                  <label htmlFor="template-category" className="text-sm font-medium">
+                    Category:
+                  </label>
+                  <select
+                    id="template-category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                  >
+                    <option value="professional">Professional</option>
+                    <option value="creative">Creative</option>
+                    <option value="tech">Tech</option>
+                    <option value="executive">Executive</option>
+                    <option value="minimal">Minimal</option>
+                    <option value="entry">Entry Level</option>
+                  </select>
+                </div>
+                
+                <div className="flex flex-col space-y-1 w-full">
+                  <label htmlFor="template-description" className="text-sm font-medium">
+                    Description:
+                  </label>
+                  <input 
+                    type="text"
+                    id="template-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                    placeholder="Brief description of this template"
+                  />
+                </div>
+              </div>
+                            
+              {/* Dimension Controls */}
+              <div className="flex flex-wrap gap-4 border-t pt-3">
+                <div className="flex flex-col space-y-1">
+                  <label htmlFor="template-width" className="text-sm font-medium">
+                    Width (px):
+                  </label>
+                  <input 
+                    type="number"
+                    id="template-width"
+                    min="400" 
+                    max="1200" 
+                    step="10"
+                    value={width}
+                    onChange={(e) => {
+                      setWidth(e.target.value);
+                      if (preserveRatio) {
+                        setHeight(Math.round(parseInt(e.target.value) / parseFloat(aspectRatio)).toString());
+                      }
+                    }}
+                    className="w-20 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                </div>
+                
+                <div className="flex flex-col space-y-1">
+                  <label htmlFor="template-height" className="text-sm font-medium">
+                    Height (px):
+                  </label>
+                  <input 
+                    type="number"
+                    id="template-height"
+                    min="600" 
+                    max="1800" 
+                    step="10"
+                    value={height}
+                    onChange={(e) => {
+                      setHeight(e.target.value);
+                      if (preserveRatio) {
+                        setWidth(Math.round(parseInt(e.target.value) * parseFloat(aspectRatio)).toString());
+                      }
+                    }}
+                    className="w-20 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                </div>
+                
+                <div className="flex flex-col space-y-1">
+                  <label htmlFor="aspect-ratio" className="text-sm font-medium">
+                    Aspect Ratio:
+                  </label>
+                  <div className="flex items-center">
+                    <input 
+                      type="number"
+                      id="aspect-ratio"
+                      min="0.3" 
+                      max="1.5" 
+                      step="0.01"
+                      value={aspectRatio}
+                      onChange={(e) => setAspectRatio(e.target.value)}
+                      className="w-20 rounded border-gray-300 text-primary focus:ring-primary"
+                      disabled={!preserveRatio}
+                    />
+                    <div className="flex items-center ml-3">
+                      <input 
+                        type="checkbox"
+                        id="preserve-ratio"
+                        checked={preserveRatio}
+                        onChange={(e) => setPreserveRatio(e.target.checked)}
+                        className="rounded border-gray-300 text-primary focus:ring-primary mr-1"
+                      />
+                      <label htmlFor="preserve-ratio" className="text-xs">
+                        Lock ratio
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col space-y-1 ml-auto">
+                  <label htmlFor="display-scale" className="text-sm font-medium">
+                    Display Scale:
+                  </label>
+                  <div className="flex items-center">
+                    <input 
+                      type="number"
+                      id="display-scale"
+                      min="0.1" 
+                      max="0.5" 
+                      step="0.01"
+                      value={displayScale}
+                      onChange={(e) => setDisplayScale(e.target.value)}
+                      className="w-16 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="0.5"
+                      step="0.01"
+                      value={displayScale}
+                      onChange={(e) => setDisplayScale(e.target.value)}
+                      className="w-32 ml-2"
+                    />
+                  </div>
+                </div>
+              </div>
+              
               {/* Code Section Toggles */}
               <div className="flex items-center gap-4 border-t pt-3">
                 <div className="flex items-center space-x-2">
@@ -411,31 +606,6 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                     checked={jsEnabled}
                     onChange={(e) => setJsEnabled(e.target.checked)}
                     className="rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2 ml-auto">
-                  <label htmlFor="display-scale" className="text-sm font-medium">
-                    Display Scale:
-                  </label>
-                  <input 
-                    type="number"
-                    id="display-scale"
-                    min="0.1" 
-                    max="0.5" 
-                    step="0.01"
-                    value={displayScale}
-                    onChange={(e) => setDisplayScale(e.target.value)}
-                    className="w-16 rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <input
-                    type="range"
-                    min="0.1"
-                    max="0.5"
-                    step="0.01"
-                    value={displayScale}
-                    onChange={(e) => setDisplayScale(e.target.value)}
-                    className="w-32"
                   />
                 </div>
               </div>
