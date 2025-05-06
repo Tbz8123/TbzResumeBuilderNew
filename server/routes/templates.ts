@@ -20,6 +20,14 @@ router.get("/", async (req, res) => {
       isActive: resumeTemplates.isActive,
       primaryColor: resumeTemplates.primaryColor,
       secondaryColor: resumeTemplates.secondaryColor,
+      svgContent: resumeTemplates.svgContent,
+      htmlContent: resumeTemplates.htmlContent,
+      cssContent: resumeTemplates.cssContent,
+      jsContent: resumeTemplates.jsContent,
+      displayScale: resumeTemplates.displayScale,
+      width: resumeTemplates.width,
+      height: resumeTemplates.height,
+      aspectRatio: resumeTemplates.aspectRatio,
       createdAt: resumeTemplates.createdAt,
     })
     .from(resumeTemplates)

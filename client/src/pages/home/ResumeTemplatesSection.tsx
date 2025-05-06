@@ -169,10 +169,13 @@ const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
   
   // Log template data for debugging
   useEffect(() => {
+    const hasHtmlContent = typeof template.htmlContent === 'string' && template.htmlContent.length > 0;
+    const hasSvgContent = typeof template.svgContent === 'string' && template.svgContent.length > 0;
+    
     console.log(`Template card for ID ${template.id}:`, {
       name: template.name,
-      htmlContent: template.htmlContent?.length > 0,
-      svgContent: template.svgContent?.length > 0,
+      htmlContent: hasHtmlContent,
+      svgContent: hasSvgContent,
       dimensions: {
         width: template.width,
         height: template.height,
