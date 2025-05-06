@@ -237,30 +237,42 @@ const AdminTemplateEditPage = () => {
   const updateTemplateMutation = useUpdateTemplate(isEditingTemplate ? id : undefined);
   const createTemplateMutation = useCreateTemplate();
   
-  // Cast the template data to match the expected schema
-  const template = templateData as any;
-  
   useEffect(() => {
-    if (template && isEditingTemplate) {
+    if (templateData && isEditingTemplate) {
+      // Log what we're getting from the server for debugging
+      console.log("Template data loaded:", {
+        id: templateData.id,
+        name: templateData.name,
+        htmlContentPreview: templateData.htmlContent ? templateData.htmlContent.substring(0, 50) + '...' : null,
+        svgContentPreview: templateData.svgContent ? templateData.svgContent.substring(0, 50) + '...' : null,
+        cssContentPreview: templateData.cssContent ? templateData.cssContent.substring(0, 50) + '...' : null,
+        jsContentPreview: templateData.jsContent ? templateData.jsContent.substring(0, 50) + '...' : null,
+      });
+      
+      // When existing template is loaded, update form data
       setFormData({
-        name: template.name || "",
-        description: template.description || "",
-        category: template.category || "professional",
-        svgContent: template.svgContent || defaultTemplate,
-        htmlContent: template.htmlContent || "<!DOCTYPE html>\n<html>\n<head>\n  <title>Resume Template</title>\n  <style>\n    /* CSS will be injected here */\n  </style>\n</head>\n<body>\n  <!-- Your resume HTML content here -->\n  <h1>John Doe</h1>\n  <h2>Software Engineer</h2>\n</body>\n</html>",
-        cssContent: template.cssContent || "/* Add your custom CSS styles here */\nbody {\n  font-family: Arial, sans-serif;\n  max-width: 800px;\n  margin: 0 auto;\n}\n\nh1 {\n  color: #5E17EB;\n}\n\nh2 {\n  color: #4A11C0;\n}",
-        jsContent: template.jsContent || "// Add your optional JavaScript functionality here\ndocument.addEventListener('DOMContentLoaded', function() {\n  console.log('Resume template loaded');\n  // Add your custom JavaScript code here\n});",
-        pdfContent: template.pdfContent || null,
-        isActive: template.isActive ?? true,
-        isPopular: template.isPopular ?? false,
-        primaryColor: template.primaryColor || "#5E17EB",
-        secondaryColor: template.secondaryColor || "#4A11C0",
-        thumbnailUrl: template.thumbnailUrl || null,
-        displayScale: template.displayScale || "0.22",
+        name: templateData.name || "Untitled Template",
+        description: templateData.description || "",
+        category: templateData.category || "professional",
+        
+        // IMPORTANT: Use the actual template content from the server
+        // Only fallback to defaults if the content is actually null/empty
+        svgContent: templateData.svgContent || defaultTemplate,
+        htmlContent: templateData.htmlContent || "",
+        cssContent: templateData.cssContent || "", 
+        jsContent: templateData.jsContent || "",
+        
+        pdfContent: templateData.pdfContent,
+        isActive: templateData.isActive ?? true,
+        isPopular: templateData.isPopular ?? false,
+        primaryColor: templateData.primaryColor || "#5E17EB",
+        secondaryColor: templateData.secondaryColor || "#4A11C0",
+        thumbnailUrl: templateData.thumbnailUrl,
+        displayScale: templateData.displayScale || "0.22",
         changelog: "",
       });
     }
-  }, [template, isEditingTemplate]);
+  }, [templateData, isEditingTemplate]);
   
   const refreshPreview = () => {
     setPreviewKey(prev => prev + 1);
