@@ -38,32 +38,34 @@ type TemplateCardProps = {
   onClick: () => void;
 };
 
-// Simple template preview component using direct image
+// Template preview component with iframe for HTML content
 const TemplatePreview = ({ templateId }: { templateId: number }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
-      <img
-        src={`/api/templates/${templateId}/preview`}
-        alt="Template Preview"
-        className="w-full h-full object-contain"
+    <div className="w-full h-full relative">
+      <iframe
+        src={`/api/templates/${templateId}/svg`}
+        title="Template Preview"
+        className="w-full h-full border-0 absolute inset-0 z-10"
         onLoad={() => setIsLoading(false)}
         onError={() => {
           setIsLoading(false);
           setError(true);
         }}
+        sandbox="allow-same-origin"
+        loading="lazy"
       />
       
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-75">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
       
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-90">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-90 z-20">
           <div className="text-center p-4">
             <p className="font-medium text-red-500">Failed to load preview</p>
           </div>
