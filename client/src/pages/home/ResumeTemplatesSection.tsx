@@ -114,9 +114,20 @@ const TemplatePreview = ({
   // Calculate custom scale if available from template data
   const scale = templateData?.displayScale ? parseFloat(templateData.displayScale) : 0.22;
   
+  // Calculate dimensions if available from template data
+  const width = templateData?.width || 800;
+  const height = templateData?.height || 1100;
+  const aspectRatio = templateData?.aspectRatio || '0.73';
+  
+  // Create custom style with scaling and dimensions
   const customStyle = {
     transform: `scale(${scale})`,
     transformOrigin: "center center",
+    width: `${width}px`,
+    height: `${height}px`,
+    maxWidth: '100%',
+    maxHeight: '100%',
+    margin: '0 auto',
   };
   
   return (
@@ -184,13 +195,38 @@ const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
     });
   }, [template]);
   
+  // Calculate aspect ratio for the container
+  const aspectRatio = template.aspectRatio || "0.73"; // Default A4 ratio if not specified
+  
+  // Create styles for the template preview container
+  const templateContainerStyle = {
+    position: 'relative' as const,
+    backgroundColor: 'white',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    borderRadius: '0.5rem',
+    overflow: 'hidden',
+    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+    cursor: 'pointer',
+    width: '100%',
+    aspectRatio: aspectRatio,
+    padding: '1rem'
+  };
+  
+  // Style for the document inside the container
+  const documentStyle = {
+    width: '100%',
+    height: '100%',
+    position: 'relative' as const,
+    overflow: 'hidden',
+  };
+  
   return (
     <div 
-      className="template-card-container"
+      className="flex flex-col group hover:shadow-xl transition-shadow duration-300 rounded-lg bg-white"
       onClick={onClick}
     >
-      <div className="template-preview-container">
-        <div className="resume-document">
+      <div style={templateContainerStyle} className="template-preview-container group-hover:shadow-lg">
+        <div style={documentStyle} className="resume-document">
           {previewError ? (
             <div className="h-full w-full flex items-center justify-center bg-gray-100">
               <p className="text-gray-500 text-sm">
@@ -206,35 +242,54 @@ const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
         </div>
         
         {template.isPopular && (
-          <div className="popular-badge">Popular</div>
+          <div className="absolute top-2 right-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+            Popular
+          </div>
         )}
         
-        <button className="use-template-btn">
-          Use This Template
-        </button>
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20 z-20">
+          <button className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded-md transition-colors">
+            Use This Template
+          </button>
+        </div>
       </div>
       
-      <div className="template-info">
-        <h3 className="template-title">{template.name}</h3>
-        <p className="template-description">{template.description}</p>
+      <div className="p-4">
+        <h3 className="font-bold text-lg text-gray-800">{template.name}</h3>
+        <p className="text-gray-600 text-sm mt-1">{template.description}</p>
       </div>
       
-      <div className="template-accent"></div>
+      <div className="h-1 w-full bg-primary mt-auto"></div>
     </div>
   );
 };
 
 const TemplateCardSkeleton = () => {
+  // Calculate aspect ratio for the container (using A4 default)
+  const aspectRatio = "0.73";
+  
+  // Create styles for the template preview container
+  const templateContainerStyle = {
+    position: 'relative' as const,
+    backgroundColor: 'white',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    borderRadius: '0.5rem',
+    overflow: 'hidden',
+    width: '100%',
+    aspectRatio: aspectRatio,
+    padding: '1rem'
+  };
+  
   return (
-    <div className="template-card-container">
-      <div className="template-preview-container">
-        <Skeleton className="w-full h-full" />
+    <div className="flex flex-col rounded-lg bg-white">
+      <div style={templateContainerStyle} className="mb-4">
+        <Skeleton className="w-full h-full rounded" />
       </div>
-      <div className="template-info">
+      <div className="p-4">
         <Skeleton className="h-6 w-2/3" />
         <Skeleton className="h-4 w-full mt-2" />
       </div>
-      <div className="template-accent"></div>
+      <div className="h-1 w-full bg-gray-200 mt-auto"></div>
     </div>
   );
 };
