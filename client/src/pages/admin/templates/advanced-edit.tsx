@@ -115,9 +115,25 @@ const AdvancedTemplateEditPage = () => {
   }
   
   // Create final template for editing based on new/existing state
+  // Important: When templateData exists, we need to ensure we're preserving all the content fields
   const finalTemplate = isNewTemplate 
     ? defaultResumeTemplate 
-    : templateData || defaultResumeTemplate;
+    : templateData 
+      ? {
+          ...defaultResumeTemplate,
+          ...templateData,
+          // Ensure all content fields are properly preserved
+          htmlContent: templateData.htmlContent || '',
+          cssContent: templateData.cssContent || '',
+          jsContent: templateData.jsContent || '',
+          svgContent: templateData.svgContent || '',
+          // Ensure dimension fields are properly preserved as strings
+          displayScale: templateData.displayScale?.toString() || '0.22',
+          width: templateData.width?.toString() || '800',
+          height: templateData.height?.toString() || '1100',
+          aspectRatio: templateData.aspectRatio?.toString() || '0.73',
+        }
+      : defaultResumeTemplate;
     
   console.log("Loading template for editing:", {
     isNewTemplate,
