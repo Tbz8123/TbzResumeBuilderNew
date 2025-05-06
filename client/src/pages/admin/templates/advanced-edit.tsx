@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, useParams } from 'wouter';
 import { 
   useTemplate, 
@@ -114,26 +114,52 @@ const AdvancedTemplateEditPage = () => {
     );
   }
   
-  // Create final template for editing based on new/existing state
-  // Important: When templateData exists, we need to ensure we're preserving all the content fields
-  const finalTemplate = isNewTemplate 
-    ? defaultResumeTemplate 
-    : templateData 
-      ? {
-          ...defaultResumeTemplate,
-          ...templateData,
-          // Ensure all content fields are properly preserved
-          htmlContent: templateData.htmlContent || '',
-          cssContent: templateData.cssContent || '',
-          jsContent: templateData.jsContent || '',
-          svgContent: templateData.svgContent || '',
-          // Ensure dimension fields are properly preserved as strings
-          displayScale: templateData.displayScale?.toString() || '0.22',
-          width: templateData.width?.toString() || '800',
-          height: templateData.height?.toString() || '1100',
-          aspectRatio: templateData.aspectRatio?.toString() || '0.73',
-        }
-      : defaultResumeTemplate;
+  // Create a properly typed template for editing
+  let editableTemplate: ResumeTemplate;
+  
+  if (isNewTemplate) {
+    // If creating a new template, use the default template
+    editableTemplate = defaultResumeTemplate;
+  } else if (templateData) {
+    // If editing an existing template, start with the default and override with the data
+    // We need to create a clean copy with proper types
+    editableTemplate = {
+      ...defaultResumeTemplate,
+      id: templateData.id,
+      name: templateData.name || '',
+      description: templateData.description || '',
+      category: templateData.category || 'professional',
+      isActive: templateData.isActive ?? true,
+      isPopular: templateData.isPopular ?? false,
+      primaryColor: templateData.primaryColor || '#5E17EB',
+      secondaryColor: templateData.secondaryColor || '#4A11C0',
+      
+      // Content fields
+      htmlContent: templateData.htmlContent || '',
+      cssContent: templateData.cssContent || '',
+      jsContent: templateData.jsContent || '',
+      svgContent: templateData.svgContent || '',
+      pdfContent: templateData.pdfContent,
+      
+      // Dimension fields (must be numbers for the schema)
+      width: templateData.width || 800,
+      height: templateData.height || 1100,
+      displayScale: templateData.displayScale || '0.22',
+      aspectRatio: templateData.aspectRatio || '0.73',
+      
+      // Thumbnail
+      thumbnailUrl: templateData.thumbnailUrl,
+      
+      // Dates
+      createdAt: templateData.createdAt || new Date(),
+      updatedAt: templateData.updatedAt || new Date(),
+    };
+  } else {
+    // Fallback to default if no data
+    editableTemplate = defaultResumeTemplate;
+  }
+  
+  const finalTemplate = editableTemplate;
     
   console.log("Loading template for editing:", {
     isNewTemplate,
