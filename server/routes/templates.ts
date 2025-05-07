@@ -4,6 +4,8 @@ import { resumeTemplates, resumeTemplateVersions, resumeTemplateSchema, resumeTe
 import { eq, desc, and } from "drizzle-orm";
 import { isAdmin, isAuthenticated } from "../auth";
 import { z } from "zod";
+import fs from 'fs';
+import path from 'path';
 import { upload } from '../utils/upload';
 import { renderTemplateToImage } from '../utils/templateImageRenderer';
 
@@ -1885,11 +1887,47 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
     // The renderTemplateToImage function is already imported at the top
     
     // Set the output path
-    const outputFilename = `template-${templateId}-${Date.now()}.png`;
+    let outputFilename = `template-${templateId}-${Date.now()}.png`;
     const outputPath = `public/uploads/previews/${outputFilename}`;
     
-    // Generate the image
-    await renderTemplateToImage(htmlContent, outputPath);
+    try {
+      // Try to generate the image with Puppeteer
+      await renderTemplateToImage(htmlContent, outputPath);
+    } catch (renderError) {
+      console.error("Error using Puppeteer to generate image:", renderError);
+      
+      // Fallback: Create a simple SVG placeholder with the template name
+      const svgPlaceholder = `
+      <svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="#f8f9fa"/>
+        <rect width="100%" height="60" fill="#5E17EB"/>
+        <text x="400" y="40" font-family="Arial" font-size="24" fill="white" text-anchor="middle" dominant-baseline="middle">
+          ${template.name || 'Template Preview'}
+        </text>
+        <text x="400" y="550" font-family="Arial" font-size="20" fill="#333" text-anchor="middle" dominant-baseline="middle">
+          Preview Image
+        </text>
+        <text x="400" y="590" font-family="Arial" font-size="16" fill="#666" text-anchor="middle" dominant-baseline="middle">
+          Generated: ${new Date().toLocaleDateString()}
+        </text>
+      </svg>
+      `;
+      
+      // Save the SVG placeholder instead (fs and path are imported at the top of the file)
+      
+      // Ensure directory exists
+      const outputDir = path.dirname(outputPath);
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+      
+      // Rename output with .svg extension
+      const svgOutputPath = outputPath.replace(/\.png$/, '.svg');
+      fs.writeFileSync(svgOutputPath, svgPlaceholder);
+      
+      // Update the filename to use svg extension
+      outputFilename = outputFilename.replace(/\.png$/, '.svg');
+    }
     
     // Update the template with the new thumbnail URL
     const thumbnailUrl = `/uploads/previews/${outputFilename}`;
