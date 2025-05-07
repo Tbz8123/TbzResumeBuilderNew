@@ -10,11 +10,13 @@ import ResumePreview from '@/components/resume/ResumePreview';
 import PhotoUploader from '@/components/resume/PhotoUploader';
 import AdditionalInfoOptions from '@/components/resume/AdditionalInfoOptions';
 import Logo from '@/components/Logo';
+import { useTemplates } from '@/hooks/use-templates';
 
 const PersonalInformationPage = () => {
   const [, setLocation] = useLocation();
-  const { resumeData, updateResumeData, updateAdditionalInfo, removeAdditionalInfo } = useResume();
+  const { resumeData, updateResumeData, updateAdditionalInfo, removeAdditionalInfo, selectedTemplateId } = useResume();
   const [step, setStep] = useState(1); // For multi-step form navigation
+  const { data: templates } = useTemplates(); // Fetch templates for displaying the correct template
   
   const handleBack = () => {
     setLocation('/templates');
@@ -303,13 +305,31 @@ const PersonalInformationPage = () => {
                       {/* Template preview layout - matches the templates page */}
                       <div className="relative h-full w-full overflow-hidden bg-white flex items-center justify-center">
                         <div className="relative h-full w-full flex items-center justify-center">
-                          {/* Resume Preview Component */}
-                          <ResumePreview className="h-full w-full" scaleContent={true} />
+                          {/* Template preview - uses the template's SVG directly for better consistency */}
+                          <div className="h-full w-full overflow-hidden flex items-center justify-center">
+                            {Array.isArray(templates) && templates.length > 0 ? (
+                              <img 
+                                src={
+                                  templates.find(t => t.id === selectedTemplateId)?.thumbnailUrl ||
+                                  (templates[0]?.thumbnailUrl || '/placeholder-template.svg') 
+                                }
+                                alt="Resume template"
+                                className="h-full object-contain transition-transform duration-300 hover:scale-105"
+                                style={{ maxWidth: '100%' }}
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center h-full text-gray-400">
+                                Loading template...
+                              </div>
+                            )}
+                          </div>
                           
                           {/* Template name overlay at bottom - consistent with templates page */}
                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent py-2 px-3">
                             <p className="font-medium text-white text-sm">Your Resume</p>
-                            <p className="text-xs text-gray-300 capitalize">Professional Template</p>
+                            <p className="text-xs text-gray-300 capitalize">
+                              {templates?.find(t => t.id === selectedTemplateId)?.name || 'Professional Template'}
+                            </p>
                           </div>
                         </div>
                       </div>
