@@ -48,7 +48,7 @@ const TemplatePreview = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [templateHtml, setTemplateHtml] = useState<string | null>(null);
+  const [template, setTemplate] = useState<any>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -58,7 +58,7 @@ const TemplatePreview = ({
         const response = await fetch(`/api/templates/${templateId}`);
         if (!response.ok) throw new Error("Failed to fetch");
         const data = await response.json();
-        setTemplateHtml(data.htmlContent);
+        setTemplate(data);
       } catch (e) {
         console.error("Template preview fetch error:", e);
         setError(true);
@@ -71,10 +71,10 @@ const TemplatePreview = ({
   }, [templateId, onError]);
 
   useEffect(() => {
-    if (templateHtml && iframeRef.current) {
+    if (template?.htmlContent && iframeRef.current) {
       const doc = iframeRef.current.contentDocument;
       if (doc) {
-        const styledHtml = templateHtml.replace('</head>', `
+        const styledHtml = template.htmlContent.replace('</head>', `
           <style>
             html, body {
               margin: 0;
@@ -102,7 +102,29 @@ const TemplatePreview = ({
         doc.close();
       }
     }
-  }, [templateHtml]);
+  }, [template]);
+
+  // If template has a thumbnailUrl, use it instead of rendering HTML
+  if (template?.thumbnailUrl && !error) {
+    return (
+      <div className="w-full h-full absolute inset-0 bg-white overflow-hidden flex items-center justify-center">
+        {isLoading ? (
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        ) : (
+          <img 
+            src={template.thumbnailUrl} 
+            alt={template.name || "Template preview"} 
+            className="w-full h-full object-contain"
+            onError={() => {
+              console.error("Failed to load thumbnail");
+              setError(true);
+              if (onError) onError();
+            }}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full absolute inset-0 bg-white overflow-hidden">
@@ -118,7 +140,7 @@ const TemplatePreview = ({
           </div>
         </div>
       )}
-      {!error && !isLoading && (
+      {!error && !isLoading && template?.htmlContent && (
       <iframe
         ref={iframeRef}
         sandbox="allow-same-origin"

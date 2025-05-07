@@ -825,14 +825,22 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                     <div className="flex flex-col items-center gap-2">
                       <div 
                         className="w-32 h-44 border rounded flex items-center justify-center overflow-hidden bg-gray-50"
-                        style={{ 
-                          backgroundSize: 'contain',
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat',
-                          backgroundImage: thumbnailUrl ? `url(${thumbnailUrl})` : 'none'
-                        }}
                       >
-                        {!thumbnailUrl && (
+                        {thumbnailUrl ? (
+                          <img 
+                            src={thumbnailUrl} 
+                            alt="Template thumbnail"
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              console.error('Error loading thumbnail:', e);
+                              toast({
+                                title: 'Error loading thumbnail',
+                                description: 'The thumbnail could not be displayed.',
+                                variant: 'destructive',
+                              });
+                            }}
+                          />
+                        ) : (
                           <ImageIcon className="w-10 h-10 text-gray-300" />
                         )}
                       </div>

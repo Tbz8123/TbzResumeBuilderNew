@@ -259,7 +259,15 @@ const AdminTemplateManagementPage = () => {
                                   <img 
                                     src={template.thumbnailUrl} 
                                     alt={template.name} 
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                      console.error('Error loading thumbnail:', e);
+                                      e.currentTarget.style.display = 'none';
+                                      const parent = e.currentTarget.parentElement;
+                                      if (parent) {
+                                        parent.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-50"><svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div>';
+                                      }
+                                    }}
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center bg-gray-50">
