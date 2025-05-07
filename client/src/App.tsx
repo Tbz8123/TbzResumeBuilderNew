@@ -27,6 +27,8 @@ function Router() {
   const [location] = useLocation();
   const isWizardPage = location.startsWith("/experience-level") || 
                        location.startsWith("/templates") ||
+                       location.startsWith("/upload-options") ||
+                       location.startsWith("/upload-resume") ||
                        location.startsWith("/builder");
   
   const isAdminPage = location.startsWith("/admin");
@@ -62,6 +64,8 @@ function App() {
   const [location] = useLocation();
   const isWizardPage = location.startsWith("/experience-level") || 
                        location.startsWith("/templates") ||
+                       location.startsWith("/upload-options") ||
+                       location.startsWith("/upload-resume") ||
                        location.startsWith("/builder");
   
   const isAdminPage = location.startsWith("/admin");

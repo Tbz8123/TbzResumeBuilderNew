@@ -55,10 +55,16 @@ const TemplatesPage = () => {
       })
     : [];
 
-  // Navigate to the builder page with the selected template
+  // Navigate to the upload options page with the selected template
   const handleUseTemplate = (templateId: number) => {
     console.log(`Selected template: ${templateId}`);
-    setLocation(`/builder?template=${templateId}&experience=${experienceLevel}${educationLevel ? `&education=${educationLevel}` : ''}`);
+    // Store template information in localStorage for persistence
+    localStorage.setItem('selectedTemplateId', templateId.toString());
+    localStorage.setItem('experienceLevel', experienceLevel || '');
+    localStorage.setItem('educationLevel', educationLevel || '');
+    
+    // Redirect to the upload options page
+    setLocation('/upload-options');
   };
 
   // Allow the user to choose the template later
