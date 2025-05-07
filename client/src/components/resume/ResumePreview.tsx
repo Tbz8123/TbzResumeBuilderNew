@@ -263,7 +263,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
   
   return (
     <div 
-      className={`border border-gray-200 bg-white rounded-md overflow-hidden shadow-sm relative ${className}`}
+      className={`bg-white overflow-hidden ${className} ${scaleContent ? 'bg-white' : 'rounded-md border border-gray-200 shadow-sm'}`}
       style={{ 
         width: width ? `${width}px` : '100%', 
         height: height ? `${height}px` : '100%',
@@ -279,11 +279,15 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
             {/* Render the template content with a proper scale */}
             <div 
               dangerouslySetInnerHTML={{ __html: templateHtml }} 
-              className={`w-full h-full ${scaleContent ? 'scale-100 md:scale-[0.95] origin-top' : ''}`}
+              className="w-full h-full"
               style={{ 
                 overflow: 'hidden',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                transform: scaleContent ? 'scale(0.28)' : 'none',
+                transformOrigin: 'top left',
+                height: scaleContent ? '357%' : '100%',
+                width: scaleContent ? '357%' : '100%'
               }}
             />
           </div>
