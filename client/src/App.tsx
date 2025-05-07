@@ -8,6 +8,8 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home/page";
 import ExperienceLevelPage from "@/pages/experience-level/page";
+import TemplatesPage from "@/pages/templates/page";
+import BuilderPage from "@/pages/builder/page";
 import AuthPage from "@/pages/auth-page";
 import AdminTemplatesPage from "@/pages/admin/templates/page";
 import AdminTemplateEditPage from "@/pages/admin/templates/edit";
@@ -31,6 +33,8 @@ function Router() {
     <Switch>
       <Route path="/" component={HomePage} />
       <Route path="/experience-level" component={ExperienceLevelPage} />
+      <Route path="/templates" component={TemplatesPage} />
+      <Route path="/builder" component={BuilderPage} />
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}

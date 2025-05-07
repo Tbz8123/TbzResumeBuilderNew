@@ -44,24 +44,24 @@ const ExperienceLevelPage = () => {
   const handleExperienceSelect = (experienceOption: ExperienceOption) => {
     setSelectedExperience(experienceOption.value);
     
-    // If the user has no experience, we'll wait for the student question to be answered
+    // For all experience levels except "No Experience", go directly to template catalog
     if (experienceOption.value !== "no_experience") {
-      // For users with experience, proceed directly to templates
       console.log(`Selected experience level: ${experienceOption.value}`);
       setTimeout(() => {
-        setLocation(`/templates?experience=${experienceOption.value}`);
+        setLocation(`/templates?experience=${experienceOption.value}&selection=${encodeURIComponent(experienceOption.label)}`);
       }, 500);
     }
+    // For "No Experience", we'll wait for the student question to be answered
   };
 
   const handleStudentSelect = (isStudentVal: boolean) => {
     setIsStudent(isStudentVal);
     
     if (!isStudentVal) {
-      // If not a student, proceed to templates
+      // If not a student, proceed to templates immediately
       console.log(`Not a student, experience: ${selectedExperience}`);
       setTimeout(() => {
-        setLocation(`/templates?experience=${selectedExperience}`);
+        setLocation(`/templates?experience=${selectedExperience}&selection=${encodeURIComponent("No Experience")}`);
       }, 500);
     }
     // If they are a student, they'll need to pick an education level
@@ -71,14 +71,15 @@ const ExperienceLevelPage = () => {
     setSelectedEducation(educationOption.value);
     console.log(`Selected education: ${educationOption.value}, experience: ${selectedExperience}`);
     setTimeout(() => {
-      setLocation(`/templates?experience=${selectedExperience}&education=${educationOption.value}`);
+      // Go directly to template catalog with both experience and education parameters
+      setLocation(`/templates?experience=${selectedExperience}&education=${educationOption.value}&selection=${encodeURIComponent(educationOption.label)}`);
     }, 500);
   };
 
   const skipEducation = () => {
     console.log(`Skipping education question, experience: ${selectedExperience}`);
     setTimeout(() => {
-      setLocation(`/templates?experience=${selectedExperience}`);
+      setLocation(`/templates?experience=${selectedExperience}&selection=${encodeURIComponent("No Experience")}`);
     }, 300);
   };
 
