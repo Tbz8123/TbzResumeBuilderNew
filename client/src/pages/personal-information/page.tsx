@@ -296,13 +296,8 @@ const PersonalInformationPage = () => {
                   
                   <div className="mb-2">
                     <div className="border border-gray-200 rounded overflow-hidden shadow-sm">
-                      <div className="bg-gray-50 py-1.5 px-3 text-center border-b border-gray-100">
-                        <p className="text-xs font-medium text-gray-700">
-                          Your Name
-                        </p>
-                      </div>
-                      <div className="flex justify-center">
-                        <ResumePreview width={240} height={320} />
+                      <div className="flex justify-center h-[340px]">
+                        <ResumePreview className="w-full h-full" />
                       </div>
                     </div>
                   </div>
