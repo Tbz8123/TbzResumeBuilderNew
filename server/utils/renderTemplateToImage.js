@@ -30,14 +30,13 @@ async function renderTemplateToImage(htmlString, outputPath) {
     await page.setViewport({ 
       width: 794, 
       height: 1123,
-      deviceScaleFactor: 1.5, // Higher resolution for better quality
+      deviceScaleFactor: 2, // for crisp thumbnails
     });
     
     // Take the screenshot
-    await page.screenshot({ 
+    const resumeElement = await page.$('.resume');
+    await resumeElement.screenshot({
       path: outputPath,
-      fullPage: true,
-      quality: 90,
     });
     
     console.log(`Template screenshot saved to ${outputPath}`);
