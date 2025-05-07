@@ -10,6 +10,8 @@ import HomePage from "@/pages/home/page";
 import ExperienceLevelPage from "@/pages/experience-level/page";
 import TemplatesPage from "@/pages/templates/page";
 import BuilderPage from "@/pages/builder/page";
+import UploadOptionsPage from "@/pages/upload-options/page";
+import UploadResumePage from "@/pages/upload-resume/page";
 import AuthPage from "@/pages/auth-page";
 import AdminTemplatesPage from "@/pages/admin/templates/page";
 import AdminTemplateEditPage from "@/pages/admin/templates/edit";
@@ -34,6 +36,8 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/experience-level" component={ExperienceLevelPage} />
       <Route path="/templates" component={TemplatesPage} />
+      <Route path="/upload-options" component={UploadOptionsPage} />
+      <Route path="/upload-resume" component={UploadResumePage} />
       <Route path="/builder" component={BuilderPage} />
       <Route path="/auth" component={AuthPage} />
       

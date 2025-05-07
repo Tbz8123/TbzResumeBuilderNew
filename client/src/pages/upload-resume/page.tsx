@@ -4,7 +4,7 @@ import { AnimatedSection } from '@/components/AnimationComponents';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const ResumeBuilderPage = () => {
+const UploadResumePage = () => {
   const [, setLocation] = useLocation();
   
   const handleBack = () => {
@@ -16,20 +16,21 @@ const ResumeBuilderPage = () => {
       <main className="flex-1 container mx-auto px-4 py-12 max-w-5xl">
         <AnimatedSection animation="fadeIn" className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Resume Builder
+            Upload Your Resume
           </h1>
           <p className="text-gray-600">
-            Create your resume from scratch
+            Upload your existing resume to get started
           </p>
         </AnimatedSection>
         
         <div className="p-8 bg-white rounded-lg shadow-sm border border-gray-200 text-center">
           <p className="text-lg text-gray-700 mb-4">
-            This is a placeholder for the resume builder functionality.
+            This is a placeholder for the resume upload functionality.
           </p>
           <p className="text-gray-500">
-            In a complete implementation, this page would contain a step-by-step resume builder
-            with sections for personal information, experience, education, skills, and more.
+            In a complete implementation, this page would contain a file upload component
+            with drag-and-drop functionality, supported file format information, and
+            processing capabilities.
           </p>
         </div>
         
@@ -67,4 +68,4 @@ const ResumeBuilderPage = () => {
   );
 };
 
-export default ResumeBuilderPage;
+export default UploadResumePage;
