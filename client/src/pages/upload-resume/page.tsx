@@ -3,6 +3,7 @@ import { useLocation, Link } from 'wouter';
 import { AnimatedSection } from '@/components/AnimationComponents';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Logo from '@/components/Logo';
 
 const UploadResumePage = () => {
   const [, setLocation] = useLocation();
@@ -13,6 +14,22 @@ const UploadResumePage = () => {
   
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
+      {/* Header with logo - consistent across all pages */}
+      <header className="py-6 border-b border-gray-100 bg-white">
+        <div className="container mx-auto px-4 flex items-center justify-between">
+          <Logo size="large" />
+          
+          <Button 
+            variant="ghost" 
+            onClick={handleBack}
+            className="flex items-center gap-2 text-indigo-600"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </Button>
+        </div>
+      </header>
+      
       <main className="flex-1 container mx-auto px-4 py-12 max-w-5xl">
         <AnimatedSection animation="fadeIn" className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -35,14 +52,11 @@ const UploadResumePage = () => {
         </div>
         
         {/* Navigation buttons */}
-        <div className="flex justify-between mt-12">
+        <div className="flex justify-end mt-12">
           <Button 
-            variant="outline" 
-            onClick={handleBack}
-            className="flex items-center gap-2"
+            className="bg-primary hover:bg-primary-dark text-white px-6"
           >
-            <ArrowLeft size={16} />
-            Back
+            Continue
           </Button>
         </div>
       </main>

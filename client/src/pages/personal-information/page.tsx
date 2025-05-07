@@ -39,26 +39,19 @@ const PersonalInformationPage = () => {
   
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 py-4">
-        <div className="container mx-auto px-6 flex items-center">
-          <div className="flex-1 flex items-center">
-            <Button 
-              variant="ghost" 
-              onClick={handleBack}
-              className="flex items-center gap-2 text-indigo-600"
-            >
-              <ArrowLeft size={16} />
-              Go Back
-            </Button>
-          </div>
+      {/* Header with logo - consistent across all pages */}
+      <header className="py-6 border-b border-gray-100 bg-white">
+        <div className="container mx-auto px-4 flex items-center justify-between">
+          <Logo size="large" />
           
-          <div className="flex-1 text-center">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              TbzResumeBuilder
-            </h1>
-          </div>
-          
-          <div className="flex-1"></div> {/* Spacer for centered logo */}
+          <Button 
+            variant="ghost" 
+            onClick={handleBack}
+            className="flex items-center gap-2 text-indigo-600"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </Button>
         </div>
       </header>
       
