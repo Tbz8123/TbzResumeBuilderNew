@@ -10,7 +10,7 @@ import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home/page";
 import ExperienceLevelPage from "@/pages/experience-level/page";
 import TemplatesPage from "@/pages/templates/page";
-import BuilderPage from "@/pages/builder/page";
+import PersonalInformationPage from "@/pages/personal-information/page";
 import UploadOptionsPage from "@/pages/upload-options/page";
 import UploadResumePage from "@/pages/upload-resume/page";
 import AuthPage from "@/pages/auth-page";
@@ -30,7 +30,7 @@ function Router() {
                        location.startsWith("/templates") ||
                        location.startsWith("/upload-options") ||
                        location.startsWith("/upload-resume") ||
-                       location.startsWith("/builder");
+                       location.startsWith("/personal-information");
   
   const isAdminPage = location.startsWith("/admin");
   
@@ -41,7 +41,7 @@ function Router() {
       <Route path="/templates" component={TemplatesPage} />
       <Route path="/upload-options" component={UploadOptionsPage} />
       <Route path="/upload-resume" component={UploadResumePage} />
-      <Route path="/builder" component={BuilderPage} />
+      <Route path="/personal-information" component={PersonalInformationPage} />
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}

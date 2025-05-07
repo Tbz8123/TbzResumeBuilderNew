@@ -305,4 +305,4 @@ const PersonalInformationPage = () => {
   );
 };
 
-export default ResumeBuilderPage;
+export default PersonalInformationPage;
