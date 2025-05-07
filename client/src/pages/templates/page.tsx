@@ -288,33 +288,19 @@ const TemplatesPage = () => {
                     {/* Template name and category - bottom info section */}
                     <div className="p-3 border-t border-gray-100 bg-white">
                       <h3 className="font-semibold text-base text-gray-800">{template.name}</h3>
-                      <div className="flex items-center mt-1">
-                        <div className={`w-3 h-3 rounded-full mr-2 ${
-                          template.category === 'professional' ? 'bg-blue-500' : 
-                          template.category === 'creative' ? 'bg-green-500' : 
-                          template.category === 'simple' ? 'bg-gray-400' : 'bg-purple-500'
-                        }`}></div>
-                        <p className="text-xs text-gray-500 capitalize">{template.category}</p>
-                      </div>
+                      <p className="text-xs text-gray-500 capitalize mt-1">{template.category}</p>
                       
-                      {/* Status tags */}
+                      {/* Selected tag */}
                       {selectedTemplate === template.id && (
-                        <div className="absolute bottom-3 right-3 bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-semibold">
+                        <div className="absolute bottom-3 right-3 bg-primary text-white text-xs px-2 py-1 rounded-md font-semibold">
                           Selected
                         </div>
                       )}
                       
                       {/* "RECOMMENDED" tag for certain templates */}
                       {(template.isPopular || recommendedTemplates.includes(template.id)) && selectedTemplate !== template.id && (
-                        <div className="absolute bottom-3 right-3 bg-green-500 text-white text-xs rounded-full font-semibold tracking-wide px-3 py-1">
-                          Recommended
-                        </div>
-                      )}
-
-                      {/* "NEW" tag in Zety style for newer templates - assuming last 3 templates are new */}
-                      {template.id >= (templatesArray.length - 2) && selectedTemplate !== template.id && !template.isPopular && !recommendedTemplates.includes(template.id) && (
-                        <div className="absolute bottom-3 right-3 bg-orange-500 text-white text-xs rounded-full font-semibold tracking-wide px-3 py-1">
-                          New
+                        <div className="absolute bottom-3 right-3 bg-pink-100 text-pink-500 text-xs rounded-md font-semibold tracking-wide px-2 py-0.5">
+                          RECOMMENDED
                         </div>
                       )}
                     </div>
