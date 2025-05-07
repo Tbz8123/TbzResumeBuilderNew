@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Image, Upload, X } from 'lucide-react';
 import { useResume } from '@/contexts/ResumeContext';
 
 const PhotoUploader: React.FC = () => {
@@ -69,68 +68,57 @@ const PhotoUploader: React.FC = () => {
   };
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center gap-2">
-        <div
-          className={`w-32 h-32 border-2 rounded-full overflow-hidden flex items-center justify-center cursor-pointer transition-all ${
-            isDragging 
-              ? 'border-blue-500 bg-blue-50' 
-              : resumeData.photo 
-                ? 'border-transparent' 
-                : 'border-gray-300 border-dashed hover:bg-gray-50'
-          }`}
-          onClick={handleClick}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          {resumeData.photo ? (
-            <div className="relative w-full h-full group">
-              <img
-                src={resumeData.photo}
-                alt="User profile"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <button 
-                  onClick={removePhoto}
-                  className="bg-red-500 text-white rounded-full p-1.5"
-                  aria-label="Remove photo"
-                >
-                  <X size={14} />
-                </button>
-              </div>
+    <div>
+      <div 
+        className={`w-28 h-28 border rounded bg-gray-100 overflow-hidden flex items-center justify-center cursor-pointer transition-all ${
+          isDragging ? 'border-blue-500' : 'border-gray-300'
+        }`}
+        onClick={handleClick}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {resumeData.photo ? (
+          <div className="relative w-full h-full group">
+            <img
+              src={resumeData.photo}
+              alt="User profile"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <button 
+                onClick={removePhoto}
+                className="bg-white text-gray-700 hover:bg-gray-100 rounded text-xs px-2 py-1"
+                aria-label="Remove photo"
+              >
+                Remove
+              </button>
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center text-gray-500">
-              <Image className="w-8 h-8" />
-              <span className="text-xs mt-1">Add photo</span>
-            </div>
-          )}
-          
-          <Input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-        </div>
-        
-        <div className="ml-4">
-          <h3 className="text-sm font-medium text-gray-700">Profile Photo</h3>
-          <p className="text-xs text-gray-500 mt-1">
-            For best results, use a professional-looking headshot
-          </p>
-          <div className="text-xs text-gray-400 mt-2">
-            <div className="flex items-center gap-1">
-              <Upload className="w-3 h-3" />
-              <span>Drag & drop or click to upload</span>
-            </div>
-            <div className="mt-1">Max size: 5MB</div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center p-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 mb-1"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span className="text-xs text-gray-600">Upload Photo</span>
+          </div>
+        )}
+        
+        <Input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
       </div>
+      
+      <Button 
+        variant="link" 
+        size="sm" 
+        className="text-xs text-blue-600 mt-2 p-0 h-auto"
+        onClick={handleClick}
+      >
+        Upload Photo
+      </Button>
     </div>
   );
 };

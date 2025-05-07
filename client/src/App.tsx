@@ -67,7 +67,7 @@ function App() {
                        location.startsWith("/templates") ||
                        location.startsWith("/upload-options") ||
                        location.startsWith("/upload-resume") ||
-                       location.startsWith("/builder");
+                       location.startsWith("/personal-information");
   
   const isAdminPage = location.startsWith("/admin");
   
