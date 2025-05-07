@@ -277,25 +277,28 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
     const scaleX = containerWidth / A4_WIDTH;
     const scaleY = containerHeight / A4_HEIGHT;
     
-    // Use the smaller scale factor to ensure the entire resume fits
-    return Math.min(scaleX, scaleY) * 0.90; // 0.90 for a safer margin to ensure all content is visible
+    // Use a fixed scale of 0.22 to ensure the entire resume fits within the fixed container width
+    return 0.22; // Using a lower scale to ensure everything fits without expanding the container
   };
   
   const scaleFactor = calculateScale();
   
   return (
     <div 
-      className={`preview-container ${className} ${scaleContent ? 'overflow-hidden' : 'rounded-md border border-gray-200 shadow-sm'}`}
+      className={`preview-container ${className}`}
       style={{ 
         width: width ? `${width}px` : '100%', 
         height: height ? `${height}px` : '100%',
         maxWidth: '100%',
         position: 'relative',
         backgroundColor: 'white',
+        overflow: 'hidden',
+        borderRadius: '12px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
       }}
     >
       {templateHtml ? (
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 flex items-start justify-start overflow-hidden">
           {/* Inject styles separately */}
           <style dangerouslySetInnerHTML={{ __html: templateStyles }} />
           
@@ -305,10 +308,10 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
             className="resume-scaled"
             style={{ 
               transform: `scale(${scaleFactor})`,
-              transformOrigin: 'center center',
+              transformOrigin: 'top left',
               width: '794px', // A4 width
               height: '1123px', // A4 height
-              margin: '0 auto',
+              margin: '0',
               // Debug border (comment out in production)
               // border: '1px solid red'
             }}
