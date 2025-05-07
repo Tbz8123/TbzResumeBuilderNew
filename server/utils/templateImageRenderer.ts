@@ -1,14 +1,14 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs');
-const path = require('path');
+import puppeteer from 'puppeteer';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Renders an HTML template to an image
- * @param {string} htmlString - The HTML content to render
- * @param {string} outputPath - The full path to save the rendered image
- * @returns {Promise<void>}
+ * @param htmlString - The HTML content to render
+ * @param outputPath - The full path to save the rendered image
+ * @returns Promise<void>
  */
-async function renderTemplateToImage(htmlString, outputPath) {
+export async function renderTemplateToImage(htmlString: string, outputPath: string): Promise<void> {
   // Make sure the output directory exists
   const outputDir = path.dirname(outputPath);
   if (!fs.existsSync(outputDir)) {
@@ -16,7 +16,7 @@ async function renderTemplateToImage(htmlString, outputPath) {
   }
 
   const browser = await puppeteer.launch({
-    headless: 'new',  // Use new headless mode to avoid deprecation warnings
+    headless: true,  // Use headless mode
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
   
@@ -49,7 +49,4 @@ async function renderTemplateToImage(htmlString, outputPath) {
   }
 }
 
-// CommonJS default export
-module.exports = renderTemplateToImage;
-// Also add named export for ESM compatibility
-module.exports.default = renderTemplateToImage;
+export default renderTemplateToImage;

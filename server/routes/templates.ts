@@ -5,6 +5,7 @@ import { eq, desc, and } from "drizzle-orm";
 import { isAdmin, isAuthenticated } from "../auth";
 import { z } from "zod";
 import { upload } from '../utils/upload';
+import { renderTemplateToImage } from '../utils/templateImageRenderer';
 
 const router = Router();
 
@@ -1881,8 +1882,7 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
       return res.status(404).json({ message: "No HTML content available for this template" });
     }
     
-    // Import the render function
-    const renderTemplateToImage = require('../utils/renderTemplateToImage');
+    // The renderTemplateToImage function is already imported at the top
     
     // Set the output path
     const outputFilename = `template-${templateId}-${Date.now()}.png`;
