@@ -263,31 +263,29 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
   
   return (
     <div 
-      className={`bg-white overflow-hidden ${className} ${scaleContent ? 'bg-white' : 'rounded-md border border-gray-200 shadow-sm'}`}
+      className={`bg-white ${className} ${scaleContent ? 'overflow-hidden' : 'rounded-md border border-gray-200 shadow-sm'}`}
       style={{ 
         width: width ? `${width}px` : '100%', 
         height: height ? `${height}px` : '100%',
         maxWidth: '100%',
+        position: 'relative',
       }}
     >
-      <div className="h-full flex flex-col w-full">
+      <div className="h-full w-full">
         {templateHtml ? (
-          <div className="w-full h-full flex flex-col relative">
-            {/* Inject styles separately so they're not affected by React's style handling */}
+          <div className="absolute inset-0 flex items-start justify-start">
+            {/* Inject styles separately */}
             <style dangerouslySetInnerHTML={{ __html: templateStyles }} />
             
-            {/* Render the template content with a proper scale */}
+            {/* Resume content with proper scaling */}
             <div 
               dangerouslySetInnerHTML={{ __html: templateHtml }} 
-              className="w-full h-full"
               style={{ 
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
                 transform: scaleContent ? 'scale(0.28)' : 'none',
                 transformOrigin: 'top left',
-                height: scaleContent ? '357%' : '100%',
-                width: scaleContent ? '357%' : '100%'
+                width: '794px', // A4 width in px
+                height: '1123px', // A4 height in px
+                overflow: 'hidden'
               }}
             />
           </div>
