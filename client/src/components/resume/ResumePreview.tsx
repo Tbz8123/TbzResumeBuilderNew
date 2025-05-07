@@ -15,8 +15,8 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
   const { data: templates } = useTemplates();
   
   // Find the selected template - safely handle potentially undefined templates
-  const selectedTemplate = templates && templates.length > 0 
-    ? templates.find(t => t.id === selectedTemplateId) 
+  const selectedTemplate = Array.isArray(templates) && templates.length > 0 
+    ? templates.find((t: any) => t.id === selectedTemplateId) 
     : undefined;
   
   return (

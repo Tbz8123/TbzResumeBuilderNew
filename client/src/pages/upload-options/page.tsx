@@ -18,7 +18,7 @@ const UploadOptionsPage = () => {
     if (selectedOption === 'upload') {
       setLocation('/upload-resume');
     } else if (selectedOption === 'scratch') {
-      setLocation('/builder');
+      setLocation('/personal-information');
     }
   };
   

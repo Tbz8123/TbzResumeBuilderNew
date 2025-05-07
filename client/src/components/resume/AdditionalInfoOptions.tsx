@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useResume } from '@/contexts/ResumeContext';
@@ -50,29 +50,33 @@ const AdditionalInfoOptions: React.FC = () => {
 
   return (
     <div>
-      <h3 className="text-gray-800 font-medium mb-2 flex items-center gap-2">
-        Add additional information to your resume <span className="text-gray-500 text-sm">(optional)</span>
-        <div className="inline-flex items-center justify-center w-5 h-5 bg-blue-50 text-blue-600 rounded-full border border-blue-200 text-xs ml-1">
-          i
-        </div>
-      </h3>
+      <div className="flex items-center gap-1 mb-3">
+        <h3 className="text-gray-700 text-sm font-medium">Add additional information to your resume</h3>
+        <span className="text-gray-500 text-xs">(optional)</span>
+        <HelpCircle size={14} className="text-gray-400 ml-1" />
+      </div>
       
-      <div className="flex flex-wrap gap-3 mt-3">
+      <div className="flex flex-wrap gap-2">
         {options.map((option) => (
           <Button
             key={option.id}
-            variant={option.active ? "default" : "outline"}
-            className={`flex items-center gap-2 ${option.active ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200' : 'text-blue-700 border-blue-300'}`}
+            variant="outline"
+            size="sm"
+            className={`rounded-3xl border px-3 py-1 h-auto text-sm flex items-center gap-1 ${
+              option.active 
+                ? 'bg-indigo-50 text-indigo-700 border-indigo-200' 
+                : 'border-gray-300 text-indigo-700'
+            }`}
             onClick={() => handleOptionClick(option.id)}
           >
             {option.label}
             {option.active ? (
               <X 
-                className="h-4 w-4 cursor-pointer" 
+                className="h-3.5 w-3.5 cursor-pointer ml-1" 
                 onClick={(e) => handleRemove(option.id, e)}
               />
             ) : (
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5 ml-1" />
             )}
           </Button>
         ))}
@@ -89,14 +93,21 @@ const AdditionalInfoOptions: React.FC = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={`Enter your ${activeOption} information`}
-              className="w-full mb-4"
+              className="w-full mb-4 border-gray-300"
             />
             
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setOpen(false)}
+                className="border-gray-300"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleSave}>
+              <Button 
+                onClick={handleSave}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
                 Save
               </Button>
             </div>
