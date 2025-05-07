@@ -91,6 +91,7 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(template.thumbnailUrl);
   const [generatingThumbnail, setGeneratingThumbnail] = useState<boolean>(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState<boolean>(false);
+  const [thumbnailSourceType, setThumbnailSourceType] = useState<'html' | 'svg'>('html');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Reset state when template changes
@@ -356,6 +357,7 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ sourceType: thumbnailSourceType }),
       });
       
       if (!response.ok) {
@@ -849,7 +851,19 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                     
                     {/* Thumbnail Actions */}
                     <div className="flex flex-col gap-3 mt-2">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
+                        <div className="flex items-center gap-2 border rounded p-2 bg-gray-50">
+                          <span className="text-xs font-medium">Generate From:</span>
+                          <select 
+                            className="text-xs border rounded p-1"
+                            onChange={(e) => setThumbnailSourceType(e.target.value)}
+                            value={thumbnailSourceType}
+                          >
+                            <option value="html">HTML+CSS</option>
+                            <option value="svg">SVG</option>
+                          </select>
+                        </div>
+                        
                         <Button
                           variant="outline"
                           size="sm"
@@ -892,8 +906,8 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                       
                       {/* Help text */}
                       <p className="text-xs text-gray-500 max-w-md">
-                        Generate a thumbnail automatically from the template HTML content, or upload your own image (JPG, PNG, WebP, max 5MB).
-                        Save the template first before managing thumbnails.
+                        Generate a thumbnail from {thumbnailSourceType === 'html' ? 'HTML+CSS content' : 'SVG content'}, or upload your own image (JPG, PNG, WebP, max 5MB).
+                        Select the source type from the dropdown, then click "Generate Thumbnail". Save the template first before managing thumbnails.
                       </p>
                     </div>
                   </div>
