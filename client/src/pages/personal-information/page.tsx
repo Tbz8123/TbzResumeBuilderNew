@@ -11,6 +11,7 @@ import PhotoUploader from '@/components/resume/PhotoUploader';
 import AdditionalInfoOptions from '@/components/resume/AdditionalInfoOptions';
 import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
+import { ResumeTemplate } from '@shared/schema';
 
 const PersonalInformationPage = () => {
   const [, setLocation] = useLocation();
@@ -303,32 +304,20 @@ const PersonalInformationPage = () => {
                       style={{ width: '280px', height: '362.13px' }}
                     >
                       {/* Template preview layout - matches the templates page */}
-                      <div className="relative h-full w-full overflow-hidden bg-white flex items-center justify-center">
+                      <div className="relative h-full w-full overflow-hidden bg-white">
                         <div className="relative h-full w-full flex items-center justify-center">
-                          {/* Template preview - uses the template's SVG directly for better consistency */}
-                          <div className="h-full w-full overflow-hidden flex items-center justify-center">
-                            {Array.isArray(templates) && templates.length > 0 ? (
-                              <img 
-                                src={
-                                  templates.find(t => t.id === selectedTemplateId)?.thumbnailUrl ||
-                                  (templates[0]?.thumbnailUrl || '/placeholder-template.svg') 
-                                }
-                                alt="Resume template"
-                                className="h-full object-contain transition-transform duration-300 hover:scale-105"
-                                style={{ maxWidth: '100%' }}
-                              />
-                            ) : (
-                              <div className="flex items-center justify-center h-full text-gray-400">
-                                Loading template...
-                              </div>
-                            )}
-                          </div>
+                          {/* Interactive Resume Preview component - maintains real-time updates */}
+                          <ResumePreview 
+                            className="h-full w-full border-none shadow-none" 
+                            width={280} 
+                            height={362}
+                          />
                           
                           {/* Template name overlay at bottom - consistent with templates page */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent py-2 px-3">
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent py-2 px-3 pointer-events-none">
                             <p className="font-medium text-white text-sm">Your Resume</p>
                             <p className="text-xs text-gray-300 capitalize">
-                              {templates?.find(t => t.id === selectedTemplateId)?.name || 'Professional Template'}
+                              {Array.isArray(templates) && templates.find((t: ResumeTemplate) => t.id === selectedTemplateId)?.name || 'Professional Template'}
                             </p>
                           </div>
                         </div>
