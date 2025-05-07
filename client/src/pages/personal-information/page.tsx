@@ -294,10 +294,24 @@ const PersonalInformationPage = () => {
                     </p>
                   </div>
                   
-                  <div className="mb-2">
-                    <div className="border border-gray-200 rounded overflow-hidden shadow-sm">
-                      <div className="flex justify-center h-[340px]">
-                        <ResumePreview className="w-full h-full" />
+                  <div className="mb-4">
+                    {/* Template container with exact dimensions from templates page */}
+                    <div 
+                      className="border border-gray-200 rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
+                      style={{ width: '280px', height: '362.13px' }}
+                    >
+                      {/* Template preview layout - matches the templates page */}
+                      <div className="relative h-full w-full overflow-hidden bg-white flex items-center justify-center">
+                        <div className="relative h-full w-full flex items-center justify-center">
+                          {/* Resume Preview Component */}
+                          <ResumePreview className="h-full w-full" scaleContent={true} />
+                          
+                          {/* Template name overlay at bottom - consistent with templates page */}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent py-2 px-3">
+                            <p className="font-medium text-white text-sm">Your Resume</p>
+                            <p className="text-xs text-gray-300 capitalize">Professional Template</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
