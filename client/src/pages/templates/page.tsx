@@ -188,7 +188,7 @@ const TemplatesPage = () => {
           </div>
           
           {/* Templates grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             {isLoading ? (
               // Loading skeleton
               Array.from({ length: 6 }).map((_, index) => (
@@ -200,12 +200,13 @@ const TemplatesPage = () => {
                 <AnimatedSection 
                   key={template.id} 
                   animation="fadeInUp"
-                  className="relative group"
+                  className="relative group flex items-center justify-center"
                 >
                   <motion.div 
-                    className={`border rounded-lg overflow-hidden transition-all duration-300 h-full flex flex-col 
-                      ${selectedTemplate === template.id ? 'border-primary border-2 shadow-lg' : 'border-gray-200 hover:border-primary hover:shadow-md'}`}
-                    whileHover={{ y: -5 }}
+                    className={`border rounded-lg overflow-hidden transition-all duration-300 h-full flex flex-col max-w-[300px] mx-auto
+                      ${selectedTemplate === template.id ? 'border-primary border-2 shadow-lg' : 'border-gray-200 hover:border-primary hover:shadow-xl'}`}
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 300 }}
                     onClick={() => handleTemplateSelect(template.id)}
                     onContextMenu={(e) => handleRightClick(e, template.id)}
                   >
@@ -226,13 +227,26 @@ const TemplatesPage = () => {
                     {/* Template preview */}
                     <div className="relative h-80 overflow-hidden bg-gray-50 flex items-center justify-center">
                       {template.thumbnailUrl ? (
-                        <div className="relative h-full max-w-[210px] mx-auto">
+                        <div className="relative h-full max-w-[150px] mx-auto flex items-center justify-center">
                           <img 
                             src={template.thumbnailUrl} 
                             alt={`${template.name} template`}
-                            className="h-full object-contain transition-transform duration-300 group-hover:scale-105"
-                            style={{ width: 'auto', maxHeight: '100%' }}
+                            className="h-full object-contain transition-transform duration-300 group-hover:scale-110"
+                            style={{ width: 'auto', maxHeight: '90%' }}
                           />
+                          
+                          {/* Overlay hover button */}
+                          <div className="absolute inset-0 bg-black/0 opacity-0 flex items-center justify-center transition-all duration-300 group-hover:bg-black/20 group-hover:opacity-100">
+                            <button 
+                              className="bg-primary hover:bg-primary-dark text-white text-sm py-2 px-3 rounded-md shadow-lg transform translate-y-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUseTemplate(template.id);
+                              }}
+                            >
+                              Use this template
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -263,7 +277,7 @@ const TemplatesPage = () => {
               ))
             ) : (
               // No templates found
-              <div className="col-span-3 text-center py-12">
+              <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
                 <p className="text-gray-500">No templates match your search. Try different keywords or filters.</p>
               </div>
             )}
