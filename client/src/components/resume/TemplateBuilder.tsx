@@ -856,7 +856,7 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                           <span className="text-xs font-medium">Generate From:</span>
                           <select 
                             className="text-xs border rounded p-1"
-                            onChange={(e) => setThumbnailSourceType(e.target.value)}
+                            onChange={(e) => setThumbnailSourceType(e.target.value as 'html' | 'svg')}
                             value={thumbnailSourceType}
                           >
                             <option value="html">HTML+CSS</option>

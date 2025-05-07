@@ -1864,10 +1864,17 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
       return res.status(400).json({ message: "Invalid template ID" });
     }
     
-    // Get the template HTML content
+    // Get the source type from request body (default to 'html')
+    const { sourceType = 'html' } = req.body;
+    
+    // Get the complete template with all fields we might need
     const templates = await db.select({
       htmlContent: resumeTemplates.htmlContent,
+      cssContent: resumeTemplates.cssContent,
+      svgContent: resumeTemplates.svgContent,
       name: resumeTemplates.name,
+      primaryColor: resumeTemplates.primaryColor,
+      secondaryColor: resumeTemplates.secondaryColor,
     })
     .from(resumeTemplates)
     .where(eq(resumeTemplates.id, templateId))
@@ -1878,23 +1885,43 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
     }
     
     const template = templates[0];
-    const htmlContent = template.htmlContent;
-    
-    if (!htmlContent) {
-      return res.status(404).json({ message: "No HTML content available for this template" });
-    }
-    
-    // The renderTemplateToImage function is already imported at the top
     
     // Set the output path
     let outputFilename = `template-${templateId}-${Date.now()}.png`;
     const outputPath = `public/uploads/previews/${outputFilename}`;
     
     try {
-      // Try to generate the image with Puppeteer
-      await renderTemplateToImage(htmlContent, outputPath);
+      if (sourceType === 'svg') {
+        // Handle SVG content
+        const svgContent = template.svgContent;
+        if (!svgContent) {
+          return res.status(404).json({ message: "No SVG content available for this template" });
+        }
+        
+        // Ensure directory exists
+        const outputDir = path.dirname(outputPath);
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
+        }
+        
+        // Save SVG content directly
+        const svgOutputPath = outputPath.replace(/\.png$/, '.svg');
+        fs.writeFileSync(svgOutputPath, svgContent);
+        
+        // Update filename to use SVG extension
+        outputFilename = outputFilename.replace(/\.png$/, '.svg');
+      } else {
+        // Handle HTML content
+        const htmlContent = template.htmlContent;
+        if (!htmlContent) {
+          return res.status(404).json({ message: "No HTML content available for this template" });
+        }
+        
+        // Try to generate the image with Puppeteer
+        await renderTemplateToImage(htmlContent, outputPath);
+      }
     } catch (renderError) {
-      console.error("Error using Puppeteer to generate image:", renderError);
+      console.error(`Error generating ${sourceType} preview:`, renderError);
       
       // Fallback: Create a more representative SVG based on the actual template
       // Parse the template HTML to extract some key elements
