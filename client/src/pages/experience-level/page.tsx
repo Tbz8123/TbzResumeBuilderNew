@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { FullWidthSection } from "@/components/ui/AppleStyles";
 import { AnimatedSection } from "@/components/AnimationComponents";
@@ -21,6 +21,7 @@ const ExperienceLevelPage = () => {
   const [_, setLocation] = useLocation();
   const [selectedExperience, setSelectedExperience] = useState<string | null>(null);
   const [isStudent, setIsStudent] = useState<boolean | null>(null);
+  const [selectedEducation, setSelectedEducation] = useState<string | null>(null);
   
   const experienceOptions: ExperienceOption[] = [
     { id: "no-experience", label: "No Experience", value: "no_experience" },
@@ -43,36 +44,47 @@ const ExperienceLevelPage = () => {
   const handleExperienceSelect = (experienceOption: ExperienceOption) => {
     setSelectedExperience(experienceOption.value);
     
-    // If the user has no experience, show the student question
-    if (experienceOption.value === "no_experience") {
-      // Don't navigate yet - need to ask if they're a student
-    } else {
+    // If the user has no experience, we'll wait for the student question to be answered
+    if (experienceOption.value !== "no_experience") {
       // For users with experience, proceed directly to templates
       console.log(`Selected experience level: ${experienceOption.value}`);
-      setLocation(`/templates?experience=${experienceOption.value}`);
+      setTimeout(() => {
+        setLocation(`/templates?experience=${experienceOption.value}`);
+      }, 500);
     }
   };
 
-  const handleStudentSelect = (isStudent: boolean) => {
-    setIsStudent(isStudent);
+  const handleStudentSelect = (isStudentVal: boolean) => {
+    setIsStudent(isStudentVal);
     
-    if (!isStudent) {
+    if (!isStudentVal) {
       // If not a student, proceed to templates
       console.log(`Not a student, experience: ${selectedExperience}`);
-      setLocation(`/templates?experience=${selectedExperience}`);
+      setTimeout(() => {
+        setLocation(`/templates?experience=${selectedExperience}`);
+      }, 500);
     }
-    // If they are a student, show the education options (handled by render condition)
+    // If they are a student, they'll need to pick an education level
   };
 
   const handleEducationSelect = (educationOption: EducationOption) => {
+    setSelectedEducation(educationOption.value);
     console.log(`Selected education: ${educationOption.value}, experience: ${selectedExperience}`);
-    setLocation(`/templates?experience=${selectedExperience}&education=${educationOption.value}`);
+    setTimeout(() => {
+      setLocation(`/templates?experience=${selectedExperience}&education=${educationOption.value}`);
+    }, 500);
   };
 
   const skipEducation = () => {
     console.log(`Skipping education question, experience: ${selectedExperience}`);
-    setLocation(`/templates?experience=${selectedExperience}`);
+    setTimeout(() => {
+      setLocation(`/templates?experience=${selectedExperience}`);
+    }, 300);
   };
+
+  // Determine if different sections should be visible or not
+  const showStudentSection = selectedExperience === "no_experience";
+  const showEducationSection = selectedExperience === "no_experience" && isStudent === true;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -85,9 +97,9 @@ const ExperienceLevelPage = () => {
 
       {/* Main content */}
       <FullWidthSection className="flex-grow flex items-center justify-center py-12">
-        <div className="max-w-3xl w-full mx-auto px-4">
+        <div className="max-w-4xl w-full mx-auto px-4">
           <AnimatedSection animation="fadeIn">
-            <div className="text-center mb-12">
+            <div className="text-center mb-6">
               <motion.div 
                 className="inline-flex items-center mb-2"
                 initial={{ opacity: 0, y: -10 }}
@@ -121,7 +133,7 @@ const ExperienceLevelPage = () => {
           </AnimatedSection>
 
           {/* Experience Options */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 max-w-4xl mx-auto mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 max-w-4xl mx-auto mb-10">
             {experienceOptions.map((option, index) => (
               <AnimatedSection 
                 key={option.id} 
@@ -144,103 +156,115 @@ const ExperienceLevelPage = () => {
             ))}
           </div>
 
-          {/* Student Question - Only shown if No Experience is selected */}
-          <AnimatePresence>
-            {selectedExperience === "no_experience" && isStudent === null && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="mt-8"
-              >
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold mb-2">Are you a student?</h2>
-                </div>
+          {/* Student Question - Shown if No Experience is selected */}
+          {showStudentSection && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mt-10 mb-10"
+            >
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold mb-2">Are you a student?</h2>
+              </div>
+              
+              <div className="flex justify-center gap-4 max-w-xs mx-auto">
+                <motion.button
+                  className={`flex-1 border rounded-lg py-4 px-8 text-center transition-all
+                    ${isStudent === true
+                      ? 'bg-primary text-white border-primary shadow-md'
+                      : 'border-gray-300 text-gray-800 hover:border-primary hover:shadow-md'
+                    }`}
+                  whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(94, 23, 235, 0.1)" }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleStudentSelect(true)}
+                >
+                  <span className="block font-medium">Yes</span>
+                </motion.button>
                 
-                <div className="flex justify-center gap-4 max-w-xs mx-auto">
-                  <motion.button
-                    className="flex-1 border border-gray-300 rounded-lg py-4 px-8 text-center hover:border-primary hover:shadow-md transition-all"
-                    whileHover={{ y: -5, borderColor: "#5E17EB", boxShadow: "0 10px 25px -5px rgba(94, 23, 235, 0.1)" }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleStudentSelect(true)}
-                  >
-                    <span className="block text-gray-800 font-medium">Yes</span>
-                  </motion.button>
-                  
-                  <motion.button
-                    className="flex-1 border border-gray-300 rounded-lg py-4 px-8 text-center hover:border-primary hover:shadow-md transition-all"
-                    whileHover={{ y: -5, borderColor: "#5E17EB", boxShadow: "0 10px 25px -5px rgba(94, 23, 235, 0.1)" }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleStudentSelect(false)}
-                  >
-                    <span className="block text-gray-800 font-medium">No</span>
-                  </motion.button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                <motion.button
+                  className={`flex-1 border rounded-lg py-4 px-8 text-center transition-all
+                    ${isStudent === false
+                      ? 'bg-primary text-white border-primary shadow-md'
+                      : 'border-gray-300 text-gray-800 hover:border-primary hover:shadow-md'
+                    }`}
+                  whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(94, 23, 235, 0.1)" }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleStudentSelect(false)}
+                >
+                  <span className="block font-medium">No</span>
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
           
-          {/* Education Options - Only shown if student = true */}
-          <AnimatePresence>
-            {selectedExperience === "no_experience" && isStudent === true && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="mt-12"
-              >
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold mb-2">Select the option that best describes your education level.</h2>
-                  <p className="text-gray-600">Your education background can help us guide you through relevant sections for your resume.</p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-                  {educationOptions.slice(0, 6).map((option, index) => (
-                    <AnimatedSection 
-                      key={option.id} 
-                      animation="fadeInUp"
-                      delay={0.2 + index * 0.1}
-                    >
-                      <motion.button
-                        className="w-full border border-gray-300 rounded-lg py-4 px-4 text-center hover:border-primary hover:shadow-md transition-all"
-                        whileHover={{ y: -5, borderColor: "#5E17EB", boxShadow: "0 10px 25px -5px rgba(94, 23, 235, 0.1)" }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleEducationSelect(option)}
-                      >
-                        <span className="block text-gray-800 font-medium">{option.label}</span>
-                      </motion.button>
-                    </AnimatedSection>
-                  ))}
-                </div>
-                
-                {/* Doctorate is centered on its own row */}
-                <div className="max-w-xs mx-auto mt-4">
+          {/* Education Options - Shown if student = true */}
+          {showEducationSection && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mt-10"
+            >
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold mb-2">Select the option that best describes your education level.</h2>
+                <p className="text-gray-600">Your education background can help us guide you through relevant sections for your resume.</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                {educationOptions.slice(0, 6).map((option, index) => (
                   <AnimatedSection 
+                    key={option.id} 
                     animation="fadeInUp"
-                    delay={0.8}
+                    delay={0.2 + index * 0.1}
                   >
                     <motion.button
-                      className="w-full border border-gray-300 rounded-lg py-4 px-4 text-center hover:border-primary hover:shadow-md transition-all"
-                      whileHover={{ y: -5, borderColor: "#5E17EB", boxShadow: "0 10px 25px -5px rgba(94, 23, 235, 0.1)" }}
+                      className={`w-full border rounded-lg py-4 px-4 text-center transition-all
+                        ${selectedEducation === option.value
+                          ? 'bg-primary text-white border-primary shadow-md'
+                          : 'border-gray-300 text-gray-800 hover:border-primary hover:shadow-md'
+                        }`}
+                      whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(94, 23, 235, 0.1)" }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => handleEducationSelect(educationOptions[6])}
+                      onClick={() => handleEducationSelect(option)}
                     >
-                      <span className="block text-gray-800 font-medium">{educationOptions[6].label}</span>
+                      <span className="block font-medium">{option.label}</span>
                     </motion.button>
                   </AnimatedSection>
-                </div>
-                
-                <div className="text-center mt-6">
-                  <button
-                    className="text-primary text-sm hover:underline"
-                    onClick={skipEducation}
+                ))}
+              </div>
+              
+              {/* Doctorate is centered on its own row */}
+              <div className="max-w-xs mx-auto mt-4">
+                <AnimatedSection 
+                  animation="fadeInUp"
+                  delay={0.8}
+                >
+                  <motion.button
+                    className={`w-full border rounded-lg py-4 px-4 text-center transition-all
+                      ${selectedEducation === educationOptions[6].value
+                        ? 'bg-primary text-white border-primary shadow-md'
+                        : 'border-gray-300 text-gray-800 hover:border-primary hover:shadow-md'
+                      }`}
+                    whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(94, 23, 235, 0.1)" }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleEducationSelect(educationOptions[6])}
                   >
-                    Prefer not to answer
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    <span className="block font-medium">{educationOptions[6].label}</span>
+                  </motion.button>
+                </AnimatedSection>
+              </div>
+              
+              <div className="text-center mt-6">
+                <button
+                  className="text-primary text-sm hover:underline"
+                  onClick={skipEducation}
+                >
+                  Prefer not to answer
+                </button>
+              </div>
+            </motion.div>
+          )}
         </div>
       </FullWidthSection>
 
