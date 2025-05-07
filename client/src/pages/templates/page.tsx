@@ -188,11 +188,21 @@ const TemplatesPage = () => {
           </div>
           
           {/* Templates grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center mb-12">
             {isLoading ? (
               // Loading skeleton
-              Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="bg-gray-100 rounded-lg h-96 animate-pulse"></div>
+              Array.from({ length: 8 }).map((_, index) => (
+                <div 
+                  key={index} 
+                  className="bg-gray-100 rounded-lg animate-pulse"
+                  style={{ width: '280px', height: '362.13px' }}
+                >
+                  <div className="h-[280px] bg-gray-200"></div>
+                  <div className="p-3">
+                    <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
               ))
             ) : filteredTemplates && filteredTemplates.length > 0 ? (
               // Display templates
@@ -203,9 +213,10 @@ const TemplatesPage = () => {
                   className="relative group flex items-center justify-center"
                 >
                   <motion.div 
-                    className={`border rounded-lg overflow-hidden transition-all duration-300 h-full flex flex-col max-w-[300px] mx-auto
+                    className={`border rounded-lg overflow-hidden transition-all duration-300 flex flex-col
                       ${selectedTemplate === template.id ? 'border-primary border-2 shadow-lg' : 'border-gray-200 hover:border-primary hover:shadow-xl'}`}
-                    whileHover={{ y: -8, scale: 1.02 }}
+                    style={{ width: '280px', height: '362.13px' }}
+                    whileHover={{ y: -5, scale: 1.01 }}
                     transition={{ type: "spring", stiffness: 300 }}
                     onClick={() => handleTemplateSelect(template.id)}
                     onContextMenu={(e) => handleRightClick(e, template.id)}
@@ -225,15 +236,29 @@ const TemplatesPage = () => {
                     )}
                     
                     {/* Template preview */}
-                    <div className="relative h-80 overflow-hidden bg-gray-50 flex items-center justify-center">
+                    <div className="relative h-[280px] overflow-hidden bg-white flex items-center justify-center">
                       {template.thumbnailUrl ? (
-                        <div className="relative h-full max-w-[150px] mx-auto flex items-center justify-center">
-                          <img 
-                            src={template.thumbnailUrl} 
-                            alt={`${template.name} template`}
-                            className="h-full object-contain transition-transform duration-300 group-hover:scale-110"
-                            style={{ width: 'auto', maxHeight: '90%' }}
-                          />
+                        <div className="relative h-full w-full flex items-center justify-center">
+                          <div className="w-[190px] h-full flex items-center justify-center overflow-hidden">
+                            <img 
+                              src={template.thumbnailUrl} 
+                              alt={`${template.name} template`}
+                              className="h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                              style={{ 
+                                maxWidth: '100%', 
+                                maxHeight: '100%',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                border: '1px solid #f0f0f0'
+                              }}
+                            />
+                          </div>
+                          
+                          {/* Status tags like in Zety - Popular, Selected, etc. */}
+                          {template.isPopular && (
+                            <div className="absolute top-3 right-3 bg-blue-500 text-white text-xs px-3 py-1 rounded-full z-10 font-semibold">
+                              Popular
+                            </div>
+                          )}
                           
                           {/* Overlay hover button */}
                           <div className="absolute inset-0 bg-black/0 opacity-0 flex items-center justify-center transition-all duration-300 group-hover:bg-black/20 group-hover:opacity-100">
@@ -254,30 +279,51 @@ const TemplatesPage = () => {
                         </div>
                       )}
                       
-                      {/* Template name as overlay text */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-800 to-transparent p-4 text-white">
-                        <h3 className="font-medium text-sm">{template.name}</h3>
-                        <p className="text-xs text-gray-300 capitalize">{template.category}</p>
-                      </div>
-                      
-                      {/* Category tag */}
+                      {/* Category tag - displayed as top pill */}
                       <div className="absolute top-3 left-3 bg-white text-primary text-xs px-2 py-1 rounded-full capitalize shadow-sm">
                         {template.category}
                       </div>
                     </div>
                     
-                    {/* "RECOMMENDED" tag for certain templates */}
-                    {(template.isPopular || recommendedTemplates.includes(template.id)) && (
-                      <div className="absolute right-3 bottom-16 bg-pink-100 text-pink-500 text-xs rounded-md font-semibold tracking-wide px-2 py-1 animate-pulse">
-                        RECOMMENDED
+                    {/* Template name and category - bottom info section */}
+                    <div className="p-3 border-t border-gray-100 bg-white">
+                      <h3 className="font-semibold text-base text-gray-800">{template.name}</h3>
+                      <div className="flex items-center mt-1">
+                        <div className={`w-3 h-3 rounded-full mr-2 ${
+                          template.category === 'professional' ? 'bg-blue-500' : 
+                          template.category === 'creative' ? 'bg-green-500' : 
+                          template.category === 'simple' ? 'bg-gray-400' : 'bg-purple-500'
+                        }`}></div>
+                        <p className="text-xs text-gray-500 capitalize">{template.category}</p>
                       </div>
-                    )}
+                      
+                      {/* Status tags */}
+                      {selectedTemplate === template.id && (
+                        <div className="absolute bottom-3 right-3 bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-semibold">
+                          Selected
+                        </div>
+                      )}
+                      
+                      {/* "RECOMMENDED" tag for certain templates */}
+                      {(template.isPopular || recommendedTemplates.includes(template.id)) && selectedTemplate !== template.id && (
+                        <div className="absolute bottom-3 right-3 bg-green-500 text-white text-xs rounded-full font-semibold tracking-wide px-3 py-1">
+                          Recommended
+                        </div>
+                      )}
+
+                      {/* "NEW" tag in Zety style for newer templates - assuming last 3 templates are new */}
+                      {template.id >= (templatesArray.length - 2) && selectedTemplate !== template.id && !template.isPopular && !recommendedTemplates.includes(template.id) && (
+                        <div className="absolute bottom-3 right-3 bg-orange-500 text-white text-xs rounded-full font-semibold tracking-wide px-3 py-1">
+                          New
+                        </div>
+                      )}
+                    </div>
                   </motion.div>
                 </AnimatedSection>
               ))
             ) : (
               // No templates found
-              <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
+              <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4 text-center py-12">
                 <p className="text-gray-500">No templates match your search. Try different keywords or filters.</p>
               </div>
             )}
