@@ -4,6 +4,7 @@ import { resumeTemplates, resumeTemplateVersions, resumeTemplateSchema, resumeTe
 import { eq, desc, and } from "drizzle-orm";
 import { isAdmin, isAuthenticated } from "../auth";
 import { z } from "zod";
+import { upload } from '../utils/upload';
 
 const router = Router();
 
@@ -1849,6 +1850,110 @@ router.post("/:id/versions/:versionNumber/restore", isAdmin, async (req, res) =>
   } catch (error) {
     console.error("Error restoring template version:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Template Preview Image Generation - Admin only
+router.post("/:id/generate-preview", isAdmin, async (req, res) => {
+  try {
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({ message: "Invalid template ID" });
+    }
+    
+    // Get the template HTML content
+    const templates = await db.select({
+      htmlContent: resumeTemplates.htmlContent,
+      name: resumeTemplates.name,
+    })
+    .from(resumeTemplates)
+    .where(eq(resumeTemplates.id, templateId))
+    .limit(1);
+    
+    if (templates.length === 0) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    
+    const template = templates[0];
+    const htmlContent = template.htmlContent;
+    
+    if (!htmlContent) {
+      return res.status(404).json({ message: "No HTML content available for this template" });
+    }
+    
+    // Import the render function
+    const renderTemplateToImage = require('../utils/renderTemplateToImage');
+    
+    // Set the output path
+    const outputFilename = `template-${templateId}-${Date.now()}.png`;
+    const outputPath = `public/uploads/previews/${outputFilename}`;
+    
+    // Generate the image
+    await renderTemplateToImage(htmlContent, outputPath);
+    
+    // Update the template with the new thumbnail URL
+    const thumbnailUrl = `/uploads/previews/${outputFilename}`;
+    
+    const [updatedTemplate] = await db.update(resumeTemplates)
+      .set({
+        thumbnailUrl: thumbnailUrl,
+        updatedAt: new Date(),
+      })
+      .where(eq(resumeTemplates.id, templateId))
+      .returning();
+    
+    res.json({ 
+      success: true, 
+      message: "Preview generated successfully", 
+      thumbnailUrl: thumbnailUrl,
+      template: updatedTemplate
+    });
+    
+  } catch (error) {
+    console.error("Error generating template preview:", error);
+    res.status(500).json({ message: "Failed to generate preview" });
+  }
+});
+
+// Upload Preview Image - Admin only
+router.post("/:id/upload-preview", isAdmin, upload.single('previewImage'), async (req, res) => {
+  try {
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({ message: "Invalid template ID" });
+    }
+    
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+    
+    // Get file path relative to public directory
+    const thumbnailUrl = `/uploads/previews/${req.file.filename}`;
+    
+    // Update the template with the new thumbnail URL
+    const [updatedTemplate] = await db.update(resumeTemplates)
+      .set({
+        thumbnailUrl: thumbnailUrl,
+        updatedAt: new Date(),
+      })
+      .where(eq(resumeTemplates.id, templateId))
+      .returning();
+    
+    if (!updatedTemplate) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: "Image uploaded successfully", 
+      thumbnailUrl: thumbnailUrl,
+      template: updatedTemplate
+    });
+    
+  } catch (error) {
+    console.error("Error uploading template preview:", error);
+    res.status(500).json({ message: "Failed to upload preview image" });
   }
 });
 
