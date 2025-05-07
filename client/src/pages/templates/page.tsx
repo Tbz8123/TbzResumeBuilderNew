@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useTemplates } from "@/hooks/use-templates";
 import { ResumeTemplate } from "@shared/schema";
 import { AnimatedSection } from "@/components/AnimationComponents";
+import { useToast } from "@/hooks/use-toast";
 import { FullWidthSection } from "@/components/ui/AppleStyles";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ const TemplatesPage = () => {
   const [_, setLocation] = useLocation();
   const search = useSearch();
   const searchParams = new URLSearchParams(search);
+  const { toast } = useToast();
   
   // Extract the parameters from the URL
   const experienceLevel = searchParams.get("experience");
@@ -28,6 +30,9 @@ const TemplatesPage = () => {
   
   // For template highlighting when selected
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+  
+  // For managing recommended templates
+  const [recommendedTemplates, setRecommendedTemplates] = useState<number[]>([]);
   
   // Filter templates based on the active filter and search query
   const filteredTemplates = templates && templates.length > 0 
@@ -64,6 +69,40 @@ const TemplatesPage = () => {
   // Handle template selection to highlight it
   const handleTemplateSelect = (templateId: number) => {
     setSelectedTemplate(templateId === selectedTemplate ? null : templateId);
+  };
+  
+  // Handle right-click to toggle recommendation
+  const handleRightClick = (e: React.MouseEvent, templateId: number) => {
+    e.preventDefault(); // Prevent the default context menu
+    
+    // Find the template name for the toast
+    const template = filteredTemplates.find(t => t.id === templateId);
+    const templateName = template?.name || "Template";
+    
+    // Determine if we're adding or removing
+    const isAlreadyRecommended = recommendedTemplates.includes(templateId);
+    
+    setRecommendedTemplates(prev => {
+      // Check if template is already in the recommended list
+      if (isAlreadyRecommended) {
+        // Remove it from recommendations
+        return prev.filter(id => id !== templateId);
+      } else {
+        // Add it to recommendations
+        return [...prev, templateId];
+      }
+    });
+    
+    // Show toast notification
+    toast({
+      title: isAlreadyRecommended ? "Removed from recommendations" : "Added to recommendations",
+      description: isAlreadyRecommended 
+        ? `${templateName} has been removed from your recommendations.` 
+        : `${templateName} has been added to your recommendations!`,
+      variant: isAlreadyRecommended ? "default" : "success",
+    });
+    
+    return false; // Prevent the browser's context menu
   };
   
   return (
@@ -114,8 +153,11 @@ const TemplatesPage = () => {
             <div className="bg-blue-50 rounded-lg p-4 mb-8 flex items-start">
               <Info className="h-5 w-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
               <div>
-                <p className="text-blue-800">
+                <p className="text-blue-800 mb-1">
                   You selected <span className="font-semibold text-blue-900">{decodeURIComponent(selectionText)}</span> experience level. Here are the best templates for your profile.
+                </p>
+                <p className="text-blue-600 text-xs italic">
+                  <span className="font-medium">Pro tip:</span> Right-click on a template to mark it as recommended for future reference.
                 </p>
               </div>
             </div>
@@ -164,6 +206,7 @@ const TemplatesPage = () => {
                       ${selectedTemplate === template.id ? 'border-primary border-2 shadow-lg' : 'border-gray-200 hover:border-primary hover:shadow-md'}`}
                     whileHover={{ y: -5 }}
                     onClick={() => handleTemplateSelect(template.id)}
+                    onContextMenu={(e) => handleRightClick(e, template.id)}
                   >
                     {/* Template label tag */}
                     {template.isPopular && (
@@ -206,8 +249,8 @@ const TemplatesPage = () => {
                     </div>
                     
                     {/* "RECOMMENDED" tag for certain templates */}
-                    {template.isPopular && (
-                      <div className="absolute right-3 bottom-16 bg-pink-100 text-pink-500 text-xs rounded-md font-semibold tracking-wide px-2 py-1">
+                    {(template.isPopular || recommendedTemplates.includes(template.id)) && (
+                      <div className="absolute right-3 bottom-16 bg-pink-100 text-pink-500 text-xs rounded-md font-semibold tracking-wide px-2 py-1 animate-pulse">
                         RECOMMENDED
                       </div>
                     )}
