@@ -235,30 +235,16 @@ const TemplatesPage = () => {
                       </div>
                     )}
                     
-                    {/* Template preview */}
-                    <div className="relative h-[280px] overflow-hidden bg-white flex items-center justify-center">
+                    {/* Template preview - taking the full container */}
+                    <div className="relative h-full w-full overflow-hidden bg-white flex items-center justify-center">
                       {template.thumbnailUrl ? (
                         <div className="relative h-full w-full flex items-center justify-center">
-                          <div className="w-[190px] h-full flex items-center justify-center overflow-hidden">
-                            <img 
-                              src={template.thumbnailUrl} 
-                              alt={`${template.name} template`}
-                              className="h-full object-contain transition-transform duration-300 group-hover:scale-105"
-                              style={{ 
-                                maxWidth: '100%', 
-                                maxHeight: '100%',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                border: '1px solid #f0f0f0'
-                              }}
-                            />
-                          </div>
-                          
-                          {/* Status tags like in Zety - Popular, Selected, etc. */}
-                          {template.isPopular && (
-                            <div className="absolute top-3 right-3 bg-blue-500 text-white text-xs px-3 py-1 rounded-full z-10 font-semibold">
-                              Popular
-                            </div>
-                          )}
+                          <img 
+                            src={template.thumbnailUrl} 
+                            alt={`${template.name} template`}
+                            className="h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                            style={{ maxWidth: '100%' }}
+                          />
                           
                           {/* Overlay hover button */}
                           <div className="absolute inset-0 bg-black/0 opacity-0 flex items-center justify-center transition-all duration-300 group-hover:bg-black/20 group-hover:opacity-100">
@@ -272,6 +258,12 @@ const TemplatesPage = () => {
                               Use this template
                             </button>
                           </div>
+                          
+                          {/* Template name overlay at bottom */}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent py-6 px-3">
+                            <h3 className="font-medium text-white text-sm">{template.name}</h3>
+                            <p className="text-xs text-gray-300 capitalize">{template.category}</p>
+                          </div>
                         </div>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -283,23 +275,17 @@ const TemplatesPage = () => {
                       <div className="absolute top-3 left-3 bg-white text-primary text-xs px-2 py-1 rounded-full capitalize shadow-sm">
                         {template.category}
                       </div>
-                    </div>
-                    
-                    {/* Template name and category - bottom info section */}
-                    <div className="p-3 border-t border-gray-100 bg-white">
-                      <h3 className="font-semibold text-base text-gray-800">{template.name}</h3>
-                      <p className="text-xs text-gray-500 capitalize mt-1">{template.category}</p>
                       
-                      {/* Selected tag */}
+                      {/* Status tags */}
                       {selectedTemplate === template.id && (
-                        <div className="absolute bottom-3 right-3 bg-primary text-white text-xs px-2 py-1 rounded-md font-semibold">
+                        <div className="absolute top-3 right-3 bg-primary text-white text-xs px-2 py-1 rounded-md font-semibold">
                           Selected
                         </div>
                       )}
                       
                       {/* "RECOMMENDED" tag for certain templates */}
                       {(template.isPopular || recommendedTemplates.includes(template.id)) && selectedTemplate !== template.id && (
-                        <div className="absolute bottom-3 right-3 bg-pink-100 text-pink-500 text-xs rounded-md font-semibold tracking-wide px-2 py-0.5">
+                        <div className="absolute top-3 right-3 bg-pink-100 text-pink-500 text-xs rounded-md font-semibold tracking-wide px-2 py-0.5">
                           RECOMMENDED
                         </div>
                       )}
