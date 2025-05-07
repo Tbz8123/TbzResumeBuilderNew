@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FileText, Palette, Code, Image, Save, Eye, RefreshCw, Download, RotateCw, PlusCircle, MinusCircle, Maximize2 } from 'lucide-react';
+import { FileText, Palette, Code, Image, Save, Eye, RefreshCw, Download, RotateCw, PlusCircle, MinusCircle, Maximize2, Camera, Upload, ImageIcon } from 'lucide-react';
 import { ResumeData, defaultResumeData } from './TemplateEngine';
 import TemplateEngine from './TemplateEngine';
 
@@ -87,6 +87,12 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
   const [saving, setSaving] = useState<boolean>(false);
   const [autoApply, setAutoApply] = useState<boolean>(true);
   
+  // Thumbnail state
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(template.thumbnailUrl);
+  const [generatingThumbnail, setGeneratingThumbnail] = useState<boolean>(false);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState<boolean>(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
   // Reset state when template changes
   useEffect(() => {
     // Metadata fields
@@ -105,6 +111,9 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
     setWidth(template.width?.toString() || '800');
     setHeight(template.height?.toString() || '1100');
     setAspectRatio(template.aspectRatio || '0.73');
+    
+    // Thumbnail
+    setThumbnailUrl(template.thumbnailUrl);
     
     console.log("Template loaded:", template);
   }, [template]);
@@ -323,6 +332,132 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
     if (!tab || !value) return;
     
     tab.setValue(value);
+  };
+  
+  // Handle thumbnail generation
+  const handleGenerateThumbnail = async () => {
+    if (!template.id) {
+      toast({
+        title: 'Save Required',
+        description: 'Please save the template first before generating a thumbnail.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      setGeneratingThumbnail(true);
+      
+      const response = await fetch(`/api/templates/${template.id}/generate-preview`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to generate thumbnail: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setThumbnailUrl(data.thumbnailUrl);
+        toast({
+          title: 'Thumbnail Generated',
+          description: 'Template preview image has been created successfully.',
+        });
+      } else {
+        throw new Error(data.message || 'Failed to generate thumbnail');
+      }
+    } catch (error) {
+      console.error('Thumbnail generation error:', error);
+      toast({
+        title: 'Thumbnail Generation Failed',
+        description: (error as Error).message,
+        variant: 'destructive',
+      });
+    } finally {
+      setGeneratingThumbnail(false);
+    }
+  };
+  
+  // Handle thumbnail upload
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!template.id) {
+      toast({
+        title: 'Save Required',
+        description: 'Please save the template first before uploading a thumbnail.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Check file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Please upload a JPEG, PNG, or WebP image file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'The image file must be less than 5MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Upload the file
+    try {
+      setUploadingThumbnail(true);
+      
+      const formData = new FormData();
+      formData.append('previewImage', file);
+      
+      const response = await fetch(`/api/templates/${template.id}/upload-preview`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to upload thumbnail: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setThumbnailUrl(data.thumbnailUrl);
+        toast({
+          title: 'Thumbnail Uploaded',
+          description: 'Template preview image has been uploaded successfully.',
+        });
+      } else {
+        throw new Error(data.message || 'Failed to upload thumbnail');
+      }
+    } catch (error) {
+      console.error('Thumbnail upload error:', error);
+      toast({
+        title: 'Thumbnail Upload Failed',
+        description: (error as Error).message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingThumbnail(false);
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
   
   // Return rendered component
