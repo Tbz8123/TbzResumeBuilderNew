@@ -6,31 +6,85 @@ interface ResumePreviewProps {
   width?: number;
   height?: number;
   className?: string;
+  scaleContent?: boolean;
 }
 
 const ResumePreview: React.FC<ResumePreviewProps> = ({ 
   width = 280, 
   height = 365,
-  className = ''
+  className = '',
+  scaleContent = true
 }) => {
   const { resumeData, selectedTemplateId } = useResume();
   const { data: templates } = useTemplates();
   const [templateHtml, setTemplateHtml] = useState<string>('');
+  const [templateStyles, setTemplateStyles] = useState<string>('');
   
   // Find the selected template
   const selectedTemplate = Array.isArray(templates) && templates.length > 0 
     ? templates.find((t: any) => t.id === selectedTemplateId)
     : undefined;
   
-  // Process template HTML when available
+  // Process template HTML and CSS when available
   useEffect(() => {
     if (selectedTemplate?.htmlContent) {
       let html = selectedTemplate.htmlContent;
       
-      // Replace placeholders with actual data
+      // Extract <style> content
+      const styleRegex = /<style>([\s\S]*?)<\/style>/;
+      const styleMatch = html.match(styleRegex);
+      
+      if (styleMatch && styleMatch[1]) {
+        let styles = styleMatch[1];
+        
+        // Add responsive styles to ensure proper display in preview
+        styles += `
+          @media print, screen {
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+              background: transparent !important;
+            }
+            .resume {
+              width: 100% !important;
+              height: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              box-shadow: none !important;
+            }
+            .page {
+              margin: 0 !important;
+              padding: 0 !important;
+              border: none !important;
+              box-shadow: none !important;
+            }
+            .sidebar {
+              word-break: break-word;
+              overflow-wrap: break-word;
+            }
+            .contact-item, .sidebar-section {
+              word-break: break-word;
+              overflow-wrap: break-word;
+            }
+            img.profile-image {
+              object-fit: cover;
+            }
+          }
+        `;
+        
+        // Update styles
+        setTemplateStyles(styles);
+        
+        // Remove original style tag as we'll inject it separately
+        html = html.replace(styleRegex, '');
+      }
+      
+      // Replace placeholders with actual resume data
       html = html.replace(/{{firstName}}/g, resumeData.firstName || '');
       html = html.replace(/{{lastName}}/g, resumeData.surname || '');
       html = html.replace(/{{fullName}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
+      html = html.replace(/{{name}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
       html = html.replace(/{{profession}}/g, resumeData.profession || '');
       html = html.replace(/{{email}}/g, resumeData.email || '');
       html = html.replace(/{{phone}}/g, resumeData.phone || '');
@@ -38,19 +92,33 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
       html = html.replace(/{{country}}/g, resumeData.country || '');
       html = html.replace(/{{address}}/g, [resumeData.city, resumeData.country].filter(Boolean).join(', '));
       
+      // Handle profile photo if present
+      if (resumeData.photo) {
+        html = html.replace(/<img[^>]*class="profile-image"[^>]*>/g, 
+          `<img class="profile-image" src="${resumeData.photo}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">`);
+      }
+      
+      // Additional info replacements
+      Object.entries(resumeData.additionalInfo).forEach(([key, value]) => {
+        if (value) {
+          const placeholder = new RegExp(`{{${key}}}`, 'g');
+          html = html.replace(placeholder, value);
+        }
+      });
+      
       // Update the state
       setTemplateHtml(html);
     }
   }, [selectedTemplate, resumeData]);
   
-  // Fallback template if no selected template is available
-  const renderFallbackTemplate = () => (
+  // Fallback modern template if no selected template is available
+  const renderModernTemplate = () => (
     <div className="flex flex-col h-full">
       {/* Header with Photo and Name */}
-      <div className="bg-blue-600 p-2 text-white">
-        <div className="flex items-start gap-2">
+      <div className="bg-amber-500 p-3 text-gray-900">
+        <div className="flex items-start gap-3">
           {resumeData.photo && (
-            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white flex-shrink-0">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white flex-shrink-0">
               <img 
                 src={resumeData.photo} 
                 alt="Profile" 
@@ -60,10 +128,10 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
           )}
           
           <div className="flex-1 overflow-hidden">
-            <h1 className="font-bold text-xs truncate">
+            <h1 className="font-bold text-lg leading-tight">
               {resumeData.firstName || 'First'} {resumeData.surname || 'Last'}
             </h1>
-            <p className="text-[10px] text-blue-100 truncate">
+            <p className="text-sm font-medium">
               {resumeData.profession || 'Profession'}
             </p>
           </div>
@@ -71,43 +139,52 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
       </div>
       
       {/* Content Sections */}
-      <div className="grid grid-cols-4 flex-1 overflow-hidden">
+      <div className="grid grid-cols-3 flex-1 overflow-hidden">
         {/* Left Sidebar */}
-        <div className="col-span-1 bg-gray-100 p-2">
-          <div className="space-y-2">
+        <div className="bg-gray-900 text-white p-3">
+          <div className="space-y-4">
             {/* Contact Section */}
             <section>
-              <h2 className="text-[8px] font-bold rounded-sm bg-blue-600 text-white px-1 py-0.5 mb-1">
-                CONTACT
+              <h2 className="text-amber-500 text-sm font-bold mb-2 uppercase">
+                Contact Me
               </h2>
-              <div className="text-[7px] space-y-1">
-                {resumeData.email && (
-                  <div className="truncate">
-                    <div className="font-medium">Email</div>
-                    <div>{resumeData.email}</div>
+              <div className="text-xs space-y-2">
+                {resumeData.phone && (
+                  <div className="flex items-center gap-1 overflow-hidden">
+                    <svg className="w-3 h-3 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <span className="truncate">{resumeData.phone}</span>
                   </div>
                 )}
                 
-                {resumeData.phone && (
-                  <div className="truncate">
-                    <div className="font-medium">Phone</div>
-                    <div>{resumeData.phone}</div>
+                {resumeData.email && (
+                  <div className="flex items-center gap-1 overflow-hidden">
+                    <svg className="w-3 h-3 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span className="truncate break-all overflow-ellipsis">{resumeData.email}</span>
                   </div>
                 )}
                 
                 {(resumeData.city || resumeData.country) && (
-                  <div className="truncate">
-                    <div className="font-medium">Address</div>
-                    <div>{[resumeData.city, resumeData.country].filter(Boolean).join(', ')}</div>
+                  <div className="flex items-center gap-1 overflow-hidden">
+                    <svg className="w-3 h-3 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="truncate">{[resumeData.city, resumeData.country].filter(Boolean).join(', ')}</span>
                   </div>
                 )}
                 
                 {/* Additional Info */}
                 {Object.entries(resumeData.additionalInfo).map(([key, value]) => (
                   value && (
-                    <div key={key} className="truncate">
-                      <div className="font-medium">{key.charAt(0).toUpperCase() + key.slice(1)}</div>
-                      <div>{value}</div>
+                    <div key={key} className="flex items-center gap-1 overflow-hidden">
+                      <svg className="w-3 h-3 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="truncate">{value}</span>
                     </div>
                   )
                 ))}
@@ -116,56 +193,65 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
             
             {/* Skills Section */}
             <section>
-              <h2 className="text-[8px] font-bold rounded-sm bg-blue-600 text-white px-1 py-0.5 mb-1">
-                SKILLS
+              <h2 className="text-amber-500 text-sm font-bold mb-2 uppercase">
+                Skills
               </h2>
-              <div className="text-[7px] space-y-0.5">
-                <div>• Skill 1</div>
-                <div>• Skill 2</div>
-                <div>• Skill 3</div>
+              <div className="text-xs space-y-1">
+                <div>• Adobe Photoshop</div>
+                <div>• HTML/CSS</div>
+                <div>• Microsoft Word</div>
+              </div>
+            </section>
+            
+            {/* Education Section */}
+            <section>
+              <h2 className="text-amber-500 text-sm font-bold mb-2 uppercase">
+                Education
+              </h2>
+              <div className="text-xs space-y-2">
+                <div>
+                  <p className="font-medium">University Degree</p>
+                  <p className="text-gray-300 text-[10px]">2015 – 2019</p>
+                </div>
               </div>
             </section>
           </div>
         </div>
         
         {/* Main Content */}
-        <div className="col-span-3 p-2">
-          <div className="space-y-2">
-            {/* Experience Section */}
+        <div className="col-span-2 p-3">
+          <div className="space-y-4">
+            {/* About Section */}
             <section>
-              <h2 className="text-[8px] font-bold border-b border-blue-600 pb-0.5 mb-1 text-blue-600">
-                WORK HISTORY
+              <h2 className="text-amber-500 text-sm font-bold mb-2 border-b border-amber-500 pb-1 uppercase">
+                About Me
               </h2>
-              <div className="text-[7px] space-y-1">
-                <div>
-                  <div className="flex justify-between">
-                    <p className="font-medium">Position • Company</p>
-                    <p className="text-gray-500">MM/YYYY – MM/YYYY</p>
-                  </div>
-                  <p>Brief description of responsibilities and achievements.</p>
-                </div>
-                <div>
-                  <div className="flex justify-between">
-                    <p className="font-medium">Position • Company</p>
-                    <p className="text-gray-500">MM/YYYY – MM/YYYY</p>
-                  </div>
-                  <p>Brief description of responsibilities and achievements.</p>
-                </div>
-              </div>
+              <p className="text-xs text-gray-700">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce tempor, libero a tincidunt elementum, felis urna luctus leo, non efficitur nisl justo nec augue.
+              </p>
             </section>
             
-            {/* Education Section */}
+            {/* Experience Section */}
             <section>
-              <h2 className="text-[8px] font-bold border-b border-blue-600 pb-0.5 mb-1 text-blue-600">
-                EDUCATION
+              <h2 className="text-amber-500 text-sm font-bold mb-2 border-b border-amber-500 pb-1 uppercase">
+                Job Experience
               </h2>
-              <div className="text-[7px] space-y-1">
+              <div className="text-xs space-y-3">
                 <div>
                   <div className="flex justify-between">
-                    <p className="font-medium">Degree • Institution</p>
-                    <p className="text-gray-500">MM/YYYY – MM/YYYY</p>
+                    <p className="font-semibold">Senior Web Designer</p>
+                    <p className="text-gray-500">2020 – Present</p>
                   </div>
-                  <p>Major, honors, or relevant achievements.</p>
+                  <p className="italic text-gray-600">Creative Agency / Chicago</p>
+                  <p className="mt-1">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                </div>
+                <div>
+                  <div className="flex justify-between">
+                    <p className="font-semibold">Graphic Designer</p>
+                    <p className="text-gray-500">2015 – 2020</p>
+                  </div>
+                  <p className="italic text-gray-600">Creative Market / Chicago</p>
+                  <p className="mt-1">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
                 </div>
               </div>
             </section>
@@ -185,14 +271,24 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
       }}
     >
       <div className="h-full flex flex-col w-full">
-        {/* Render selected template HTML content if available, otherwise fallback */}
         {templateHtml ? (
-          <div 
-            dangerouslySetInnerHTML={{ __html: templateHtml }} 
-            className="w-full h-full scale-[0.85] origin-top transform"
-          />
+          <div className="w-full h-full flex flex-col relative">
+            {/* Inject styles separately so they're not affected by React's style handling */}
+            <style dangerouslySetInnerHTML={{ __html: templateStyles }} />
+            
+            {/* Render the template content with a proper scale */}
+            <div 
+              dangerouslySetInnerHTML={{ __html: templateHtml }} 
+              className={`w-full h-full ${scaleContent ? 'scale-100 md:scale-[0.95] origin-top' : ''}`}
+              style={{ 
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            />
+          </div>
         ) : (
-          renderFallbackTemplate()
+          renderModernTemplate()
         )}
       </div>
     </div>
