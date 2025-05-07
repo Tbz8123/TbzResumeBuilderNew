@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTemplates } from "@/hooks/use-templates";
 import { useToast } from "@/hooks/use-toast";
-import { isAxiosError } from "axios";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
 import {
@@ -130,7 +129,9 @@ const FreshLooksShowcase = () => {
       // Create an array of templates to update with their new isPopular status
       const updatePromises = Object.entries(showcaseSelections).map(async ([id, isSelected]) => {
         const templateId = parseInt(id);
-        const template = templates?.find(t => t.id === templateId);
+        const template = templates && Array.isArray(templates) 
+          ? templates.find((t: ResumeTemplate) => t.id === templateId)
+          : null;
         
         if (template && template.isPopular !== isSelected) {
           return apiRequest('PATCH', `/api/templates/${templateId}`, {
@@ -181,13 +182,10 @@ const FreshLooksShowcase = () => {
       refetch();
     } catch (err) {
       console.error("Error deleting template:", err);
-      const errorMessage = isAxiosError(err) && err.response?.data?.message
-        ? err.response.data.message
-        : "There was an error deleting the template.";
       
       toast({
         title: "Deletion failed",
-        description: errorMessage,
+        description: "There was an error deleting the template.",
         variant: "destructive",
       });
     } finally {
