@@ -39,161 +39,94 @@ type TemplateCardProps = {
 };
 
 // Enhanced template preview that directly renders HTML templates
-const TemplatePreview = ({ 
-  templateId, 
-  onError 
-}: { 
-  templateId: number,
-  onError?: () => void 
+const TemplatePreview = ({
+  templateId,
+  onError
+}: {
+  templateId: number;
+  onError?: () => void;
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [template, setTemplate] = useState<ResumeTemplate | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Fetch full template data
+  const [templateHtml, setTemplateHtml] = useState<string | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
   useEffect(() => {
-    const fetchTemplateData = async () => {
+    const fetchTemplate = async () => {
       try {
         setIsLoading(true);
         const response = await fetch(`/api/templates/${templateId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setTemplate(data);
-          setIsLoading(false);
-        } else {
-          throw new Error('Failed to fetch template');
-        }
-      } catch (err) {
-        console.error("Error fetching template data:", err);
+        if (!response.ok) throw new Error("Failed to fetch");
+        const data = await response.json();
+        setTemplateHtml(data.htmlContent);
+      } catch (e) {
+        console.error("Template preview fetch error:", e);
         setError(true);
+        if (onError) onError();
+      } finally {
         setIsLoading(false);
-        if (onError) {
-          onError();
-        }
       }
     };
-    
-    fetchTemplateData();
+    fetchTemplate();
   }, [templateId, onError]);
 
-  // When template data is available, render it
   useEffect(() => {
-    if (!template || !template.htmlContent || !containerRef.current) return;
-    
-    try {
-      // Create the full HTML document with template content
-      const htmlContent = template.htmlContent;
-      
-      // Add specific styling to make sure it fits edge-to-edge
-      const styledHtml = htmlContent.replace('</head>', `
-        <style>
-          body, html {
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            background: white !important;
-          }
-          
-          .resume, body > div {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: auto !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            transform: scale(0.22) !important;
-            transform-origin: center !important;
-          }
-          
-          /* Adjust the resume layout */
-          .resume {
-            flex-direction: row !important;
-            width: 100% !important;
-          }
-          
-          /* Adjust widths of left and right sections */
-          .left {
-            width: 35% !important;
-            flex-shrink: 0 !important;
-          }
-          
-          .right {
-            width: 65% !important;
-            flex-shrink: 0 !important;
-          }
-          
-          /* Remove background color from resume body */
-          body {
-            background: white !important;
-          }
-          
-          /* Adjust layout to show full template */
-          .left, .right {
-            padding: 5px !important;
-          }
-          
-          /* Adjust margins to center content */
-          .resume {
-            margin: 0 auto !important;
-          }
-        </style>
-        </head>
-      `);
-      
-      // Create a data URL with the HTML content
-      const encodedHtml = encodeURIComponent(styledHtml);
-      const dataUrl = `data:text/html;charset=utf-8,${encodedHtml}`;
-      
-      // Create an iframe to display the template
-      const iframe = document.createElement('iframe');
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      iframe.style.border = 'none';
-      iframe.style.overflow = 'hidden';
-      iframe.src = dataUrl;
-      
-      // Clear the container and append the iframe
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-        containerRef.current.appendChild(iframe);
-      }
-    } catch (err) {
-      console.error("Error rendering template:", err);
-      setError(true);
-      if (onError) {
-        onError();
+    if (templateHtml && iframeRef.current) {
+      const doc = iframeRef.current.contentDocument;
+      if (doc) {
+        const styledHtml = templateHtml.replace('</head>', `
+          <style>
+            html, body {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              background: white;
+              display: flex;
+              align-items: flex-start;
+              justify-content: center;
+            }
+            .resume {
+              transform: scale(0.27);
+              transform-origin: top center;
+              width: 794px;
+              height: 1123px;
+              pointer-events: none;
+            }
+          </style>
+        </head>`);
+        
+        doc.open();
+        doc.write(styledHtml);
+        doc.close();
       }
     }
-  }, [template, onError]);
-  
+  }, [templateHtml]);
+
   return (
-    <>
-      <div 
-        ref={containerRef} 
-        className="w-full h-full absolute inset-0 bg-white overflow-hidden"
-      />
-      
-      {/* Loading state */}
+    <div className="w-full h-full absolute inset-0 bg-white overflow-hidden">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-30">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       )}
-      
-      {/* Error state */}
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-30">
           <div className="text-center p-4">
-            <p className="font-medium text-red-500">Failed to load preview</p>
+            <p className="font-medium text-red-500">Preview failed</p>
           </div>
         </div>
       )}
-    </>
+      {!error && !isLoading && (
+      <iframe
+        ref={iframeRef}
+        sandbox="allow-same-origin"
+        className="w-full h-full border-0 pointer-events-none"
+        style={{ backgroundColor: 'white' }}
+      />
+      )}
+    </div>
   );
 };
 
@@ -230,7 +163,8 @@ const TemplateCard = ({ template, onClick }: TemplateCardProps) => {
     transition: 'transform 0.3s ease, box-shadow 0.3s ease',
     cursor: 'pointer',
     width: '100%',
-    aspectRatio: aspectRatio,
+    aspectRatio: '0.7', // Consistent with A4
+    minHeight: '300px',
     // Removed padding to allow template to fill the entire card
   };
   
@@ -298,7 +232,8 @@ const TemplateCardSkeleton = () => {
     borderRadius: '0.5rem',
     overflow: 'hidden',
     width: '100%',
-    aspectRatio: aspectRatio,
+    aspectRatio: '0.7',
+    minHeight: '300px',
     // Removed padding to allow template to fill the entire card
   };
   

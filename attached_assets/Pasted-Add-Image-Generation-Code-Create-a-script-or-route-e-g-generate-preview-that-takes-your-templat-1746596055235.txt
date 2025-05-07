@@ -1,0 +1,92 @@
+Add Image Generation Code
+Create a script or route (e.g., /generate-preview) that takes your template's HTML and returns a PNG.
+
+📁 utils/renderTemplateToImage.js
+js
+Copy
+Edit
+const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
+
+async function renderTemplateToImage(htmlString, outputPath) {
+  const browser = await puppeteer.launch({
+    headless: 'new',  // Avoid deprecated headless mode warnings
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
+  const page = await browser.newPage();
+
+  await page.setContent(htmlString, { waitUntil: 'networkidle0' });
+
+  await page.setViewport({ width: 1000, height: 1400 });
+
+  await page.screenshot({ path: outputPath, fullPage: true });
+
+  await browser.close();
+}
+
+module.exports = renderTemplateToImage;
+📁 routes/templates.js
+js
+Copy
+Edit
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const renderTemplateToImage = require('../utils/renderTemplateToImage');
+
+const router = express.Router();
+
+router.post('/generate-preview', async (req, res) => {
+  const { htmlContent, templateId } = req.body;
+
+  const outputPath = path.join(__dirname, `../previews/${templateId}.png`);
+
+  try {
+    await renderTemplateToImage(htmlContent, outputPath);
+    res.status(200).json({ previewUrl: `/previews/${templateId}.png` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to generate preview' });
+  }
+});
+
+module.exports = router;
+✅ Result
+This saves the rendered preview image to your /previews/ folder and returns the URL.
+
+✅ FRONTEND CHANGES (React + Tailwind)
+🔧 1. Replace iframe/html rendering with image
+In your component that shows resume templates (e.g. TemplateGallery.jsx):
+
+❌ Replace this:
+tsx
+Copy
+Edit
+<div dangerouslySetInnerHTML={{ __html: template.html }} />
+✅ With this:
+tsx
+Copy
+Edit
+<img
+  src={template.previewImageUrl}
+  alt="Template preview"
+  className="rounded-xl w-full h-auto object-cover shadow-md"
+/>
+🔧 2. Store & Use previewImageUrl
+When a new resume is created or uploaded:
+
+Call /generate-preview with the HTML
+
+Store the returned previewUrl in your DB as previewImageUrl
+
+Use it in the frontend display
+
+✅ OPTIONAL: Upload to Cloud Storage
+If you're using Firebase / S3 / Supabase, modify renderTemplateToImage to:
+
+Save the image to a temp folder
+
+Upload it to your cloud bucket
+
+Return the cloud URL (https://yourcdn.com/previews/abc.png)
