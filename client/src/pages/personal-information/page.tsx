@@ -301,7 +301,7 @@ const PersonalInformationPage = () => {
                     {/* Template container with exact dimensions from templates page */}
                     <div 
                       className="border border-gray-200 rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
-                      style={{ width: '280px', height: '362.13px' }}
+                      style={{ width: '360px', height: '362.13px' }}
                     >
                       {/* Template preview layout - matches the templates page */}
                       <div className="relative h-full w-full overflow-hidden bg-white">
@@ -309,7 +309,7 @@ const PersonalInformationPage = () => {
                           {/* Interactive Resume Preview component - maintains real-time updates */}
                           <ResumePreview 
                             className="h-full w-full border-none shadow-none" 
-                            width={280} 
+                            width={360} 
                             height={362}
                           />
                           

@@ -278,7 +278,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
     const scaleY = containerHeight / A4_HEIGHT;
     
     // Use the smaller scale factor to ensure the entire resume fits
-    return Math.min(scaleX, scaleY) * 0.95; // 0.95 for a slight margin
+    return Math.min(scaleX, scaleY) * 0.90; // 0.90 for a safer margin to ensure all content is visible
   };
   
   const scaleFactor = calculateScale();
@@ -305,7 +305,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
             className="resume-scaled"
             style={{ 
               transform: `scale(${scaleFactor})`,
-              transformOrigin: 'center',
+              transformOrigin: 'center center',
               width: '794px', // A4 width
               height: '1123px', // A4 height
               margin: '0 auto',
