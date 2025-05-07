@@ -59,13 +59,6 @@ const AdminHomePage = () => {
           color: 'bg-green-500'
         },
         {
-          title: 'Fresh Looks Showcase',
-          description: 'Manage templates in the showcase section',
-          icon: <Star className="h-5 w-5" />,
-          path: '/admin/templates/fresh-looks-showcase',
-          color: 'bg-yellow-500'
-        },        
-        {
           title: 'Basic Editor',
           description: 'Simple template editor interface',
           icon: <FileEdit className="h-5 w-5" />,

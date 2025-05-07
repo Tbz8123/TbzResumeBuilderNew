@@ -5,7 +5,6 @@ import IndustryTemplatesSection from "./IndustryTemplatesSection";
 import ResumeTemplatesSection from "./ResumeTemplatesSection";
 import CreateTogetherSection from "./CreateTogetherSection";
 import FreshLooksSection from "./FreshLooksSection";
-import ShowcaseFreshLooksSection from "./ShowcaseFreshLooksSection";
 import JobCategoriesSection from "./JobCategoriesSection";
 import ResumeWritingTipsSection from "./ResumeWritingTipsSection";
 import CTASection from "./CTASection";
@@ -19,7 +18,6 @@ const HomePage = () => {
       <IndustryTemplatesSection />
       <ResumeTemplatesSection />
       <CreateTogetherSection />
-      <ShowcaseFreshLooksSection />
       <FreshLooksSection />
       <JobCategoriesSection />
       <ResumeWritingTipsSection />
