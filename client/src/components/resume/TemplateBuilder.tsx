@@ -299,6 +299,9 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
         width: widthVal || 800,
         height: heightVal || 1100,
         aspectRatio,
+        
+        // Thumbnail (only include if already exists, otherwise use API endpoints)
+        ...(thumbnailUrl ? { thumbnailUrl } : {})
       };
       
       console.log("Saving template:", updatedTemplate);
@@ -806,6 +809,85 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                       onChange={(e) => setDisplayScale(e.target.value)}
                       className="w-32 ml-2"
                     />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Thumbnail Management */}
+              <div className="flex flex-wrap gap-4 border-t pt-3">
+                <div className="flex flex-col space-y-2 w-full">
+                  <label className="text-sm font-medium flex items-center">
+                    Template Thumbnail
+                  </label>
+                  
+                  <div className="flex flex-wrap gap-3 items-start">
+                    {/* Thumbnail Preview */}
+                    <div className="flex flex-col items-center gap-2">
+                      <div 
+                        className="w-32 h-44 border rounded flex items-center justify-center overflow-hidden bg-gray-50"
+                        style={{ 
+                          backgroundSize: 'contain',
+                          backgroundPosition: 'center',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundImage: thumbnailUrl ? `url(${thumbnailUrl})` : 'none'
+                        }}
+                      >
+                        {!thumbnailUrl && (
+                          <ImageIcon className="w-10 h-10 text-gray-300" />
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-500">Preview</span>
+                    </div>
+                    
+                    {/* Thumbnail Actions */}
+                    <div className="flex flex-col gap-3 mt-2">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleGenerateThumbnail}
+                          disabled={generatingThumbnail || !template.id}
+                          className="flex items-center"
+                        >
+                          {generatingThumbnail ? (
+                            <RotateCw className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Camera className="h-4 w-4 mr-1" />
+                          )}
+                          Generate Thumbnail
+                        </Button>
+                        
+                        {/* Hidden file input for upload */}
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={handleThumbnailUpload}
+                        />
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingThumbnail || !template.id}
+                          className="flex items-center"
+                        >
+                          {uploadingThumbnail ? (
+                            <RotateCw className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4 mr-1" />
+                          )}
+                          Upload Image
+                        </Button>
+                      </div>
+                      
+                      {/* Help text */}
+                      <p className="text-xs text-gray-500 max-w-md">
+                        Generate a thumbnail automatically from the template HTML content, or upload your own image (JPG, PNG, WebP, max 5MB).
+                        Save the template first before managing thumbnails.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
