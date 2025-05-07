@@ -261,38 +261,64 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
     </div>
   );
   
+  // Calculate scale factor based on container dimensions and A4 paper ratio
+  const calculateScale = () => {
+    if (!scaleContent) return 1;
+    
+    // A4 paper dimensions
+    const A4_WIDTH = 794; // px
+    const A4_HEIGHT = 1123; // px
+    
+    // Container dimensions
+    const containerWidth = width || 280;
+    const containerHeight = height || 362;
+    
+    // Calculate scale factors for both dimensions
+    const scaleX = containerWidth / A4_WIDTH;
+    const scaleY = containerHeight / A4_HEIGHT;
+    
+    // Use the smaller scale factor to ensure the entire resume fits
+    return Math.min(scaleX, scaleY) * 0.95; // 0.95 for a slight margin
+  };
+  
+  const scaleFactor = calculateScale();
+  
   return (
     <div 
-      className={`bg-white ${className} ${scaleContent ? 'overflow-hidden' : 'rounded-md border border-gray-200 shadow-sm'}`}
+      className={`preview-container ${className} ${scaleContent ? 'overflow-hidden' : 'rounded-md border border-gray-200 shadow-sm'}`}
       style={{ 
         width: width ? `${width}px` : '100%', 
         height: height ? `${height}px` : '100%',
         maxWidth: '100%',
         position: 'relative',
+        backgroundColor: 'white',
       }}
     >
-      <div className="h-full w-full">
-        {templateHtml ? (
-          <div className="absolute inset-0 flex items-start justify-start">
-            {/* Inject styles separately */}
-            <style dangerouslySetInnerHTML={{ __html: templateStyles }} />
-            
-            {/* Resume content with proper scaling */}
-            <div 
-              dangerouslySetInnerHTML={{ __html: templateHtml }} 
-              style={{ 
-                transform: scaleContent ? 'scale(0.28)' : 'none',
-                transformOrigin: 'top left',
-                width: '794px', // A4 width in px
-                height: '1123px', // A4 height in px
-                overflow: 'hidden'
-              }}
-            />
-          </div>
-        ) : (
-          renderModernTemplate()
-        )}
-      </div>
+      {templateHtml ? (
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+          {/* Inject styles separately */}
+          <style dangerouslySetInnerHTML={{ __html: templateStyles }} />
+          
+          {/* Resume content with proper scaling */}
+          <div 
+            dangerouslySetInnerHTML={{ __html: templateHtml }} 
+            className="resume-scaled"
+            style={{ 
+              transform: `scale(${scaleFactor})`,
+              transformOrigin: 'center',
+              width: '794px', // A4 width
+              height: '1123px', // A4 height
+              margin: '0 auto',
+              // Debug border (comment out in production)
+              // border: '1px solid red'
+            }}
+          />
+        </div>
+      ) : (
+        <div className="h-full w-full">
+          {renderModernTemplate()}
+        </div>
+      )}
     </div>
   );
 };
