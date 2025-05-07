@@ -25,6 +25,7 @@ const TemplatesPage = () => {
   
   // Template filtering and search
   const { data: templates, isLoading } = useTemplates();
+  const templatesArray = templates as ResumeTemplate[] || [];
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   
@@ -35,8 +36,8 @@ const TemplatesPage = () => {
   const [recommendedTemplates, setRecommendedTemplates] = useState<number[]>([]);
   
   // Filter templates based on the active filter and search query
-  const filteredTemplates = templates && templates.length > 0 
-    ? templates.filter((template: ResumeTemplate) => {
+  const filteredTemplates = templatesArray.length > 0 
+    ? templatesArray.filter((template: ResumeTemplate) => {
         // Filter by category
         if (activeFilter !== "all" && template.category !== activeFilter) {
           return false;
@@ -76,7 +77,7 @@ const TemplatesPage = () => {
     e.preventDefault(); // Prevent the default context menu
     
     // Find the template name for the toast
-    const template = filteredTemplates.find(t => t.id === templateId);
+    const template = filteredTemplates.find((t: ResumeTemplate) => t.id === templateId);
     const templateName = template?.name || "Template";
     
     // Determine if we're adding or removing
@@ -99,7 +100,7 @@ const TemplatesPage = () => {
       description: isAlreadyRecommended 
         ? `${templateName} has been removed from your recommendations.` 
         : `${templateName} has been added to your recommendations!`,
-      variant: isAlreadyRecommended ? "default" : "success",
+      variant: isAlreadyRecommended ? "default" : "default",
     });
     
     return false; // Prevent the browser's context menu
@@ -195,7 +196,7 @@ const TemplatesPage = () => {
               ))
             ) : filteredTemplates && filteredTemplates.length > 0 ? (
               // Display templates
-              filteredTemplates.map((template) => (
+              filteredTemplates.map((template: ResumeTemplate) => (
                 <AnimatedSection 
                   key={template.id} 
                   animation="fadeInUp"
@@ -223,13 +224,16 @@ const TemplatesPage = () => {
                     )}
                     
                     {/* Template preview */}
-                    <div className="relative h-80 overflow-hidden bg-gray-50">
+                    <div className="relative h-80 overflow-hidden bg-gray-50 flex items-center justify-center">
                       {template.thumbnailUrl ? (
-                        <img 
-                          src={template.thumbnailUrl} 
-                          alt={`${template.name} template`}
-                          className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
-                        />
+                        <div className="relative h-full max-w-[210px] mx-auto">
+                          <img 
+                            src={template.thumbnailUrl} 
+                            alt={`${template.name} template`}
+                            className="h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                            style={{ width: 'auto', maxHeight: '100%' }}
+                          />
+                        </div>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
                           No preview available
