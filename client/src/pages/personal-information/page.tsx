@@ -9,6 +9,7 @@ import { useResume } from '@/contexts/ResumeContext';
 import ResumePreview from '@/components/resume/ResumePreview';
 import PhotoUploader from '@/components/resume/PhotoUploader';
 import AdditionalInfoOptions from '@/components/resume/AdditionalInfoOptions';
+import Logo from '@/components/Logo';
 
 const PersonalInformationPage = () => {
   const [, setLocation] = useLocation();

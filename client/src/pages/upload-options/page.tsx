@@ -3,6 +3,7 @@ import { useLocation, Link } from 'wouter';
 import { AnimatedSection } from '@/components/AnimationComponents';
 import { ArrowLeft, FileUp, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Logo from '@/components/Logo';
 
 const UploadOptionsPage = () => {
   const [, setLocation] = useLocation();
@@ -24,6 +25,13 @@ const UploadOptionsPage = () => {
   
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
+      {/* Header with logo */}
+      <header className="py-6 border-b border-gray-100 bg-white">
+        <div className="container mx-auto px-4">
+          <Logo size="large" />
+        </div>
+      </header>
+      
       <main className="flex-1 container mx-auto px-4 py-12 max-w-5xl">
         <AnimatedSection animation="fadeIn" className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
