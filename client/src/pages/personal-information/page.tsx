@@ -38,53 +38,17 @@ const PersonalInformationPage = () => {
   };
   
   return (
-    <div className="flex min-h-screen">
-      {/* Left sidebar - progressive steps */}
-      <div className="hidden md:block w-[90px] bg-indigo-950 flex-shrink-0">
-        <div className="flex flex-col items-center pt-6">
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-500 mb-4">
-            <span className="text-white font-medium">1</span>
-          </div>
-          <span className="text-white text-xs mb-8">Heading</span>
-          
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-700 mb-4">
-            <span className="text-white font-medium">2</span>
-          </div>
-          <span className="text-white text-xs mb-8">Work history</span>
-          
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-700 mb-4">
-            <span className="text-white font-medium">3</span>
-          </div>
-          <span className="text-white text-xs mb-8">Education</span>
-          
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-700 mb-4">
-            <span className="text-white font-medium">4</span>
-          </div>
-          <span className="text-white text-xs mb-8">Skills</span>
-          
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-700 mb-4">
-            <span className="text-white font-medium">5</span>
-          </div>
-          <span className="text-white text-xs mb-8">Summary</span>
-          
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-700 mb-4">
-            <span className="text-white font-medium">6</span>
-          </div>
-          <span className="text-white text-xs">Finalize</span>
-          
-          <div className="mt-8 px-2 py-1 bg-white rounded-sm text-[10px] text-center font-medium">
-            RESUME COMPLETION:
-            <div className="w-full bg-gray-200 h-1.5 rounded-full mt-1">
-              <div className="bg-indigo-600 h-1.5 rounded-full w-[20%]"></div>
-            </div>
-            <span className="text-xs font-semibold">20%</span>
-          </div>
+    <div className="flex flex-col min-h-screen bg-white">
+      {/* Header with logo - consistent across all pages */}
+      <header className="py-6 border-b border-gray-100 bg-white">
+        <div className="container mx-auto px-4">
+          <Logo size="large" />
         </div>
-      </div>
+      </header>
       
       {/* Main content */}
-      <div className="flex-1 bg-white">
-        <div className="px-10 py-8">
+      <div className="flex-1">
+        <div className="container mx-auto px-6 py-8">
           <Button 
             variant="ghost" 
             onClick={handleBack}
@@ -363,9 +327,12 @@ const PersonalInformationPage = () => {
           </div>
         </div>
         
-        {/* Footer */}
-        <footer className="mt-auto py-4 border-t border-gray-100 text-center">
-          <div className="flex justify-center items-center gap-3 text-xs text-gray-500">
+      </div>
+      
+      {/* Footer */}
+      <footer className="mt-auto py-4 border-t border-gray-200">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-wrap justify-center text-xs text-gray-500 gap-4">
             <Link href="/terms" className="hover:text-indigo-600">TERMS AND CONDITIONS</Link>
             <span>|</span>
             <Link href="/privacy" className="hover:text-indigo-600">PRIVACY POLICY</Link>
@@ -374,11 +341,11 @@ const PersonalInformationPage = () => {
             <span>|</span>
             <Link href="/contact" className="hover:text-indigo-600">CONTACT US</Link>
           </div>
-          <div className="mt-2 text-xs text-gray-400">
+          <div className="text-center mt-2 text-xs text-gray-400">
             © 2025, TbzResume Limited. All rights reserved.
           </div>
-        </footer>
-      </div>
+        </div>
+      </footer>
     </div>
   );
 };
