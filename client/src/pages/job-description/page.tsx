@@ -12,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { JobTitle, getJobTitleSuggestions, findJobTitleById } from '@/utils/jobTitlesData';
 import { getJobDescriptionsByTitleId, searchJobDescriptions, JobDescription } from '@/utils/jobDescriptionData';
+import { WorkExperience } from '@/types/resume';
 
 // Related job titles
 const getRelatedJobTitles = (jobTitle: string): JobTitle[] => {
@@ -44,16 +45,32 @@ const JobDescriptionPage = () => {
   const [, setLocation] = useLocation();
   const { resumeData, updateResumeData } = useResume();
   const [searchTerm, setSearchTerm] = useState('');
-  const [jobResponsibilities, setJobResponsibilities] = useState('');
   const [jobTitleSuggestions, setJobTitleSuggestions] = useState<JobTitle[]>([]);
   const [showJobTitleSuggestions, setShowJobTitleSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   
   // Get the current work experience (first one in the array)
+  const defaultWorkExperience: WorkExperience = { 
+    id: 'temp-default',
+    jobTitle: 'Manager', 
+    employer: 'Cocoblu', 
+    location: '',
+    isRemote: false,
+    startMonth: 'January', 
+    startYear: '2025', 
+    endMonth: 'January', 
+    endYear: '2026',
+    isCurrentJob: false,
+    responsibilities: ''
+  };
+  
   const currentJob = resumeData.workExperience && resumeData.workExperience.length > 0 
     ? resumeData.workExperience[0] 
-    : { jobTitle: 'Manager', employer: 'Cocoblu', startMonth: 'January', startYear: '2025', endMonth: 'January', endYear: '2026' };
+    : defaultWorkExperience;
+      
+  // Initialize job responsibilities from currentJob if available
+  const [jobResponsibilities, setJobResponsibilities] = useState(currentJob.responsibilities || '');
   
   // Get job title ID for looking up descriptions
   const jobTitleId = currentJob.jobTitle ? 

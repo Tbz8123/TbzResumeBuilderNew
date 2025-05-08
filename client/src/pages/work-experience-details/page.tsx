@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { WorkExperience } from '@/types/resume';
 
 // Helper function to generate month options
 const generateMonths = () => {
@@ -39,20 +40,6 @@ const generateYears = () => {
   return years;
 };
 
-interface WorkExperience {
-  id?: string;
-  jobTitle: string;
-  employer: string;
-  location: string;
-  isRemote: boolean;
-  startMonth: string;
-  startYear: string;
-  endMonth: string;
-  endYear: string;
-  isCurrentJob: boolean;
-  responsibilities: string;
-}
-
 const WorkExperienceDetailsPage = () => {
   const [, setLocation] = useLocation();
   const { resumeData, updateResumeData } = useResume();
@@ -61,6 +48,7 @@ const WorkExperienceDetailsPage = () => {
   
   // Initialize with empty values
   const [workExperience, setWorkExperience] = useState<WorkExperience>({
+    id: `temp-${Date.now()}`,
     jobTitle: '',
     employer: '',
     location: '',
