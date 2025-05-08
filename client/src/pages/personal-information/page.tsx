@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useResume } from '@/contexts/ResumeContext';
 import ResumePreview from '@/components/resume/ResumePreview';
 import ModernResumePreview from '@/components/resume/ModernResumePreview';
+import DirectResumePreview from '@/components/resume/DirectResumePreview';
 import PhotoUploader from '@/components/resume/PhotoUploader';
 import AdditionalInfoOptions from '@/components/resume/AdditionalInfoOptions';
 import Logo from '@/components/Logo';
@@ -353,27 +354,13 @@ const PersonalInformationPage = () => {
                       {/* Scaling container for resume preview */}
                       <div className="relative h-full w-full overflow-hidden bg-white">
                         <div className="relative h-full w-full flex items-center justify-center">
-                          {/* Resume Preview based on selected template with real-time updates */}
+                          {/* Direct Resume Preview with guaranteed real-time updates */}
                           <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                            {selectedTemplateId ? (
-                              <ResumePreview 
-                                className="h-full w-full" 
-                                scaleContent={true}
-                                width={450} 
-                                height={520}
-                              />
-                            ) : (
-                              <div className="transform-gpu origin-top-left" style={{ 
-                                width: '180px', // Container for the scaled content if no template selected
-                                height: '520px',
-                                position: 'relative'
-                              }}>
-                                <ModernResumePreview 
-                                  className="h-full"
-                                  scale={0.22} 
-                                />
-                              </div>
-                            )}
+                            <DirectResumePreview 
+                              className="h-full w-full" 
+                              width={450} 
+                              height={520}
+                            />
                           </div>
                           
                           {/* Template name overlay at bottom - consistent with templates page */}
