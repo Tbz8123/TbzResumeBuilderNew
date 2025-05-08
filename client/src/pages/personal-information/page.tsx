@@ -1,16 +1,11 @@
 import React, { useState } from 'react';
 import { useLocation, Link } from 'wouter';
-import { AnimatedSection } from '@/components/AnimationComponents';
-import { ArrowLeft, Info, X, Plus } from 'lucide-react';
+import { ArrowLeft, Info, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useResume } from '@/contexts/ResumeContext';
-import ResumePreview from '@/components/resume/ResumePreview';
-import ModernResumePreview from '@/components/resume/ModernResumePreview';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
-import PhotoUploader from '@/components/resume/PhotoUploader';
-import AdditionalInfoOptions from '@/components/resume/AdditionalInfoOptions';
 import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
@@ -18,14 +13,9 @@ import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
 
 const PersonalInformationPage = () => {
   const [, setLocation] = useLocation();
-  const { resumeData, updateResumeData, updateAdditionalInfo, removeAdditionalInfo, selectedTemplateId, setSelectedTemplateId } = useResume();
-  const [step, setStep] = useState(1); // For multi-step form navigation
+  const { resumeData, updateResumeData, updateAdditionalInfo, selectedTemplateId, setSelectedTemplateId } = useResume();
   const { data: templates } = useTemplates(); // Fetch templates for displaying the correct template
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
-  
-  // Add debug logging
-  console.log("Personal Information Page - Selected Template ID:", selectedTemplateId);
-  console.log("Personal Information Page - Templates data:", templates);
   
   // Find the selected template from the templates data
   const selectedTemplate = Array.isArray(templates) 
@@ -34,12 +24,8 @@ const PersonalInformationPage = () => {
   
   // Load template ID from localStorage if not set in context
   React.useEffect(() => {
-    // Check if there's a template ID in localStorage but not in context
     const storedTemplateId = localStorage.getItem('selectedTemplateId');
-    console.log("Template ID from localStorage:", storedTemplateId);
-    
     if (storedTemplateId && !selectedTemplateId) {
-      console.log("Using template ID from localStorage:", storedTemplateId);
       setSelectedTemplateId(parseInt(storedTemplateId));
     }
   }, [selectedTemplateId, setSelectedTemplateId]);
@@ -50,352 +36,359 @@ const PersonalInformationPage = () => {
   
   const handleNext = () => {
     // Navigate to work history step
-    console.log('Moving to work history step');
+    setLocation('/work-history');
   };
   
-  // Handle input changes with enhanced reactivity
+  // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    console.log(`Updating field: ${name} with value: ${value}`);
     updateResumeData({ [name]: value } as any);
   };
   
   // Preview resume
   const handlePreview = () => {
-    // This could be a modal or a new view that shows a larger preview
+    // Open preview modal or new tab
     console.log('Preview resume');
   };
   
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {/* Header with logo - consistent across all pages */}
-      <header className="py-6 border-b border-gray-100 bg-white">
+      {/* Header with logo - kept from original design */}
+      <header className="py-4 border-b border-gray-100 bg-white">
         <div className="container mx-auto px-4">
-          <Logo size="large" />
+          <Logo size="medium" />
         </div>
       </header>
       
       {/* Main content */}
-      <div className="flex-1">
-        <div className="container mx-auto px-6 py-8">
+      <div className="flex-1 max-w-6xl mx-auto px-4 py-6">
+        {/* Back button - styled like Zety */}
+        <div className="mb-8">
           <Button 
             variant="ghost" 
             onClick={handleBack}
-            className="flex items-center gap-2 text-indigo-600 mb-6 hover:bg-transparent hover:text-indigo-800"
+            className="flex items-center gap-1 text-blue-600 hover:bg-transparent hover:text-blue-800 px-0"
+            size="sm"
           >
-            <ArrowLeft size={16} />
-            Go Back
+            <ArrowLeft size={14} />
+            <span className="text-sm">Go Back</span>
           </Button>
-          
-          <div className="mx-auto max-w-5xl">
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        </div>
+        
+        <div className="flex flex-col lg:flex-row lg:gap-16">
+          {/* Left column - Form Fields */}
+          <div className="lg:flex-1">
+            <div className="mb-6">
+              <h1 className="text-xl font-bold text-gray-900">
                 What's the best way for employers to contact you?
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm mt-1">
                 We suggest including an email and phone number.
               </p>
             </div>
             
-            <div className="flex flex-col lg:flex-row lg:gap-8">
-              {/* Left column - Form Fields */}
-              <div className="lg:flex-1">
-                {/* Required fields indicator */}
-                <div className="text-xs text-gray-500 mb-6">
-                  <span className="text-red-500">*</span> Indicates a required field
-                </div>
-                
-                {/* Photo section */}
-                <div className="mb-8 flex items-start gap-6">
-                  <div className="w-[8.5rem] h-[8.5rem] overflow-hidden border border-gray-200">
-                    {resumeData.photo ? (
-                      <img 
-                        src={resumeData.photo} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
-                        <div className="mb-2">
-                          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M6 21V19C6 17.4087 6.63214 15.8826 7.75736 14.7574C8.88258 13.6321 10.4087 13 12 13C13.5913 13 15.1174 13.6321 16.2426 14.7574C17.3679 15.8826 18 17.4087 18 19V21" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                        <div className="text-center">
-                          <Button
-                            variant="link"
-                            className="text-indigo-600 text-xs hover:text-indigo-800"
-                            onClick={() => document.getElementById('photo-upload')?.click()}
-                          >
-                            Upload Photo
-                          </Button>
-                          <input 
-                            id="photo-upload" 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (event) => {
-                                  updateResumeData({ photo: event.target?.result as string });
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                        </div>
+            {/* Required field indicator */}
+            <div className="text-xs text-gray-500 mb-4">
+              <span className="text-red-500">*</span> Indicates a required field
+            </div>
+            
+            {/* Photo upload section */}
+            <div className="mb-6 flex justify-center">
+              <div className="text-center">
+                <div className="w-[9rem] h-[9rem] mx-auto mb-2 border border-gray-200">
+                  {resumeData.photo ? (
+                    <img 
+                      src={resumeData.photo} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
+                      <div className="mb-1">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M6 21V19C6 17.4087 6.63214 15.8826 7.75736 14.7574C8.88258 13.6321 10.4087 13 12 13C13.5913 13 15.1174 13.6321 16.2426 14.7574C17.3679 15.8826 18 17.4087 18 19V21" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
                       </div>
-                    )}
-                  </div>
-                  
-                  {/* First Name and Surname */}
-                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
-                        First Name <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="firstName"
-                        name="firstName"
-                        placeholder="e.g. Saanvi"
-                        value={resumeData.firstName}
-                        onChange={handleInputChange}
-                        required
-                        className="border-gray-300 h-10 rounded"
-                      />
                     </div>
-                    
-                    <div>
-                      <Label htmlFor="surname" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
-                        Surname
-                      </Label>
-                      <Input
-                        id="surname"
-                        name="surname"
-                        placeholder="e.g. Patel"
-                        value={resumeData.surname}
-                        onChange={handleInputChange}
-                        className="border-gray-300 h-10 rounded"
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
-                
-                {/* Profession */}
-                <div className="mb-6">
-                  <Label htmlFor="profession" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
-                    Profession
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="text-xs py-1"
+                  onClick={() => document.getElementById('photo-upload')?.click()}
+                >
+                  Upload Photo
+                </Button>
+                <input 
+                  id="photo-upload" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        updateResumeData({ photo: event.target?.result as string });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            
+            {/* Name Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <div className="flex items-center mb-1">
+                  <Label htmlFor="firstName" className="text-xs font-medium text-gray-700 block uppercase">
+                    First Name
                   </Label>
-                  <Input
-                    id="profession"
-                    name="profession"
-                    placeholder="e.g. Retail Sales Associate"
-                    value={resumeData.profession}
-                    onChange={handleInputChange}
-                    className="border-gray-300 h-10 rounded w-full"
-                  />
+                  <span className="text-red-500 ml-1">*</span>
                 </div>
-                
-                {/* City, Country, and PIN Code */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                  <div>
-                    <Label htmlFor="city" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
-                      City
-                    </Label>
-                    <Input
-                      id="city"
-                      name="city"
-                      placeholder="e.g. New Delhi"
-                      value={resumeData.city}
-                      onChange={handleInputChange}
-                      className="border-gray-300 h-10 rounded"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="country" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
-                      Country
-                    </Label>
-                    <Input
-                      id="country"
-                      name="country"
-                      placeholder="e.g. India"
-                      value={resumeData.country}
-                      onChange={handleInputChange}
-                      className="border-gray-300 h-10 rounded"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="postalCode" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
-                      Pin Code
-                    </Label>
-                    <Input
-                      id="postalCode"
-                      name="postalCode"
-                      placeholder="e.g. 110034"
-                      value={resumeData.postalCode}
-                      onChange={handleInputChange}
-                      className="border-gray-300 h-10 rounded"
-                    />
-                  </div>
-                </div>
-                
-                {/* Phone and Email */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                  <div>
-                    <Label htmlFor="phone" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
-                      Phone
-                    </Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      placeholder="e.g. +91 22 1234 5677"
-                      value={resumeData.phone}
-                      onChange={handleInputChange}
-                      className="border-gray-300 h-10 rounded"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="email" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
-                      Email <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="e.g. saanvipatel@sample.in"
-                      value={resumeData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="border-gray-300 h-10 rounded"
-                    />
-                  </div>
-                </div>
-                
-                {/* Summary Section */}
-                <div className="mb-6">
-                  <Label htmlFor="summary" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
-                    Professional Summary
-                  </Label>
-                  <textarea
-                    id="summary"
-                    name="summary"
-                    placeholder="A results-driven professional with experience in your field..."
-                    value={resumeData.summary || ''}
-                    onChange={(e) => {
-                      console.log(`Updating summary: ${e.target.value}`);
-                      updateResumeData({ summary: e.target.value });
-                    }}
-                    className="border border-gray-300 rounded w-full h-24 p-2 text-sm"
-                  />
-                </div>
-                
-                {/* Additional Info Options */}
-                <div className="mb-12">
-                  <AdditionalInfoOptions />
-                </div>
-                
-                {/* Navigation Buttons */}
-                <div className="flex items-center justify-between">
-                  <Button 
-                    variant="default" 
-                    className="bg-indigo-900 hover:bg-indigo-800 text-white rounded-full px-6"
-                  >
-                    Optional: Personal details
-                  </Button>
-                  
-                  <div className="flex gap-3">
-                    <Button 
-                      variant="outline" 
-                      onClick={handlePreview}
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50 rounded-full px-6"
-                    >
-                      Preview
-                    </Button>
-                    <Button 
-                      onClick={handleNext}
-                      className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-medium rounded-full px-6"
-                    >
-                      Next: Work history
-                    </Button>
-                  </div>
+                <Input
+                  id="firstName"
+                  name="firstName"
+                  placeholder="e.g. John"
+                  value={resumeData.firstName}
+                  onChange={handleInputChange}
+                  required
+                  className="border-gray-300 h-10 rounded-md"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="surname" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
+                  Surname
+                </Label>
+                <Input
+                  id="surname"
+                  name="surname"
+                  placeholder="e.g. Patel"
+                  value={resumeData.surname}
+                  onChange={handleInputChange}
+                  className="border-gray-300 h-10 rounded-md"
+                />
+              </div>
+            </div>
+            
+            {/* Profession */}
+            <div className="mb-4">
+              <Label htmlFor="profession" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
+                Profession
+              </Label>
+              <Input
+                id="profession"
+                name="profession"
+                placeholder="e.g. Retail Sales Associate"
+                value={resumeData.profession}
+                onChange={handleInputChange}
+                className="border-gray-300 h-10 rounded-md w-full"
+              />
+            </div>
+            
+            {/* City and Country */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <Label htmlFor="city" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
+                  City
+                </Label>
+                <Input
+                  id="city"
+                  name="city"
+                  placeholder="e.g. New Delhi"
+                  value={resumeData.city}
+                  onChange={handleInputChange}
+                  className="border-gray-300 h-10 rounded-md"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="country" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
+                  Country
+                </Label>
+                <Input
+                  id="country"
+                  name="country"
+                  placeholder="e.g. India"
+                  value={resumeData.country}
+                  onChange={handleInputChange}
+                  className="border-gray-300 h-10 rounded-md"
+                />
+              </div>
+            </div>
+            
+            {/* PIN Code */}
+            <div className="mb-4">
+              <Label htmlFor="postalCode" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
+                Pin Code
+              </Label>
+              <Input
+                id="postalCode"
+                name="postalCode"
+                placeholder="e.g. 110034"
+                value={resumeData.postalCode}
+                onChange={handleInputChange}
+                className="border-gray-300 h-10 rounded-md w-full sm:w-1/2"
+              />
+            </div>
+            
+            {/* Phone */}
+            <div className="mb-4">
+              <Label htmlFor="phone" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
+                Phone
+              </Label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                placeholder="e.g. +91 22 1234 5677"
+                value={resumeData.phone}
+                onChange={handleInputChange}
+                className="border-gray-300 h-10 rounded-md w-full"
+              />
+            </div>
+            
+            {/* Email */}
+            <div className="mb-6">
+              <div className="flex items-center mb-1">
+                <Label htmlFor="email" className="text-xs font-medium text-gray-700 block uppercase">
+                  Email
+                </Label>
+                <span className="text-red-500 ml-1">*</span>
+              </div>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="e.g. example@sample.in"
+                value={resumeData.email}
+                onChange={handleInputChange}
+                required
+                className="border-gray-300 h-10 rounded-md w-full"
+              />
+            </div>
+            
+            {/* Additional Information */}
+            <div className="mb-6">
+              <div className="flex items-center mb-2">
+                <span className="text-sm text-gray-700">Add additional information to your resume</span>
+                <span className="text-xs text-gray-500 ml-1">(optional)</span>
+                <div className="ml-2 bg-gray-100 rounded-full p-1">
+                  <Info size={14} className="text-gray-500" />
                 </div>
               </div>
               
-              {/* Right column - Resume Preview */}
-              <div className="hidden lg:flex lg:flex-col lg:w-[450px] mt-12 lg:mt-0">
-                <div className="sticky top-8 w-full">
-                  <div className="bg-blue-50 rounded-lg p-3 mb-4">
-                    <h3 className="font-semibold text-blue-900 text-sm mb-1">Live Resume Preview</h3>
-                    <p className="text-blue-700 text-xs flex items-center">
-                      <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold mr-2">
-                        NEW
-                      </span>
-                      <span>Updates in real-time as you type</span>
-                    </p>
-                  </div>
-                  
-                  <div className="mb-4 relative">
-                    {/* Modern Resume Preview Container - Larger for better visibility */}
-                    <div 
-                      className="border border-gray-200 rounded-lg overflow-hidden shadow-md"
-                      style={{ 
-                        width: '100%', 
-                        height: '520px',
-                        backgroundColor: 'white'
-                      }}
-                    >
-                      {/* Scaling container for resume preview */}
-                      <div className="relative h-full w-full overflow-hidden bg-white">
-                        <div className="relative h-full w-full flex items-center justify-center">
-                          {/* Hybrid Resume Preview - combines template display with real-time updates */}
-                          <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                            <HybridResumePreview 
-                              className="h-full w-full" 
-                              width={450} 
-                              height={520}
-                              scaleContent={true}
-                            />
-                          </div>
-                          
-                          {/* Template name overlay at bottom - consistent with templates page */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent py-2 px-3 pointer-events-none">
-                            <p className="font-medium text-white text-sm">Your Resume</p>
-                            <p className="text-xs text-gray-300 capitalize">
-                              {selectedTemplate ? selectedTemplate.name : "Modern Professional"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <Button 
-                      variant="link" 
-                      className="text-indigo-600 text-xs font-medium hover:text-indigo-800"
-                      onClick={() => setTemplateModalOpen(true)}
-                    >
-                      Change template
-                    </Button>
-                  </div>
-                  
-                  <div className="mt-4 text-[10px] text-gray-500 text-center">
-                    <p>¹ The results are based on a study with over 1000 participants,</p>
-                    <p>among whom 287 used resume tools provided on our family sites.</p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full border-gray-300 text-xs py-1 px-3 flex items-center gap-1"
+                  onClick={() => updateAdditionalInfo('linkedin', '')}
+                >
+                  LinkedIn
+                  <Plus size={14} />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full border-gray-300 text-xs py-1 px-3 flex items-center gap-1"
+                  onClick={() => updateAdditionalInfo('website', '')}
+                >
+                  Website
+                  <Plus size={14} />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full border-gray-300 text-xs py-1 px-3 flex items-center gap-1"
+                  onClick={() => updateAdditionalInfo('drivingLicense', '')}
+                >
+                  Driving license
+                  <Plus size={14} />
+                </Button>
+              </div>
+            </div>
+            
+            {/* Navigation Buttons */}
+            <div className="flex items-center justify-between gap-4 mt-8">
+              <Button
+                variant="outline"
+                onClick={handlePreview}
+                className="rounded-full px-6 py-2"
+              >
+                Preview
+              </Button>
+              
+              <Button
+                variant="default"
+                onClick={handleNext}
+                className="bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-full px-6 py-2"
+              >
+                Next: Work history
+              </Button>
+            </div>
+          </div>
+          
+          {/* Right column - Resume Preview */}
+          <div className="lg:w-[360px] mt-12 lg:mt-0">
+            <div className="mb-4">
+              <div className="bg-blue-50 rounded-lg p-3 flex items-center">
+                <div className="bg-blue-100 rounded-full p-1 mr-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#1E88E5" strokeWidth="2"/>
+                    <path d="M12 8V12M12 16H12.01" stroke="#1E88E5" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <p className="text-sm text-blue-800">Our Resume Builder delivers results!</p>
+              </div>
+              <div className="bg-blue-50 rounded-b-lg p-2 text-center text-sm text-blue-800 font-medium -mt-1">
+                +22% Higher response rate from recruiters
+              </div>
+            </div>
+            
+            {/* Resume Preview */}
+            <div className="rounded-lg overflow-hidden shadow-md border border-gray-200">
+              <div
+                className="relative w-full bg-white overflow-hidden"
+                style={{ height: '425px' }}
+              >
+                {/* Resume preview */}
+                <div className="relative h-full w-full overflow-hidden bg-white">
+                  <div className="relative h-full w-full flex items-center justify-center">
+                    <HybridResumePreview 
+                      className="h-full w-full" 
+                      width={360} 
+                      height={425}
+                      scaleContent={true}
+                    />
                   </div>
                 </div>
               </div>
             </div>
+            
+            {/* Change template button */}
+            <div className="text-center mt-3">
+              <Button 
+                variant="link" 
+                className="text-blue-600 text-sm hover:text-blue-800"
+                onClick={() => setTemplateModalOpen(true)}
+              >
+                Change template
+              </Button>
+            </div>
+            
+            {/* Study disclaimer */}
+            <div className="mt-4 text-xs text-gray-500">
+              <p className="mb-1">¹ The results are based on a study with over 1000 participants, among whom 287 used resume tools provided on our family sites.</p>
+            </div>
           </div>
         </div>
-        
       </div>
       
       {/* Footer */}
