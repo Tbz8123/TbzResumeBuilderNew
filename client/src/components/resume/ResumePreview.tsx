@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useResume } from '@/contexts/ResumeContext';
 import { useTemplates } from '@/hooks/use-templates';
 
@@ -17,8 +17,8 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
 }) => {
   const { resumeData, selectedTemplateId, setSelectedTemplateId } = useResume();
   const { data: templates } = useTemplates();
-  const [templateHtml, setTemplateHtml] = useState<string>('');
   const [templateStyles, setTemplateStyles] = useState<string>('');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   
   // Get template ID from localStorage if needed
   useEffect(() => {
@@ -26,21 +26,14 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
     const storedTemplateId = localStorage.getItem('selectedTemplateId');
     
     if (storedTemplateId && (!selectedTemplateId || selectedTemplateId.toString() !== storedTemplateId)) {
-      console.log("ResumePreview: Updating template ID from localStorage:", storedTemplateId);
+      console.log("ResumePreview: Using template ID from localStorage:", storedTemplateId);
       setSelectedTemplateId(parseInt(storedTemplateId, 10));
     }
   }, [selectedTemplateId, setSelectedTemplateId]);
   
   // Find the selected template
   const selectedTemplate = Array.isArray(templates) && templates.length > 0 
-    ? templates.find((t: any) => {
-        const templateId = t.id;
-        const storedTemplateId = parseInt(localStorage.getItem('selectedTemplateId') || '0', 10);
-        
-        // Compare with both context selectedTemplateId and localStorage
-        return templateId === selectedTemplateId || 
-              (selectedTemplateId === null && templateId === storedTemplateId);
-      })
+    ? templates.find((t: any) => t.id === selectedTemplateId)
     : undefined;
     
   // For debugging
@@ -102,75 +95,117 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
     }
   }, [selectedTemplate]);
 
-  // Process template HTML whenever resume data or template changes
+  // Direct DOM manipulation to update content in iframe
   useEffect(() => {
-    const processTemplate = () => {
-      if (selectedTemplate?.htmlContent) {
-        // Create a new copy of the HTML content
-        let html = selectedTemplate.htmlContent;
-        
-        // Remove style tag as we'll inject it separately
-        const styleRegex = /<style>([\s\S]*?)<\/style>/;
-        html = html.replace(styleRegex, '');
-        
-        // Add a timestamp comment to force refresh on each update
-        html = `<!-- Updated: ${Date.now()} -->\n${html}`;
-        
-        // Replace placeholders with actual resume data
-        html = html.replace(/{{firstName}}/g, resumeData.firstName || '');
-        html = html.replace(/{{lastName}}/g, resumeData.surname || '');
-        html = html.replace(/{{fullName}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
-        html = html.replace(/{{name}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
-        html = html.replace(/{{profession}}/g, resumeData.profession || '');
-        html = html.replace(/{{email}}/g, resumeData.email || '');
-        html = html.replace(/{{phone}}/g, resumeData.phone || '');
-        html = html.replace(/{{city}}/g, resumeData.city || '');
-        html = html.replace(/{{country}}/g, resumeData.country || '');
-        html = html.replace(/{{address}}/g, [resumeData.city, resumeData.country].filter(Boolean).join(', '));
-        html = html.replace(/{{summary}}/g, resumeData.summary || '');
-        html = html.replace(/{{profile}}/g, resumeData.summary || '');
-        html = html.replace(/{{aboutMe}}/g, resumeData.summary || '');
-        html = html.replace(/{{bio}}/g, resumeData.summary || '');
-        html = html.replace(/{{description}}/g, resumeData.summary || '');
-        
-        // Handle profile photo if present
-        if (resumeData.photo) {
-          html = html.replace(/<img[^>]*class="profile-image"[^>]*>/g, 
-            `<img class="profile-image" src="${resumeData.photo}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">`);
-        }
-        
-        // Additional info replacements
-        Object.entries(resumeData.additionalInfo).forEach(([key, value]) => {
-          if (value) {
-            const placeholder = new RegExp(`{{${key}}}`, 'g');
-            html = html.replace(placeholder, value);
-          }
-        });
-        
-        // Update the state
-        setTemplateHtml(html);
-        
-        // Add debug log
-        console.log("Updating template HTML with latest resume data", {
-          firstName: resumeData.firstName,
-          lastName: resumeData.surname,
-          profession: resumeData.profession,
-          summary: resumeData.summary,
-          timestamp: Date.now()
-        });
+    if (!selectedTemplate?.htmlContent || !iframeRef.current) return;
+    
+    try {
+      const iframe = iframeRef.current;
+      const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+      
+      if (!iframeDocument) return;
+      
+      // Insert basic document structure if it doesn't exist
+      if (!iframeDocument.body) {
+        iframeDocument.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                ${templateStyles}
+                body, html {
+                  margin: 0;
+                  padding: 0;
+                  overflow: hidden;
+                  height: 100%;
+                }
+              </style>
+            </head>
+            <body></body>
+          </html>
+        `);
+        iframeDocument.close();
       }
-    };
-
-    // Process immediately
-    processTemplate();
-    
-    // Also set up a timer to refresh every 500ms to ensure any changes are picked up
-    const refreshTimer = setTimeout(() => {
-      processTemplate();
-    }, 500);
-    
-    return () => clearTimeout(refreshTimer);
-  }, [selectedTemplate, resumeData]);
+      
+      // Get just the HTML content without style tags
+      let htmlContent = selectedTemplate.htmlContent;
+      htmlContent = htmlContent.replace(/<style>[\s\S]*?<\/style>/g, '');
+      
+      // Set the content
+      iframeDocument.body.innerHTML = htmlContent;
+      
+      // Insert or update style tag
+      let styleTag = iframeDocument.querySelector('style');
+      if (!styleTag) {
+        styleTag = iframeDocument.createElement('style');
+        iframeDocument.head.appendChild(styleTag);
+      }
+      styleTag.textContent = templateStyles;
+      
+      // Update all placeholders in the iframe DOM directly
+      const updateTextContent = (selector, value) => {
+        const elements = iframeDocument.querySelectorAll(selector);
+        elements.forEach(el => {
+          el.textContent = value;
+        });
+      };
+      
+      // Replace placeholders with direct DOM manipulation
+      updateTextContent('[data-placeholder="firstName"]', resumeData.firstName || '');
+      updateTextContent('[data-placeholder="lastName"]', resumeData.surname || '');
+      updateTextContent('[data-placeholder="fullName"]', `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
+      updateTextContent('[data-placeholder="name"]', `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
+      updateTextContent('[data-placeholder="profession"]', resumeData.profession || '');
+      updateTextContent('[data-placeholder="email"]', resumeData.email || '');
+      updateTextContent('[data-placeholder="phone"]', resumeData.phone || '');
+      updateTextContent('[data-placeholder="city"]', resumeData.city || '');
+      updateTextContent('[data-placeholder="country"]', resumeData.country || '');
+      
+      // Also do text replacements for older template format
+      const replaceInnerHTML = (element) => {
+        if (element.innerHTML) {
+          element.innerHTML = element.innerHTML
+            .replace(/{{firstName}}/g, resumeData.firstName || '')
+            .replace(/{{lastName}}/g, resumeData.surname || '')
+            .replace(/{{fullName}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`)
+            .replace(/{{name}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`)
+            .replace(/{{profession}}/g, resumeData.profession || '')
+            .replace(/{{email}}/g, resumeData.email || '')
+            .replace(/{{phone}}/g, resumeData.phone || '')
+            .replace(/{{city}}/g, resumeData.city || '')
+            .replace(/{{country}}/g, resumeData.country || '')
+            .replace(/{{address}}/g, [resumeData.city, resumeData.country].filter(Boolean).join(', '))
+            .replace(/{{summary}}/g, resumeData.summary || '')
+            .replace(/{{profile}}/g, resumeData.summary || '')
+            .replace(/{{aboutMe}}/g, resumeData.summary || '')
+            .replace(/{{bio}}/g, resumeData.summary || '')
+            .replace(/{{description}}/g, resumeData.summary || '');
+        }
+      };
+      
+      // Apply to all elements
+      const allElements = iframeDocument.querySelectorAll('*');
+      allElements.forEach(replaceInnerHTML);
+      
+      // Update the head title for completeness
+      const title = iframeDocument.querySelector('title');
+      if (title) {
+        title.textContent = `Resume - ${resumeData.firstName || ''} ${resumeData.surname || ''}`;
+      }
+      
+      console.log("Direct DOM update completed for resume data", {
+        firstName: resumeData.firstName,
+        lastName: resumeData.surname,
+        profession: resumeData.profession,
+        summary: resumeData.summary,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error('Error updating iframe content:', error);
+    }
+  }, [selectedTemplate, resumeData, templateStyles]);
   
   // Fallback modern template if no selected template is available
   const renderModernTemplate = () => (
@@ -354,32 +389,11 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
       }}
     >
-      {templateHtml ? (
+      {selectedTemplate ? (
         <div className="absolute inset-0 flex items-start justify-start overflow-hidden">
-          {/* Use iframe for more reliable rendering and isolation */}
+          {/* Use iframe with ref for direct DOM manipulation */}
           <iframe
-            srcDoc={`
-              <!DOCTYPE html>
-              <html>
-                <head>
-                  <meta charset="UTF-8">
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <style>
-                    ${templateStyles}
-                    /* Additional iframe-specific styles */
-                    body, html {
-                      margin: 0;
-                      padding: 0;
-                      overflow: hidden;
-                      height: 100%;
-                    }
-                  </style>
-                </head>
-                <body>
-                  ${templateHtml}
-                </body>
-              </html>
-            `}
+            ref={iframeRef}
             style={{ 
               border: 'none',
               width: '794px', // A4 width
