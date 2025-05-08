@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useResume } from '@/contexts/ResumeContext';
 import ResumePreview from '@/components/resume/ResumePreview';
 import ModernResumePreview from '@/components/resume/ModernResumePreview';
-import DirectResumePreview from '@/components/resume/DirectResumePreview';
+import HybridResumePreview from '@/components/resume/HybridResumePreview';
 import PhotoUploader from '@/components/resume/PhotoUploader';
 import AdditionalInfoOptions from '@/components/resume/AdditionalInfoOptions';
 import Logo from '@/components/Logo';
@@ -354,12 +354,13 @@ const PersonalInformationPage = () => {
                       {/* Scaling container for resume preview */}
                       <div className="relative h-full w-full overflow-hidden bg-white">
                         <div className="relative h-full w-full flex items-center justify-center">
-                          {/* Direct Resume Preview with guaranteed real-time updates */}
+                          {/* Hybrid Resume Preview - combines template display with real-time updates */}
                           <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                            <DirectResumePreview 
+                            <HybridResumePreview 
                               className="h-full w-full" 
                               width={450} 
                               height={520}
+                              scaleContent={true}
                             />
                           </div>
                           
