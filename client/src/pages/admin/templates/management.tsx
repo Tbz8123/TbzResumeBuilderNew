@@ -257,7 +257,7 @@ const AdminTemplateManagementPage = () => {
                               >
                                 {template.thumbnailUrl ? (
                                   <img 
-                                    src={template.thumbnailUrl} 
+                                    src={`${template.thumbnailUrl}?t=${Date.now()}`} 
                                     alt={template.name} 
                                     className="w-full h-full object-contain"
                                     onError={(e) => {
