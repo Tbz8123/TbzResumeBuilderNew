@@ -81,18 +81,56 @@ const JobDescriptionPage = () => {
   const relatedJobTitles = getRelatedJobTitles(currentJob.jobTitle);
   
   // Get job descriptions based on job title
-  const [descriptions, setDescriptions] = useState<JobDescription[]>(
-    getJobDescriptionsByTitleId(jobTitleId)
-  );
+  const [descriptions, setDescriptions] = useState<JobDescription[]>([]);
+  const [isLoadingDescriptions, setIsLoadingDescriptions] = useState(false);
   
-  // Update descriptions when job title changes
+  // Fetch job descriptions from API when job title changes or on search
   useEffect(() => {
-    if (searchTerm) {
-      setDescriptions(searchJobDescriptions(jobTitleId, searchTerm));
-    } else {
-      setDescriptions(getJobDescriptionsByTitleId(jobTitleId));
-    }
-  }, [jobTitleId, searchTerm]);
+    const fetchJobDescriptions = async () => {
+      setIsLoadingDescriptions(true);
+      try {
+        // First try to find the actual job title ID from the database based on the title
+        const titlesResponse = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(currentJob.jobTitle)}`);
+        const titlesData = await titlesResponse.json();
+        
+        let jobTitleIdFromDb = null;
+        if (titlesData.data && titlesData.data.length > 0) {
+          // Use the first matching job title's ID
+          jobTitleIdFromDb = titlesData.data[0].id;
+        }
+        
+        // Fetch descriptions based on the found job title ID, or all descriptions if none found
+        let descriptionsUrl = '/api/jobs/descriptions';
+        if (jobTitleIdFromDb) {
+          descriptionsUrl += `?jobTitleId=${jobTitleIdFromDb}`;
+        }
+        
+        // If search term is provided, we would normally add it to the query
+        // But the backend doesn't currently support text search on descriptions
+        // so we'll filter on the client side
+        
+        const response = await apiRequest('GET', descriptionsUrl);
+        let descriptionsData = await response.json();
+        
+        // Client-side filtering if search term is provided
+        if (searchTerm && descriptionsData.length > 0) {
+          const searchTermLower = searchTerm.toLowerCase();
+          descriptionsData = descriptionsData.filter((desc: JobDescription) => 
+            desc.content.toLowerCase().includes(searchTermLower)
+          );
+        }
+        
+        setDescriptions(descriptionsData);
+      } catch (error) {
+        console.error('Error fetching job descriptions:', error);
+        setDescriptions([]);
+      } finally {
+        setIsLoadingDescriptions(false);
+      }
+    };
+    
+    fetchJobDescriptions();
+  }, [currentJob.jobTitle, searchTerm]);
   
   // Effect to update job title suggestions when search term changes
   useEffect(() => {
@@ -334,7 +372,15 @@ const JobDescriptionPage = () => {
               
               {/* Examples list */}
               <div className="border border-gray-200 rounded-sm divide-y divide-gray-200">
-                {descriptions.length > 0 ? (
+                {isLoadingDescriptions ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <svg className="animate-spin h-5 w-5 mx-auto mb-2 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading job descriptions...
+                  </div>
+                ) : descriptions.length > 0 ? (
                   descriptions.map((description: JobDescription) => (
                     <div key={description.id} className="p-3 hover:bg-gray-50">
                       <button 
