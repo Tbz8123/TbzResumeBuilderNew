@@ -5,6 +5,7 @@ import { ArrowLeft, Info, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useResume } from '@/contexts/ResumeContext';
 import ResumePreview from '@/components/resume/ResumePreview';
 import ModernResumePreview from '@/components/resume/ModernResumePreview';
@@ -48,7 +49,7 @@ const PersonalInformationPage = () => {
   };
   
   // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     updateResumeData({ [name]: value } as any);
   };
@@ -271,6 +272,21 @@ const PersonalInformationPage = () => {
                   </div>
                 </div>
                 
+                {/* Professional Summary */}
+                <div className="mb-6">
+                  <Label htmlFor="summary" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
+                    Professional Summary
+                  </Label>
+                  <Textarea
+                    id="summary"
+                    name="summary"
+                    placeholder="Brief overview of your professional experience, key skills, and career goals..."
+                    value={resumeData.summary || ''}
+                    onChange={handleInputChange}
+                    className="border-gray-300 rounded resize-none min-h-[100px]"
+                  />
+                </div>
+                
                 {/* Additional Info Options */}
                 <div className="mb-12">
                   <AdditionalInfoOptions />
@@ -303,8 +319,8 @@ const PersonalInformationPage = () => {
                 </div>
               </div>
               
-              {/* Right column - Resume Preview */}
-              <div className="hidden lg:block lg:w-80 mt-12 lg:mt-0">
+              {/* Right column - Modern Resume Preview */}
+              <div className="hidden lg:block lg:w-96 mt-12 lg:mt-0">
                 <div className="sticky top-8">
                   <div className="bg-blue-50 rounded-lg p-3 mb-4">
                     <h3 className="font-semibold text-blue-900 text-sm mb-1">Our Resume Builder delivers results!<sup>1</sup></h3>
@@ -317,28 +333,16 @@ const PersonalInformationPage = () => {
                   </div>
                   
                   <div className="mb-4">
-                    {/* Template container with exact dimensions from templates page */}
+                    {/* Modern Resume Preview container */}
                     <div 
-                      className="border border-gray-200 rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
-                      style={{ width: '280px', height: '362.13px' }}
+                      className="border border-gray-200 rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md bg-white"
+                      style={{ width: '360px', height: '465px' }}
                     >
-                      {/* Template preview layout - matches the templates page */}
+                      {/* Container for the scaled preview */}
                       <div className="relative h-full w-full overflow-hidden bg-white">
-                        <div className="relative h-full w-full flex items-center justify-center">
-                          {/* Interactive Resume Preview component - maintains real-time updates */}
-                          <ResumePreview 
-                            className="h-full w-full border-none shadow-none" 
-                            width={280} 
-                            height={362}
-                          />
-                          
-                          {/* Template name overlay at bottom - consistent with templates page */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent py-2 px-3 pointer-events-none">
-                            <p className="font-medium text-white text-sm">Your Resume</p>
-                            <p className="text-xs text-gray-300 capitalize">
-                              {Array.isArray(templates) && templates.find((t: ResumeTemplate) => t.id === selectedTemplateId)?.name || 'Professional Template'}
-                            </p>
-                          </div>
+                        {/* Modern Resume Preview that updates in real-time */}
+                        <div className="transform-gpu" style={{ transformOrigin: 'top left' }}>
+                          <ModernResumePreview scale={0.22} />
                         </div>
                       </div>
                     </div>
