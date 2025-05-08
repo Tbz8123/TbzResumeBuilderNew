@@ -344,25 +344,34 @@ const PersonalInformationPage = () => {
                       {/* Scaling container for resume preview */}
                       <div className="relative h-full w-full overflow-hidden bg-white">
                         <div className="relative h-full w-full flex items-center justify-center">
-                          {/* Modern Resume Preview with real-time updates */}
+                          {/* Resume Preview based on selected template with real-time updates */}
                           <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                            <div className="transform-gpu origin-top-left" style={{ 
-                              width: '180px', // Container for the scaled content
-                              height: '520px',
-                              position: 'relative'
-                            }}>
-                              <ModernResumePreview 
-                                className="h-full"
-                                scale={0.22} // Scale to fit the container while maintaining aspect ratio
+                            {selectedTemplateId ? (
+                              <ResumePreview 
+                                className="h-full w-full" 
+                                scaleContent={true}
+                                width={450} 
+                                height={520}
                               />
-                            </div>
+                            ) : (
+                              <div className="transform-gpu origin-top-left" style={{ 
+                                width: '180px', // Container for the scaled content if no template selected
+                                height: '520px',
+                                position: 'relative'
+                              }}>
+                                <ModernResumePreview 
+                                  className="h-full"
+                                  scale={0.22} 
+                                />
+                              </div>
+                            )}
                           </div>
                           
                           {/* Template name overlay at bottom - consistent with templates page */}
                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent py-2 px-3 pointer-events-none">
                             <p className="font-medium text-white text-sm">Your Resume</p>
                             <p className="text-xs text-gray-300 capitalize">
-                              Modern Professional
+                              {selectedTemplate ? selectedTemplate.name : "Modern Professional"}
                             </p>
                           </div>
                         </div>
