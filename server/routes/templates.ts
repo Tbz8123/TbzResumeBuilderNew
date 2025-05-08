@@ -2229,9 +2229,9 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
         
         if (colorfulColors.length >= 2) {
           // Use first two unique colorful colors
-          const uniqueColors = [...new Set(colorfulColors)];
-          primaryColor = uniqueColors[0];
-          secondaryColor = uniqueColors[1];
+          const uniqueColorsArray = Array.from(new Set(colorfulColors));
+          primaryColor = uniqueColorsArray[0];
+          secondaryColor = uniqueColorsArray[1];
           console.log(`Using extracted colors for template ${templateId}: Primary: ${primaryColor}, Secondary: ${secondaryColor}`);
         }
       }

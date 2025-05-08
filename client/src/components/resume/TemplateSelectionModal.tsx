@@ -141,10 +141,13 @@ const TemplateSelectionModal: React.FC<TemplateSelectionModalProps> = ({
                     <div className="aspect-[210/297] w-full bg-white">
                       {template.thumbnailUrl ? (
                         <img 
-                          src={template.thumbnailUrl} 
+                          src={`${template.thumbnailUrl}?t=${Date.now()}`} 
                           alt={template.name} 
                           className="w-full h-full object-contain"
+                          loading="eager"
+                          decoding="async"
                           onError={(e) => {
+                            console.warn(`Failed to load thumbnail for template ${template.id}`, template.thumbnailUrl);
                             e.currentTarget.src = '/placeholder-template.svg';
                           }}
                         />

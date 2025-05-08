@@ -106,6 +106,11 @@ const TemplatePreview = ({
 
   // If template has a thumbnailUrl, use it instead of rendering HTML
   if (template?.thumbnailUrl && !error) {
+    // Add cache busting timestamp to prevent browser caching
+    const cacheBustedUrl = template.thumbnailUrl.includes('?') 
+      ? `${template.thumbnailUrl}&t=${Date.now()}` 
+      : `${template.thumbnailUrl}?t=${Date.now()}`;
+      
     return (
       <div className="w-full h-full absolute inset-0 bg-white overflow-hidden flex items-center justify-center">
         {isLoading ? (
@@ -113,19 +118,24 @@ const TemplatePreview = ({
         ) : (
           <div className="relative w-full h-full">
             <img 
-              src={template.thumbnailUrl} 
+              src={cacheBustedUrl} 
               alt={template.name || "Template preview"} 
               className="w-full h-full object-contain"
+              loading="eager"
+              decoding="async"
               onError={(e) => {
                 console.error("Failed to load thumbnail:", template.thumbnailUrl);
+                
+                // Try loading the placeholder as fallback
+                const fallbackSrc = "/placeholder-template.svg";
                 
                 // Add error message to the component
                 const parent = e.currentTarget.parentElement;
                 if (parent) {
                   parent.innerHTML = `
-                    <div class="w-full h-full flex flex-col items-center justify-center bg-red-50 text-center p-4">
-                      <p class="text-red-500 font-medium mb-2">Error loading thumbnail</p>
-                      <p class="text-sm text-gray-600">${template.name}</p>
+                    <div class="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-center p-4">
+                      <img src="${fallbackSrc}" alt="${template.name || 'Template preview'}" class="w-full h-full object-contain" />
+                      <p class="text-gray-600 text-xs absolute bottom-2">${template.name || ''}</p>
                     </div>
                   `;
                 }
