@@ -10,9 +10,11 @@ export const jobsRouter = Router();
 // Get all job titles
 jobsRouter.get("/titles", async (req, res) => {
   try {
+    console.log("Fetching all job titles");
     const allTitles = await db.query.jobTitles.findMany({
       orderBy: asc(jobTitles.title)
     });
+    console.log(`Retrieved ${allTitles.length} job titles`);
     return res.json(allTitles);
   } catch (error) {
     console.error("Error fetching job titles:", error);
@@ -53,7 +55,8 @@ jobsRouter.get("/titles/:id/descriptions", async (req, res) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: "Invalid job title ID" });
     }
-
+    
+    console.log(`Fetching descriptions for job title ID: ${id}`);
     const descriptions = await db.query.jobDescriptions.findMany({
       where: eq(jobDescriptions.jobTitleId, id),
       orderBy: [
@@ -61,7 +64,44 @@ jobsRouter.get("/titles/:id/descriptions", async (req, res) => {
         asc(jobDescriptions.id)
       ]
     });
+    
+    console.log(`Retrieved ${descriptions.length} descriptions for job title ID: ${id}`);
+    return res.json(descriptions);
+  } catch (error) {
+    console.error("Error fetching job descriptions:", error);
+    return res.status(500).json({ error: "Failed to fetch job descriptions" });
+  }
+});
 
+// Get all job descriptions (optionally filtered by jobTitleId)
+jobsRouter.get("/descriptions", async (req, res) => {
+  try {
+    const jobTitleId = req.query.jobTitleId ? parseInt(req.query.jobTitleId as string) : null;
+    console.log(`Fetching job descriptions${jobTitleId ? ` for job title ID: ${jobTitleId}` : ' (all)'}`);
+    
+    let query = db.query.jobDescriptions;
+    let descriptions;
+    
+    if (jobTitleId) {
+      descriptions = await query.findMany({
+        where: eq(jobDescriptions.jobTitleId, jobTitleId),
+        orderBy: [
+          desc(jobDescriptions.isRecommended),
+          asc(jobDescriptions.id)
+        ]
+      });
+    } else {
+      descriptions = await query.findMany({
+        orderBy: [
+          asc(jobDescriptions.jobTitleId),
+          desc(jobDescriptions.isRecommended),
+          asc(jobDescriptions.id)
+        ],
+        limit: 100 // Limit to avoid returning too much data
+      });
+    }
+    
+    console.log(`Retrieved ${descriptions.length} job descriptions`);
     return res.json(descriptions);
   } catch (error) {
     console.error("Error fetching job descriptions:", error);
