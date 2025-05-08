@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useResume } from '@/contexts/ResumeContext';
 import Logo from '@/components/Logo';
-import { ArrowLeft, HelpCircle } from 'lucide-react';
+import { ArrowLeft, HelpCircle, Search, X } from 'lucide-react';
+import { getJobTitleSuggestions, JobTitle } from '@/utils/jobTitlesData';
 import { 
   Select,
   SelectContent,
@@ -55,6 +56,8 @@ interface WorkExperience {
 const WorkExperienceDetailsPage = () => {
   const [, setLocation] = useLocation();
   const { resumeData, updateResumeData } = useResume();
+  const jobTitleRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
   
   // Initialize with empty values
   const [workExperience, setWorkExperience] = useState<WorkExperience>({
@@ -69,6 +72,40 @@ const WorkExperienceDetailsPage = () => {
     isCurrentJob: false,
     responsibilities: ''
   });
+  
+  // State for job title suggestions
+  const [jobTitleSuggestions, setJobTitleSuggestions] = useState<JobTitle[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // Effect to update job title suggestions when the job title input changes
+  useEffect(() => {
+    if (workExperience.jobTitle.trim()) {
+      const suggestions = getJobTitleSuggestions(workExperience.jobTitle, 10);
+      setJobTitleSuggestions(suggestions);
+      setShowSuggestions(suggestions.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  }, [workExperience.jobTitle]);
+  
+  // Effect to handle clicks outside the suggestions dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current && 
+        !suggestionsRef.current.contains(event.target as Node) &&
+        jobTitleRef.current && 
+        !jobTitleRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleBack = () => {
     setLocation('/work-history');
@@ -124,6 +161,26 @@ const WorkExperienceDetailsPage = () => {
       
       return updated;
     });
+  };
+  
+  // Handle job title suggestion selection
+  const handleSelectJobTitle = (jobTitle: JobTitle) => {
+    setWorkExperience(prev => ({
+      ...prev,
+      jobTitle: jobTitle.title
+    }));
+    
+    // Update the resume preview
+    const tempWorkExperience = [...(resumeData.workExperience || [])];
+    tempWorkExperience.unshift({
+      ...workExperience,
+      jobTitle: jobTitle.title,
+      id: 'temp-' + Date.now(),
+    });
+    updateResumeData({ workExperience: tempWorkExperience });
+    
+    // Hide suggestions after selection
+    setShowSuggestions(false);
   };
 
   const handleCurrentJobChange = (checked: boolean) => {
@@ -201,18 +258,47 @@ const WorkExperienceDetailsPage = () => {
           <div className="space-y-8">
             <div className="grid grid-cols-2 gap-4">
               {/* Job Title */}
-              <div>
+              <div className="relative">
                 <label htmlFor="jobTitle" className="block text-xs uppercase font-medium mb-2">
                   JOB TITLE <span className="text-red-500">*</span>
                 </label>
-                <Input 
-                  id="jobTitle"
-                  value={workExperience.jobTitle}
-                  onChange={(e) => handleInputChange('jobTitle', e.target.value)}
-                  placeholder="e.g. Analyst"
-                  className="rounded-sm border-gray-300 h-10"
-                  required
-                />
+                <div className="relative">
+                  <Input 
+                    id="jobTitle"
+                    ref={jobTitleRef}
+                    value={workExperience.jobTitle}
+                    onChange={(e) => handleInputChange('jobTitle', e.target.value)}
+                    placeholder="e.g. Analyst"
+                    className="rounded-sm border-gray-300 h-10 pr-10"
+                    required
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+                
+                {/* Job title suggestions dropdown */}
+                {showSuggestions && (
+                  <div 
+                    ref={suggestionsRef}
+                    className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto"
+                  >
+                    <div className="py-1">
+                      {jobTitleSuggestions.map((jobTitle) => (
+                        <button
+                          key={jobTitle.id}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex justify-between items-center"
+                          onClick={() => handleSelectJobTitle(jobTitle)}
+                        >
+                          <div>
+                            <span className="font-medium">{jobTitle.title}</span>
+                            <span className="text-xs text-gray-500 ml-2">({jobTitle.category})</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Employer */}
