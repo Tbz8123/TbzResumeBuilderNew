@@ -96,10 +96,12 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   const processHtmlWithData = () => {
     if (!templateHtmlRef.current) return;
     
+    console.log("Processing HTML with data");
+    
     // Get HTML from ref
     let html = templateHtmlRef.current;
     
-    // Replace placeholders with actual resume data
+    // Replace standard placeholders if they exist
     html = html.replace(/{{firstName}}/g, resumeData.firstName || '');
     html = html.replace(/{{lastName}}/g, resumeData.surname || '');
     html = html.replace(/{{fullName}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
@@ -122,14 +124,60 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
         `<img class="profile-image" src="${resumeData.photo}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">`);
     }
     
+    // Handle hard-coded names and values in templates
+    // Replace name placeholder
+    const fullName = `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim();
+    if (fullName) {
+      html = html.replace(/SAHIB KHAN/g, fullName.toUpperCase());
+      html = html.replace(/Stephen Jphn/gi, fullName);
+    }
+    
+    // Replace profession
+    if (resumeData.profession) {
+      html = html.replace(/GRAPHIC DESIGNER/g, resumeData.profession.toUpperCase());
+    }
+    
+    // Replace contact info
+    if (resumeData.phone) {
+      html = html.replace(/📞 telephone/g, `📞 ${resumeData.phone}`);
+    }
+    
+    if (resumeData.email) {
+      html = html.replace(/✉️ email/g, `✉️ ${resumeData.email}`);
+    }
+    
+    let address = [resumeData.city, resumeData.country].filter(Boolean).join(', ');
+    if (address) {
+      html = html.replace(/📍 address, city, st zip code/g, `📍 ${address}`);
+    }
+    
+    // Replace about me/summary
+    if (resumeData.summary) {
+      const aboutMeRegex = /<h2>ABOUT ME<\/h2>\s*<p>(.*?)<\/p>/s;
+      html = html.replace(aboutMeRegex, `<h2>ABOUT ME</h2>\n<p>${resumeData.summary}</p>`);
+    }
+    
+    console.log("HTML processed with data", html.substring(0, 200) + "...");
+    
     // Update the state
     setTemplateHtml(html);
   };
   
-  // Watch for resume data changes
+  // Watch for resume data changes with detailed logging
   useEffect(() => {
+    console.log("Resume data changed:", resumeData);
     processHtmlWithData();
-  }, [resumeData]);
+  }, [
+    resumeData.firstName, 
+    resumeData.surname, 
+    resumeData.profession,
+    resumeData.email,
+    resumeData.phone,
+    resumeData.city,
+    resumeData.country,
+    resumeData.summary,
+    resumeData.photo
+  ]);
   
   // Fallback direct template if template processing fails
   const renderDirectTemplate = () => (
