@@ -31,7 +31,8 @@ function Router() {
                        location.startsWith("/templates") ||
                        location.startsWith("/upload-options") ||
                        location.startsWith("/upload-resume") ||
-                       location.startsWith("/personal-information");
+                       location.startsWith("/personal-information") ||
+                       location.startsWith("/work-history");
   
   const isAdminPage = location.startsWith("/admin");
   
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/upload-options" component={UploadOptionsPage} />
       <Route path="/upload-resume" component={UploadResumePage} />
       <Route path="/personal-information" component={PersonalInformationPage} />
+      <Route path="/work-history" component={WhyNeedResumePage} />
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}
@@ -68,7 +70,8 @@ function App() {
                        location.startsWith("/templates") ||
                        location.startsWith("/upload-options") ||
                        location.startsWith("/upload-resume") ||
-                       location.startsWith("/personal-information");
+                       location.startsWith("/personal-information") || 
+                       location.startsWith("/work-history");
   
   const isAdminPage = location.startsWith("/admin");
   
