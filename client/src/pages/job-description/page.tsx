@@ -156,7 +156,18 @@ const JobDescriptionPage = () => {
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    // Only show suggestions if there's input text
+    if (value.trim()) {
+      // Get suggestions based on input
+      const suggestions = getJobTitleSuggestions(value, 5);
+      setJobTitleSuggestions(suggestions);
+      setShowJobTitleSuggestions(suggestions.length > 0);
+    } else {
+      setShowJobTitleSuggestions(false);
+    }
   };
 
   const handleDescriptionClick = (description: string) => {
@@ -221,7 +232,7 @@ const JobDescriptionPage = () => {
             <div>
               <div className="mb-4">
                 <h2 className="text-xs uppercase font-bold text-gray-600 mb-2">SEARCH BY JOB TITLE FOR PRE-WRITTEN EXAMPLES</h2>
-                <div className="relative">
+                <div className="relative" style={{ position: 'relative' }}>
                   <Input 
                     type="text"
                     ref={searchInputRef}
@@ -229,6 +240,11 @@ const JobDescriptionPage = () => {
                     value={searchTerm}
                     onChange={handleSearchChange}
                     className="rounded-sm border-gray-300 pr-10"
+                    onFocus={() => {
+                      if (jobTitleSuggestions.length > 0) {
+                        setShowJobTitleSuggestions(true);
+                      }
+                    }}
                   />
                   {searchTerm ? (
                     <button 
@@ -240,6 +256,41 @@ const JobDescriptionPage = () => {
                   ) : (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-600">
                       <Search className="h-5 w-5" />
+                    </div>
+                  )}
+
+                  {/* Job title suggestions dropdown positioned directly below search input */}
+                  {showJobTitleSuggestions && (
+                    <div 
+                      ref={suggestionsRef}
+                      className="absolute z-50 mt-1 w-full"
+                      style={{ top: '100%', left: 0 }}
+                    >
+                      <div className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                        <div className="py-1">
+                          {jobTitleSuggestions.length > 0 ? (
+                            jobTitleSuggestions.map((jobTitle: JobTitle) => (
+                              <button
+                                key={jobTitle.id}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex justify-between items-center"
+                                onClick={() => {
+                                  setSearchTerm(jobTitle.title);
+                                  setShowJobTitleSuggestions(false);
+                                }}
+                              >
+                                <div>
+                                  <span className="font-medium">{jobTitle.title}</span>
+                                  <span className="text-xs text-gray-500 ml-2">({jobTitle.category})</span>
+                                </div>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-2 text-sm text-gray-500">
+                              No job titles found matching your search
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -268,39 +319,7 @@ const JobDescriptionPage = () => {
                 </div>
               </div>
               
-              {/* Job title suggestions dropdown */}
-              {showJobTitleSuggestions && (
-                <div 
-                  ref={suggestionsRef}
-                  className="relative z-20"
-                >
-                  <div className="absolute top-0 left-0 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                    <div className="py-1">
-                      {jobTitleSuggestions.length > 0 ? (
-                        jobTitleSuggestions.map((jobTitle: JobTitle) => (
-                          <button
-                            key={jobTitle.id}
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex justify-between items-center"
-                            onClick={() => {
-                              setSearchTerm(jobTitle.title);
-                              setShowJobTitleSuggestions(false);
-                            }}
-                          >
-                            <div>
-                              <span className="font-medium">{jobTitle.title}</span>
-                              <span className="text-xs text-gray-500 ml-2">({jobTitle.category})</span>
-                            </div>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="px-4 py-2 text-sm text-gray-500">
-                          No job titles found matching your search
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+
               
               {/* Results heading */}
               <div className="flex justify-between items-center mb-2">
