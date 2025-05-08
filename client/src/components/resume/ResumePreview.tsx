@@ -104,56 +104,72 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
 
   // Process template HTML whenever resume data or template changes
   useEffect(() => {
-    if (selectedTemplate?.htmlContent) {
-      // Create a new copy of the HTML content
-      let html = selectedTemplate.htmlContent;
-      
-      // Remove style tag as we'll inject it separately
-      const styleRegex = /<style>([\s\S]*?)<\/style>/;
-      html = html.replace(styleRegex, '');
-      
-      // Replace placeholders with actual resume data
-      html = html.replace(/{{firstName}}/g, resumeData.firstName || '');
-      html = html.replace(/{{lastName}}/g, resumeData.surname || '');
-      html = html.replace(/{{fullName}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
-      html = html.replace(/{{name}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
-      html = html.replace(/{{profession}}/g, resumeData.profession || '');
-      html = html.replace(/{{email}}/g, resumeData.email || '');
-      html = html.replace(/{{phone}}/g, resumeData.phone || '');
-      html = html.replace(/{{city}}/g, resumeData.city || '');
-      html = html.replace(/{{country}}/g, resumeData.country || '');
-      html = html.replace(/{{address}}/g, [resumeData.city, resumeData.country].filter(Boolean).join(', '));
-      html = html.replace(/{{summary}}/g, resumeData.summary || '');
-      html = html.replace(/{{profile}}/g, resumeData.summary || '');
-      html = html.replace(/{{aboutMe}}/g, resumeData.summary || '');
-      html = html.replace(/{{bio}}/g, resumeData.summary || '');
-      html = html.replace(/{{description}}/g, resumeData.summary || '');
-      
-      // Handle profile photo if present
-      if (resumeData.photo) {
-        html = html.replace(/<img[^>]*class="profile-image"[^>]*>/g, 
-          `<img class="profile-image" src="${resumeData.photo}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">`);
-      }
-      
-      // Additional info replacements
-      Object.entries(resumeData.additionalInfo).forEach(([key, value]) => {
-        if (value) {
-          const placeholder = new RegExp(`{{${key}}}`, 'g');
-          html = html.replace(placeholder, value);
+    const processTemplate = () => {
+      if (selectedTemplate?.htmlContent) {
+        // Create a new copy of the HTML content
+        let html = selectedTemplate.htmlContent;
+        
+        // Remove style tag as we'll inject it separately
+        const styleRegex = /<style>([\s\S]*?)<\/style>/;
+        html = html.replace(styleRegex, '');
+        
+        // Add a timestamp comment to force refresh on each update
+        html = `<!-- Updated: ${Date.now()} -->\n${html}`;
+        
+        // Replace placeholders with actual resume data
+        html = html.replace(/{{firstName}}/g, resumeData.firstName || '');
+        html = html.replace(/{{lastName}}/g, resumeData.surname || '');
+        html = html.replace(/{{fullName}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
+        html = html.replace(/{{name}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
+        html = html.replace(/{{profession}}/g, resumeData.profession || '');
+        html = html.replace(/{{email}}/g, resumeData.email || '');
+        html = html.replace(/{{phone}}/g, resumeData.phone || '');
+        html = html.replace(/{{city}}/g, resumeData.city || '');
+        html = html.replace(/{{country}}/g, resumeData.country || '');
+        html = html.replace(/{{address}}/g, [resumeData.city, resumeData.country].filter(Boolean).join(', '));
+        html = html.replace(/{{summary}}/g, resumeData.summary || '');
+        html = html.replace(/{{profile}}/g, resumeData.summary || '');
+        html = html.replace(/{{aboutMe}}/g, resumeData.summary || '');
+        html = html.replace(/{{bio}}/g, resumeData.summary || '');
+        html = html.replace(/{{description}}/g, resumeData.summary || '');
+        
+        // Handle profile photo if present
+        if (resumeData.photo) {
+          html = html.replace(/<img[^>]*class="profile-image"[^>]*>/g, 
+            `<img class="profile-image" src="${resumeData.photo}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">`);
         }
-      });
-      
-      // Update the state
-      setTemplateHtml(html);
-      
-      // Add debug log
-      console.log("Updating template HTML with latest resume data", {
-        firstName: resumeData.firstName,
-        lastName: resumeData.surname,
-        profession: resumeData.profession,
-        summary: resumeData.summary,
-      });
-    }
+        
+        // Additional info replacements
+        Object.entries(resumeData.additionalInfo).forEach(([key, value]) => {
+          if (value) {
+            const placeholder = new RegExp(`{{${key}}}`, 'g');
+            html = html.replace(placeholder, value);
+          }
+        });
+        
+        // Update the state
+        setTemplateHtml(html);
+        
+        // Add debug log
+        console.log("Updating template HTML with latest resume data", {
+          firstName: resumeData.firstName,
+          lastName: resumeData.surname,
+          profession: resumeData.profession,
+          summary: resumeData.summary,
+          timestamp: Date.now()
+        });
+      }
+    };
+
+    // Process immediately
+    processTemplate();
+    
+    // Also set up a timer to refresh every 500ms to ensure any changes are picked up
+    const refreshTimer = setTimeout(() => {
+      processTemplate();
+    }, 500);
+    
+    return () => clearTimeout(refreshTimer);
   }, [selectedTemplate, resumeData]);
   
   // Fallback modern template if no selected template is available
@@ -340,22 +356,39 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
     >
       {templateHtml ? (
         <div className="absolute inset-0 flex items-start justify-start overflow-hidden">
-          {/* Inject styles separately */}
-          <style dangerouslySetInnerHTML={{ __html: templateStyles }} />
-          
-          {/* Resume content with proper scaling */}
-          <div 
-            dangerouslySetInnerHTML={{ __html: templateHtml }} 
-            className="resume-scaled"
+          {/* Use iframe for more reliable rendering and isolation */}
+          <iframe
+            srcDoc={`
+              <!DOCTYPE html>
+              <html>
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <style>
+                    ${templateStyles}
+                    /* Additional iframe-specific styles */
+                    body, html {
+                      margin: 0;
+                      padding: 0;
+                      overflow: hidden;
+                      height: 100%;
+                    }
+                  </style>
+                </head>
+                <body>
+                  ${templateHtml}
+                </body>
+              </html>
+            `}
             style={{ 
-              transform: `scale(${scaleFactor})`,
-              transformOrigin: 'top left',
+              border: 'none',
               width: '794px', // A4 width
               height: '1123px', // A4 height
-              margin: '0',
-              // Debug border (comment out in production)
-              // border: '1px solid red'
+              transform: `scale(${scaleFactor})`,
+              transformOrigin: 'top left',
             }}
+            title="Resume Preview"
+            className="resume-iframe"
           />
         </div>
       ) : (
