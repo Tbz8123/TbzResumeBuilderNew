@@ -103,3 +103,49 @@ export type InsertResumeTemplate = z.infer<typeof resumeTemplateSchema>;
 
 export type ResumeTemplateVersion = typeof resumeTemplateVersions.$inferSelect;
 export type InsertResumeTemplateVersion = z.infer<typeof resumeTemplateVersionSchema>;
+
+// Job Titles and Descriptions Schema
+export const jobTitles = pgTable("job_titles", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull().unique(),
+  category: text("category").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const jobDescriptions = pgTable("job_descriptions", {
+  id: serial("id").primaryKey(),
+  jobTitleId: integer("job_title_id").references(() => jobTitles.id).notNull(),
+  content: text("content").notNull(),
+  isRecommended: boolean("is_recommended").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Relations
+export const jobTitlesRelations = relations(jobTitles, ({ many }) => ({
+  descriptions: many(jobDescriptions),
+}));
+
+export const jobDescriptionsRelations = relations(jobDescriptions, ({ one }) => ({
+  jobTitle: one(jobTitles, {
+    fields: [jobDescriptions.jobTitleId],
+    references: [jobTitles.id],
+  }),
+}));
+
+// Schemas for validation
+export const jobTitleSchema = createInsertSchema(jobTitles, {
+  title: (schema) => schema.min(2, "Title must be at least 2 characters"),
+  category: (schema) => schema.min(2, "Category must be at least 2 characters"),
+});
+
+export const jobDescriptionSchema = createInsertSchema(jobDescriptions, {
+  content: (schema) => schema.min(10, "Description must be at least 10 characters"),
+});
+
+export type JobTitle = typeof jobTitles.$inferSelect;
+export type InsertJobTitle = z.infer<typeof jobTitleSchema>;
+
+export type JobDescription = typeof jobDescriptions.$inferSelect;
+export type InsertJobDescription = z.infer<typeof jobDescriptionSchema>;
