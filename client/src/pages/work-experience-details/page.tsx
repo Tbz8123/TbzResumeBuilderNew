@@ -84,7 +84,7 @@ const WorkExperienceDetailsPage = () => {
   const handleNext = () => {
     // Save and navigate to the next step
     saveWorkExperience();
-    setLocation('/education'); // Assuming education is the next step
+    setLocation('/job-description');
   };
 
   const saveWorkExperience = () => {
