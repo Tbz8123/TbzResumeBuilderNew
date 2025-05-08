@@ -60,10 +60,10 @@ const PersonalInformationPage = () => {
         </div>
       </header>
       
-      {/* Main content */}
-      <div className="flex-1 max-w-6xl mx-auto px-4 py-6">
-        {/* Back button - styled like Zety */}
-        <div className="mb-8">
+      {/* Main content area */}
+      <div className="flex-1 max-w-[1140px] mx-auto px-4 sm:px-6 py-6">
+        {/* Back button */}
+        <div className="mb-6">
           <Button 
             variant="ghost" 
             onClick={handleBack}
@@ -75,9 +75,9 @@ const PersonalInformationPage = () => {
           </Button>
         </div>
         
-        <div className="flex flex-col lg:flex-row lg:gap-16">
+        <div className="flex flex-col lg:flex-row lg:gap-20">
           {/* Left column - Form Fields */}
-          <div className="lg:flex-1">
+          <div className="lg:flex-1 max-w-[550px]">
             <div className="mb-6">
               <h1 className="text-xl font-bold text-gray-900">
                 What's the best way for employers to contact you?
@@ -92,235 +92,238 @@ const PersonalInformationPage = () => {
               <span className="text-red-500">*</span> Indicates a required field
             </div>
             
-            {/* Photo upload section */}
-            <div className="mb-6 flex justify-center">
-              <div className="text-center">
-                <div className="w-[9rem] h-[9rem] mx-auto mb-2 border border-gray-200">
-                  {resumeData.photo ? (
-                    <img 
-                      src={resumeData.photo} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
-                      <div className="mb-1">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M6 21V19C6 17.4087 6.63214 15.8826 7.75736 14.7574C8.88258 13.6321 10.4087 13 12 13C13.5913 13 15.1174 13.6321 16.2426 14.7574C17.3679 15.8826 18 17.4087 18 19V21" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
+            {/* Image upload area as a separate element before the form fields */}
+            <div className="text-center mb-8">
+              <div className="inline-block w-[200px] h-[200px] border border-gray-200 mb-3">
+                {resumeData.photo ? (
+                  <img 
+                    src={resumeData.photo} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
+                    <div className="mb-2">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M6 21V19C6 17.4087 6.63214 15.8826 7.75736 14.7574C8.88258 13.6321 10.4087 13 12 13C13.5913 13 15.1174 13.6321 16.2426 14.7574C17.3679 15.8826 18 17.4087 18 19V21" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                     </div>
-                  )}
-                </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="text-xs py-1"
-                  onClick={() => document.getElementById('photo-upload')?.click()}
-                >
-                  Upload Photo
-                </Button>
-                <input 
-                  id="photo-upload" 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        updateResumeData({ photo: event.target?.result as string });
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
+                  </div>
+                )}
               </div>
+              <Button
+                variant="link"
+                className="text-blue-600 text-sm hover:text-blue-800"
+                onClick={() => document.getElementById('photo-upload')?.click()}
+              >
+                Upload Photo
+              </Button>
+              <input 
+                id="photo-upload" 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      updateResumeData({ photo: event.target?.result as string });
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
             </div>
             
-            {/* Name Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            {/* Form fields in a more organized layout */}
+            <div className="space-y-5">
+              {/* Name Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center mb-1">
+                    <Label htmlFor="firstName" className="text-xs font-medium text-gray-700 uppercase">
+                      First Name
+                    </Label>
+                    <span className="text-red-500 ml-1">*</span>
+                  </div>
+                  <Input
+                    id="firstName"
+                    name="firstName"
+                    placeholder="e.g. John"
+                    value={resumeData.firstName}
+                    onChange={handleInputChange}
+                    required
+                    className="border-gray-300 h-10 rounded-md"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="surname" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                    Surname
+                  </Label>
+                  <Input
+                    id="surname"
+                    name="surname"
+                    placeholder="e.g. Patel"
+                    value={resumeData.surname}
+                    onChange={handleInputChange}
+                    className="border-gray-300 h-10 rounded-md"
+                  />
+                </div>
+              </div>
+              
+              {/* Profession - Full width */}
+              <div>
+                <Label htmlFor="profession" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                  Profession
+                </Label>
+                <Input
+                  id="profession"
+                  name="profession"
+                  placeholder="e.g. Retail Sales Associate"
+                  value={resumeData.profession}
+                  onChange={handleInputChange}
+                  className="border-gray-300 h-10 rounded-md w-full"
+                />
+              </div>
+              
+              {/* City and Country */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="city" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                    City
+                  </Label>
+                  <Input
+                    id="city"
+                    name="city"
+                    placeholder="e.g. New Delhi"
+                    value={resumeData.city}
+                    onChange={handleInputChange}
+                    className="border-gray-300 h-10 rounded-md"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="country" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                    Country
+                  </Label>
+                  <Input
+                    id="country"
+                    name="country"
+                    placeholder="e.g. India"
+                    value={resumeData.country}
+                    onChange={handleInputChange}
+                    className="border-gray-300 h-10 rounded-md"
+                  />
+                </div>
+              </div>
+              
+              {/* PIN Code - Fixed width */}
+              <div>
+                <Label htmlFor="postalCode" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                  Pin Code
+                </Label>
+                <Input
+                  id="postalCode"
+                  name="postalCode"
+                  placeholder="e.g. 110034"
+                  value={resumeData.postalCode}
+                  onChange={handleInputChange}
+                  className="border-gray-300 h-10 rounded-md w-full sm:w-1/2"
+                />
+              </div>
+              
+              {/* Phone */}
+              <div>
+                <Label htmlFor="phone" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                  Phone
+                </Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="e.g. +91 22 1234 5677"
+                  value={resumeData.phone}
+                  onChange={handleInputChange}
+                  className="border-gray-300 h-10 rounded-md w-full"
+                />
+              </div>
+              
+              {/* Email */}
               <div>
                 <div className="flex items-center mb-1">
-                  <Label htmlFor="firstName" className="text-xs font-medium text-gray-700 block uppercase">
-                    First Name
+                  <Label htmlFor="email" className="text-xs font-medium text-gray-700 uppercase">
+                    Email
                   </Label>
                   <span className="text-red-500 ml-1">*</span>
                 </div>
                 <Input
-                  id="firstName"
-                  name="firstName"
-                  placeholder="e.g. John"
-                  value={resumeData.firstName}
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="e.g. example@sample.in"
+                  value={resumeData.email}
                   onChange={handleInputChange}
                   required
-                  className="border-gray-300 h-10 rounded-md"
+                  className="border-gray-300 h-10 rounded-md w-full"
                 />
               </div>
               
+              {/* Additional Information */}
               <div>
-                <Label htmlFor="surname" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
-                  Surname
-                </Label>
-                <Input
-                  id="surname"
-                  name="surname"
-                  placeholder="e.g. Patel"
-                  value={resumeData.surname}
-                  onChange={handleInputChange}
-                  className="border-gray-300 h-10 rounded-md"
-                />
-              </div>
-            </div>
-            
-            {/* Profession */}
-            <div className="mb-4">
-              <Label htmlFor="profession" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
-                Profession
-              </Label>
-              <Input
-                id="profession"
-                name="profession"
-                placeholder="e.g. Retail Sales Associate"
-                value={resumeData.profession}
-                onChange={handleInputChange}
-                className="border-gray-300 h-10 rounded-md w-full"
-              />
-            </div>
-            
-            {/* City and Country */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <Label htmlFor="city" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
-                  City
-                </Label>
-                <Input
-                  id="city"
-                  name="city"
-                  placeholder="e.g. New Delhi"
-                  value={resumeData.city}
-                  onChange={handleInputChange}
-                  className="border-gray-300 h-10 rounded-md"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="country" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
-                  Country
-                </Label>
-                <Input
-                  id="country"
-                  name="country"
-                  placeholder="e.g. India"
-                  value={resumeData.country}
-                  onChange={handleInputChange}
-                  className="border-gray-300 h-10 rounded-md"
-                />
-              </div>
-            </div>
-            
-            {/* PIN Code */}
-            <div className="mb-4">
-              <Label htmlFor="postalCode" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
-                Pin Code
-              </Label>
-              <Input
-                id="postalCode"
-                name="postalCode"
-                placeholder="e.g. 110034"
-                value={resumeData.postalCode}
-                onChange={handleInputChange}
-                className="border-gray-300 h-10 rounded-md w-full sm:w-1/2"
-              />
-            </div>
-            
-            {/* Phone */}
-            <div className="mb-4">
-              <Label htmlFor="phone" className="text-xs font-medium text-gray-700 mb-1 block uppercase">
-                Phone
-              </Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                placeholder="e.g. +91 22 1234 5677"
-                value={resumeData.phone}
-                onChange={handleInputChange}
-                className="border-gray-300 h-10 rounded-md w-full"
-              />
-            </div>
-            
-            {/* Email */}
-            <div className="mb-6">
-              <div className="flex items-center mb-1">
-                <Label htmlFor="email" className="text-xs font-medium text-gray-700 block uppercase">
-                  Email
-                </Label>
-                <span className="text-red-500 ml-1">*</span>
-              </div>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="e.g. example@sample.in"
-                value={resumeData.email}
-                onChange={handleInputChange}
-                required
-                className="border-gray-300 h-10 rounded-md w-full"
-              />
-            </div>
-            
-            {/* Additional Information */}
-            <div className="mb-6">
-              <div className="flex items-center mb-2">
-                <span className="text-sm text-gray-700">Add additional information to your resume</span>
-                <span className="text-xs text-gray-500 ml-1">(optional)</span>
-                <div className="ml-2 bg-gray-100 rounded-full p-1">
-                  <Info size={14} className="text-gray-500" />
+                <div className="flex items-center mb-2">
+                  <span className="text-sm text-gray-700">Add additional information to your resume</span>
+                  <span className="text-xs text-gray-500 ml-1">(optional)</span>
+                  <div className="ml-2 inline-flex items-center justify-center w-4 h-4">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="10" stroke="#718096" strokeWidth="1.5"/>
+                      <path d="M12 7V13M12 17H12.01" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full border-gray-300 text-xs py-1 px-3 flex items-center gap-1"
+                    onClick={() => updateAdditionalInfo('linkedin', '')}
+                  >
+                    LinkedIn
+                    <Plus size={14} />
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full border-gray-300 text-xs py-1 px-3 flex items-center gap-1"
+                    onClick={() => updateAdditionalInfo('website', '')}
+                  >
+                    Website
+                    <Plus size={14} />
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full border-gray-300 text-xs py-1 px-3 flex items-center gap-1"
+                    onClick={() => updateAdditionalInfo('drivingLicense', '')}
+                  >
+                    Driving license
+                    <Plus size={14} />
+                  </Button>
                 </div>
               </div>
-              
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full border-gray-300 text-xs py-1 px-3 flex items-center gap-1"
-                  onClick={() => updateAdditionalInfo('linkedin', '')}
-                >
-                  LinkedIn
-                  <Plus size={14} />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full border-gray-300 text-xs py-1 px-3 flex items-center gap-1"
-                  onClick={() => updateAdditionalInfo('website', '')}
-                >
-                  Website
-                  <Plus size={14} />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full border-gray-300 text-xs py-1 px-3 flex items-center gap-1"
-                  onClick={() => updateAdditionalInfo('drivingLicense', '')}
-                >
-                  Driving license
-                  <Plus size={14} />
-                </Button>
-              </div>
             </div>
             
-            {/* Navigation Buttons */}
-            <div className="flex items-center justify-between gap-4 mt-8">
+            {/* Navigation Buttons - well aligned at bottom */}
+            <div className="flex justify-between items-center mt-8 pt-5 border-t border-gray-100">
               <Button
-                variant="outline"
+                variant="default"
                 onClick={handlePreview}
-                className="rounded-full px-6 py-2"
+                className="border border-gray-300 bg-white hover:bg-gray-50 text-gray-800 rounded-full px-8 py-2"
               >
                 Preview
               </Button>
@@ -328,7 +331,7 @@ const PersonalInformationPage = () => {
               <Button
                 variant="default"
                 onClick={handleNext}
-                className="bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-full px-6 py-2"
+                className="bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-full px-8 py-2"
               >
                 Next: Work history
               </Button>
@@ -336,39 +339,33 @@ const PersonalInformationPage = () => {
           </div>
           
           {/* Right column - Resume Preview */}
-          <div className="lg:w-[360px] mt-12 lg:mt-0">
+          <div className="lg:w-[350px] mt-10 lg:mt-0">
+            {/* Results notification */}
             <div className="mb-4">
-              <div className="bg-blue-50 rounded-lg p-3 flex items-center">
-                <div className="bg-blue-100 rounded-full p-1 mr-2">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#1E88E5" strokeWidth="2"/>
-                    <path d="M12 8V12M12 16H12.01" stroke="#1E88E5" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                </div>
-                <p className="text-sm text-blue-800">Our Resume Builder delivers results!</p>
+              <div className="bg-blue-50 rounded-t-lg p-3 flex items-center">
+                <p className="text-sm text-blue-800">Our Resume Builder delivers results¹</p>
               </div>
-              <div className="bg-blue-50 rounded-b-lg p-2 text-center text-sm text-blue-800 font-medium -mt-1">
-                +22% Higher response rate from recruiters
+              <div className="bg-blue-50 rounded-b-lg p-2 flex items-center justify-center text-sm text-blue-800 font-medium">
+                <svg className="w-4 h-4 mr-1 text-blue-700" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586l3.293-3.293A1 1 0 0114 7z" clipRule="evenodd"></path>
+                </svg>
+                <span>+22% Higher response rate from recruiters</span>
               </div>
             </div>
             
-            {/* Resume Preview */}
+            {/* Resume Preview - Cleaner presentation */}
             <div className="rounded-lg overflow-hidden shadow-md border border-gray-200">
               <div
                 className="relative w-full bg-white overflow-hidden"
-                style={{ height: '425px' }}
+                style={{ height: '470px' }}
               >
                 {/* Resume preview */}
-                <div className="relative h-full w-full overflow-hidden bg-white">
-                  <div className="relative h-full w-full flex items-center justify-center">
-                    <HybridResumePreview 
-                      className="h-full w-full" 
-                      width={360} 
-                      height={425}
-                      scaleContent={true}
-                    />
-                  </div>
-                </div>
+                <HybridResumePreview 
+                  className="h-full w-full" 
+                  width={350} 
+                  height={470}
+                  scaleContent={true}
+                />
               </div>
             </div>
             
@@ -385,7 +382,7 @@ const PersonalInformationPage = () => {
             
             {/* Study disclaimer */}
             <div className="mt-4 text-xs text-gray-500">
-              <p className="mb-1">¹ The results are based on a study with over 1000 participants, among whom 287 used resume tools provided on our family sites.</p>
+              <p>¹ The results are based on a study with over 1000 participants, among whom 287 used resume tools provided on our family sites.</p>
             </div>
           </div>
         </div>
