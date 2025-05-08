@@ -26,6 +26,9 @@ const PersonalInformationPage = () => {
   console.log("Personal Information Page - Selected Template ID:", selectedTemplateId);
   console.log("Personal Information Page - Templates data:", templates);
   
+  // Find the selected template from the templates data
+  const selectedTemplate = templates?.find(template => template.id === selectedTemplateId) || null;
+  
   // Load template ID from localStorage if not set in context
   React.useEffect(() => {
     // Check if there's a template ID in localStorage but not in context
