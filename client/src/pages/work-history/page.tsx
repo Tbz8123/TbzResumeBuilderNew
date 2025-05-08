@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useResume } from '@/contexts/ResumeContext';
 import Logo from '@/components/Logo';
-import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
 const WhyNeedResumePage = () => {
@@ -44,7 +43,7 @@ const WhyNeedResumePage = () => {
           <div className="mb-8">
             <button 
               onClick={handleBack}
-              className="flex items-center text-primary hover:text-primary/80 transition-colors"
+              className="flex items-center text-purple-600 hover:text-purple-800 transition-colors text-sm font-medium"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Go Back
@@ -52,20 +51,20 @@ const WhyNeedResumePage = () => {
           </div>
           
           {/* Main Content */}
-          <div className="text-center mb-10">
-            <h1 className="text-2xl font-bold mb-2">Why do you need a resume?</h1>
-            <p className="text-gray-600">We'll show you a personalized experience based on your response.</p>
+          <div className="text-center mb-12">
+            <h1 className="text-3xl font-bold mb-3">Why do you need a resume?</h1>
+            <p className="text-gray-600 text-lg">We'll show you a personalized experience based on your response.</p>
           </div>
           
           {/* Option Buttons */}
-          <div className="flex justify-center gap-4 mb-10">
+          <div className="flex justify-center gap-6 mb-16">
             {reasons.map(reason => (
               <button
                 key={reason.id}
-                className={`border rounded-lg py-3 px-8 transition-all ${
+                className={`border rounded-lg py-4 px-10 transition-all text-base ${
                   selectedReason === reason.id 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-gray-200 hover:border-gray-400'
+                    ? 'border-purple-500 bg-purple-50' 
+                    : 'border-gray-300 hover:border-gray-400'
                 }`}
                 onClick={() => setSelectedReason(reason.id)}
               >
@@ -75,20 +74,19 @@ const WhyNeedResumePage = () => {
           </div>
           
           {/* Navigation Buttons */}
-          <div className="flex justify-end items-center gap-4">
-            <Button 
-              variant="link" 
+          <div className="flex justify-end items-center gap-6">
+            <button 
               onClick={handleSkip}
-              className="text-primary hover:text-primary/80"
+              className="text-purple-600 hover:text-purple-800 text-base font-medium"
             >
               Skip for now
-            </Button>
-            <Button 
+            </button>
+            <button 
               onClick={handleNext}
-              className="bg-amber-400 hover:bg-amber-500 text-black font-medium rounded-full px-8"
+              className="bg-amber-400 hover:bg-amber-500 text-black font-medium rounded-full px-10 py-3 text-base"
             >
               Next
-            </Button>
+            </button>
           </div>
         </div>
       </main>
