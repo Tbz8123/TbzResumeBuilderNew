@@ -272,25 +272,31 @@ const JobDescriptionPage = () => {
               {showJobTitleSuggestions && (
                 <div 
                   ref={suggestionsRef}
-                  className="relative z-10 mb-4"
+                  className="relative z-20"
                 >
                   <div className="absolute top-0 left-0 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
                     <div className="py-1">
-                      {jobTitleSuggestions.map((jobTitle: JobTitle) => (
-                        <button
-                          key={jobTitle.id}
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex justify-between items-center"
-                          onClick={() => {
-                            setSearchTerm(jobTitle.title);
-                            setShowJobTitleSuggestions(false);
-                          }}
-                        >
-                          <div>
-                            <span className="font-medium">{jobTitle.title}</span>
-                            <span className="text-xs text-gray-500 ml-2">({jobTitle.category})</span>
-                          </div>
-                        </button>
-                      ))}
+                      {jobTitleSuggestions.length > 0 ? (
+                        jobTitleSuggestions.map((jobTitle: JobTitle) => (
+                          <button
+                            key={jobTitle.id}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex justify-between items-center"
+                            onClick={() => {
+                              setSearchTerm(jobTitle.title);
+                              setShowJobTitleSuggestions(false);
+                            }}
+                          >
+                            <div>
+                              <span className="font-medium">{jobTitle.title}</span>
+                              <span className="text-xs text-gray-500 ml-2">({jobTitle.category})</span>
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-sm text-gray-500">
+                          No job titles found matching your search
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
