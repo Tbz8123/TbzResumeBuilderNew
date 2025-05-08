@@ -10,6 +10,7 @@ import ResumePreview from '@/components/resume/ResumePreview';
 import ModernResumePreview from '@/components/resume/ModernResumePreview';
 import PhotoUploader from '@/components/resume/PhotoUploader';
 import AdditionalInfoOptions from '@/components/resume/AdditionalInfoOptions';
+import SkillsInput from '@/components/resume/SkillsInput';
 import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
@@ -271,6 +272,33 @@ const PersonalInformationPage = () => {
                   </div>
                 </div>
                 
+                {/* Summary section */}
+                <div className="mb-6">
+                  <Label htmlFor="summary" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
+                    Professional Summary
+                  </Label>
+                  <textarea
+                    id="summary"
+                    name="summary"
+                    placeholder="Brief overview of your professional background, key skills, and career goals..."
+                    value={resumeData.summary || ''}
+                    onChange={(e) => updateResumeData({ summary: e.target.value })}
+                    className="w-full border border-gray-300 rounded p-2 text-sm min-h-[100px]"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">This summary will appear at the top of your resume. Keep it concise and impactful.</p>
+                </div>
+                
+                {/* Skills section */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-xs font-medium text-gray-600 uppercase block">
+                      Skills
+                    </Label>
+                    <span className="text-xs text-gray-500">These will appear in the left sidebar</span>
+                  </div>
+                  <SkillsInput />
+                </div>
+                
                 {/* Additional Info Options */}
                 <div className="mb-12">
                   <AdditionalInfoOptions />
@@ -304,7 +332,7 @@ const PersonalInformationPage = () => {
               </div>
               
               {/* Right column - Resume Preview */}
-              <div className="hidden lg:block lg:w-80 mt-12 lg:mt-0">
+              <div className="hidden lg:block lg:w-[400px] mt-12 lg:mt-0">
                 <div className="sticky top-8">
                   <div className="bg-blue-50 rounded-lg p-3 mb-4">
                     <h3 className="font-semibold text-blue-900 text-sm mb-1">Our Resume Builder delivers results!<sup>1</sup></h3>
@@ -317,28 +345,29 @@ const PersonalInformationPage = () => {
                   </div>
                   
                   <div className="mb-4">
-                    {/* Template container with exact dimensions from templates page */}
+                    {/* Modern Resume Preview Container */}
                     <div 
-                      className="border border-gray-200 rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
-                      style={{ width: '280px', height: '362.13px' }}
+                      className="border border-gray-200 rounded-lg overflow-hidden shadow-md"
+                      style={{ 
+                        width: '400px', 
+                        height: '540px',
+                        position: 'relative',
+                        backgroundColor: 'white'
+                      }}
                     >
-                      {/* Template preview layout - matches the templates page */}
-                      <div className="relative h-full w-full overflow-hidden bg-white">
-                        <div className="relative h-full w-full flex items-center justify-center">
-                          {/* Interactive Resume Preview component - maintains real-time updates */}
-                          <ResumePreview 
-                            className="h-full w-full border-none shadow-none" 
-                            width={280} 
-                            height={362}
-                          />
-                          
-                          {/* Template name overlay at bottom - consistent with templates page */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent py-2 px-3 pointer-events-none">
-                            <p className="font-medium text-white text-sm">Your Resume</p>
-                            <p className="text-xs text-gray-300 capitalize">
-                              {Array.isArray(templates) && templates.find((t: ResumeTemplate) => t.id === selectedTemplateId)?.name || 'Professional Template'}
-                            </p>
-                          </div>
+                      <div className="relative h-full w-full overflow-hidden">
+                        {/* Container for scaling the preview - this ensures proper scaling while maintaining aspect ratio */}
+                        <div className="absolute inset-0 flex items-start justify-start overflow-hidden">
+                          {/* Modern Resume Preview component with live data binding */}
+                          <ModernResumePreview scale={0.5} className="origin-top-left" />
+                        </div>
+                        
+                        {/* Template name overlay at bottom */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent py-2 px-3 pointer-events-none">
+                          <p className="font-medium text-white text-sm">Modern Professional</p>
+                          <p className="text-xs text-gray-300">
+                            Real-time preview updates as you type
+                          </p>
                         </div>
                       </div>
                     </div>
