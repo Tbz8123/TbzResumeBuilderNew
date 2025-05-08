@@ -15,15 +15,40 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
   className = '',
   scaleContent = true
 }) => {
-  const { resumeData, selectedTemplateId } = useResume();
+  const { resumeData, selectedTemplateId, setSelectedTemplateId } = useResume();
   const { data: templates } = useTemplates();
   const [templateHtml, setTemplateHtml] = useState<string>('');
   const [templateStyles, setTemplateStyles] = useState<string>('');
   
+  // Get template ID from localStorage if needed
+  useEffect(() => {
+    // Check if the context's selectedTemplateId doesn't match localStorage
+    const storedTemplateId = localStorage.getItem('selectedTemplateId');
+    
+    if (storedTemplateId && (!selectedTemplateId || selectedTemplateId.toString() !== storedTemplateId)) {
+      console.log("ResumePreview: Updating template ID from localStorage:", storedTemplateId);
+      setSelectedTemplateId(parseInt(storedTemplateId, 10));
+    }
+  }, [selectedTemplateId, setSelectedTemplateId]);
+  
   // Find the selected template
   const selectedTemplate = Array.isArray(templates) && templates.length > 0 
-    ? templates.find((t: any) => t.id === selectedTemplateId)
+    ? templates.find((t: any) => {
+        const templateId = t.id;
+        const storedTemplateId = parseInt(localStorage.getItem('selectedTemplateId') || '0', 10);
+        
+        // Compare with both context selectedTemplateId and localStorage
+        return templateId === selectedTemplateId || 
+              (selectedTemplateId === null && templateId === storedTemplateId);
+      })
     : undefined;
+    
+  // For debugging
+  useEffect(() => {
+    console.log("ResumePreview - Selected Template ID:", selectedTemplateId);
+    console.log("ResumePreview - Local Storage ID:", localStorage.getItem('selectedTemplateId'));
+    console.log("ResumePreview - Found Template:", selectedTemplate?.name);
+  }, [selectedTemplateId, selectedTemplate]);
   
   // Process template HTML and CSS when available
   useEffect(() => {

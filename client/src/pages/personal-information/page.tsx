@@ -19,6 +19,21 @@ const PersonalInformationPage = () => {
   const [step, setStep] = useState(1); // For multi-step form navigation
   const { data: templates } = useTemplates(); // Fetch templates for displaying the correct template
   
+  // Add debug logging
+  console.log("Personal Information Page - Selected Template ID:", selectedTemplateId);
+  console.log("Personal Information Page - Templates data:", templates);
+  
+  // Load template ID from localStorage if not set in context
+  React.useEffect(() => {
+    // Check if there's a template ID in localStorage but not in context
+    const storedTemplateId = localStorage.getItem('selectedTemplateId');
+    console.log("Template ID from localStorage:", storedTemplateId);
+    
+    if (storedTemplateId) {
+      console.log("Using template ID from localStorage:", storedTemplateId);
+    }
+  }, [selectedTemplateId]);
+  
   const handleBack = () => {
     setLocation('/templates');
   };

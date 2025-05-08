@@ -60,25 +60,16 @@ const TemplatesPage = () => {
   // Navigate to the upload options page with the selected template
   const handleUseTemplate = (templateId: number) => {
     console.log(`Selected template: ${templateId}`);
+    
     // Store template information in localStorage for persistence
     localStorage.setItem('selectedTemplateId', templateId.toString());
     localStorage.setItem('experienceLevel', experienceLevel || '');
     localStorage.setItem('educationLevel', educationLevel || '');
     
-    // Also set in the ResumeContext to ensure it's updated immediately
-    try {
-      // Import the ResumeContext hook
-      const { useResume } = require('@/contexts/ResumeContext');
-      const resumeContext = useResume();
-      if (resumeContext && resumeContext.setSelectedTemplateId) {
-        resumeContext.setSelectedTemplateId(templateId);
-        console.log("Template ID set in ResumeContext:", templateId);
-      } else {
-        console.warn("useResume context or setSelectedTemplateId not available");
-      }
-    } catch (error) {
-      console.error("Error setting template ID in ResumeContext:", error);
-    }
+    // Update the template ID in ResumeContext so it's available immediately
+    // across all pages (including the personal information page)
+    setSelectedTemplateId(templateId);
+    console.log("Template ID set in ResumeContext:", templateId);
     
     // Redirect to the upload options page
     setLocation('/upload-options');
