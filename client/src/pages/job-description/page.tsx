@@ -598,6 +598,11 @@ const JobDescriptionPage = () => {
                               Expert Recommended
                             </div>
                           )}
+                          {description.jobTitleId !== parseInt(currentJob.dbJobTitleId as string) && (
+                            <div className="text-xs text-gray-600 mb-1">
+                              <span className="italic">Related suggestion</span>
+                            </div>
+                          )}
                           <p className="text-sm">{description.content}</p>
                         </div>
                       </button>
@@ -605,7 +610,28 @@ const JobDescriptionPage = () => {
                   ))
                 ) : (
                   <div className="p-4 text-center">
-                    <p className="text-gray-500">No descriptions found. Try another job title.</p>
+                    <div className="mb-3">
+                      <p className="text-gray-500 mb-2">No specific descriptions found for "{currentJob.jobTitle}"</p>
+                      <p className="text-gray-500 text-sm">We'll fetch suggestions from related positions. You can also try another job title.</p>
+                    </div>
+                    <button 
+                      onClick={async () => {
+                        setIsLoadingDescriptions(true);
+                        try {
+                          // Get general descriptions when no specific ones are found
+                          const allResponse = await apiRequest('GET', '/api/jobs/descriptions?limit=200');
+                          const allDescriptionsData = await allResponse.json();
+                          setDescriptions(allDescriptionsData);
+                        } catch (error) {
+                          console.error('Error fetching fallback job descriptions:', error);
+                        } finally {
+                          setIsLoadingDescriptions(false);
+                        }
+                      }}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                    >
+                      Get Generic Suggestions
+                    </button>
                   </div>
                 )}
               </div>

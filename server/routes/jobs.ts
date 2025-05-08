@@ -204,7 +204,7 @@ jobsRouter.get("/descriptions", async (req, res) => {
           desc(jobDescriptions.isRecommended),
           asc(jobDescriptions.id)
         )
-        .limit(100);
+        .limit(200); // Increased limit to ensure enough suggestions
     } else {
       // No direct filters, but we might have a jobTitleId for prioritization
       if (jobTitleId) {
@@ -218,7 +218,7 @@ jobsRouter.get("/descriptions", async (req, res) => {
         });
         
         // Then get other descriptions to fill up to the limit
-        const remainingLimit = 100 - titleDescriptions.length;
+        const remainingLimit = 200 - titleDescriptions.length; // Increased limit to ensure more suggestions
         
         if (remainingLimit > 0) {
           const otherDescriptions = await db.query.jobDescriptions.findMany({
@@ -245,7 +245,7 @@ jobsRouter.get("/descriptions", async (req, res) => {
             desc(jobDescriptions.isRecommended),
             asc(jobDescriptions.id)
           ],
-          limit: 100 // Limit to avoid returning too much data
+          limit: 200 // Increased limit to ensure enough suggestions
         });
       }
     }
