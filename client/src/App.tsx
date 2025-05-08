@@ -13,6 +13,7 @@ import TemplatesPage from "@/pages/templates/page";
 import PersonalInformationPage from "@/pages/personal-information/page";
 import UploadOptionsPage from "@/pages/upload-options/page";
 import UploadResumePage from "@/pages/upload-resume/page";
+import WhyNeedResumePage from "@/pages/work-history/page";
 import AuthPage from "@/pages/auth-page";
 import AdminTemplatesPage from "@/pages/admin/templates/page";
 import AdminTemplateEditPage from "@/pages/admin/templates/edit";
