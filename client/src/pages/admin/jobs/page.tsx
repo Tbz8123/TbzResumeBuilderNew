@@ -418,8 +418,8 @@ const AdminJobsPage = () => {
           <div className="flex items-center gap-3 w-full sm:w-auto">
             {activeTab === "titles" && (
               <Select
-                value={categoryFilter || ""}
-                onValueChange={(value) => setCategoryFilter(value || null)}
+                value={categoryFilter || "all_categories"}
+                onValueChange={(value) => setCategoryFilter(value === "all_categories" ? null : value)}
               >
                 <SelectTrigger className="w-full sm:w-40">
                   <div className="flex items-center">
@@ -428,7 +428,7 @@ const AdminJobsPage = () => {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all_categories">All Categories</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -440,8 +440,8 @@ const AdminJobsPage = () => {
 
             {activeTab === "descriptions" && (
               <Select
-                value={selectedJobTitleId?.toString() || ""}
-                onValueChange={(value) => setSelectedJobTitleId(value ? parseInt(value) : null)}
+                value={selectedJobTitleId?.toString() || "all_job_titles"}
+                onValueChange={(value) => setSelectedJobTitleId(value === "all_job_titles" ? null : parseInt(value))}
               >
                 <SelectTrigger className="w-full sm:w-40">
                   <div className="flex items-center">
@@ -450,7 +450,7 @@ const AdminJobsPage = () => {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Job Titles</SelectItem>
+                  <SelectItem value="all_job_titles">All Job Titles</SelectItem>
                   {jobTitles.map((title) => (
                     <SelectItem key={title.id} value={title.id.toString()}>
                       {title.title}
