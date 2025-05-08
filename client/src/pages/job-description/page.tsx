@@ -598,7 +598,8 @@ const JobDescriptionPage = () => {
                               Expert Recommended
                             </div>
                           )}
-                          {description.jobTitleId !== parseInt(currentJob.dbJobTitleId as string) && (
+                          {currentJob.dbJobTitleId && 
+                           (description.jobTitleId !== parseInt(currentJob.dbJobTitleId.toString())) && (
                             <div className="text-xs text-gray-600 mb-1">
                               <span className="italic">Related suggestion</span>
                             </div>
