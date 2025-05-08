@@ -97,65 +97,65 @@ const PersonalInformationPage = () => {
               <span className="text-red-500">*</span> Indicates a required field
             </div>
             
-            {/* Form with Photo on Left */}
-            <div className="flex mb-4">
-              {/* Image upload section - left aligned */}
-              <div className="mr-8">
-                <div className="w-[80px] h-[100px] border border-gray-300 flex items-center justify-center mb-1">
-                  {resumeData.photo ? (
-                    <img 
-                      src={resumeData.photo} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full w-full">
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <mask id="mask0_1_2" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
-                          <rect width="24" height="24" fill="#D9D9D9"/>
-                        </mask>
-                        <g mask="url(#mask0_1_2)">
-                          <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" fill="#717171"/>
-                          <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" fill="#717171"/>
-                        </g>
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div className="text-center">
-                  <a
-                    className="text-blue-600 text-sm hover:text-blue-800 hover:underline"
-                    onClick={() => document.getElementById('photo-upload')?.click()}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    Upload Photo
-                  </a>
-                  <input 
-                    id="photo-upload" 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          updateResumeData({ photo: event.target?.result as string });
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
+            {/* Photo section on its own - EXACTLY like screenshot */}
+            <div className="float-left mr-10 mb-5">
+              <div className="w-[80px] h-[100px] border border-gray-300 flex items-center justify-center mb-2">
+                {resumeData.photo ? (
+                  <img 
+                    src={resumeData.photo} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
                   />
-                </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full w-full">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <mask id="mask0_1_2" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+                        <rect width="24" height="24" fill="#D9D9D9"/>
+                      </mask>
+                      <g mask="url(#mask0_1_2)">
+                        <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" fill="#717171"/>
+                        <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" fill="#717171"/>
+                      </g>
+                    </svg>
+                  </div>
+                )}
               </div>
-              
-              {/* First fields aligned next to photo */}
-              <div className="flex-1">
-                <div className="mb-4">
+              <div className="text-center">
+                <a
+                  className="text-blue-600 text-sm hover:text-blue-800 hover:underline"
+                  onClick={() => document.getElementById('photo-upload')?.click()}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Upload Photo
+                </a>
+                <input 
+                  id="photo-upload" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        updateResumeData({ photo: event.target?.result as string });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            
+            {/* Form section - with clear float */}
+            <div className="clear-right">
+              {/* First Name & Surname - 2 columns */}
+              <div className="flex gap-4 mb-4">
+                <div className="w-1/2">
                   <div className="mb-1">
                     <div className="flex items-center">
                       <div className="text-xs font-medium text-gray-700 uppercase">
-                        First Name
+                        FIRST NAME
                       </div>
                       <span className="text-red-500 ml-1">*</span>
                     </div>
@@ -173,7 +173,7 @@ const PersonalInformationPage = () => {
                   </div>
                 </div>
                 
-                <div>
+                <div className="w-1/2">
                   <div className="mb-1">
                     <div className="text-xs font-medium text-gray-700 uppercase">
                       SURNAME
@@ -192,32 +192,30 @@ const PersonalInformationPage = () => {
                   </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Profession - Full width */}
-            <div className="mb-4">
-              <div className="mb-1">
-                <div className="text-xs font-medium text-gray-700 uppercase">
-                  PROFESSION
+              
+              {/* Profession - Full width */}
+              <div className="mb-4">
+                <div className="mb-1">
+                  <div className="text-xs font-medium text-gray-700 uppercase">
+                    PROFESSION
+                  </div>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="profession"
+                    name="profession"
+                    placeholder="e.g. Retail Sales Associate"
+                    value={resumeData.profession}
+                    onChange={handleInputChange}
+                    className="border border-gray-300 h-10 rounded-sm w-full pr-8"
+                  />
+                  {resumeData.profession && renderCheckmark()}
                 </div>
               </div>
-              <div className="relative">
-                <Input
-                  id="profession"
-                  name="profession"
-                  placeholder="e.g. Retail Sales Associate"
-                  value={resumeData.profession}
-                  onChange={handleInputChange}
-                  className="border border-gray-300 h-10 rounded-sm w-full pr-8"
-                />
-                {resumeData.profession && renderCheckmark()}
-              </div>
-            </div>
-            
-            {/* City, Country and PIN Code - Exact layout */}
-            <div className="mb-4">
-              <div className="flex gap-4">
-                <div className="w-1/2">
+              
+              {/* City, Country and PIN Code - Exact layout */}
+              <div className="flex mb-4">
+                <div className="w-1/3 mr-4">
                   <div className="mb-1">
                     <div className="text-xs font-medium text-gray-700 uppercase">
                       CITY
@@ -236,7 +234,7 @@ const PersonalInformationPage = () => {
                   </div>
                 </div>
                 
-                <div className="w-1/2">
+                <div className="w-1/3 mr-4">
                   <div className="mb-1">
                     <div className="text-xs font-medium text-gray-700 uppercase">
                       COUNTRY
@@ -254,32 +252,29 @@ const PersonalInformationPage = () => {
                     {resumeData.country && renderCheckmark()}
                   </div>
                 </div>
-              </div>
-            </div>
-            
-            {/* PIN Code - Exact width */}
-            <div className="mb-4">
-              <div className="mb-1">
-                <div className="text-xs font-medium text-gray-700 uppercase">
-                  PIN CODE
+                
+                <div className="w-1/3">
+                  <div className="mb-1">
+                    <div className="text-xs font-medium text-gray-700 uppercase">
+                      PIN CODE
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="postalCode"
+                      name="postalCode"
+                      placeholder="e.g. 110034"
+                      value={resumeData.postalCode}
+                      onChange={handleInputChange}
+                      className="border border-gray-300 h-10 rounded-sm w-full pr-8"
+                    />
+                    {resumeData.postalCode && renderCheckmark()}
+                  </div>
                 </div>
               </div>
-              <div className="relative w-1/3">
-                <Input
-                  id="postalCode"
-                  name="postalCode"
-                  placeholder="e.g. 110034"
-                  value={resumeData.postalCode}
-                  onChange={handleInputChange}
-                  className="border border-gray-300 h-10 rounded-sm w-full pr-8"
-                />
-                {resumeData.postalCode && renderCheckmark()}
-              </div>
-            </div>
-            
-            {/* Phone and Email - 2 columns */}
-            <div className="mb-4">
-              <div className="flex gap-4">
+              
+              {/* Phone and Email - 2 columns */}
+              <div className="flex gap-4 mb-4">
                 <div className="w-1/2">
                   <div className="mb-1">
                     <div className="text-xs font-medium text-gray-700 uppercase">
@@ -318,42 +313,42 @@ const PersonalInformationPage = () => {
                   />
                 </div>
               </div>
-            </div>
-            
-            {/* Additional Information Section - exactly like Zety */}
-            <div className="mb-4">
-              <div className="flex items-center mb-2">
-                <span className="text-sm text-gray-700">Add additional information to your resume</span>
-                <span className="text-xs text-gray-500 ml-1">(optional)</span>
-                <div className="ml-2 inline-flex items-center justify-center">
-                  <Info size={16} className="text-gray-500" />
-                </div>
-              </div>
               
-              <div className="flex gap-3">
-                <button
-                  className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                  onClick={() => updateAdditionalInfo('linkedin', '')}
-                >
-                  LinkedIn
-                  <span className="ml-2 font-bold">+</span>
-                </button>
+              {/* Additional Information Section - exactly like Zety */}
+              <div className="mb-4">
+                <div className="flex items-center mb-2">
+                  <span className="text-sm text-gray-700">Add additional information to your resume</span>
+                  <span className="text-xs text-gray-500 ml-1">(optional)</span>
+                  <div className="ml-2 inline-flex items-center justify-center">
+                    <Info size={16} className="text-gray-500" />
+                  </div>
+                </div>
                 
-                <button
-                  className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                  onClick={() => updateAdditionalInfo('website', '')}
-                >
-                  Website
-                  <span className="ml-2 font-bold">+</span>
-                </button>
-                
-                <button
-                  className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                  onClick={() => updateAdditionalInfo('drivingLicense', '')}
-                >
-                  Driving licence
-                  <span className="ml-2 font-bold">+</span>
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                    onClick={() => updateAdditionalInfo('linkedin', '')}
+                  >
+                    LinkedIn
+                    <span className="ml-2 font-bold">+</span>
+                  </button>
+                  
+                  <button
+                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                    onClick={() => updateAdditionalInfo('website', '')}
+                  >
+                    Website
+                    <span className="ml-2 font-bold">+</span>
+                  </button>
+                  
+                  <button
+                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                    onClick={() => updateAdditionalInfo('drivingLicense', '')}
+                  >
+                    Driving licence
+                    <span className="ml-2 font-bold">+</span>
+                  </button>
+                </div>
               </div>
             </div>
             
