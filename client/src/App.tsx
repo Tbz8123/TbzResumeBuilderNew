@@ -24,6 +24,9 @@ import CreateNewTemplateAdminPage from "@/pages/admin/templates/new";
 import TemplateVersionsPage from "@/pages/admin/templates/versions";
 import AdminTemplateManagementPage from "@/pages/admin/templates/management";
 import AdminHomePage from "@/pages/admin/home";
+import AdminDashboardPage from "@/pages/admin/page";
+import AdminJobsPage from "@/pages/admin/jobs/page";
+import AdminLink from "@/components/AdminLink";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -54,8 +57,10 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}
+      <ProtectedRoute path="/admin/dashboard" component={AdminDashboardPage} adminOnly />
       <ProtectedRoute path="/admin/home" component={AdminHomePage} adminOnly />
-      <ProtectedRoute path="/admin" component={AdminHomePage} adminOnly />
+      <ProtectedRoute path="/admin" component={AdminDashboardPage} adminOnly />
+      <ProtectedRoute path="/admin/jobs" component={AdminJobsPage} adminOnly />
       <ProtectedRoute path="/admin/templates" component={AdminTemplatesPage} adminOnly />
       <ProtectedRoute path="/admin/templates/management" component={AdminTemplateManagementPage} adminOnly />
       <ProtectedRoute path="/admin/templates/new/basic" component={CreateNewTemplateAdminPage} adminOnly />
@@ -94,6 +99,7 @@ function App() {
                 <Router />
               </main>
               {!isWizardPage && !isAdminPage && location !== "/auth" && <Footer />}
+              {!isAdminPage && <AdminLink />}
             </div>
             <Toaster />
           </ResumeProvider>
