@@ -9,6 +9,187 @@ import path from 'path';
 import { upload } from '../utils/upload';
 import { renderTemplateToImage } from '../utils/templateImageRenderer';
 
+/**
+ * Generates a fallback SVG preview for a template when Puppeteer fails
+ * @param templateName - The name of the template
+ * @param primaryColor - The primary color to use (typically for backgrounds)
+ * @param secondaryColor - The secondary/accent color to use
+ * @returns An SVG string representing the template preview
+ */
+function generateTemplatePreviewSvg(templateName: string, primaryColor = "#2d2f35", secondaryColor = "#4a90e2"): string {
+  // Check if it's a two-column template with a dark sidebar
+  const isDarkSidebarTemplate = primaryColor === "#2d2f35" || primaryColor === "#1e1e1e";
+  
+  if (isDarkSidebarTemplate) {
+    // Two-column layout with dark sidebar on left, white main content on right
+    return `<svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
+      <!-- Background -->
+      <rect width="100%" height="100%" fill="white"/>
+      
+      <!-- Two-column layout with dark sidebar -->
+      <rect width="280" height="100%" fill="${primaryColor}"/>
+      <rect x="280" y="0" width="520" height="100%" fill="white"/>
+      
+      <!-- Left column header -->
+      <rect x="20" y="50" width="240" height="50" fill="${secondaryColor}"/>
+      <text x="30" y="85" font-family="Arial" font-size="20" font-weight="bold" fill="white">
+        ${templateName || "Professional Resume"}
+      </text>
+      
+      <!-- Left column content -->
+      <text x="20" y="130" font-family="Arial" font-size="14" fill="white">
+        Job Position
+      </text>
+      
+      <text x="20" y="180" font-family="Arial" font-size="16" font-weight="bold" fill="white">
+        Contact
+      </text>
+      
+      <!-- Contact items -->
+      <text x="20" y="210" font-family="Arial" font-size="12" fill="white">+600 123-4567</text>
+      <text x="20" y="230" font-family="Arial" font-size="12" fill="white">email@example.com</text>
+      <text x="20" y="250" font-family="Arial" font-size="12" fill="white">123 Street, City, State</text>
+      
+      <!-- Education section -->
+      <text x="20" y="300" font-family="Arial" font-size="16" font-weight="bold" fill="white">
+        Education
+      </text>
+      <text x="20" y="330" font-family="Arial" font-size="12" fill="white" font-weight="bold">
+        DEGREE NAME
+      </text>
+      <text x="20" y="350" font-family="Arial" font-size="12" fill="white">
+        University Name
+      </text>
+      
+      <!-- Skills section -->
+      <text x="20" y="400" font-family="Arial" font-size="16" font-weight="bold" fill="white">
+        Skills
+      </text>
+      <text x="20" y="430" font-family="Arial" font-size="12" fill="white">• Skill 1</text>
+      <text x="20" y="450" font-family="Arial" font-size="12" fill="white">• Skill 2</text>
+      <text x="20" y="470" font-family="Arial" font-size="12" fill="white">• Skill 3</text>
+      
+      <!-- Right column section headings -->
+      <text x="320" y="100" font-family="Arial" font-size="24" font-weight="bold" fill="${secondaryColor}">
+        Profile
+      </text>
+      <rect x="320" y="120" width="450" height="2" fill="#ddd"/>
+      
+      <!-- Profile content placeholder -->
+      <rect x="320" y="140" width="450" height="7" rx="3" fill="#eee"/>
+      <rect x="320" y="155" width="450" height="7" rx="3" fill="#eee"/>
+      <rect x="320" y="170" width="350" height="7" rx="3" fill="#eee"/>
+      
+      <!-- Experience heading -->
+      <text x="320" y="220" font-family="Arial" font-size="24" font-weight="bold" fill="${secondaryColor}">
+        Experience
+      </text>
+      <rect x="320" y="240" width="450" height="2" fill="#ddd"/>
+      
+      <!-- Experience item 1 -->
+      <text x="320" y="270" font-family="Arial" font-size="16" font-weight="bold" fill="#333">
+        Job Title
+      </text>
+      <text x="320" y="290" font-family="Arial" font-size="14" fill="#555">
+        Company Name | 2018 - Present
+      </text>
+      <rect x="320" y="310" width="450" height="7" rx="3" fill="#eee"/>
+      <rect x="320" y="325" width="420" height="7" rx="3" fill="#eee"/>
+      <rect x="320" y="340" width="380" height="7" rx="3" fill="#eee"/>
+      
+      <!-- Experience item 2 -->
+      <text x="320" y="380" font-family="Arial" font-size="16" font-weight="bold" fill="#333">
+        Previous Job
+      </text>
+      <text x="320" y="400" font-family="Arial" font-size="14" fill="#555">
+        Previous Company | 2015 - 2018
+      </text>
+      <rect x="320" y="420" width="450" height="7" rx="3" fill="#eee"/>
+      <rect x="320" y="435" width="420" height="7" rx="3" fill="#eee"/>
+    </svg>`;
+  } else {
+    // Modern single column or creative layout
+    return `<svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
+      <!-- Background with primary color header -->
+      <rect width="100%" height="100%" fill="white"/>
+      <rect width="100%" height="200" fill="${primaryColor}"/>
+      
+      <!-- Header content -->
+      <text x="50%" y="100" font-family="Arial" font-size="36" font-weight="bold" text-anchor="middle" fill="white">
+        ${templateName || "Creative Resume"}
+      </text>
+      <text x="50%" y="140" font-family="Arial" font-size="18" text-anchor="middle" fill="white">
+        Professional Position
+      </text>
+      
+      <!-- Accent bar -->
+      <rect x="50" y="230" width="700" height="8" rx="4" fill="${secondaryColor}"/>
+      
+      <!-- Contact information section -->
+      <text x="50" y="280" font-family="Arial" font-size="20" font-weight="bold" fill="${secondaryColor}">
+        Contact Information
+      </text>
+      
+      <!-- Contact items in row -->
+      <text x="50" y="310" font-family="Arial" font-size="14" fill="#444">📞 +600 123-4567</text>
+      <text x="300" y="310" font-family="Arial" font-size="14" fill="#444">✉️ email@example.com</text>
+      <text x="550" y="310" font-family="Arial" font-size="14" fill="#444">🏠 City, State</text>
+      
+      <!-- Summary section -->
+      <text x="50" y="360" font-family="Arial" font-size="20" font-weight="bold" fill="${secondaryColor}">
+        Professional Summary
+      </text>
+      
+      <!-- Summary content placeholder -->
+      <rect x="50" y="380" width="700" height="7" rx="3" fill="#eee"/>
+      <rect x="50" y="395" width="700" height="7" rx="3" fill="#eee"/>
+      <rect x="50" y="410" width="500" height="7" rx="3" fill="#eee"/>
+      
+      <!-- Two column layout for skills and education -->
+      <text x="50" y="460" font-family="Arial" font-size="20" font-weight="bold" fill="${secondaryColor}">
+        Skills
+      </text>
+      
+      <rect x="50" y="480" width="330" height="30" rx="15" fill="#f5f5f5"/>
+      <text x="65" y="500" font-family="Arial" font-size="14" fill="#444">Skill 1</text>
+      
+      <rect x="50" y="520" width="330" height="30" rx="15" fill="#f5f5f5"/>
+      <text x="65" y="540" font-family="Arial" font-size="14" fill="#444">Skill 2</text>
+      
+      <rect x="50" y="560" width="330" height="30" rx="15" fill="#f5f5f5"/>
+      <text x="65" y="580" font-family="Arial" font-size="14" fill="#444">Skill 3</text>
+      
+      <!-- Education section -->
+      <text x="420" y="460" font-family="Arial" font-size="20" font-weight="bold" fill="${secondaryColor}">
+        Education
+      </text>
+      
+      <text x="420" y="490" font-family="Arial" font-size="16" font-weight="bold" fill="#333">
+        Degree Name
+      </text>
+      <text x="420" y="515" font-family="Arial" font-size="14" fill="#555">
+        University Name | 2014 - 2018
+      </text>
+      
+      <!-- Experience section -->
+      <text x="50" y="620" font-family="Arial" font-size="20" font-weight="bold" fill="${secondaryColor}">
+        Work Experience
+      </text>
+      
+      <!-- Experience item -->
+      <text x="50" y="650" font-family="Arial" font-size="16" font-weight="bold" fill="#333">
+        Job Title
+      </text>
+      <text x="50" y="670" font-family="Arial" font-size="14" fill="#555">
+        Company Name | 2018 - Present
+      </text>
+      <rect x="50" y="690" width="700" height="7" rx="3" fill="#eee"/>
+      <rect x="50" y="705" width="650" height="7" rx="3" fill="#eee"/>
+      <rect x="50" y="720" width="600" height="7" rx="3" fill="#eee"/>
+    </svg>`;
+  }
+}
+
 const router = Router();
 
 // Get all templates (public route - available to all users)
@@ -1942,324 +2123,73 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
     
     const template = templates[0];
     
-    // Set the output path
-    let outputFilename = `template-${templateId}-${Date.now()}.png`;
+    // Set the output path with SVG extension since PNG generation might fail with Puppeteer
+    let outputFilename = `template-${templateId}-${Date.now()}.svg`;
     const outputPath = `public/uploads/previews/${outputFilename}`;
     
-    try {
-      if (sourceType === 'svg') {
-        // Handle SVG content
-        const svgContent = template.svgContent;
-        if (!svgContent) {
-          return res.status(404).json({ message: "No SVG content available for this template" });
-        }
+    // Ensure directory exists 
+    const outputDir = path.dirname(outputPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
+    // Extract colors from template for preview generation
+    let primaryColor = template.primaryColor || "#2d2f35";
+    let secondaryColor = template.secondaryColor || "#4a90e2";
+    
+    // Analyze HTML content to detect colors if needed
+    if (template.htmlContent) {
+      const htmlContent = template.htmlContent;
+      
+      // Check for two-column layout with dark sidebar, blue accents
+      const hasDarkSidebar = 
+        htmlContent.includes('background-color: #2d2f35') || 
+        htmlContent.includes('.left-section') ||
+        (htmlContent.includes('display: flex') && htmlContent.includes('width: 35%'));
         
-        // Ensure directory exists
-        const outputDir = path.dirname(outputPath);
-        if (!fs.existsSync(outputDir)) {
-          fs.mkdirSync(outputDir, { recursive: true });
-        }
-        
-        // Save SVG content directly
-        const svgOutputPath = outputPath.replace(/\.png$/, '.svg');
-        fs.writeFileSync(svgOutputPath, svgContent);
-        
-        // Update filename to use SVG extension
-        outputFilename = outputFilename.replace(/\.png$/, '.svg');
-      } else {
-        // Handle HTML content
-        const htmlContent = template.htmlContent;
-        if (!htmlContent) {
-          return res.status(404).json({ message: "No HTML content available for this template" });
-        }
-        
-        // Try to generate the image with Puppeteer
-        await renderTemplateToImage(htmlContent, outputPath);
+      if (hasDarkSidebar) {
+        primaryColor = "#2d2f35";
+        secondaryColor = "#4a90e2";
       }
-    } catch (renderError) {
-      console.error(`Error generating ${sourceType} preview:`, renderError);
       
-      // Fallback: Create a more representative SVG based on the actual template HTML content
-      // Extract actual template colors from the HTML content
-      let primaryColor = "#2d2f35"; // Default dark gray for left sidebar
-      let secondaryColor = "#4a90e2"; // Default blue accent color
-      
-      // Check if this template contains the blue/dark gray theme by looking for specific markers
-      const isBlueAndDarkTemplate = template.htmlContent?.includes('background-color: #2d2f35') || 
-                                    template.htmlContent?.includes('.left-section');
-      
-      if (isBlueAndDarkTemplate) {
-        // Let's extract the actual colors from the HTML template content
-        if (template.htmlContent) {
-          // Parse the HTML to find the actual colors - using manual search to avoid regex issues
-          if (template.htmlContent.indexOf('background-color: #2d2f35') !== -1) {
-            primaryColor = "#2d2f35";  // Dark gray for left sidebar background
-          }
-          
-          if (template.htmlContent.indexOf('background-color: #4a90e2') !== -1) {
-            secondaryColor = "#4a90e2";  // Blue for headers
-          }
-        }
-        
-        // Also update the template's stored colors to match the actual template
+      // Update detected colors in the template
+      if (primaryColor !== template.primaryColor || secondaryColor !== template.secondaryColor) {
         await db.update(resumeTemplates)
           .set({
-            primaryColor: primaryColor,
-            secondaryColor: secondaryColor,
+            primaryColor,
+            secondaryColor
           })
-          .where(eq(resumeTemplates.id, parseInt(req.params.id)));
-      } else {
-        // Use stored colors for non-blue/dark templates
-        primaryColor = (template as any).primaryColor || "#1e1e1e"; 
-        secondaryColor = (template as any).secondaryColor || "#ffc107";
+          .where(eq(resumeTemplates.id, templateId));
       }
-      
-      // Choose the appropriate SVG representation based on template analysis
-      const svgPlaceholder = isBlueAndDarkTemplate ? `
-      <svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Background -->
-        <rect width="100%" height="100%" fill="white"/>
+    }
+    
+    let previewGenerated = false;
+    
+    // Try to use existing SVG content first if available and requested
+    if (sourceType === 'svg' && template.svgContent) {
+      fs.writeFileSync(outputPath, template.svgContent);
+      previewGenerated = true;
+    } 
+    // Otherwise try HTML rendering with Puppeteer
+    else if (template.htmlContent) {
+      try {
+        // Try to generate PNG with Puppeteer first
+        const pngOutputPath = outputPath.replace(/\.svg$/, '.png');
+        await renderTemplateToImage(template.htmlContent, pngOutputPath);
         
-        <!-- Two-column layout exactly matching the template HTML -->
-        <rect width="280" height="100%" fill="${primaryColor}"/>
-        <rect x="280" y="0" width="520" height="100%" fill="white"/>
-        
-        <!-- Header for left column - blue bar -->
-        <rect x="20" y="50" width="240" height="50" fill="${secondaryColor}"/>
-        <text x="30" y="85" font-family="Arial" font-size="20" font-weight="bold" fill="white">
-          Michael Brown
-        </text>
-        
-        <!-- Left column content -->
-        <text x="20" y="130" font-family="Arial" font-size="14" fill="white">
-          Job Position Here
-        </text>
-        
-        <text x="20" y="180" font-family="Arial" font-size="16" font-weight="bold" fill="white">
-          Contact
-        </text>
-        
-        <text x="20" y="210" font-family="Arial" font-size="12" fill="white">
-          +600 123-4567
-        </text>
-        <text x="20" y="230" font-family="Arial" font-size="12" fill="white">
-          yourinfo@example.com
-        </text>
-        <text x="20" y="250" font-family="Arial" font-size="12" fill="white">
-          123 Street, City, State 45678
-        </text>
-        
-        <text x="20" y="300" font-family="Arial" font-size="16" font-weight="bold" fill="white">
-          Education
-        </text>
-        
-        <text x="20" y="330" font-family="Arial" font-size="12" fill="white" font-weight="bold">
-          MAJOR DEGREE
-        </text>
-        
-        <text x="20" y="350" font-family="Arial" font-size="12" fill="white">
-          University Name
-        </text>
-        
-        <text x="20" y="400" font-family="Arial" font-size="16" font-weight="bold" fill="white">
-          Expertises
-        </text>
-        
-        <text x="20" y="430" font-family="Arial" font-size="12" fill="white">• Website Design</text>
-        <text x="20" y="450" font-family="Arial" font-size="12" fill="white">• Product Design</text>
-        <text x="20" y="470" font-family="Arial" font-size="12" fill="white">• Graphic Design</text>
-        
-        <!-- Right column content -->
-        <text x="320" y="100" font-family="Arial" font-size="24" font-weight="bold" fill="${secondaryColor}">
-          Profile
-        </text>
-      ` : `
-      <svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Background -->
-        <rect width="100%" height="100%" fill="white"/>
-        
-        <!-- Two-column layout with angled element -->
-        <rect width="280" height="100%" fill="${primaryColor}"/>
-        <rect x="280" y="0" width="520" height="100%" fill="white"/>
-        
-        <!-- Yellow diagonal accent in top left -->
-        <polygon points="0,0 280,0 0,280" fill="${secondaryColor}" />
-        
-        <!-- Header section -->
-        <text x="320" y="100" font-family="Arial" font-size="36" font-weight="bold">
-          <tspan fill="#333333">BRIAN R. </tspan><tspan fill="${secondaryColor}">BAXTER</tspan>
-        </text>
-        <text x="320" y="140" font-family="Arial" font-size="18" fill="#666666">
-          Graphic &amp; Web Designer
-        </text>
-        
-        <!-- Left column content -->
-        <text x="30" y="200" font-family="Arial" font-size="20" font-weight="bold" fill="${secondaryColor}">
-          CONTACT ME
-        </text>
-        
-        <text x="30" y="240" font-family="Arial" font-size="14" fill="white">
-          +1-718-310-5658
-        </text>
-        <text x="30" y="270" font-family="Arial" font-size="14" fill="white">
-          yourinfo@gmail.com
-        </text>
-        <text x="30" y="300" font-family="Arial" font-size="14" fill="white">
-          www.yourwebsite.com
-        </text>
-        <text x="30" y="330" font-family="Arial" font-size="14" fill="white">
-          Lincoln Park, MI 48146
-        </text>
-        
-        <line x1="30" y1="360" x2="240" y2="360" stroke="#444" stroke-dasharray="2,2" />
-        
-        <text x="30" y="400" font-family="Arial" font-size="20" font-weight="bold" fill="${secondaryColor}">
-          REFERENCES
-        </text>
-        
-        <text x="30" y="435" font-family="Arial" font-size="16" font-weight="bold" fill="white">
-          Darwin B. Magana
-        </text>
-        <text x="30" y="460" font-family="Arial" font-size="14" fill="white">
-          +1-970-533-3393
-        </text>
-        
-        <text x="30" y="495" font-family="Arial" font-size="16" font-weight="bold" fill="white">
-          Robert J. Belvin
-        </text>
-        <text x="30" y="520" font-family="Arial" font-size="14" fill="white">
-          +1-908-987-5103
-        </text>
-        
-        <line x1="30" y1="550" x2="240" y2="550" stroke="#444" stroke-dasharray="2,2" />
-        
-        <text x="30" y="590" font-family="Arial" font-size="20" font-weight="bold" fill="${secondaryColor}">
-          EDUCATION
-        </text>
-        
-        <text x="30" y="625" font-family="Arial" font-size="16" font-weight="bold" fill="white">
-          Stanford University
-        </text>
-        <text x="30" y="650" font-family="Arial" font-size="14" fill="white">
-          2011 - 2013
-        </text>
-        
-        <text x="30" y="685" font-family="Arial" font-size="16" font-weight="bold" fill="white">
-          University of Chicago
-        </text>
-        <text x="30" y="710" font-family="Arial" font-size="14" fill="white">
-          2007 - 2010
-        </text>
-        
-        <!-- Right column content with yellow icons -->
-        <!-- About Me with icon -->
-        <rect x="300" y="170" width="24" height="24" fill="${secondaryColor}" />
-        <text x="340" y="190" font-family="Arial" font-size="20" font-weight="bold" fill="${secondaryColor}">
-          ABOUT ME
-        </text>
-        
-        <rect x="320" y="205" width="450" height="10" rx="5" fill="#f0f0f0"/>
-        <rect x="320" y="225" width="450" height="10" rx="5" fill="#f0f0f0"/>
-        <rect x="320" y="245" width="350" height="10" rx="5" fill="#f0f0f0"/>
-        
-        <!-- Job Experience with icon -->
-        <rect x="300" y="290" width="24" height="24" fill="${secondaryColor}" />
-        <text x="340" y="310" font-family="Arial" font-size="20" font-weight="bold" fill="${secondaryColor}">
-          JOB EXPERIENCE
-        </text>
-        
-        <text x="320" y="345" font-family="Arial" font-size="18" font-weight="bold" fill="#444444">
-          Senior Web Designer
-        </text>
-        <text x="320" y="370" font-family="Arial" font-size="16" fill="#666666">
-          Creative Agency / Chicago
-        </text>
-        <text x="690" y="370" font-family="Arial" font-size="16" fill="#666666" text-anchor="end">
-          2020 - Present
-        </text>
-        
-        <rect x="320" y="385" width="450" height="10" rx="5" fill="#f0f0f0"/>
-        
-        <text x="320" y="430" font-family="Arial" font-size="18" font-weight="bold" fill="#444444">
-          Graphic Designer
-        </text>
-        <text x="320" y="455" font-family="Arial" font-size="16" fill="#666666">
-          Creative Market / Chicago
-        </text>
-        <text x="690" y="455" font-family="Arial" font-size="16" fill="#666666" text-anchor="end">
-          2015 - 2020
-        </text>
-        
-        <rect x="320" y="470" width="450" height="10" rx="5" fill="#f0f0f0"/>
-        
-        <text x="320" y="515" font-family="Arial" font-size="18" font-weight="bold" fill="#444444">
-          Marketing Manager
-        </text>
-        <text x="320" y="540" font-family="Arial" font-size="16" fill="#666666">
-          Manufacturing Agency / NJ
-        </text>
-        <text x="690" y="540" font-family="Arial" font-size="16" fill="#666666" text-anchor="end">
-          2013 - 2015
-        </text>
-        
-        <rect x="320" y="555" width="450" height="10" rx="5" fill="#f0f0f0"/>
-        
-        <!-- Skills with icon -->
-        <rect x="300" y="585" width="24" height="24" fill="${secondaryColor}" />
-        <text x="340" y="605" font-family="Arial" font-size="20" font-weight="bold" fill="${secondaryColor}">
-          SKILLS
-        </text>
-        
-        <!-- Skill bars -->
-        <text x="320" y="640" font-family="Arial" font-size="16" fill="#333333">
-          Adobe Photoshop
-        </text>
-        <rect x="320" y="650" width="400" height="16" rx="8" fill="#f0f0f0"/>
-        <rect x="320" y="650" width="340" height="16" rx="8" fill="${secondaryColor}"/>
-        
-        <text x="320" y="685" font-family="Arial" font-size="16" fill="#333333">
-          HTML/CSS
-        </text>
-        <rect x="320" y="695" width="400" height="16" rx="8" fill="#f0f0f0"/>
-        <rect x="320" y="695" width="350" height="16" rx="8" fill="${secondaryColor}"/>
-        
-        <text x="320" y="730" font-family="Arial" font-size="16" fill="#333333">
-          Microsoft Word
-        </text>
-        <rect x="320" y="740" width="400" height="16" rx="8" fill="#f0f0f0"/>
-        <rect x="320" y="740" width="320" height="16" rx="8" fill="${secondaryColor}"/>
-        
-        <text x="320" y="775" font-family="Arial" font-size="16" fill="#333333">
-          Adobe Illustrator
-        </text>
-        <rect x="320" y="785" width="400" height="16" rx="8" fill="#f0f0f0"/>
-        <rect x="320" y="785" width="300" height="16" rx="8" fill="${secondaryColor}"/>
-        
-        <text x="320" y="820" font-family="Arial" font-size="16" fill="#333333">
-          PowerPoint
-        </text>
-        <rect x="320" y="830" width="400" height="16" rx="8" fill="#f0f0f0"/>
-        <rect x="320" y="830" width="280" height="16" rx="8" fill="${secondaryColor}"/>
-        
-        <!-- Bottom accent -->
-        <polygon points="800,800 800,1100 600,1100" fill="${secondaryColor}" />
-      </svg>
-      `;
-      
-      // Save the SVG placeholder instead (fs and path are imported at the top of the file)
-      
-      // Ensure directory exists
-      const outputDir = path.dirname(outputPath);
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
+        // If successful, use PNG extension instead
+        outputFilename = outputFilename.replace(/\.svg$/, '.png');
+        previewGenerated = true;
+      } catch (puppeteerError) {
+        console.error(`Error generating HTML preview with Puppeteer:`, puppeteerError);
+        // Puppeteer failed - fall back to SVG generation below
       }
-      
-      // Rename output with .svg extension
-      const svgOutputPath = outputPath.replace(/\.png$/, '.svg');
-      fs.writeFileSync(svgOutputPath, svgPlaceholder);
-      
-      // Update the filename to use svg extension
-      outputFilename = outputFilename.replace(/\.png$/, '.svg');
+    }
+    
+    // If preview wasn't successfully generated, create a fallback SVG
+    if (!previewGenerated) {
+      const fallbackSvg = generateTemplatePreviewSvg(template.name, primaryColor, secondaryColor);
+      fs.writeFileSync(outputPath, fallbackSvg);
     }
     
     // Update the template with the new thumbnail URL
@@ -2267,8 +2197,10 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
     
     const [updatedTemplate] = await db.update(resumeTemplates)
       .set({
-        thumbnailUrl: thumbnailUrl,
-        updatedAt: new Date(),
+        thumbnailUrl,
+        primaryColor,
+        secondaryColor,
+        updatedAt: new Date()
       })
       .where(eq(resumeTemplates.id, templateId))
       .returning();
@@ -2276,7 +2208,7 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
     res.json({ 
       success: true, 
       message: "Preview generated successfully", 
-      thumbnailUrl: thumbnailUrl,
+      thumbnailUrl,
       template: updatedTemplate
     });
     
