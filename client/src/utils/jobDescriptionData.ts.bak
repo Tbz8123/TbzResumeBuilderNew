@@ -466,115 +466,116 @@ export const jobDescriptions: Record<string, JobDescription[]> = {
     },
     {
       id: 'project-manager-3',
-      content: 'Managed project budgets ranging from $100K to $2M, ensuring proper resource allocation and cost control.',
+      content: 'Managed project budgets ranging from $250K to $2M, ensuring proper resource allocation.',
       isRecommended: true,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-4',
-      content: 'Facilitated effective communication between stakeholders, team members, and executives throughout project lifecycles.',
+      content: 'Conducted regular status meetings and created progress reports for stakeholders.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-5',
-      content: 'Tracked and reported on project progress using Key Performance Indicators (KPIs) and project management tools.',
+      content: 'Identified and mitigated risks throughout the project lifecycle.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-6',
-      content: 'Identified and mitigated risks and issues throughout project execution phases.',
+      content: 'Established and maintained project documentation including requirements and specifications.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-7',
-      content: 'Implemented Agile/Scrum methodologies to improve project delivery efficiency by 30%.',
+      content: 'Used project management methodologies (Agile, Scrum, Waterfall) to ensure effective execution.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-8',
-      content: 'Created and maintained project documentation including status reports, meeting minutes, and lessons learned.',
+      content: 'Coordinated with vendors and external partners to ensure timely delivery of services.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-9',
-      content: 'Conducted post-project evaluations to identify successful and unsuccessful project elements.',
+      content: 'Managed stakeholder expectations and communicated project status effectively.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-10',
-      content: 'Managed vendor relationships and contracts to ensure timely delivery of outsourced components.',
+      content: 'Conducted post-project reviews to identify lessons learned and best practices.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     // Additional project manager responsibilities
     {
       id: 'project-manager-11',
-      content: 'Facilitated daily stand-up meetings and sprint planning sessions with development teams.',
+      content: 'Established and maintained project management office (PMO) standards across the organization.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-12',
-      content: 'Utilized project management software to track tasks, dependencies, and critical paths.',
+      content: 'Created and managed project dashboards for real-time monitoring of key metrics.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-13',
-      content: 'Implemented earned value management techniques to monitor project performance.',
+      content: 'Facilitated resolution of issues and conflicts within project teams.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-14',
-      content: 'Negotiated with stakeholders to manage scope changes and prevent scope creep.',
+      content: 'Implemented project management tools and software to improve efficiency.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-15',
-      content: 'Adapted project approaches to meet changing business requirements and market conditions.',
+      content: 'Mentored junior project managers and team members on project management methodologies.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-16',
-      content: 'Mentored and coached team members on project management methodologies and best practices.',
+      content: 'Developed and managed project communication plans for various stakeholder groups.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-17',
-      content: 'Conducted resource planning and capacity management to optimize team utilization.',
+      content: 'Created and maintained project schedules using tools like Microsoft Project and Jira.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-18',
-      content: 'Managed interdependencies between multiple concurrent projects to prevent conflicts.',
+      content: 'Conducted resource planning and allocation across multiple simultaneous projects.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-19',
-      content: 'Created and presented executive-level project status reports and dashboards.',
+      content: 'Implemented earned value management (EVM) to track project performance and progress.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
     {
       id: 'project-manager-20',
-      content: 'Streamlined project processes resulting in 25% reduction in delivery time across the portfolio.',
+      content: 'Ensured compliance with regulatory requirements and organizational standards.',
       isRecommended: false,
       jobTitleId: 'project-manager'
     },
   ],
   
+  // ... additional job titles would follow similar patterns
   // The complete dataset would include job descriptions for all job titles
   // from the jobTitlesData.ts file, with 100 descriptions for each
 };
@@ -605,7 +606,6 @@ export function getJobDescriptionsByTitleId(jobTitleId: string): JobDescription[
     default:
       return jobDescriptions['manager'] || [];
   }
-}
 
 /**
  * Helper function to determine job category from job title ID
