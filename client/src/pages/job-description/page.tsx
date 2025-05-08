@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useResume } from '@/contexts/ResumeContext';
 import Logo from '@/components/Logo';
-import { ArrowLeft, HelpCircle, Search, Plus, ArrowRight, RotateCw, Undo2 } from 'lucide-react';
+import { ArrowLeft, HelpCircle, Search, Plus, ArrowRight, RotateCw, Undo2, X } from 'lucide-react';
 import { 
   Tooltip,
   TooltipContent,
@@ -10,68 +10,101 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
+import { JobTitle, getJobTitleSuggestions, findJobTitleById } from '@/utils/jobTitlesData';
+import { getJobDescriptionsByTitleId, searchJobDescriptions, JobDescription } from '@/utils/jobDescriptionData';
 
-// Pre-defined job descriptions for various job titles
-const preWrittenExamples = [
-  {
-    id: 1,
-    content: 'Managed and motivated employees to be productive and engaged in work.',
-    isRecommended: true
-  },
-  {
-    id: 2,
-    content: 'Accomplished multiple tasks within established timeframes.',
-    isRecommended: true
-  },
-  {
-    id: 3,
-    content: 'Maximized performance by monitoring daily activities and mentoring team members.',
-    isRecommended: false
-  },
-  {
-    id: 4,
-    content: 'Enhanced customer satisfaction by resolving disputes promptly, maintaining open lines of communication, and ensuring high-quality service delivery.',
-    isRecommended: false
-  },
-  {
-    id: 5,
-    content: 'Resolved staff member conflicts, actively listening to concerns and finding appropriate middle ground.',
-    isRecommended: false
-  },
-  {
-    id: 6,
-    content: 'Controlled costs to keep business operating within budget and increase profits.',
-    isRecommended: false
-  },
-  {
-    id: 7,
-    content: 'Improved marketing to attract new customers and promote business.',
-    isRecommended: false
-  },
-  {
-    id: 8,
-    content: 'Cross-trained existing employees to maximize team agility and performance.',
-    isRecommended: false
-  }
-];
+// Related job titles
+const getRelatedJobTitles = (jobTitle: string): JobTitle[] => {
+  // Convert common job titles to their IDs
+  const titleToId = (title: string): string => {
+    return title.toLowerCase().replace(/\s+/g, '-');
+  };
 
-// Related job titles for suggestions
-const relatedJobTitles = [
-  { id: 'assistant-manager', title: 'Assistant Manager' },
-  { id: 'project-manager', title: 'Project Manager' },
-];
+  // Predefined related job titles map
+  const relatedTitlesMap: Record<string, string[]> = {
+    'manager': ['assistant-manager', 'project-manager', 'operations-manager', 'general-manager'],
+    'developer': ['software-engineer', 'web-developer', 'front-end-developer', 'back-end-developer'],
+    'engineer': ['software-engineer', 'mechanical-engineer', 'electrical-engineer', 'civil-engineer'],
+    'accountant': ['financial-analyst', 'bookkeeper', 'tax-accountant', 'controller'],
+    'designer': ['graphic-designer', 'ui-designer', 'ux-designer', 'product-designer'],
+  };
+  
+  // Default to manager if no match
+  const baseTitle = titleToId(jobTitle) || 'manager';
+  const relatedIds = relatedTitlesMap[baseTitle] || relatedTitlesMap['manager'];
+  
+  // Map IDs to job title objects
+  return relatedIds.map(id => {
+    const jobTitle = findJobTitleById(id);
+    return jobTitle || { id, title: id.replace(/-/g, ' '), category: 'Default' };
+  });
+};
 
 const JobDescriptionPage = () => {
   const [, setLocation] = useLocation();
   const { resumeData, updateResumeData } = useResume();
   const [searchTerm, setSearchTerm] = useState('');
-  const [descriptions, setDescriptions] = useState(preWrittenExamples);
   const [jobResponsibilities, setJobResponsibilities] = useState('');
+  const [jobTitleSuggestions, setJobTitleSuggestions] = useState<JobTitle[]>([]);
+  const [showJobTitleSuggestions, setShowJobTitleSuggestions] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
   
   // Get the current work experience (first one in the array)
   const currentJob = resumeData.workExperience && resumeData.workExperience.length > 0 
     ? resumeData.workExperience[0] 
     : { jobTitle: 'Manager', employer: 'Cocoblu', startMonth: 'January', startYear: '2025', endMonth: 'January', endYear: '2026' };
+  
+  // Get job title ID for looking up descriptions
+  const jobTitleId = currentJob.jobTitle ? 
+    currentJob.jobTitle.toLowerCase().replace(/\s+/g, '-') : 'manager';
+  
+  // Get related job titles
+  const relatedJobTitles = getRelatedJobTitles(currentJob.jobTitle);
+  
+  // Get job descriptions based on job title
+  const [descriptions, setDescriptions] = useState<JobDescription[]>(
+    getJobDescriptionsByTitleId(jobTitleId)
+  );
+  
+  // Update descriptions when job title changes
+  useEffect(() => {
+    if (searchTerm) {
+      setDescriptions(searchJobDescriptions(jobTitleId, searchTerm));
+    } else {
+      setDescriptions(getJobDescriptionsByTitleId(jobTitleId));
+    }
+  }, [jobTitleId, searchTerm]);
+  
+  // Effect to update job title suggestions when search term changes
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      const suggestions = getJobTitleSuggestions(searchTerm, 5);
+      setJobTitleSuggestions(suggestions);
+      setShowJobTitleSuggestions(suggestions.length > 0);
+    } else {
+      setShowJobTitleSuggestions(false);
+    }
+  }, [searchTerm]);
+  
+  // Effect to handle clicks outside the suggestions dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current && 
+        !suggestionsRef.current.contains(event.target as Node) &&
+        searchInputRef.current && 
+        !searchInputRef.current.contains(event.target as Node)
+      ) {
+        setShowJobTitleSuggestions(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleBack = () => {
     setLocation('/work-experience-details');
@@ -174,14 +207,24 @@ const JobDescriptionPage = () => {
                 <div className="relative">
                   <Input 
                     type="text"
+                    ref={searchInputRef}
                     placeholder="Search by job title"
                     value={searchTerm}
                     onChange={handleSearchChange}
                     className="rounded-sm border-gray-300 pr-10"
                   />
-                  <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-600">
-                    <Search className="h-5 w-5" />
-                  </button>
+                  {searchTerm ? (
+                    <button 
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      onClick={() => setSearchTerm('')}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  ) : (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-600">
+                      <Search className="h-5 w-5" />
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -194,11 +237,12 @@ const JobDescriptionPage = () => {
                   </button>
                 </div>
                 
-                <div className="flex gap-2">
-                  {relatedJobTitles.map(job => (
+                <div className="flex flex-wrap gap-2">
+                  {relatedJobTitles.map((job: JobTitle) => (
                     <button
                       key={job.id}
                       className="flex items-center border border-gray-300 rounded-md px-2 py-1 text-sm"
+                      onClick={() => setSearchTerm(job.title)}
                     >
                       <Search className="h-3 w-3 mr-1 text-purple-600" />
                       {job.title}
@@ -207,9 +251,39 @@ const JobDescriptionPage = () => {
                 </div>
               </div>
               
+              {/* Job title suggestions dropdown */}
+              {showJobTitleSuggestions && (
+                <div 
+                  ref={suggestionsRef}
+                  className="relative z-10 mb-4"
+                >
+                  <div className="absolute top-0 left-0 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                    <div className="py-1">
+                      {jobTitleSuggestions.map((jobTitle: JobTitle) => (
+                        <button
+                          key={jobTitle.id}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex justify-between items-center"
+                          onClick={() => {
+                            setSearchTerm(jobTitle.title);
+                            setShowJobTitleSuggestions(false);
+                          }}
+                        >
+                          <div>
+                            <span className="font-medium">{jobTitle.title}</span>
+                            <span className="text-xs text-gray-500 ml-2">({jobTitle.category})</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Results heading */}
               <div className="flex justify-between items-center mb-2">
-                <p className="text-sm text-gray-500">{showingResults} results for <span className="font-medium">Manager</span></p>
+                <p className="text-sm text-gray-500">
+                  {showingResults} results for <span className="font-medium">{searchTerm || currentJob.jobTitle}</span>
+                </p>
                 <button className="text-purple-600 text-sm flex items-center">
                   Filter by Keyword <ArrowRight className="h-3 w-3 ml-1" />
                 </button>
@@ -217,27 +291,33 @@ const JobDescriptionPage = () => {
               
               {/* Examples list */}
               <div className="border border-gray-200 rounded-sm divide-y divide-gray-200">
-                {descriptions.map(description => (
-                  <div key={description.id} className="p-3 hover:bg-gray-50">
-                    <button 
-                      onClick={() => handleDescriptionClick(description.content)}
-                      className="flex items-start w-full text-left group"
-                    >
-                      <div className="mt-1 mr-2">
-                        <Plus className="h-4 w-4 text-purple-600 opacity-0 group-hover:opacity-100" />
-                      </div>
-                      <div>
-                        {description.isRecommended && (
-                          <div className="flex items-center text-xs text-purple-600 mb-1">
-                            <span className="text-purple-600 mr-1">★</span>
-                            Expert Recommended
-                          </div>
-                        )}
-                        <p className="text-sm">{description.content}</p>
-                      </div>
-                    </button>
+                {descriptions.length > 0 ? (
+                  descriptions.map((description: JobDescription) => (
+                    <div key={description.id} className="p-3 hover:bg-gray-50">
+                      <button 
+                        onClick={() => handleDescriptionClick(description.content)}
+                        className="flex items-start w-full text-left group"
+                      >
+                        <div className="mt-1 mr-2">
+                          <Plus className="h-4 w-4 text-purple-600 opacity-0 group-hover:opacity-100" />
+                        </div>
+                        <div>
+                          {description.isRecommended && (
+                            <div className="flex items-center text-xs text-purple-600 mb-1">
+                              <span className="text-purple-600 mr-1">★</span>
+                              Expert Recommended
+                            </div>
+                          )}
+                          <p className="text-sm">{description.content}</p>
+                        </div>
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center">
+                    <p className="text-gray-500">No descriptions found. Try another job title.</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
             
