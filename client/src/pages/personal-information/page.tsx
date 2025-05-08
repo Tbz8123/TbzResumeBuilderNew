@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useResume } from '@/contexts/ResumeContext';
 import ResumePreview from '@/components/resume/ResumePreview';
+import ModernResumePreview from '@/components/resume/ModernResumePreview';
 import PhotoUploader from '@/components/resume/PhotoUploader';
 import AdditionalInfoOptions from '@/components/resume/AdditionalInfoOptions';
 import Logo from '@/components/Logo';

@@ -1,6 +1,30 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
 // Define the resume data structure
+export interface WorkExperience {
+  jobTitle: string;
+  employer: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  isCurrentPosition: boolean;
+  description: string;
+}
+
+export interface Education {
+  degree: string;
+  institution: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+}
+
+export interface Skill {
+  name: string;
+  level: number; // 1-5 for skill level
+}
+
 export interface ResumeData {
   firstName: string;
   surname: string;
@@ -11,13 +35,16 @@ export interface ResumeData {
   phone: string;
   email: string;
   photo: string | null;
+  summary: string;
+  skills: Skill[];
+  workExperience: WorkExperience[];
+  education: Education[];
   additionalInfo: {
     linkedin?: string;
     website?: string;
     drivingLicense?: string;
     [key: string]: string | undefined;
   };
-  // Will add more fields for education, experience, etc. later
 }
 
 // Create initial state
@@ -31,6 +58,10 @@ const initialResumeData: ResumeData = {
   phone: '',
   email: '',
   photo: null,
+  summary: '',
+  skills: [],
+  workExperience: [],
+  education: [],
   additionalInfo: {}
 };
 
