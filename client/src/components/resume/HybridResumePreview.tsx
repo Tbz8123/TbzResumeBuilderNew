@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useResume } from '@/contexts/ResumeContext';
 import { useTemplates } from '@/hooks/use-templates';
+import { processTemplateHtml, extractAndEnhanceStyles } from './templates-support';
 
 interface HybridResumePreviewProps {
   width?: number;
@@ -45,41 +46,10 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   // Extract styles and HTML from template
   useEffect(() => {
     if (selectedTemplate?.htmlContent) {
-      // Extract <style> content
-      const styleRegex = /<style>([\s\S]*?)<\/style>/;
-      const styleMatch = selectedTemplate.htmlContent.match(styleRegex);
-      
-      if (styleMatch && styleMatch[1]) {
-        let styles = styleMatch[1];
-        
-        // Add responsive styles
-        styles += `
-          @media print, screen {
-            body {
-              margin: 0 !important;
-              padding: 0 !important;
-              overflow: hidden !important;
-              background: transparent !important;
-            }
-            .page, .resume {
-              width: 100% !important;
-              height: 100% !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              box-shadow: none !important;
-            }
-            .sidebar, .contact-item, .sidebar-section {
-              word-break: break-word;
-              overflow-wrap: break-word;
-            }
-            img.profile-image {
-              object-fit: cover;
-            }
-          }
-        `;
-        
-        // Update styles
-        setTemplateStyles(styles);
+      // Extract and enhance styles
+      const enhancedStyles = extractAndEnhanceStyles(selectedTemplate.htmlContent);
+      if (enhancedStyles) {
+        setTemplateStyles(enhancedStyles);
       }
       
       // Get HTML without style tags
@@ -98,69 +68,13 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     
     console.log("Processing HTML with data");
     
-    // Get HTML from ref
-    let html = templateHtmlRef.current;
+    // Use the enhanced template processor with more robust placeholder handling
+    const processedHtml = processTemplateHtml(templateHtmlRef.current, resumeData);
     
-    // Replace standard placeholders if they exist
-    html = html.replace(/{{firstName}}/g, resumeData.firstName || '');
-    html = html.replace(/{{lastName}}/g, resumeData.surname || '');
-    html = html.replace(/{{fullName}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
-    html = html.replace(/{{name}}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`);
-    html = html.replace(/{{profession}}/g, resumeData.profession || '');
-    html = html.replace(/{{email}}/g, resumeData.email || '');
-    html = html.replace(/{{phone}}/g, resumeData.phone || '');
-    html = html.replace(/{{city}}/g, resumeData.city || '');
-    html = html.replace(/{{country}}/g, resumeData.country || '');
-    html = html.replace(/{{address}}/g, [resumeData.city, resumeData.country].filter(Boolean).join(', '));
-    html = html.replace(/{{summary}}/g, resumeData.summary || '');
-    html = html.replace(/{{profile}}/g, resumeData.summary || '');
-    html = html.replace(/{{aboutMe}}/g, resumeData.summary || '');
-    html = html.replace(/{{bio}}/g, resumeData.summary || '');
-    html = html.replace(/{{description}}/g, resumeData.summary || '');
-    
-    // Handle profile photo if present
-    if (resumeData.photo) {
-      html = html.replace(/<img[^>]*class="profile-image"[^>]*>/g, 
-        `<img class="profile-image" src="${resumeData.photo}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">`);
-    }
-    
-    // Handle hard-coded names and values in templates
-    // Replace name placeholder
-    const fullName = `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim();
-    if (fullName) {
-      html = html.replace(/SAHIB KHAN/g, fullName.toUpperCase());
-      html = html.replace(/Stephen Jphn/gi, fullName);
-    }
-    
-    // Replace profession
-    if (resumeData.profession) {
-      html = html.replace(/GRAPHIC DESIGNER/g, resumeData.profession.toUpperCase());
-    }
-    
-    // Replace contact info
-    if (resumeData.phone) {
-      html = html.replace(/📞 telephone/g, `📞 ${resumeData.phone}`);
-    }
-    
-    if (resumeData.email) {
-      html = html.replace(/✉️ email/g, `✉️ ${resumeData.email}`);
-    }
-    
-    let address = [resumeData.city, resumeData.country].filter(Boolean).join(', ');
-    if (address) {
-      html = html.replace(/📍 address, city, st zip code/g, `📍 ${address}`);
-    }
-    
-    // Replace about me/summary
-    if (resumeData.summary) {
-      const aboutMeRegex = /<h2>ABOUT ME<\/h2>\s*<p>(.*?)<\/p>/s;
-      html = html.replace(aboutMeRegex, `<h2>ABOUT ME</h2>\n<p>${resumeData.summary}</p>`);
-    }
-    
-    console.log("HTML processed with data", html.substring(0, 200) + "...");
+    console.log("HTML processed with data", processedHtml.substring(0, 200) + "...");
     
     // Update the state
-    setTemplateHtml(html);
+    setTemplateHtml(processedHtml);
   };
   
   // Watch for resume data changes with detailed logging

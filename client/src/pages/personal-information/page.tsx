@@ -233,9 +233,9 @@ const PersonalInformationPage = () => {
               </div>
               
               {/* Phone and Email - FIXED ALIGNMENT */}
-              <div className="flex gap-5 mb-6">
+              <div className="flex gap-5 mb-7">
                 <div className="flex-1">
-                  <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
+                  <div className="mb-4 text-xs font-medium text-gray-700 uppercase">
                     PHONE
                   </div>
                   <Input
@@ -355,12 +355,12 @@ const PersonalInformationPage = () => {
             </div>
             
             {/* Resume Preview */}
-            <div className="border border-gray-200 overflow-hidden mx-auto" style={{ maxWidth: '300px' }}>
+            <div className="border border-gray-200 overflow-hidden mx-auto" style={{ maxWidth: '280px' }}>
               <div className="relative bg-white" style={{ height: '400px' }}>
                 <HybridResumePreview 
                   className="h-full w-full" 
-                  width={300} 
-                  height={400}
+                  width={280} 
+                  height={410}
                   scaleContent={true}
                 />
               </div>
