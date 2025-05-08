@@ -2058,6 +2058,25 @@ router.put("/:id", isAdmin, async (req, res) => {
       changelog: req.body.changelog || `Version ${nextVersionNumber}`,
     });
     
+    // Check if HTML or CSS content was updated - this would require thumbnail regeneration
+    const contentUpdated = req.body.htmlContent !== undefined || req.body.cssContent !== undefined;
+    
+    if (contentUpdated) {
+      console.log(`Content updated for template ${templateId}, starting thumbnail sync...`);
+      
+      // Start thumbnail sync in the background but don't wait for it to complete
+      // This ensures a fast response while still updating the thumbnail
+      (async () => {
+        try {
+          const updatedTemplateWithThumbnail = await syncTemplateThumbnail(templateId);
+          console.log(`Template ${templateId} thumbnail synced successfully:`, 
+            updatedTemplateWithThumbnail.thumbnailUrl);
+        } catch (thumbnailError) {
+          console.error(`Failed to sync thumbnail for template ${templateId}:`, thumbnailError);
+        }
+      })();
+    }
+    
     res.json(updatedTemplate);
   } catch (error) {
     if (error instanceof z.ZodError) {
