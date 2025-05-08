@@ -631,26 +631,92 @@ const JobDescriptionPage = () => {
                   <div className="p-4 text-center">
                     <div className="mb-3">
                       <p className="text-gray-500 mb-2">No specific descriptions found for "{currentJob.jobTitle}"</p>
-                      <p className="text-gray-500 text-sm">We'll fetch suggestions from related positions. You can also try another job title.</p>
+                      <p className="text-gray-500 text-sm">
+                        This could be due to a connection issue or because this job title doesn't have descriptions yet.
+                      </p>
                     </div>
-                    <button 
-                      onClick={async () => {
-                        setIsLoadingDescriptions(true);
-                        try {
-                          // Get general descriptions when no specific ones are found
-                          const allResponse = await apiRequest('GET', '/api/jobs/descriptions?limit=200');
-                          const allDescriptionsData = await allResponse.json();
-                          setDescriptions(allDescriptionsData);
-                        } catch (error) {
-                          console.error('Error fetching fallback job descriptions:', error);
-                        } finally {
-                          setIsLoadingDescriptions(false);
-                        }
-                      }}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                    >
-                      Get Generic Suggestions
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button 
+                        onClick={async () => {
+                          setIsLoadingDescriptions(true);
+                          try {
+                            // First try to fetch with current job title ID again
+                            if (currentJob.dbJobTitleId) {
+                              const jobTitleIdForApi = typeof currentJob.dbJobTitleId === 'string' 
+                                ? parseInt(currentJob.dbJobTitleId) 
+                                : currentJob.dbJobTitleId;
+                              
+                              console.log(`Re-attempting to fetch descriptions for job title ID: ${jobTitleIdForApi}`);
+                              const response = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`);
+                              const data = await response.json();
+                              
+                              if (data && data.length > 0) {
+                                console.log(`Successfully retrieved ${data.length} descriptions on retry`);
+                                setDescriptions(data);
+                                setIsLoadingDescriptions(false);
+                                return;
+                              }
+                            }
+                            
+                            // If that fails or no ID, get general descriptions
+                            console.log('Fetching generic job descriptions as fallback');
+                            const allResponse = await apiRequest('GET', '/api/jobs/descriptions?limit=200');
+                            const allDescriptionsData = await allResponse.json();
+                            setDescriptions(allDescriptionsData);
+                            setShowingResults(`${allDescriptionsData.length} generic`);
+                          } catch (error) {
+                            console.error('Error fetching fallback job descriptions:', error);
+                          } finally {
+                            setIsLoadingDescriptions(false);
+                          }
+                        }}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                      >
+                        Get Generic Suggestions
+                      </button>
+                      
+                      <button 
+                        onClick={async () => {
+                          setIsLoadingDescriptions(true);
+                          try {
+                            // Try to find a similar job title that might have descriptions
+                            const response = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(currentJob.jobTitle.split(' ')[0])}&limit=5`);
+                            const relatedTitles = await response.json();
+                            
+                            if (relatedTitles?.data?.length > 0) {
+                              // Find the first related title that isn't exactly the same
+                              const similarTitle = relatedTitles.data.find((t: any) => 
+                                t.title.toLowerCase() !== currentJob.jobTitle.toLowerCase()
+                              );
+                              
+                              if (similarTitle) {
+                                console.log(`Trying similar job title: ${similarTitle.title} (ID: ${similarTitle.id})`);
+                                const descResponse = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${similarTitle.id}`);
+                                const descData = await descResponse.json();
+                                
+                                if (descData && descData.length > 0) {
+                                  setDescriptions(descData);
+                                  setShowingResults(`${descData.length} from similar title "${similarTitle.title}"`);
+                                } else {
+                                  // If still no descriptions, fall back to generic ones
+                                  const allResponse = await apiRequest('GET', '/api/jobs/descriptions?limit=100');
+                                  const allData = await allResponse.json();
+                                  setDescriptions(allData);
+                                  setShowingResults(`${allData.length} generic`);
+                                }
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Error fetching similar job titles:', error);
+                          } finally {
+                            setIsLoadingDescriptions(false);
+                          }
+                        }}
+                        className="px-4 py-2 border border-purple-600 text-purple-600 rounded-md hover:bg-purple-50 transition-colors"
+                      >
+                        Try Similar Jobs
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
