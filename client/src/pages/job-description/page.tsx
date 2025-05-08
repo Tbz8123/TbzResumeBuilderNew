@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import { JobTitle, getJobTitleSuggestions, findJobTitleById } from '@/utils/jobTitlesData';
-import { getJobDescriptionsByTitleId, searchJobDescriptions, JobDescription } from '@/utils/jobDescriptionData';
+import { JobDescription } from '@shared/schema';
+import { apiRequest } from '@/lib/queryClient';
 import { WorkExperience } from '@/types/resume';
 
 // Related job titles
