@@ -1923,20 +1923,37 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
     } catch (renderError) {
       console.error(`Error generating ${sourceType} preview:`, renderError);
       
-      // Fallback: Create a more representative SVG based on the actual template HTML
-      // Check if this is the Blue/Dark Gray template we expect
-      const isBlueAndDarkTemplate = template.htmlContent?.includes('font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif') && 
+      // Fallback: Create a more representative SVG based on the actual template HTML content
+      // Extract actual template colors from the HTML content
+      let primaryColor = "#2d2f35"; // Default dark gray for left sidebar
+      let secondaryColor = "#4a90e2"; // Default blue accent color
+      
+      // Check if this template contains the blue/dark gray theme by looking for specific markers
+      const isBlueAndDarkTemplate = template.htmlContent?.includes('background-color: #2d2f35') || 
                                     template.htmlContent?.includes('.left-section');
       
-      // Define colors based on HTML content and template colors 
-      let primaryColor, secondaryColor;
-      
       if (isBlueAndDarkTemplate) {
-        // Use colors that match the blue/dark gray template
-        primaryColor = (template as any).primaryColor || "#2d2f35"; // Dark gray for left sidebar
-        secondaryColor = (template as any).secondaryColor || "#4a90e2"; // Blue accent color
+        // Let's extract the actual colors from the HTML template content
+        if (template.htmlContent) {
+          // Parse the HTML to find the actual colors - using manual search to avoid regex issues
+          if (template.htmlContent.indexOf('background-color: #2d2f35') !== -1) {
+            primaryColor = "#2d2f35";  // Dark gray for left sidebar background
+          }
+          
+          if (template.htmlContent.indexOf('background-color: #4a90e2') !== -1) {
+            secondaryColor = "#4a90e2";  // Blue for headers
+          }
+        }
+        
+        // Also update the template's stored colors to match the actual template
+        await db.update(resumeTemplates)
+          .set({
+            primaryColor: primaryColor,
+            secondaryColor: secondaryColor,
+          })
+          .where(eq(resumeTemplates.id, parseInt(req.params.id)));
       } else {
-        // Default colors for other templates
+        // Use stored colors for non-blue/dark templates
         primaryColor = (template as any).primaryColor || "#1e1e1e"; 
         secondaryColor = (template as any).secondaryColor || "#ffc107";
       }
@@ -1947,33 +1964,58 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
         <!-- Background -->
         <rect width="100%" height="100%" fill="white"/>
         
-        <!-- Two-column layout -->
+        <!-- Two-column layout exactly matching the template HTML -->
         <rect width="280" height="100%" fill="${primaryColor}"/>
         <rect x="280" y="0" width="520" height="100%" fill="white"/>
         
-        <!-- Header for left column -->
-        <rect x="0" y="0" width="280" height="60" fill="${secondaryColor}"/>
-        <text x="20" y="40" font-family="Arial" font-size="20" font-weight="bold" fill="white">
+        <!-- Header for left column - blue bar -->
+        <rect x="20" y="50" width="240" height="50" fill="${secondaryColor}"/>
+        <text x="30" y="85" font-family="Arial" font-size="20" font-weight="bold" fill="white">
           Michael Brown
         </text>
         
         <!-- Left column content -->
-        <text x="20" y="100" font-family="Arial" font-size="14" fill="white">
+        <text x="20" y="130" font-family="Arial" font-size="14" fill="white">
           Job Position Here
         </text>
         
-        <text x="20" y="150" font-family="Arial" font-size="16" font-weight="bold" fill="white">
+        <text x="20" y="180" font-family="Arial" font-size="16" font-weight="bold" fill="white">
           Contact
         </text>
         
-        <text x="20" y="180" font-family="Arial" font-size="12" fill="white">
+        <text x="20" y="210" font-family="Arial" font-size="12" fill="white">
           +600 123-4567
         </text>
-        <text x="20" y="200" font-family="Arial" font-size="12" fill="white">
+        <text x="20" y="230" font-family="Arial" font-size="12" fill="white">
           yourinfo@example.com
         </text>
-        <text x="20" y="220" font-family="Arial" font-size="12" fill="white">
+        <text x="20" y="250" font-family="Arial" font-size="12" fill="white">
           123 Street, City, State 45678
+        </text>
+        
+        <text x="20" y="300" font-family="Arial" font-size="16" font-weight="bold" fill="white">
+          Education
+        </text>
+        
+        <text x="20" y="330" font-family="Arial" font-size="12" fill="white" font-weight="bold">
+          MAJOR DEGREE
+        </text>
+        
+        <text x="20" y="350" font-family="Arial" font-size="12" fill="white">
+          University Name
+        </text>
+        
+        <text x="20" y="400" font-family="Arial" font-size="16" font-weight="bold" fill="white">
+          Expertises
+        </text>
+        
+        <text x="20" y="430" font-family="Arial" font-size="12" fill="white">• Website Design</text>
+        <text x="20" y="450" font-family="Arial" font-size="12" fill="white">• Product Design</text>
+        <text x="20" y="470" font-family="Arial" font-size="12" fill="white">• Graphic Design</text>
+        
+        <!-- Right column content -->
+        <text x="320" y="100" font-family="Arial" font-size="24" font-weight="bold" fill="${secondaryColor}">
+          Profile
         </text>
       ` : `
       <svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
