@@ -52,9 +52,10 @@ const PersonalInformationPage = () => {
     console.log('Moving to work history step');
   };
   
-  // Handle input changes
+  // Handle input changes with enhanced reactivity
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    console.log(`Updating field: ${name} with value: ${value}`);
     updateResumeData({ [name]: value } as any);
   };
   
@@ -286,7 +287,10 @@ const PersonalInformationPage = () => {
                     name="summary"
                     placeholder="A results-driven professional with experience in your field..."
                     value={resumeData.summary || ''}
-                    onChange={(e) => updateResumeData({ summary: e.target.value })}
+                    onChange={(e) => {
+                      console.log(`Updating summary: ${e.target.value}`);
+                      updateResumeData({ summary: e.target.value });
+                    }}
                     className="border border-gray-300 rounded w-full h-24 p-2 text-sm"
                   />
                 </div>

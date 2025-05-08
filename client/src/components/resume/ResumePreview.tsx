@@ -50,14 +50,12 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
     console.log("ResumePreview - Found Template:", selectedTemplate?.name);
   }, [selectedTemplateId, selectedTemplate]);
   
-  // Process template HTML and CSS when available
+  // Extract styles from template HTML - only depends on selectedTemplate
   useEffect(() => {
     if (selectedTemplate?.htmlContent) {
-      let html = selectedTemplate.htmlContent;
-      
       // Extract <style> content
       const styleRegex = /<style>([\s\S]*?)<\/style>/;
-      const styleMatch = html.match(styleRegex);
+      const styleMatch = selectedTemplate.htmlContent.match(styleRegex);
       
       if (styleMatch && styleMatch[1]) {
         let styles = styleMatch[1];
@@ -100,10 +98,19 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
         
         // Update styles
         setTemplateStyles(styles);
-        
-        // Remove original style tag as we'll inject it separately
-        html = html.replace(styleRegex, '');
       }
+    }
+  }, [selectedTemplate]);
+
+  // Process template HTML whenever resume data or template changes
+  useEffect(() => {
+    if (selectedTemplate?.htmlContent) {
+      // Create a new copy of the HTML content
+      let html = selectedTemplate.htmlContent;
+      
+      // Remove style tag as we'll inject it separately
+      const styleRegex = /<style>([\s\S]*?)<\/style>/;
+      html = html.replace(styleRegex, '');
       
       // Replace placeholders with actual resume data
       html = html.replace(/{{firstName}}/g, resumeData.firstName || '');
@@ -119,6 +126,8 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
       html = html.replace(/{{summary}}/g, resumeData.summary || '');
       html = html.replace(/{{profile}}/g, resumeData.summary || '');
       html = html.replace(/{{aboutMe}}/g, resumeData.summary || '');
+      html = html.replace(/{{bio}}/g, resumeData.summary || '');
+      html = html.replace(/{{description}}/g, resumeData.summary || '');
       
       // Handle profile photo if present
       if (resumeData.photo) {
@@ -136,6 +145,14 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
       
       // Update the state
       setTemplateHtml(html);
+      
+      // Add debug log
+      console.log("Updating template HTML with latest resume data", {
+        firstName: resumeData.firstName,
+        lastName: resumeData.surname,
+        profession: resumeData.profession,
+        summary: resumeData.summary,
+      });
     }
   }, [selectedTemplate, resumeData]);
   

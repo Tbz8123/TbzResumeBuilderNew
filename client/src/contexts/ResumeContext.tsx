@@ -81,7 +81,13 @@ export const ResumeContext = createContext<ResumeContextType | undefined>(undefi
 // Create provider component
 export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [resumeData, setResumeData] = useState<ResumeData>(initialResumeData);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [selectedTemplateId, setSelectedTemplateIdState] = useState<number | null>(null);
+  
+  // Enhanced setSelectedTemplateId with tracking
+  const setSelectedTemplateId = (id: number | null) => {
+    console.log("Template ID set in ResumeContext:", id);
+    setSelectedTemplateIdState(id);
+  };
 
   // Initialize with template ID from localStorage if available
   React.useEffect(() => {
@@ -91,12 +97,17 @@ export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, []);
 
-  // Update resume data
+  // Update resume data with improved reactivity
   const updateResumeData = (newData: Partial<ResumeData>) => {
-    setResumeData(prev => ({
-      ...prev,
-      ...newData
-    }));
+    console.log("ResumeContext - Updating data:", newData);
+    setResumeData(prev => {
+      const updated = {
+        ...prev,
+        ...newData
+      };
+      console.log("ResumeContext - Updated data:", updated);
+      return updated;
+    });
   };
 
   // Add or update additional info
