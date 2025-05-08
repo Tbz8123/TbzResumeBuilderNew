@@ -19,7 +19,7 @@ const WhyNeedResumePage = () => {
   const handleNext = () => {
     if (selectedReason) {
       // Store the selected reason if needed
-      setLocation('/education'); // Navigate to next step
+      setLocation('/work-experience-details'); // Navigate to work experience details page
     }
   };
   

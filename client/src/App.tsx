@@ -14,6 +14,7 @@ import PersonalInformationPage from "@/pages/personal-information/page";
 import UploadOptionsPage from "@/pages/upload-options/page";
 import UploadResumePage from "@/pages/upload-resume/page";
 import WhyNeedResumePage from "@/pages/work-history/page";
+import WorkExperienceDetailsPage from "@/pages/work-experience-details/page";
 import AuthPage from "@/pages/auth-page";
 import AdminTemplatesPage from "@/pages/admin/templates/page";
 import AdminTemplateEditPage from "@/pages/admin/templates/edit";
@@ -32,7 +33,8 @@ function Router() {
                        location.startsWith("/upload-options") ||
                        location.startsWith("/upload-resume") ||
                        location.startsWith("/personal-information") ||
-                       location.startsWith("/work-history");
+                       location.startsWith("/work-history") ||
+                       location.startsWith("/work-experience-details");
   
   const isAdminPage = location.startsWith("/admin");
   
@@ -45,6 +47,7 @@ function Router() {
       <Route path="/upload-resume" component={UploadResumePage} />
       <Route path="/personal-information" component={PersonalInformationPage} />
       <Route path="/work-history" component={WhyNeedResumePage} />
+      <Route path="/work-experience-details" component={WorkExperienceDetailsPage} />
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}
@@ -71,7 +74,8 @@ function App() {
                        location.startsWith("/upload-options") ||
                        location.startsWith("/upload-resume") ||
                        location.startsWith("/personal-information") || 
-                       location.startsWith("/work-history");
+                       location.startsWith("/work-history") ||
+                       location.startsWith("/work-experience-details");
   
   const isAdminPage = location.startsWith("/admin");
   
