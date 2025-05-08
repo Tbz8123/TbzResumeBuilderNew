@@ -5,6 +5,7 @@ import { useTemplates } from "@/hooks/use-templates";
 import { ResumeTemplate } from "@shared/schema";
 import { AnimatedSection } from "@/components/AnimationComponents";
 import { useToast } from "@/hooks/use-toast";
+import { useResume } from "@/contexts/ResumeContext";
 import { FullWidthSection } from "@/components/ui/AppleStyles";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ const TemplatesPage = () => {
   const search = useSearch();
   const searchParams = new URLSearchParams(search);
   const { toast } = useToast();
+  const { setSelectedTemplateId } = useResume(); // Add ResumeContext hook
   
   // Extract the parameters from the URL
   const experienceLevel = searchParams.get("experience");
@@ -62,6 +64,21 @@ const TemplatesPage = () => {
     localStorage.setItem('selectedTemplateId', templateId.toString());
     localStorage.setItem('experienceLevel', experienceLevel || '');
     localStorage.setItem('educationLevel', educationLevel || '');
+    
+    // Also set in the ResumeContext to ensure it's updated immediately
+    try {
+      // Import the ResumeContext hook
+      const { useResume } = require('@/contexts/ResumeContext');
+      const resumeContext = useResume();
+      if (resumeContext && resumeContext.setSelectedTemplateId) {
+        resumeContext.setSelectedTemplateId(templateId);
+        console.log("Template ID set in ResumeContext:", templateId);
+      } else {
+        console.warn("useResume context or setSelectedTemplateId not available");
+      }
+    } catch (error) {
+      console.error("Error setting template ID in ResumeContext:", error);
+    }
     
     // Redirect to the upload options page
     setLocation('/upload-options');

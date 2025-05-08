@@ -264,21 +264,17 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
   // Calculate scale factor based on container dimensions and A4 paper ratio
   const calculateScale = () => {
     if (!scaleContent) return 1;
-    
-    // A4 paper dimensions
-    const A4_WIDTH = 794; // px
-    const A4_HEIGHT = 1123; // px
-    
-    // Container dimensions
+
+    const resumeWidth = 794;
+    const resumeHeight = 1123;
+
     const containerWidth = width || 280;
-    const containerHeight = height || 362;
-    
-    // Calculate scale factors for both dimensions
-    const scaleX = containerWidth / A4_WIDTH;
-    const scaleY = containerHeight / A4_HEIGHT;
-    
-    // Use a fixed scale of 0.22 to ensure the entire resume fits within the fixed container width
-    return 0.22; // Using a lower scale to ensure everything fits without expanding the container
+    const containerHeight = height || containerWidth * 1.414;
+
+    const scaleX = containerWidth / resumeWidth;
+    const scaleY = containerHeight / resumeHeight;
+
+    return Math.min(scaleX, scaleY);
   };
   
   const scaleFactor = calculateScale();
