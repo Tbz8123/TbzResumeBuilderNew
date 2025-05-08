@@ -82,6 +82,7 @@ export default function JobsAdminPage() {
   const [selectedJobTitle, setSelectedJobTitle] = useState<JobTitle | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [categoryFilter, setCategoryFilter] = useState("");
   const pageSize = 10;
 
   // Modal states
@@ -95,17 +96,34 @@ export default function JobsAdminPage() {
   const [deletingTitle, setDeletingTitle] = useState<JobTitle | null>(null);
   const [deletingDescription, setDeletingDescription] = useState<JobDescription | null>(null);
 
-  // Queries
+  // Queries with pagination
   const { 
-    data: jobTitles = [], 
+    data: jobTitlesResponse,
     isLoading: isLoadingTitles 
-  } = useQuery<JobTitle[]>({ 
-    queryKey: ['/api/jobs/titles'],
+  } = useQuery<{ data: JobTitle[], meta: { page: number, limit: number, totalCount: number, totalPages: number } }>({ 
+    queryKey: ['/api/jobs/titles', page, titleSearchQuery],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/jobs/titles');
+      // Build query parameters for pagination, search, and filters
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', pageSize.toString());
+      
+      if (titleSearchQuery) {
+        params.append('search', titleSearchQuery);
+      }
+      
+      if (categoryFilter) {
+        params.append('category', categoryFilter);
+      }
+      
+      const url = `/api/jobs/titles?${params.toString()}`;
+      const res = await apiRequest('GET', url);
       return await res.json();
     }
   });
+  
+  // Extract job titles and pagination metadata
+  const jobTitles = jobTitlesResponse?.data || [];
   
   const { 
     data: jobDescriptions = [], 
@@ -124,26 +142,17 @@ export default function JobsAdminPage() {
   // Extract unique categories from job titles
   const categories = Array.from(new Set(jobTitles.map(title => title.category))).sort();
 
-  // Filter job titles based on search query
-  const filteredJobTitles = jobTitles.filter(title => {
-    return title.title.toLowerCase().includes(titleSearchQuery.toLowerCase()) ||
-           title.category.toLowerCase().includes(titleSearchQuery.toLowerCase());
-  });
-
   // Filter job descriptions based on search query
   const filteredJobDescriptions = jobDescriptions.filter(desc => {
     return desc.content.toLowerCase().includes(searchQuery.toLowerCase());
   });
-
-  // Calculate pagination for titles
-  const paginatedTitles = filteredJobTitles.slice((page - 1) * pageSize, page * pageSize);
   
+  // Set totalPages from server response
   useEffect(() => {
-    setTotalPages(Math.max(1, Math.ceil(filteredJobTitles.length / pageSize)));
-    if (page > Math.ceil(filteredJobTitles.length / pageSize)) {
-      setPage(1);
+    if (jobTitlesResponse?.meta?.totalPages) {
+      setTotalPages(jobTitlesResponse.meta.totalPages);
     }
-  }, [filteredJobTitles, pageSize, page]);
+  }, [jobTitlesResponse?.meta?.totalPages]);
 
   // Forms
   const titleForm = useForm<z.infer<typeof jobTitleSchema>>({
@@ -437,13 +446,13 @@ export default function JobsAdminPage() {
                   <div className="flex justify-center py-10">
                     <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                   </div>
-                ) : paginatedTitles.length === 0 ? (
+                ) : jobTitles.length === 0 ? (
                   <div className="text-center py-10">
                     <p className="text-gray-500">No job titles found.</p>
                   </div>
                 ) : (
                   <ul className="divide-y">
-                    {paginatedTitles.map((title) => (
+                    {jobTitles.map((title) => (
                       <li 
                         key={title.id}
                         className={`px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between ${

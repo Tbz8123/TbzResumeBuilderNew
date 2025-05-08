@@ -2,20 +2,84 @@ import { Router } from "express";
 import { db } from "@db";
 import { isAdmin, isAuthenticated } from "../auth";
 import { jobTitles, jobDescriptions, jobTitleSchema, jobDescriptionSchema } from "@shared/schema";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq, asc, desc, sql } from "drizzle-orm";
 import { z } from "zod";
 
 export const jobsRouter = Router();
 
-// Get all job titles
+// Get all job titles with pagination
 jobsRouter.get("/titles", async (req, res) => {
   try {
-    console.log("Fetching all job titles");
-    const allTitles = await db.query.jobTitles.findMany({
-      orderBy: asc(jobTitles.title)
+    // Parse pagination parameters from the query
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+    const offset = (page - 1) * limit;
+    
+    // Parse additional filter parameters
+    const category = req.query.category as string || null;
+    const searchQuery = req.query.search as string || null;
+    
+    console.log(`Fetching job titles (page: ${page}, limit: ${limit}, category: ${category || 'all'}, search: ${searchQuery || 'none'})`);
+    
+    // Build the query with optional filters
+    let query = db.select().from(jobTitles);
+    
+    // Apply category filter if provided
+    if (category) {
+      query = query.where(eq(jobTitles.category, category));
+    }
+    
+    // Apply search filter if provided
+    if (searchQuery) {
+      // This is a simple implementation - for production, consider using more advanced search techniques
+      const searchPattern = `%${searchQuery}%`;
+      query = query.where(
+        sql`LOWER(${jobTitles.title}) LIKE LOWER(${searchPattern})
+            OR LOWER(${jobTitles.category}) LIKE LOWER(${searchPattern})`
+      );
+    }
+    
+    // Get the total count for pagination
+    // Use a separate count query to avoid SQL injection issues with dynamic SQL
+    let countQuery = db.select({ count: sql`COUNT(*)` }).from(jobTitles);
+    
+    // Apply the same filters
+    if (category) {
+      countQuery = countQuery.where(eq(jobTitles.category, category));
+    }
+    
+    if (searchQuery) {
+      const searchPattern = `%${searchQuery}%`;
+      countQuery = countQuery.where(
+        sql`LOWER(${jobTitles.title}) LIKE LOWER(${searchPattern})
+            OR LOWER(${jobTitles.category}) LIKE LOWER(${searchPattern})`
+      );
+    }
+    
+    const countResult = await countQuery.execute();
+    const totalCount = parseInt(countResult[0].count.toString());
+    
+    // Apply pagination and ordering
+    query = query
+      .orderBy(asc(jobTitles.title))
+      .limit(limit)
+      .offset(offset);
+    
+    // Execute the final query
+    const allTitles = await query.execute();
+    
+    console.log(`Retrieved ${allTitles.length} job titles (total: ${totalCount})`);
+    
+    // Return the results with pagination metadata
+    return res.json({
+      data: allTitles,
+      meta: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      }
     });
-    console.log(`Retrieved ${allTitles.length} job titles`);
-    return res.json(allTitles);
   } catch (error) {
     console.error("Error fetching job titles:", error);
     return res.status(500).json({ error: "Failed to fetch job titles" });
