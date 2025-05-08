@@ -177,11 +177,16 @@ const JobDescriptionPage = () => {
         }
         
         // As a fallback, if we still have no descriptions, fetch all descriptions
+        // but pass the job title ID to prioritize this title's descriptions
         if (descriptionsData.length === 0) {
-          console.log("No descriptions found, fetching all descriptions as fallback");
-          const allResponse = await apiRequest('GET', '/api/jobs/descriptions');
+          console.log("No descriptions found, fetching all descriptions as fallback with prioritization");
+          
+          // Include the current job title ID even when fetching all descriptions
+          // so the backend can prioritize this title's descriptions at the top
+          const allResponse = await apiRequest('GET', `/api/jobs/descriptions${jobTitleIdFromDb ? `?jobTitleId=${jobTitleIdFromDb}` : ''}`);
+          
           descriptionsData = await allResponse.json();
-          console.log("Fallback descriptions data:", descriptionsData);
+          console.log(`Fallback descriptions retrieved: ${descriptionsData.length}`);
         }
         
         setDescriptions(descriptionsData);
@@ -438,7 +443,8 @@ const JobDescriptionPage = () => {
                                         setDescriptions(descriptionsData);
                                       } else {
                                         // Fallback to general descriptions if none found
-                                        const allResponse = await apiRequest('GET', '/api/jobs/descriptions');
+                                        // Pass the job title ID for prioritization
+                                        const allResponse = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${jobTitle.id}`);
                                         const allDescriptionsData = await allResponse.json();
                                         setDescriptions(allDescriptionsData);
                                       }
@@ -532,8 +538,8 @@ const JobDescriptionPage = () => {
                               if (descriptionsData.length > 0) {
                                 setDescriptions(descriptionsData);
                               } else {
-                                // Fallback to general descriptions if none found
-                                const allResponse = await apiRequest('GET', '/api/jobs/descriptions');
+                                // Fallback to general descriptions, but still prioritize this job title's descriptions
+                                const allResponse = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${dbJobTitleId}`);
                                 const allDescriptionsData = await allResponse.json();
                                 setDescriptions(allDescriptionsData);
                               }

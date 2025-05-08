@@ -206,15 +206,83 @@ jobsRouter.get("/descriptions", async (req, res) => {
         )
         .limit(100);
     } else {
-      // No filters, get all descriptions with a limit
-      descriptions = await db.query.jobDescriptions.findMany({
-        orderBy: [
-          asc(jobDescriptions.jobTitleId),
-          desc(jobDescriptions.isRecommended),
-          asc(jobDescriptions.id)
-        ],
-        limit: 100 // Limit to avoid returning too much data
+      // No direct filters, but we might have a jobTitleId for prioritization
+      if (jobTitleId) {
+        // First get descriptions for this specific job title
+        const titleDescriptions = await db.query.jobDescriptions.findMany({
+          where: eq(jobDescriptions.jobTitleId, jobTitleId),
+          orderBy: [
+            desc(jobDescriptions.isRecommended),
+            asc(jobDescriptions.id)
+          ]
+        });
+        
+        // Then get other descriptions to fill up to the limit
+        const remainingLimit = 100 - titleDescriptions.length;
+        
+        if (remainingLimit > 0) {
+          const otherDescriptions = await db.query.jobDescriptions.findMany({
+            where: sql`${jobDescriptions.jobTitleId} != ${jobTitleId}`,
+            orderBy: [
+              desc(jobDescriptions.isRecommended),
+              asc(jobDescriptions.id)
+            ],
+            limit: remainingLimit
+          });
+          
+          // Combine both sets
+          descriptions = [...titleDescriptions, ...otherDescriptions];
+          console.log(`Retrieved ${titleDescriptions.length} descriptions for job title ID: ${jobTitleId} and ${otherDescriptions.length} other descriptions`);
+        } else {
+          descriptions = titleDescriptions;
+          console.log(`Retrieved ${titleDescriptions.length} descriptions for job title ID: ${jobTitleId} (no room for other descriptions)`);
+        }
+      } else {
+        // No filters and no prioritization, get all descriptions with a limit
+        descriptions = await db.query.jobDescriptions.findMany({
+          orderBy: [
+            asc(jobDescriptions.jobTitleId),
+            desc(jobDescriptions.isRecommended),
+            asc(jobDescriptions.id)
+          ],
+          limit: 100 // Limit to avoid returning too much data
+        });
+      }
+    }
+    
+    // If we need to return all descriptions but have a preferred job title ID,
+    // we'll organize them with that title's descriptions at the top
+    if (descriptions.length > 0 && jobTitleId && !searchTerm) {
+      // Already sorted as needed - descriptions for this job title only
+    } else if (descriptions.length > 0 && jobTitleId) {
+      // We have a preferred job title ID, but we're showing other descriptions too
+      // Re-sort the array to put the target title's descriptions first
+      const titleDescriptions = descriptions.filter(desc => desc.jobTitleId === jobTitleId);
+      const otherDescriptions = descriptions.filter(desc => desc.jobTitleId !== jobTitleId);
+      
+      // Sort each group by recommended status and then by ID
+      titleDescriptions.sort((a, b) => {
+        // Sort by recommended first (true comes before false)
+        if (a.isRecommended !== b.isRecommended) {
+          return a.isRecommended ? -1 : 1;
+        }
+        // Then sort by ID
+        return a.id - b.id;
       });
+      
+      otherDescriptions.sort((a, b) => {
+        // Sort by recommended first
+        if (a.isRecommended !== b.isRecommended) {
+          return a.isRecommended ? -1 : 1;
+        }
+        // Then sort by ID
+        return a.id - b.id;
+      });
+      
+      // Combine the arrays with title descriptions first
+      descriptions = [...titleDescriptions, ...otherDescriptions];
+      
+      console.log(`Prioritized ${titleDescriptions.length} descriptions for job title ID: ${jobTitleId}`);
     }
     
     // If no descriptions found but we have a job title ID, check if the title exists
