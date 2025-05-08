@@ -59,7 +59,7 @@ function Router() {
       {/* Admin Routes - Protected + Admin Only */}
       <ProtectedRoute path="/admin/dashboard" component={AdminDashboardPage} adminOnly />
       <ProtectedRoute path="/admin/home" component={AdminHomePage} adminOnly />
-      <ProtectedRoute path="/admin" component={AdminDashboardPage} adminOnly />
+      <ProtectedRoute path="/admin" component={AdminHomePage} adminOnly />
       <ProtectedRoute path="/admin/jobs" component={AdminJobsPage} adminOnly />
       <ProtectedRoute path="/admin/templates" component={AdminTemplatesPage} adminOnly />
       <ProtectedRoute path="/admin/templates/management" component={AdminTemplateManagementPage} adminOnly />

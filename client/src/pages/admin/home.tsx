@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { AnimatedSection, AnimatedItem } from '@/components/AnimatedSection';
-import { FileText, Users, Settings, Code, Layers, LayoutGrid, FileEdit, Plus, Database, Palette, Server, Shield } from 'lucide-react';
+import { FileText, Users, Settings, Code, Layers, LayoutGrid, FileEdit, Plus, Database, Palette, Server, Shield, Briefcase, BookText } from 'lucide-react';
 
 const AdminHomePage = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -71,6 +71,21 @@ const AdminHomePage = () => {
           icon: <Code className="h-5 w-5" />,
           path: '/admin/templates/advanced-edit',
           color: 'bg-orange-500'
+        }
+      ]
+    },
+    {
+      id: 'content',
+      name: 'Content Management',
+      description: 'Manage job titles, descriptions, and other content',
+      icon: <BookText className="h-6 w-6" />,
+      items: [
+        {
+          title: 'Job Titles & Descriptions',
+          description: 'Manage job titles and their associated descriptions',
+          icon: <Briefcase className="h-5 w-5" />,
+          path: '/admin/jobs',
+          color: 'bg-emerald-500'
         }
       ]
     },

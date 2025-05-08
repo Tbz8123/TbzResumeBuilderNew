@@ -1,8 +1,31 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import { useLocation } from 'wouter';
-import { JobTitle, JobDescription } from '@shared/schema';
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { 
+  Briefcase, 
+  ChevronLeft, 
+  Search, 
+  Plus, 
+  Pencil, 
+  Trash, 
+  Star,
+  MoreHorizontal,
+  X,
+  Filter,
+  Check,
+  FileText
+} from "lucide-react";
+import { 
+  JobTitle, 
+  JobDescription,
+  jobTitleSchema,
+  jobDescriptionSchema
+} from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -10,21 +33,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -33,812 +42,798 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { Pencil, Trash2, Plus, ArrowLeft } from 'lucide-react';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
-const JobsManagementPage: React.FC = () => {
-  const [, setLocation] = useLocation();
+const AdminJobsPage = () => {
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("titles");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  
+  // Job Title State
+  const [titleDialogOpen, setTitleDialogOpen] = useState(false);
+  const [editingTitle, setEditingTitle] = useState<JobTitle | null>(null);
+  const [deleteTitleDialog, setDeleteTitleDialog] = useState(false);
+
+  // Job Description State
+  const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false);
+  const [editingDescription, setEditingDescription] = useState<JobDescription | null>(null);
+  const [deleteDescriptionDialog, setDeleteDescriptionDialog] = useState(false);
   const [selectedJobTitleId, setSelectedJobTitleId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('titles');
   
-  // Dialog states
-  const [isAddTitleDialogOpen, setIsAddTitleDialogOpen] = useState(false);
-  const [isEditTitleDialogOpen, setIsEditTitleDialogOpen] = useState(false);
-  const [isDeleteTitleDialogOpen, setIsDeleteTitleDialogOpen] = useState(false);
-  const [isAddDescriptionDialogOpen, setIsAddDescriptionDialogOpen] = useState(false);
-  const [isEditDescriptionDialogOpen, setIsEditDescriptionDialogOpen] = useState(false);
-  const [isDeleteDescriptionDialogOpen, setIsDeleteDescriptionDialogOpen] = useState(false);
-  
-  // Form states
-  const [titleFormData, setTitleFormData] = useState<{
-    title: string;
-    category: string;
-    id?: number;
-  }>({ title: '', category: '' });
-  
-  const [descriptionFormData, setDescriptionFormData] = useState<{
-    content: string;
-    isRecommended: boolean;
-    jobTitleId: number;
-    id?: number;
-  }>({ content: '', isRecommended: false, jobTitleId: 0 });
-  
-  // Queries
-  const {
-    data: jobTitles = [],
-    isLoading: isLoadingTitles,
-    error: titlesError
+  // Fetch job titles
+  const { 
+    data: jobTitles = [], 
+    isLoading: isLoadingTitles 
   } = useQuery<JobTitle[]>({
     queryKey: ['/api/jobs/titles'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/jobs/titles');
+      return await res.json();
+    }
   });
   
-  const {
-    data: selectedJobTitle,
-    isLoading: isLoadingSelectedTitle,
-  } = useQuery<JobTitle & { descriptions: JobDescription[] }>({
-    queryKey: ['/api/jobs/titles', selectedJobTitleId],
-    enabled: !!selectedJobTitleId,
+  // Fetch job descriptions
+  const { 
+    data: jobDescriptions = [], 
+    isLoading: isLoadingDescriptions 
+  } = useQuery<JobDescription[]>({
+    queryKey: ['/api/jobs/descriptions', selectedJobTitleId],
+    queryFn: async () => {
+      const url = selectedJobTitleId 
+        ? `/api/jobs/descriptions?jobTitleId=${selectedJobTitleId}` 
+        : '/api/jobs/descriptions';
+      const res = await apiRequest('GET', url);
+      return await res.json();
+    },
+    enabled: activeTab === "descriptions"
   });
-  
-  // Mutations
+
+  // Extract unique categories from job titles
+  const categories = jobTitles
+    .map((title) => title.category)
+    .filter((value, index, self) => self.indexOf(value) === index)
+    .sort();
+
+  // Filter job titles based on search query and category
+  const filteredJobTitles = jobTitles.filter((title) => {
+    const matchesSearch = title.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = !categoryFilter || title.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Filter job descriptions based on search query
+  const filteredJobDescriptions = jobDescriptions.filter((desc) => {
+    return desc.content.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  // Create new job title mutation
   const createJobTitleMutation = useMutation({
-    mutationFn: async (data: { title: string; category: string }) => {
+    mutationFn: async (data: z.infer<typeof jobTitleSchema>) => {
       const res = await apiRequest('POST', '/api/jobs/titles', data);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to create job title');
-      }
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/titles'] });
-      setIsAddTitleDialogOpen(false);
-      setTitleFormData({ title: '', category: '' });
+      setTitleDialogOpen(false);
       toast({
-        title: 'Success',
-        description: 'Job title created successfully',
+        title: "Success",
+        description: "Job title created successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to create job title: ${error.message}`,
+        variant: "destructive",
       });
-    },
+    }
   });
-  
+
+  // Update job title mutation
   const updateJobTitleMutation = useMutation({
-    mutationFn: async (data: { id: number; title: string; category: string }) => {
-      const { id, ...updateData } = data;
-      const res = await apiRequest('PUT', `/api/jobs/titles/${id}`, updateData);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to update job title');
-      }
+    mutationFn: async (data: JobTitle) => {
+      const res = await apiRequest('PUT', `/api/jobs/titles/${data.id}`, data);
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/titles'] });
-      if (selectedJobTitleId) {
-        queryClient.invalidateQueries({ queryKey: ['/api/jobs/titles', selectedJobTitleId] });
-      }
-      setIsEditTitleDialogOpen(false);
-      setTitleFormData({ title: '', category: '' });
+      setTitleDialogOpen(false);
+      setEditingTitle(null);
       toast({
-        title: 'Success',
-        description: 'Job title updated successfully',
+        title: "Success",
+        description: "Job title updated successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to update job title: ${error.message}`,
+        variant: "destructive",
       });
-    },
+    }
   });
-  
+
+  // Delete job title mutation
   const deleteJobTitleMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest('DELETE', `/api/jobs/titles/${id}`);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to delete job title');
-      }
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/titles'] });
-      setIsDeleteTitleDialogOpen(false);
-      setSelectedJobTitleId(null);
+      setDeleteTitleDialog(false);
+      setEditingTitle(null);
       toast({
-        title: 'Success',
-        description: 'Job title deleted successfully',
+        title: "Success",
+        description: "Job title deleted successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to delete job title: ${error.message}`,
+        variant: "destructive",
       });
-    },
+    }
   });
-  
+
+  // Create new job description mutation
   const createJobDescriptionMutation = useMutation({
-    mutationFn: async (data: { content: string; isRecommended: boolean; jobTitleId: number }) => {
+    mutationFn: async (data: z.infer<typeof jobDescriptionSchema>) => {
       const res = await apiRequest('POST', '/api/jobs/descriptions', data);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to create job description');
-      }
       return await res.json();
     },
     onSuccess: () => {
-      if (selectedJobTitleId) {
-        queryClient.invalidateQueries({ queryKey: ['/api/jobs/titles', selectedJobTitleId] });
-      }
-      setIsAddDescriptionDialogOpen(false);
-      setDescriptionFormData({ content: '', isRecommended: false, jobTitleId: selectedJobTitleId || 0 });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs/descriptions'] });
+      setDescriptionDialogOpen(false);
       toast({
-        title: 'Success',
-        description: 'Job description created successfully',
+        title: "Success",
+        description: "Job description created successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to create job description: ${error.message}`,
+        variant: "destructive",
       });
-    },
+    }
   });
-  
+
+  // Update job description mutation
   const updateJobDescriptionMutation = useMutation({
-    mutationFn: async (data: { id: number; content: string; isRecommended: boolean; jobTitleId: number }) => {
-      const { id, ...updateData } = data;
-      const res = await apiRequest('PUT', `/api/jobs/descriptions/${id}`, updateData);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to update job description');
-      }
+    mutationFn: async (data: JobDescription) => {
+      const res = await apiRequest('PUT', `/api/jobs/descriptions/${data.id}`, data);
       return await res.json();
     },
     onSuccess: () => {
-      if (selectedJobTitleId) {
-        queryClient.invalidateQueries({ queryKey: ['/api/jobs/titles', selectedJobTitleId] });
-      }
-      setIsEditDescriptionDialogOpen(false);
-      setDescriptionFormData({ content: '', isRecommended: false, jobTitleId: selectedJobTitleId || 0 });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs/descriptions'] });
+      setDescriptionDialogOpen(false);
+      setEditingDescription(null);
       toast({
-        title: 'Success',
-        description: 'Job description updated successfully',
+        title: "Success",
+        description: "Job description updated successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to update job description: ${error.message}`,
+        variant: "destructive",
       });
-    },
+    }
   });
-  
+
+  // Delete job description mutation
   const deleteJobDescriptionMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest('DELETE', `/api/jobs/descriptions/${id}`);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to delete job description');
-      }
       return await res.json();
     },
     onSuccess: () => {
-      if (selectedJobTitleId) {
-        queryClient.invalidateQueries({ queryKey: ['/api/jobs/titles', selectedJobTitleId] });
-      }
-      setIsDeleteDescriptionDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs/descriptions'] });
+      setDeleteDescriptionDialog(false);
+      setEditingDescription(null);
       toast({
-        title: 'Success',
-        description: 'Job description deleted successfully',
+        title: "Success",
+        description: "Job description deleted successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to delete job description: ${error.message}`,
+        variant: "destructive",
       });
-    },
+    }
   });
-  
-  // Event Handlers
-  const handleAddJobTitle = (e: React.FormEvent) => {
-    e.preventDefault();
-    createJobTitleMutation.mutate(titleFormData);
-  };
-  
-  const handleEditJobTitle = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (titleFormData.id) {
+
+  // Form for job title
+  const titleForm = useForm<z.infer<typeof jobTitleSchema>>({
+    resolver: zodResolver(jobTitleSchema),
+    defaultValues: editingTitle ? {
+      title: editingTitle.title,
+      category: editingTitle.category,
+    } : {
+      title: "",
+      category: "",
+    }
+  });
+
+  // Form for job description
+  const descriptionForm = useForm<z.infer<typeof jobDescriptionSchema>>({
+    resolver: zodResolver(jobDescriptionSchema),
+    defaultValues: editingDescription ? {
+      content: editingDescription.content,
+      jobTitleId: editingDescription.jobTitleId,
+      isRecommended: editingDescription.isRecommended,
+    } : {
+      content: "",
+      jobTitleId: selectedJobTitleId || 0,
+      isRecommended: false,
+    }
+  });
+
+  // Handle form submission for job title
+  const handleTitleSubmit = (data: z.infer<typeof jobTitleSchema>) => {
+    if (editingTitle) {
       updateJobTitleMutation.mutate({
-        id: titleFormData.id,
-        title: titleFormData.title,
-        category: titleFormData.category,
+        ...editingTitle,
+        title: data.title,
+        category: data.category,
       });
+    } else {
+      createJobTitleMutation.mutate(data);
     }
   };
-  
-  const handleDeleteJobTitle = () => {
-    if (titleFormData.id) {
-      deleteJobTitleMutation.mutate(titleFormData.id);
-    }
-  };
-  
-  const handleAddJobDescription = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedJobTitleId) {
-      createJobDescriptionMutation.mutate({
-        ...descriptionFormData,
-        jobTitleId: selectedJobTitleId,
-      });
-    }
-  };
-  
-  const handleEditJobDescription = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (descriptionFormData.id) {
+
+  // Handle form submission for job description
+  const handleDescriptionSubmit = (data: z.infer<typeof jobDescriptionSchema>) => {
+    if (editingDescription) {
       updateJobDescriptionMutation.mutate({
-        id: descriptionFormData.id,
-        content: descriptionFormData.content,
-        isRecommended: descriptionFormData.isRecommended,
-        jobTitleId: descriptionFormData.jobTitleId,
+        ...editingDescription,
+        content: data.content,
+        jobTitleId: data.jobTitleId,
+        isRecommended: data.isRecommended,
       });
+    } else {
+      createJobDescriptionMutation.mutate(data);
     }
   };
-  
-  const handleDeleteJobDescription = () => {
-    if (descriptionFormData.id) {
-      deleteJobDescriptionMutation.mutate(descriptionFormData.id);
-    }
-  };
-  
+
+  // Open edit dialog for job title
   const openEditTitleDialog = (title: JobTitle) => {
-    setTitleFormData({
-      id: title.id,
+    setEditingTitle(title);
+    titleForm.reset({
       title: title.title,
       category: title.category,
     });
-    setIsEditTitleDialogOpen(true);
+    setTitleDialogOpen(true);
   };
-  
+
+  // Open delete dialog for job title
   const openDeleteTitleDialog = (title: JobTitle) => {
-    setTitleFormData({
-      id: title.id,
-      title: title.title,
-      category: title.category,
-    });
-    setIsDeleteTitleDialogOpen(true);
+    setEditingTitle(title);
+    setDeleteTitleDialog(true);
   };
-  
+
+  // Open edit dialog for job description
   const openEditDescriptionDialog = (description: JobDescription) => {
-    setDescriptionFormData({
-      id: description.id,
+    setEditingDescription(description);
+    descriptionForm.reset({
       content: description.content,
-      isRecommended: description.isRecommended,
       jobTitleId: description.jobTitleId,
+      isRecommended: description.isRecommended,
     });
-    setIsEditDescriptionDialogOpen(true);
+    setDescriptionDialogOpen(true);
   };
-  
+
+  // Open delete dialog for job description
   const openDeleteDescriptionDialog = (description: JobDescription) => {
-    setDescriptionFormData({
-      id: description.id,
-      content: description.content,
-      isRecommended: description.isRecommended,
-      jobTitleId: description.jobTitleId,
-    });
-    setIsDeleteDescriptionDialogOpen(true);
+    setEditingDescription(description);
+    setDeleteDescriptionDialog(true);
   };
-  
-  const handleJobTitleSelect = (titleId: string) => {
-    setSelectedJobTitleId(parseInt(titleId));
-    setActiveTab('descriptions');
-  };
-  
+
   return (
-    <div className="mx-auto max-w-screen-xl px-4 py-8">
-      <div className="mb-6 flex items-center">
-        <Button
-          variant="ghost"
-          className="mr-4 flex items-center"
-          onClick={() => setLocation('/')}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Home
-        </Button>
-        <h1 className="text-3xl font-bold">Job Titles & Descriptions Management</h1>
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+          <div className="flex items-center mb-2">
+            <Button asChild variant="ghost" className="p-0 mr-2">
+              <Link href="/admin/dashboard">
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
+            </Button>
+            <h1 className="text-3xl font-bold">Job Titles & Descriptions</h1>
+          </div>
+          <p className="text-gray-500">
+            Manage job titles and their associated descriptions for the resume wizard.
+          </p>
+        </div>
       </div>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+
+      <Tabs 
+        defaultValue="titles" 
+        className="w-full"
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTab(value);
+          setSearchQuery("");
+          setCategoryFilter(null);
+        }}
+      >
         <TabsList className="mb-6">
-          <TabsTrigger value="titles">Job Titles</TabsTrigger>
-          <TabsTrigger value="descriptions" disabled={!selectedJobTitleId}>
-            Job Descriptions {selectedJobTitle?.title ? `for "${selectedJobTitle.title}"` : ''}
+          <TabsTrigger value="titles" className="flex items-center">
+            <Briefcase className="h-4 w-4 mr-2" />
+            Job Titles
+          </TabsTrigger>
+          <TabsTrigger value="descriptions" className="flex items-center">
+            <FileText className="h-4 w-4 mr-2" />
+            Job Descriptions
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="titles">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>All Job Titles</CardTitle>
-                <CardDescription>
-                  Manage all job titles that will be available for users to select.
-                </CardDescription>
-              </div>
-              <Dialog open={isAddTitleDialogOpen} onOpenChange={setIsAddTitleDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="ml-auto">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Job Title
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Job Title</DialogTitle>
-                    <DialogDescription>
-                      Create a new job title that will be available for users.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleAddJobTitle}>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="title">Job Title</Label>
-                        <Input
-                          id="title"
-                          placeholder="e.g. Software Engineer"
-                          value={titleFormData.title}
-                          onChange={(e) => setTitleFormData({ ...titleFormData, title: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="category">Category</Label>
-                        <Input
-                          id="category"
-                          placeholder="e.g. Technology"
-                          value={titleFormData.category}
-                          onChange={(e) => setTitleFormData({ ...titleFormData, category: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setIsAddTitleDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={createJobTitleMutation.isPending}>
-                        {createJobTitleMutation.isPending ? 'Creating...' : 'Create Job Title'}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </CardHeader>
-            <CardContent>
-              {titlesError ? (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertDescription>Failed to load job titles. Please try again.</AlertDescription>
-                </Alert>
-              ) : null}
-              
-              {isLoadingTitles ? (
-                <div className="flex justify-center py-8">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                </div>
-              ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {jobTitles.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center">
-                            No job titles found. Add your first job title to get started.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        jobTitles.map((title) => (
-                          <TableRow key={title.id}>
-                            <TableCell>{title.id}</TableCell>
-                            <TableCell 
-                              className="font-medium cursor-pointer text-blue-600 hover:text-blue-800 hover:underline"
-                              onClick={() => handleJobTitleSelect(title.id.toString())}
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0 sm:space-x-4">
+          <div className="relative w-full sm:w-1/3">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder={`Search ${activeTab === "titles" ? "job titles" : "descriptions"}...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {activeTab === "titles" && (
+              <Select
+                value={categoryFilter || ""}
+                onValueChange={(value) => setCategoryFilter(value || null)}
+              >
+                <SelectTrigger className="w-full sm:w-40">
+                  <div className="flex items-center">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="All Categories" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Categories</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {activeTab === "descriptions" && (
+              <Select
+                value={selectedJobTitleId?.toString() || ""}
+                onValueChange={(value) => setSelectedJobTitleId(value ? parseInt(value) : null)}
+              >
+                <SelectTrigger className="w-full sm:w-40">
+                  <div className="flex items-center">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="All Job Titles" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Job Titles</SelectItem>
+                  {jobTitles.map((title) => (
+                    <SelectItem key={title.id} value={title.id.toString()}>
+                      {title.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
+            <Dialog open={activeTab === "titles" ? titleDialogOpen : descriptionDialogOpen} 
+                   onOpenChange={(open) => {
+                      if (activeTab === "titles") {
+                        setTitleDialogOpen(open);
+                        if (!open) setEditingTitle(null);
+                      } else {
+                        setDescriptionDialogOpen(open);
+                        if (!open) setEditingDescription(null);
+                      }
+                      
+                      if (!open) {
+                        titleForm.reset({
+                          title: "",
+                          category: "",
+                        });
+                        descriptionForm.reset({
+                          content: "",
+                          jobTitleId: selectedJobTitleId || 0,
+                          isRecommended: false,
+                        });
+                      }
+                   }}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add {activeTab === "titles" ? "Job Title" : "Description"}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingTitle || editingDescription ? "Edit" : "Add"} {activeTab === "titles" ? "Job Title" : "Job Description"}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {activeTab === "titles" 
+                      ? "Job titles are used to categorize job descriptions and provide suggestions to users." 
+                      : "Job descriptions provide sample content for users to use in their resumes."}
+                  </DialogDescription>
+                </DialogHeader>
+                
+                {activeTab === "titles" ? (
+                  <Form {...titleForm}>
+                    <form onSubmit={titleForm.handleSubmit(handleTitleSubmit)} className="space-y-6">
+                      <FormField
+                        control={titleForm.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Job Title</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g. Front-end Developer" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Enter a job title that users might search for
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={titleForm.control}
+                        name="category"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Category</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="e.g. Technology, Healthcare, etc." 
+                                {...field} 
+                                list="categories"
+                              />
+                            </FormControl>
+                            <datalist id="categories">
+                              {categories.map((category) => (
+                                <option key={category} value={category} />
+                              ))}
+                            </datalist>
+                            <FormDescription>
+                              Categorize this job title for easier filtering
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setTitleDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={titleForm.formState.isSubmitting}>
+                          {editingTitle ? "Update" : "Create"} Job Title
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </Form>
+                ) : (
+                  <Form {...descriptionForm}>
+                    <form onSubmit={descriptionForm.handleSubmit(handleDescriptionSubmit)} className="space-y-6">
+                      <FormField
+                        control={descriptionForm.control}
+                        name="jobTitleId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Associated Job Title</FormLabel>
+                            <Select
+                              onValueChange={(value) => field.onChange(parseInt(value))}
+                              defaultValue={field.value?.toString()}
                             >
-                              {title.title}
-                            </TableCell>
-                            <TableCell>{title.category}</TableCell>
-                            <TableCell>
-                              <div className="flex space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openEditTitleDialog(title)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openDeleteTitleDialog(title)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a job title" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {jobTitles.map((title) => (
+                                  <SelectItem key={title.id} value={title.id.toString()}>
+                                    {title.title}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Select the job title this description applies to
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={descriptionForm.control}
+                        name="content"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description Content</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter job description..." 
+                                {...field}
+                                rows={7}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Write a detailed job description that can be used as a template
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={descriptionForm.control}
+                        name="isRecommended"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Recommended</FormLabel>
+                              <FormDescription>
+                                Recommended descriptions are highlighted to users
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setDescriptionDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={descriptionForm.formState.isSubmitting}>
+                          {editingDescription ? "Update" : "Create"} Description
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </Form>
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+        
+        <TabsContent value="titles" className="mt-0">
+          {isLoadingTitles ? (
+            <div className="flex justify-center py-10">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : filteredJobTitles.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-gray-500">No job titles found. Add a new job title to get started.</p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[400px]">Title</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredJobTitles.map((title) => (
+                      <TableRow key={title.id}>
+                        <TableCell className="font-medium">{title.title}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-gray-100">
+                            {title.category}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditTitleDialog(title)}
+                              title="Edit"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openDeleteTitleDialog(title)}
+                              title="Delete"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              <div className="mt-4 text-gray-500 text-sm">
+                Showing {filteredJobTitles.length} of {jobTitles.length} job titles
+              </div>
+            </>
+          )}
         </TabsContent>
         
-        <TabsContent value="descriptions">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>
-                  Descriptions for "{selectedJobTitle?.title || ''}"
-                </CardTitle>
-                <CardDescription>
-                  Manage all descriptions available for this job title.
-                </CardDescription>
-              </div>
-              <Dialog
-                open={isAddDescriptionDialogOpen}
-                onOpenChange={setIsAddDescriptionDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button className="ml-auto">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Description
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Job Description</DialogTitle>
-                    <DialogDescription>
-                      Create a new job description for "{selectedJobTitle?.title || ''}".
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleAddJobDescription}>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="content">Description</Label>
-                        <Textarea
-                          id="content"
-                          placeholder="e.g. Led cross-functional teams to deliver product features, increasing efficiency by 25%."
-                          value={descriptionFormData.content}
-                          onChange={(e) =>
-                            setDescriptionFormData({
-                              ...descriptionFormData,
-                              content: e.target.value,
-                            })
-                          }
-                          className="min-h-[120px]"
-                          required
-                        />
+        <TabsContent value="descriptions" className="mt-0">
+          {isLoadingDescriptions ? (
+            <div className="flex justify-center py-10">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : filteredJobDescriptions.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-gray-500">No job descriptions found. Add a new description to get started.</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredJobDescriptions.map((description) => {
+                  const relatedJobTitle = jobTitles.find(t => t.id === description.jobTitleId);
+                  return (
+                    <Card key={description.id} className="overflow-hidden">
+                      <div className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <Badge variant="outline" className="bg-gray-100 mb-2">
+                              {relatedJobTitle?.title || "Unknown Job Title"}
+                            </Badge>
+                            {description.isRecommended && (
+                              <Badge variant="secondary" className="ml-2 bg-yellow-100 text-yellow-800">
+                                <Star className="h-3 w-3 mr-1 fill-yellow-500 text-yellow-500" />
+                                Recommended
+                              </Badge>
+                            )}
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditDescriptionDialog(description)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => openDeleteDescriptionDialog(description)}
+                                className="text-red-600"
+                              >
+                                <Trash className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <p className="text-gray-700 text-sm line-clamp-5 whitespace-pre-line">
+                          {description.content}
+                        </p>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="recommended"
-                          checked={descriptionFormData.isRecommended}
-                          onCheckedChange={(checked) =>
-                            setDescriptionFormData({
-                              ...descriptionFormData,
-                              isRecommended: checked,
-                            })
-                          }
-                        />
-                        <Label htmlFor="recommended">Mark as Recommended</Label>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setIsAddDescriptionDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        disabled={createJobDescriptionMutation.isPending}
-                      >
-                        {createJobDescriptionMutation.isPending
-                          ? 'Creating...'
-                          : 'Create Description'}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">
-                <Label htmlFor="job-title-select">Select Job Title</Label>
-                <Select
-                  value={selectedJobTitleId?.toString() || ""}
-                  onValueChange={handleJobTitleSelect}
-                >
-                  <SelectTrigger id="job-title-select" className="w-full md:w-[300px]">
-                    <SelectValue placeholder="Select a job title" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {jobTitles.map((title) => (
-                      <SelectItem key={title.id} value={title.id.toString()}>
-                        {title.title} ({title.category})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    </Card>
+                  );
+                })}
               </div>
               
-              {isLoadingSelectedTitle ? (
-                <div className="flex justify-center py-8">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                </div>
-              ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Recommended</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {!selectedJobTitle?.descriptions ||
-                      selectedJobTitle.descriptions.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center">
-                            No descriptions found for this job title. Add your first description.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        selectedJobTitle.descriptions.map((description) => (
-                          <TableRow key={description.id}>
-                            <TableCell>{description.id}</TableCell>
-                            <TableCell>{description.content}</TableCell>
-                            <TableCell>
-                              {description.isRecommended ? (
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                  Recommended
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                                  Regular
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openEditDescriptionDialog(description)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openDeleteDescriptionDialog(description)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              <div className="mt-4 text-gray-500 text-sm">
+                Showing {filteredJobDescriptions.length} of {jobDescriptions.length} job descriptions
+              </div>
+            </>
+          )}
         </TabsContent>
       </Tabs>
       
-      {/* Edit Job Title Dialog */}
-      <Dialog open={isEditTitleDialogOpen} onOpenChange={setIsEditTitleDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Job Title</DialogTitle>
-            <DialogDescription>
-              Update the details of this job title.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEditJobTitle}>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-title">Job Title</Label>
-                <Input
-                  id="edit-title"
-                  placeholder="e.g. Software Engineer"
-                  value={titleFormData.title}
-                  onChange={(e) => setTitleFormData({ ...titleFormData, title: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-category">Category</Label>
-                <Input
-                  id="edit-category"
-                  placeholder="e.g. Technology"
-                  value={titleFormData.category}
-                  onChange={(e) => setTitleFormData({ ...titleFormData, category: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditTitleDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updateJobTitleMutation.isPending}>
-                {updateJobTitleMutation.isPending ? 'Updating...' : 'Update Job Title'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Delete Job Title Dialog */}
-      <Dialog open={isDeleteTitleDialogOpen} onOpenChange={setIsDeleteTitleDialogOpen}>
-        <DialogContent>
+      {/* Delete job title confirmation dialog */}
+      <Dialog open={deleteTitleDialog} onOpenChange={setDeleteTitleDialog}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Job Title</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{titleFormData.title}"? This action cannot be undone, and all associated descriptions will also be deleted.
+              Are you sure you want to delete the job title "{editingTitle?.title}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
-              type="button"
               variant="outline"
-              onClick={() => setIsDeleteTitleDialogOpen(false)}
+              onClick={() => setDeleteTitleDialog(false)}
             >
               Cancel
             </Button>
             <Button
-              type="button"
               variant="destructive"
-              onClick={handleDeleteJobTitle}
+              onClick={() => editingTitle && deleteJobTitleMutation.mutate(editingTitle.id)}
               disabled={deleteJobTitleMutation.isPending}
             >
-              {deleteJobTitleMutation.isPending ? 'Deleting...' : 'Delete Job Title'}
+              {deleteJobTitleMutation.isPending ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Edit Job Description Dialog */}
-      <Dialog open={isEditDescriptionDialogOpen} onOpenChange={setIsEditDescriptionDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Job Description</DialogTitle>
-            <DialogDescription>
-              Update the content of this job description.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEditJobDescription}>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-content">Description</Label>
-                <Textarea
-                  id="edit-content"
-                  value={descriptionFormData.content}
-                  onChange={(e) =>
-                    setDescriptionFormData({
-                      ...descriptionFormData,
-                      content: e.target.value,
-                    })
-                  }
-                  className="min-h-[120px]"
-                  required
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="edit-recommended"
-                  checked={descriptionFormData.isRecommended}
-                  onCheckedChange={(checked) =>
-                    setDescriptionFormData({
-                      ...descriptionFormData,
-                      isRecommended: checked,
-                    })
-                  }
-                />
-                <Label htmlFor="edit-recommended">Mark as Recommended</Label>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditDescriptionDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updateJobDescriptionMutation.isPending}>
-                {updateJobDescriptionMutation.isPending ? 'Updating...' : 'Update Description'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Delete Job Description Dialog */}
-      <Dialog open={isDeleteDescriptionDialogOpen} onOpenChange={setIsDeleteDescriptionDialogOpen}>
-        <DialogContent>
+      {/* Delete job description confirmation dialog */}
+      <Dialog open={deleteDescriptionDialog} onOpenChange={setDeleteDescriptionDialog}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Job Description</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this job description? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground mb-4 max-h-24 overflow-y-auto border p-2 rounded-md">
-            {descriptionFormData.content}
-          </p>
           <DialogFooter>
             <Button
-              type="button"
               variant="outline"
-              onClick={() => setIsDeleteDescriptionDialogOpen(false)}
+              onClick={() => setDeleteDescriptionDialog(false)}
             >
               Cancel
             </Button>
             <Button
-              type="button"
               variant="destructive"
-              onClick={handleDeleteJobDescription}
+              onClick={() => editingDescription && deleteJobDescriptionMutation.mutate(editingDescription.id)}
               disabled={deleteJobDescriptionMutation.isPending}
             >
-              {deleteJobDescriptionMutation.isPending ? 'Deleting...' : 'Delete Description'}
+              {deleteJobDescriptionMutation.isPending ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -847,4 +842,4 @@ const JobsManagementPage: React.FC = () => {
   );
 };
 
-export default JobsManagementPage;
+export default AdminJobsPage;
