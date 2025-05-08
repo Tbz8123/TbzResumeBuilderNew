@@ -59,7 +59,7 @@ const PersonalInformationPage = () => {
       </header>
       
       {/* Main content */}
-      <div className="flex-1 max-w-[1000px] mx-auto px-4 py-8">
+      <div className="flex-1 max-w-[1200px] mx-auto px-4 py-8">
         {/* Back button */}
         <div className="mb-6">
           <button 
@@ -72,8 +72,8 @@ const PersonalInformationPage = () => {
         </div>
         
         <div className="flex flex-col lg:flex-row lg:gap-16">
-          {/* Left column - Form Fields */}
-          <div className="lg:w-[60%]">
+          {/* Left column - Form Fields - EXPANDED */}
+          <div className="lg:w-[65%]">
             <div className="mb-2">
               <h1 className="text-xl font-bold text-gray-900 mb-1">
                 What's the best way for employers to contact you?
@@ -184,125 +184,125 @@ const PersonalInformationPage = () => {
                       className="border border-gray-300 h-10 rounded-none w-full"
                     />
                   </div>
-                  
-                  {/* City, Country, PIN Code */}
-                  <div className="flex gap-5 mb-6">
-                    <div className="flex-1">
-                      <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
-                        CITY
-                      </div>
-                      <Input
-                        id="city"
-                        name="city"
-                        placeholder="e.g. New Delhi"
-                        value={resumeData.city}
-                        onChange={handleInputChange}
-                        className="border border-gray-300 h-10 rounded-none"
-                      />
-                    </div>
-                    
-                    <div className="w-[180px]">
-                      <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
-                        COUNTRY
-                      </div>
-                      <Input
-                        id="country"
-                        name="country"
-                        placeholder="e.g. India"
-                        value={resumeData.country}
-                        onChange={handleInputChange}
-                        className="border border-gray-300 h-10 rounded-none"
-                      />
-                    </div>
-                    
-                    <div className="w-[180px]">
-                      <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
-                        PIN CODE
-                      </div>
-                      <Input
-                        id="postalCode"
-                        name="postalCode"
-                        placeholder="e.g. 110034"
-                        value={resumeData.postalCode}
-                        onChange={handleInputChange}
-                        className="border border-gray-300 h-10 rounded-none"
-                      />
-                    </div>
+                </div>
+              </div>
+              
+              {/* City, Country, PIN Code - FIXED */}
+              <div className="flex gap-5 mb-6">
+                <div className="flex-1">
+                  <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
+                    CITY
                   </div>
-                  
-                  {/* Phone and Email */}
-                  <div className="flex gap-5 mb-6">
-                    <div className="flex-1">
-                      <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
-                        PHONE
-                      </div>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        placeholder="e.g. +91 22 1234 5677"
-                        value={resumeData.phone}
-                        onChange={handleInputChange}
-                        className="border border-gray-300 h-10 rounded-none"
-                      />
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="mb-2 flex items-center">
-                        <div className="text-xs font-medium text-gray-700 uppercase">
-                          EMAIL
-                        </div>
-                        <span className="text-red-500 ml-1">*</span>
-                      </div>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="e.g. saanvipatel@sample.in"
-                        value={resumeData.email}
-                        onChange={handleInputChange}
-                        required
-                        className="border border-gray-300 h-10 rounded-none"
-                      />
-                    </div>
+                  <Input
+                    id="city"
+                    name="city"
+                    placeholder="e.g. New Delhi"
+                    value={resumeData.city}
+                    onChange={handleInputChange}
+                    className="border border-gray-300 h-10 rounded-none w-full"
+                  />
+                </div>
+                
+                <div className="w-[200px]">
+                  <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
+                    COUNTRY
                   </div>
-                  
-                  {/* Additional Information Section */}
-                  <div>
-                    <div className="flex items-center mb-4">
-                      <span className="text-sm text-gray-700">Add additional information to your resume</span>
-                      <span className="text-xs text-gray-500 ml-1">(optional)</span>
-                      <div className="ml-2 inline-flex items-center justify-center">
-                        <Info size={16} className="text-gray-500" />
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <button
-                        className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                        onClick={() => updateAdditionalInfo('linkedin', '')}
-                      >
-                        LinkedIn
-                        <span className="ml-2 font-bold">+</span>
-                      </button>
-                      
-                      <button
-                        className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                        onClick={() => updateAdditionalInfo('website', '')}
-                      >
-                        Website
-                        <span className="ml-2 font-bold">+</span>
-                      </button>
-                      
-                      <button
-                        className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                        onClick={() => updateAdditionalInfo('drivingLicense', '')}
-                      >
-                        Driving licence
-                        <span className="ml-2 font-bold">+</span>
-                      </button>
-                    </div>
+                  <Input
+                    id="country"
+                    name="country"
+                    placeholder="e.g. India"
+                    value={resumeData.country}
+                    onChange={handleInputChange}
+                    className="border border-gray-300 h-10 rounded-none w-full"
+                  />
+                </div>
+                
+                <div className="w-[200px]">
+                  <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
+                    PIN CODE
                   </div>
+                  <Input
+                    id="postalCode"
+                    name="postalCode"
+                    placeholder="e.g. 110034"
+                    value={resumeData.postalCode}
+                    onChange={handleInputChange}
+                    className="border border-gray-300 h-10 rounded-none w-full"
+                  />
+                </div>
+              </div>
+              
+              {/* Phone and Email - FIXED ALIGNMENT */}
+              <div className="flex gap-5 mb-6">
+                <div className="flex-1">
+                  <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
+                    PHONE
+                  </div>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="e.g. +91 22 1234 5677"
+                    value={resumeData.phone}
+                    onChange={handleInputChange}
+                    className="border border-gray-300 h-10 rounded-none w-full"
+                  />
+                </div>
+                
+                <div className="flex-1">
+                  <div className="mb-2 flex items-center">
+                    <div className="text-xs font-medium text-gray-700 uppercase">
+                      EMAIL
+                    </div>
+                    <span className="text-red-500 ml-1">*</span>
+                  </div>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="e.g. saanvipatel@sample.in"
+                    value={resumeData.email}
+                    onChange={handleInputChange}
+                    required
+                    className="border border-gray-300 h-10 rounded-none w-full"
+                  />
+                </div>
+              </div>
+              
+              {/* Additional Information Section */}
+              <div>
+                <div className="flex items-center mb-4">
+                  <span className="text-sm text-gray-700">Add additional information to your resume</span>
+                  <span className="text-xs text-gray-500 ml-1">(optional)</span>
+                  <div className="ml-2 inline-flex items-center justify-center">
+                    <Info size={16} className="text-gray-500" />
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                    onClick={() => updateAdditionalInfo('linkedin', '')}
+                  >
+                    LinkedIn
+                    <span className="ml-2 font-bold">+</span>
+                  </button>
+                  
+                  <button
+                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                    onClick={() => updateAdditionalInfo('website', '')}
+                  >
+                    Website
+                    <span className="ml-2 font-bold">+</span>
+                  </button>
+                  
+                  <button
+                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                    onClick={() => updateAdditionalInfo('drivingLicense', '')}
+                  >
+                    Driving licence
+                    <span className="ml-2 font-bold">+</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -338,7 +338,7 @@ const PersonalInformationPage = () => {
           </div>
           
           {/* Right column - Resume Preview */}
-          <div className="lg:w-[40%] mt-10 lg:mt-0">
+          <div className="lg:w-[35%] mt-10 lg:mt-0">
             {/* Results notification with exact styling */}
             <div className="mb-4">
               <div className="bg-blue-50 rounded-lg p-2 px-3">
