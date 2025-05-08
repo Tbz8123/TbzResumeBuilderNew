@@ -271,6 +271,21 @@ const PersonalInformationPage = () => {
                   </div>
                 </div>
                 
+                {/* Summary Section */}
+                <div className="mb-6">
+                  <Label htmlFor="summary" className="text-xs font-medium text-gray-600 uppercase mb-1 block">
+                    Professional Summary
+                  </Label>
+                  <textarea
+                    id="summary"
+                    name="summary"
+                    placeholder="A results-driven professional with experience in your field..."
+                    value={resumeData.summary || ''}
+                    onChange={(e) => updateResumeData({ summary: e.target.value })}
+                    className="border border-gray-300 rounded w-full h-24 p-2 text-sm"
+                  />
+                </div>
+                
                 {/* Additional Info Options */}
                 <div className="mb-12">
                   <AdditionalInfoOptions />
@@ -304,39 +319,50 @@ const PersonalInformationPage = () => {
               </div>
               
               {/* Right column - Resume Preview */}
-              <div className="hidden lg:block lg:w-80 mt-12 lg:mt-0">
-                <div className="sticky top-8">
+              <div className="hidden lg:flex lg:flex-col lg:w-[450px] mt-12 lg:mt-0">
+                <div className="sticky top-8 w-full">
                   <div className="bg-blue-50 rounded-lg p-3 mb-4">
-                    <h3 className="font-semibold text-blue-900 text-sm mb-1">Our Resume Builder delivers results!<sup>1</sup></h3>
+                    <h3 className="font-semibold text-blue-900 text-sm mb-1">Live Resume Preview</h3>
                     <p className="text-blue-700 text-xs flex items-center">
                       <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold mr-2">
-                        42%
+                        NEW
                       </span>
-                      <span>Higher response rate from recruiters</span>
+                      <span>Updates in real-time as you type</span>
                     </p>
                   </div>
                   
-                  <div className="mb-4">
-                    {/* Template container with exact dimensions from templates page */}
+                  <div className="mb-4 relative">
+                    {/* Modern Resume Preview Container - Larger for better visibility */}
                     <div 
-                      className="border border-gray-200 rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
-                      style={{ width: '280px', height: '362.13px' }}
+                      className="border border-gray-200 rounded-lg overflow-hidden shadow-md"
+                      style={{ 
+                        width: '100%', 
+                        height: '520px',
+                        backgroundColor: 'white'
+                      }}
                     >
-                      {/* Template preview layout - matches the templates page */}
+                      {/* Scaling container for resume preview */}
                       <div className="relative h-full w-full overflow-hidden bg-white">
                         <div className="relative h-full w-full flex items-center justify-center">
-                          {/* Interactive Resume Preview component - maintains real-time updates */}
-                          <ResumePreview 
-                            className="h-full w-full border-none shadow-none" 
-                            width={280} 
-                            height={362}
-                          />
+                          {/* Modern Resume Preview with real-time updates */}
+                          <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+                            <div className="transform-gpu origin-top-left" style={{ 
+                              width: '180px', // Container for the scaled content
+                              height: '520px',
+                              position: 'relative'
+                            }}>
+                              <ModernResumePreview 
+                                className="h-full"
+                                scale={0.22} // Scale to fit the container while maintaining aspect ratio
+                              />
+                            </div>
+                          </div>
                           
                           {/* Template name overlay at bottom - consistent with templates page */}
                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent py-2 px-3 pointer-events-none">
                             <p className="font-medium text-white text-sm">Your Resume</p>
                             <p className="text-xs text-gray-300 capitalize">
-                              {Array.isArray(templates) && templates.find((t: ResumeTemplate) => t.id === selectedTemplateId)?.name || 'Professional Template'}
+                              Modern Professional
                             </p>
                           </div>
                         </div>

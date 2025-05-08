@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useResume } from '@/contexts/ResumeContext';
-import { Phone, Mail, MapPin, Globe, Linkedin, Award } from 'lucide-react';
+import { Phone, Mail, MapPin, Globe, Linkedin, Award, Briefcase, GraduationCap, User } from 'lucide-react';
 
 interface ModernResumePreviewProps {
   className?: string;
