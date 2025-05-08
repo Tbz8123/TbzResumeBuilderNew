@@ -162,6 +162,8 @@ jobsRouter.get("/titles/:id/descriptions", async (req, res) => {
 // Get all job descriptions (optionally filtered by jobTitleId or search term)
 jobsRouter.get("/descriptions", async (req, res) => {
   try {
+    // Log the raw query parameter for debugging
+    console.log("Raw jobTitleId from request:", req.query.jobTitleId, "Type:", typeof req.query.jobTitleId);
     const jobTitleId = req.query.jobTitleId ? parseInt(req.query.jobTitleId as string) : null;
     const searchTerm = req.query.search as string || null;
     

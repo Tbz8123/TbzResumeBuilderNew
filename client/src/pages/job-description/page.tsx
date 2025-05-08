@@ -96,7 +96,13 @@ const JobDescriptionPage = () => {
           // If we already have the database ID, use it directly
           console.log(`Using stored job title ID (${dbJobTitleId}) for fetching descriptions`);
           
-          const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${dbJobTitleId}`;
+          // Make sure the job title ID is a valid number
+          const jobTitleIdForApi = typeof dbJobTitleId === 'string' ? parseInt(dbJobTitleId) : dbJobTitleId;
+          console.log("Job title ID for API (parsed):", jobTitleIdForApi, "Type:", typeof jobTitleIdForApi);
+          
+          const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`;
+          console.log("Descriptions URL:", descriptionsUrl);
+          
           const response = await apiRequest('GET', descriptionsUrl);
           let descriptionsData = await response.json();
           
@@ -183,9 +189,12 @@ const JobDescriptionPage = () => {
           
           // Include the current job title ID even when fetching all descriptions
           // so the backend can prioritize this title's descriptions at the top
-          const allResponse = await apiRequest('GET', `/api/jobs/descriptions${jobTitleIdFromDb ? `?jobTitleId=${jobTitleIdFromDb}` : ''}`);
+          const jobTitleIdParam = jobTitleIdFromDb ? `?jobTitleId=${jobTitleIdFromDb}` : '';
+          console.log("Fallback descriptions URL:", `/api/jobs/descriptions${jobTitleIdParam}`);
           
+          const allResponse = await apiRequest('GET', `/api/jobs/descriptions${jobTitleIdParam}`);
           descriptionsData = await allResponse.json();
+          console.log("Fallback descriptions raw data:", descriptionsData);
           console.log(`Fallback descriptions retrieved: ${descriptionsData.length}`);
         }
         
@@ -423,7 +432,8 @@ const JobDescriptionPage = () => {
                                       ...updatedWorkExperience[0],
                                       jobTitle: jobTitle.title,
                                       // Store the database ID to use directly in the descriptions API
-                                      dbJobTitleId: jobTitle.id
+                                      // Ensure ID is stored as a number for API consistency
+                                      dbJobTitleId: typeof jobTitle.id === 'string' ? parseInt(jobTitle.id) : jobTitle.id
                                     };
                                     updateResumeData({ workExperience: updatedWorkExperience });
                                     console.log(`Updated current job title to: ${jobTitle.title} (DB ID: ${jobTitle.id})`);
