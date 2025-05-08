@@ -14,6 +14,7 @@ export interface WorkExperience {
   endYear: string;
   isCurrentJob: boolean;
   responsibilities: string;
+  dbJobTitleId?: number | string; // Add database job title ID for direct API access
 }
 
 export interface ResumeData {

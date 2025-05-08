@@ -73,9 +73,7 @@ const JobDescriptionPage = () => {
   // Initialize job responsibilities from currentJob if available
   const [jobResponsibilities, setJobResponsibilities] = useState(currentJob.responsibilities || '');
   
-  // Get job title ID for looking up descriptions
-  const jobTitleId = currentJob.jobTitle ? 
-    currentJob.jobTitle.toLowerCase().replace(/\s+/g, '-') : 'manager';
+  // Job title ID will be set in the fetchJobDescriptions function
   
   // Get related job titles
   const relatedJobTitles = getRelatedJobTitles(currentJob.jobTitle);
@@ -91,7 +89,36 @@ const JobDescriptionPage = () => {
       try {
         console.log("Searching for job title:", currentJob.jobTitle);
         
-        // First try to find the actual job title ID from the database based on the title
+        // First check if we already have a job title ID stored in the work experience
+        const dbJobTitleId = currentJob.dbJobTitleId;
+        
+        if (dbJobTitleId) {
+          // If we already have the database ID, use it directly
+          console.log(`Using stored job title ID (${dbJobTitleId}) for fetching descriptions`);
+          
+          const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${dbJobTitleId}`;
+          const response = await apiRequest('GET', descriptionsUrl);
+          let descriptionsData = await response.json();
+          
+          console.log(`Retrieved ${descriptionsData.length} descriptions directly for stored job title ID: ${dbJobTitleId}`);
+          
+          // Apply search term filtering
+          if (searchTerm && descriptionsData.length > 0) {
+            const searchTermLower = searchTerm.toLowerCase();
+            descriptionsData = descriptionsData.filter((desc: JobDescription) => 
+              desc.content.toLowerCase().includes(searchTermLower)
+            );
+            console.log("Filtered descriptions by search term:", searchTerm, "Results:", descriptionsData.length);
+          }
+          
+          if (descriptionsData.length > 0) {
+            setDescriptions(descriptionsData);
+            setIsLoadingDescriptions(false);
+            return; // Exit early since we found descriptions
+          }
+        }
+        
+        // If we don't have a stored ID or no descriptions found, try to find the job title in the database
         const searchQuery = currentJob.jobTitle || "Manager";
         const titlesResponse = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(searchQuery)}`);
         const titlesData = await titlesResponse.json();
@@ -100,14 +127,31 @@ const JobDescriptionPage = () => {
         
         let jobTitleIdFromDb = null;
         if (titlesData.data && titlesData.data.length > 0) {
-          // Use the first matching job title's ID
-          jobTitleIdFromDb = titlesData.data[0].id;
-          console.log("Found matching job title ID:", jobTitleIdFromDb);
+          // Try to find an exact match first (case-insensitive)
+          const exactMatch = titlesData.data.find((item: any) => 
+            item.title.toLowerCase() === searchQuery.toLowerCase()
+          );
+          
+          if (exactMatch) {
+            jobTitleIdFromDb = exactMatch.id;
+            console.log("Found exact matching job title ID:", jobTitleIdFromDb);
+            
+            // Update the work experience with this ID for future reference
+            const updatedWorkExperience = [...(resumeData.workExperience || [])];
+            if (updatedWorkExperience.length > 0 && !updatedWorkExperience[0].dbJobTitleId) {
+              updatedWorkExperience[0] = {
+                ...updatedWorkExperience[0],
+                dbJobTitleId: jobTitleIdFromDb
+              };
+              updateResumeData({ workExperience: updatedWorkExperience });
+            }
+          } else {
+            // If no exact match, use the first result
+            jobTitleIdFromDb = titlesData.data[0].id;
+            console.log("Using closest matching job title ID:", jobTitleIdFromDb);
+          }
         } else {
           console.log("No matching job title found in database");
-          
-          // If no specific title found, let's fetch a few default ones
-          console.log("Fetching all job descriptions as fallback");
         }
         
         // Fetch descriptions based on the found job title ID, or all descriptions if none found
@@ -150,7 +194,7 @@ const JobDescriptionPage = () => {
     };
     
     fetchJobDescriptions();
-  }, [currentJob.jobTitle, searchTerm]);
+  }, [currentJob.jobTitle, currentJob.dbJobTitleId, searchTerm, resumeData.workExperience]);
   
   // Effect to update job title suggestions when search term changes
   useEffect(() => {
@@ -362,19 +406,47 @@ const JobDescriptionPage = () => {
                               <button
                                 key={jobTitle.id}
                                 className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex justify-between items-center"
-                                onClick={() => {
+                                onClick={async () => {
                                   setSearchTerm(jobTitle.title);
                                   setShowJobTitleSuggestions(false);
                                   
                                   // Update current job title in resume data
                                   const updatedWorkExperience = [...(resumeData.workExperience || [])];
                                   if (updatedWorkExperience.length > 0) {
+                                    // Update job title
                                     updatedWorkExperience[0] = {
                                       ...updatedWorkExperience[0],
-                                      jobTitle: jobTitle.title
+                                      jobTitle: jobTitle.title,
+                                      // Store the database ID to use directly in the descriptions API
+                                      dbJobTitleId: jobTitle.id
                                     };
                                     updateResumeData({ workExperience: updatedWorkExperience });
-                                    console.log(`Updated current job title to: ${jobTitle.title}`);
+                                    console.log(`Updated current job title to: ${jobTitle.title} (DB ID: ${jobTitle.id})`);
+                                    
+                                    // Immediately fetch the job descriptions for this title ID
+                                    setIsLoadingDescriptions(true);
+                                    try {
+                                      const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${jobTitle.id}`;
+                                      console.log(`Directly fetching descriptions from: ${descriptionsUrl}`);
+                                      
+                                      const response = await apiRequest('GET', descriptionsUrl);
+                                      const descriptionsData = await response.json();
+                                      
+                                      console.log(`Retrieved ${descriptionsData.length} descriptions directly for job title ID: ${jobTitle.id}`);
+                                      
+                                      if (descriptionsData.length > 0) {
+                                        setDescriptions(descriptionsData);
+                                      } else {
+                                        // Fallback to general descriptions if none found
+                                        const allResponse = await apiRequest('GET', '/api/jobs/descriptions');
+                                        const allDescriptionsData = await allResponse.json();
+                                        setDescriptions(allDescriptionsData);
+                                      }
+                                    } catch (error) {
+                                      console.error('Error fetching job descriptions:', error);
+                                    } finally {
+                                      setIsLoadingDescriptions(false);
+                                    }
                                   }
                                 }}
                               >
@@ -410,18 +482,67 @@ const JobDescriptionPage = () => {
                     <button
                       key={job.id}
                       className="flex items-center border border-gray-300 rounded-md px-2 py-1 text-sm"
-                      onClick={() => {
+                      onClick={async () => {
                         setSearchTerm(job.title);
                         
                         // Update current job title in resume data
                         const updatedWorkExperience = [...(resumeData.workExperience || [])];
                         if (updatedWorkExperience.length > 0) {
-                          updatedWorkExperience[0] = {
-                            ...updatedWorkExperience[0],
-                            jobTitle: job.title
-                          };
-                          updateResumeData({ workExperience: updatedWorkExperience });
-                          console.log(`Updated current job title to: ${job.title}`);
+                          // First try to find the exact job title ID from API
+                          setIsLoadingDescriptions(true);
+                          try {
+                            // First check if this job title exists in the database
+                            const titlesResponse = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(job.title)}`);
+                            const titlesData = await titlesResponse.json();
+                            
+                            let dbJobTitleId = null;
+                            if (titlesData.data && titlesData.data.length > 0) {
+                              // Find exact match (case-insensitive)
+                              const exactMatch = titlesData.data.find((item: any) => 
+                                item.title.toLowerCase() === job.title.toLowerCase()
+                              );
+                              
+                              if (exactMatch) {
+                                dbJobTitleId = exactMatch.id;
+                                console.log(`Found exact DB match for related job title: ${job.title} (ID: ${dbJobTitleId})`);
+                              }
+                            }
+                            
+                            // Update work experience with job title and ID if found
+                            updatedWorkExperience[0] = {
+                              ...updatedWorkExperience[0],
+                              jobTitle: job.title,
+                              // Store the database ID if found
+                              ...(dbJobTitleId && { dbJobTitleId })
+                            };
+                            updateResumeData({ workExperience: updatedWorkExperience });
+                            console.log(`Updated current job title to: ${job.title}`);
+                            
+                            // Fetch descriptions for this job title
+                            if (dbJobTitleId) {
+                              // If we have a database ID, use it directly
+                              const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${dbJobTitleId}`;
+                              console.log(`Directly fetching descriptions from: ${descriptionsUrl}`);
+                              
+                              const response = await apiRequest('GET', descriptionsUrl);
+                              const descriptionsData = await response.json();
+                              
+                              console.log(`Retrieved ${descriptionsData.length} descriptions directly for job title ID: ${dbJobTitleId}`);
+                              
+                              if (descriptionsData.length > 0) {
+                                setDescriptions(descriptionsData);
+                              } else {
+                                // Fallback to general descriptions if none found
+                                const allResponse = await apiRequest('GET', '/api/jobs/descriptions');
+                                const allDescriptionsData = await allResponse.json();
+                                setDescriptions(allDescriptionsData);
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Error fetching job title data:', error);
+                          } finally {
+                            setIsLoadingDescriptions(false);
+                          }
                         }
                       }}
                     >
