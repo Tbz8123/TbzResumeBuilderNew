@@ -93,262 +93,261 @@ const PersonalInformationPage = () => {
             </div>
             
             {/* Required field indicator */}
-            <div className="text-xs text-gray-500 mb-3">
+            <div className="text-xs text-gray-500 mb-4">
               <span className="text-red-500">*</span> Indicates a required field
             </div>
             
-            {/* Photo section on its own - EXACTLY like screenshot */}
-            <div className="float-left mr-10 mb-5">
-              <div className="w-[80px] h-[100px] border border-gray-300 flex items-center justify-center mb-2">
-                {resumeData.photo ? (
-                  <img 
-                    src={resumeData.photo} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full w-full">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <mask id="mask0_1_2" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
-                        <rect width="24" height="24" fill="#D9D9D9"/>
-                      </mask>
-                      <g mask="url(#mask0_1_2)">
-                        <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" fill="#717171"/>
-                        <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" fill="#717171"/>
-                      </g>
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <div className="text-center">
-                <a
-                  className="text-blue-600 text-sm hover:text-blue-800 hover:underline"
-                  onClick={() => document.getElementById('photo-upload')?.click()}
-                  style={{ cursor: 'pointer' }}
-                >
-                  Upload Photo
-                </a>
-                <input 
-                  id="photo-upload" 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        updateResumeData({ photo: event.target?.result as string });
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            
-            {/* Form section - with clear float */}
-            <div className="clear-right">
-              {/* First Name & Surname - 2 columns */}
-              <div className="flex gap-4 mb-4">
-                <div className="w-1/2">
-                  <div className="mb-1">
-                    <div className="flex items-center">
-                      <div className="text-xs font-medium text-gray-700 uppercase">
-                        FIRST NAME
-                      </div>
-                      <span className="text-red-500 ml-1">*</span>
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="firstName"
-                      name="firstName"
-                      placeholder="e.g. John"
-                      value={resumeData.firstName}
-                      onChange={handleInputChange}
-                      className="border border-gray-300 h-10 rounded-sm w-full pr-8"
+            {/* 3-column grid layout for photo and name fields */}
+            <div className="grid grid-cols-12 gap-4 mb-6">
+              {/* Photo area - takes 3 columns */}
+              <div className="col-span-3">
+                <div className="w-full border border-gray-300 aspect-square flex items-center justify-center">
+                  {resumeData.photo ? (
+                    <img 
+                      src={resumeData.photo} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
                     />
-                    {resumeData.firstName && renderCheckmark()}
-                  </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full w-full">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <mask id="mask0_1_2" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+                          <rect width="24" height="24" fill="#D9D9D9"/>
+                        </mask>
+                        <g mask="url(#mask0_1_2)">
+                          <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" fill="#717171"/>
+                          <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" fill="#717171"/>
+                        </g>
+                      </svg>
+                    </div>
+                  )}
                 </div>
-                
-                <div className="w-1/2">
-                  <div className="mb-1">
-                    <div className="text-xs font-medium text-gray-700 uppercase">
-                      SURNAME
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="surname"
-                      name="surname"
-                      placeholder="e.g. Patel"
-                      value={resumeData.surname}
-                      onChange={handleInputChange}
-                      className="border border-gray-300 h-10 rounded-sm w-full pr-8"
-                    />
-                    {resumeData.surname && renderCheckmark()}
-                  </div>
+                <div className="text-center mt-2">
+                  <a
+                    className="text-blue-600 text-sm hover:text-blue-800 hover:underline"
+                    onClick={() => document.getElementById('photo-upload')?.click()}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    Upload Photo
+                  </a>
+                  <input 
+                    id="photo-upload" 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          updateResumeData({ photo: event.target?.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
                 </div>
               </div>
               
-              {/* Profession - Full width */}
-              <div className="mb-4">
+              {/* First Name field - takes 4.5 columns */}
+              <div className="col-span-4">
                 <div className="mb-1">
-                  <div className="text-xs font-medium text-gray-700 uppercase">
-                    PROFESSION
+                  <div className="flex items-center">
+                    <div className="text-xs font-medium text-gray-700 uppercase">
+                      FIRST NAME
+                    </div>
+                    <span className="text-red-500 ml-1">*</span>
                   </div>
                 </div>
                 <div className="relative">
                   <Input
-                    id="profession"
-                    name="profession"
-                    placeholder="e.g. Retail Sales Associate"
-                    value={resumeData.profession}
+                    id="firstName"
+                    name="firstName"
+                    placeholder="e.g. John"
+                    value={resumeData.firstName}
                     onChange={handleInputChange}
                     className="border border-gray-300 h-10 rounded-sm w-full pr-8"
                   />
-                  {resumeData.profession && renderCheckmark()}
+                  {resumeData.firstName && renderCheckmark()}
                 </div>
               </div>
               
-              {/* City, Country and PIN Code - Exact layout */}
-              <div className="flex mb-4">
-                <div className="w-1/3 mr-4">
-                  <div className="mb-1">
-                    <div className="text-xs font-medium text-gray-700 uppercase">
-                      CITY
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="city"
-                      name="city"
-                      placeholder="e.g. New Delhi"
-                      value={resumeData.city}
-                      onChange={handleInputChange}
-                      className="border border-gray-300 h-10 rounded-sm w-full pr-8"
-                    />
-                    {resumeData.city && renderCheckmark()}
+              {/* Surname field - takes 4.5 columns */}
+              <div className="col-span-5">
+                <div className="mb-1">
+                  <div className="text-xs font-medium text-gray-700 uppercase">
+                    SURNAME
                   </div>
                 </div>
-                
-                <div className="w-1/3 mr-4">
-                  <div className="mb-1">
-                    <div className="text-xs font-medium text-gray-700 uppercase">
-                      COUNTRY
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="country"
-                      name="country"
-                      placeholder="e.g. India"
-                      value={resumeData.country}
-                      onChange={handleInputChange}
-                      className="border border-gray-300 h-10 rounded-sm w-full pr-8"
-                    />
-                    {resumeData.country && renderCheckmark()}
-                  </div>
-                </div>
-                
-                <div className="w-1/3">
-                  <div className="mb-1">
-                    <div className="text-xs font-medium text-gray-700 uppercase">
-                      PIN CODE
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="postalCode"
-                      name="postalCode"
-                      placeholder="e.g. 110034"
-                      value={resumeData.postalCode}
-                      onChange={handleInputChange}
-                      className="border border-gray-300 h-10 rounded-sm w-full pr-8"
-                    />
-                    {resumeData.postalCode && renderCheckmark()}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Phone and Email - 2 columns */}
-              <div className="flex gap-4 mb-4">
-                <div className="w-1/2">
-                  <div className="mb-1">
-                    <div className="text-xs font-medium text-gray-700 uppercase">
-                      PHONE
-                    </div>
-                  </div>
+                <div className="relative">
                   <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="e.g. +91 22 1234 5677"
-                    value={resumeData.phone}
+                    id="surname"
+                    name="surname"
+                    placeholder="e.g. Patel"
+                    value={resumeData.surname}
                     onChange={handleInputChange}
-                    className="border border-gray-300 h-10 rounded-sm w-full"
+                    className="border border-gray-300 h-10 rounded-sm w-full pr-8"
                   />
+                  {resumeData.surname && renderCheckmark()}
                 </div>
-                
-                <div className="w-1/2">
-                  <div className="mb-1">
-                    <div className="flex items-center">
-                      <div className="text-xs font-medium text-gray-700 uppercase">
-                        EMAIL
-                      </div>
-                      <span className="text-red-500 ml-1">*</span>
-                    </div>
+              </div>
+            </div>
+            
+            {/* Profession - Full width */}
+            <div className="mb-4">
+              <div className="mb-1">
+                <div className="text-xs font-medium text-gray-700 uppercase">
+                  PROFESSION
+                </div>
+              </div>
+              <div className="relative">
+                <Input
+                  id="profession"
+                  name="profession"
+                  placeholder="e.g. Retail Sales Associate"
+                  value={resumeData.profession}
+                  onChange={handleInputChange}
+                  className="border border-gray-300 h-10 rounded-sm w-full pr-8"
+                />
+                {resumeData.profession && renderCheckmark()}
+              </div>
+            </div>
+            
+            {/* City, Country and PIN Code - Exact layout */}
+            <div className="flex gap-4 mb-4">
+              <div className="w-1/3">
+                <div className="mb-1">
+                  <div className="text-xs font-medium text-gray-700 uppercase">
+                    CITY
                   </div>
+                </div>
+                <div className="relative">
                   <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="e.g. example@sample.in"
-                    value={resumeData.email}
+                    id="city"
+                    name="city"
+                    placeholder="e.g. New Delhi"
+                    value={resumeData.city}
                     onChange={handleInputChange}
-                    required
-                    className="border border-gray-300 h-10 rounded-sm w-full"
+                    className="border border-gray-300 h-10 rounded-sm w-full pr-8"
                   />
+                  {resumeData.city && renderCheckmark()}
                 </div>
               </div>
               
-              {/* Additional Information Section - exactly like Zety */}
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <span className="text-sm text-gray-700">Add additional information to your resume</span>
-                  <span className="text-xs text-gray-500 ml-1">(optional)</span>
-                  <div className="ml-2 inline-flex items-center justify-center">
-                    <Info size={16} className="text-gray-500" />
+              <div className="w-1/3">
+                <div className="mb-1">
+                  <div className="text-xs font-medium text-gray-700 uppercase">
+                    COUNTRY
                   </div>
                 </div>
-                
-                <div className="flex gap-3">
-                  <button
-                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                    onClick={() => updateAdditionalInfo('linkedin', '')}
-                  >
-                    LinkedIn
-                    <span className="ml-2 font-bold">+</span>
-                  </button>
-                  
-                  <button
-                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                    onClick={() => updateAdditionalInfo('website', '')}
-                  >
-                    Website
-                    <span className="ml-2 font-bold">+</span>
-                  </button>
-                  
-                  <button
-                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                    onClick={() => updateAdditionalInfo('drivingLicense', '')}
-                  >
-                    Driving licence
-                    <span className="ml-2 font-bold">+</span>
-                  </button>
+                <div className="relative">
+                  <Input
+                    id="country"
+                    name="country"
+                    placeholder="e.g. India"
+                    value={resumeData.country}
+                    onChange={handleInputChange}
+                    className="border border-gray-300 h-10 rounded-sm w-full pr-8"
+                  />
+                  {resumeData.country && renderCheckmark()}
                 </div>
+              </div>
+              
+              <div className="w-1/3">
+                <div className="mb-1">
+                  <div className="text-xs font-medium text-gray-700 uppercase">
+                    PIN CODE
+                  </div>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="postalCode"
+                    name="postalCode"
+                    placeholder="e.g. 110034"
+                    value={resumeData.postalCode}
+                    onChange={handleInputChange}
+                    className="border border-gray-300 h-10 rounded-sm w-full pr-8"
+                  />
+                  {resumeData.postalCode && renderCheckmark()}
+                </div>
+              </div>
+            </div>
+            
+            {/* Phone and Email - 2 columns */}
+            <div className="flex gap-4 mb-4">
+              <div className="w-1/2">
+                <div className="mb-1">
+                  <div className="text-xs font-medium text-gray-700 uppercase">
+                    PHONE
+                  </div>
+                </div>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="e.g. +91 22 1234 5677"
+                  value={resumeData.phone}
+                  onChange={handleInputChange}
+                  className="border border-gray-300 h-10 rounded-sm w-full"
+                />
+              </div>
+              
+              <div className="w-1/2">
+                <div className="mb-1">
+                  <div className="flex items-center">
+                    <div className="text-xs font-medium text-gray-700 uppercase">
+                      EMAIL
+                    </div>
+                    <span className="text-red-500 ml-1">*</span>
+                  </div>
+                </div>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="e.g. example@sample.in"
+                  value={resumeData.email}
+                  onChange={handleInputChange}
+                  required
+                  className="border border-gray-300 h-10 rounded-sm w-full"
+                />
+              </div>
+            </div>
+            
+            {/* Additional Information Section - exactly like Zety */}
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <span className="text-sm text-gray-700">Add additional information to your resume</span>
+                <span className="text-xs text-gray-500 ml-1">(optional)</span>
+                <div className="ml-2 inline-flex items-center justify-center">
+                  <Info size={16} className="text-gray-500" />
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                  onClick={() => updateAdditionalInfo('linkedin', '')}
+                >
+                  LinkedIn
+                  <span className="ml-2 font-bold">+</span>
+                </button>
+                
+                <button
+                  className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                  onClick={() => updateAdditionalInfo('website', '')}
+                >
+                  Website
+                  <span className="ml-2 font-bold">+</span>
+                </button>
+                
+                <button
+                  className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                  onClick={() => updateAdditionalInfo('drivingLicense', '')}
+                >
+                  Driving licence
+                  <span className="ml-2 font-bold">+</span>
+                </button>
               </div>
             </div>
             
