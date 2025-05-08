@@ -73,7 +73,7 @@ const PersonalInformationPage = () => {
         
         <div className="flex flex-col lg:flex-row lg:gap-16">
           {/* Left column - Form Fields - EXPANDED */}
-          <div className="lg:w-[65%]">
+          <div className="lg:w-[68%]">
             <div className="mb-2">
               <h1 className="text-xl font-bold text-gray-900 mb-1">
                 What's the best way for employers to contact you?
@@ -338,7 +338,7 @@ const PersonalInformationPage = () => {
           </div>
           
           {/* Right column - Resume Preview */}
-          <div className="lg:w-[35%] mt-10 lg:mt-0">
+          <div className="lg:w-[32%] mt-10 lg:mt-0">
             {/* Results notification with exact styling */}
             <div className="mb-4">
               <div className="bg-blue-50 rounded-lg p-2 px-3">
@@ -355,11 +355,11 @@ const PersonalInformationPage = () => {
             </div>
             
             {/* Resume Preview */}
-            <div className="border border-gray-200 overflow-hidden">
+            <div className="border border-gray-200 overflow-hidden mx-auto" style={{ maxWidth: '300px' }}>
               <div className="relative bg-white" style={{ height: '400px' }}>
                 <HybridResumePreview 
                   className="h-full w-full" 
-                  width={400} 
+                  width={300} 
                   height={400}
                   scaleContent={true}
                 />
