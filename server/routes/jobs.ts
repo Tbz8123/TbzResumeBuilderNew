@@ -168,9 +168,25 @@ jobsRouter.get("/descriptions", async (req, res) => {
     // Handle jobTitleId more robustly - ensure proper parsing and validation
     let jobTitleId: number | null = null;
     if (req.query.jobTitleId) {
-      const parsedId = parseInt(req.query.jobTitleId as string);
+      // Force conversion to string
+      const jobTitleIdStr = String(req.query.jobTitleId).trim();
+      console.log(`Job title ID as string: "${jobTitleIdStr}"`);
+      
+      const parsedId = parseInt(jobTitleIdStr);
       if (!isNaN(parsedId) && parsedId > 0) {
         jobTitleId = parsedId;
+        console.log(`Successfully parsed jobTitleId to number: ${jobTitleId}`);
+        
+        // Double-check the job title exists
+        const jobTitle = await db.query.jobTitles.findFirst({
+          where: eq(jobTitles.id, jobTitleId)
+        });
+        
+        if (jobTitle) {
+          console.log(`Job title found: "${jobTitle.title}" (ID: ${jobTitle.id})`);
+        } else {
+          console.warn(`Job title with ID ${jobTitleId} not found in database`);
+        }
       } else {
         console.warn(`Invalid jobTitleId provided: ${req.query.jobTitleId}`);
       }
