@@ -1642,10 +1642,10 @@ router.post("/", isAdmin, async (req, res) => {
       templateId: template.id,
       versionNumber: 1,
       svgContent: template.svgContent,
-      // Preserve empty strings in version history too
-      htmlContent: template.htmlContent !== undefined ? template.htmlContent : null,
-      cssContent: template.cssContent !== undefined ? template.cssContent : null,
-      jsContent: template.jsContent !== undefined ? template.jsContent : null,
+      // CRITICAL FIX: Always preserve content as empty strings (not null)
+      htmlContent: template.htmlContent !== undefined ? template.htmlContent : '',
+      cssContent: template.cssContent !== undefined ? template.cssContent : '',
+      jsContent: template.jsContent !== undefined ? template.jsContent : '',
       pdfContent: template.pdfContent || null,
       createdById: req.user?.id,
       changelog: "Initial version",
@@ -1672,16 +1672,24 @@ router.put("/:id", isAdmin, async (req, res) => {
     
     console.log("Updating template with ID:", templateId, "and data:", req.body);
     
+    // Debug: For tracking which fields are being sent
+    console.log("Template content fields:", {
+      htmlContent: typeof req.body.htmlContent,
+      cssContent: typeof req.body.cssContent,
+      jsContent: typeof req.body.jsContent,
+      svgContent: typeof req.body.svgContent,
+    });
+    
     // Create a clean object with only the needed fields
     const templateData = {
       name: req.body.name,
       description: req.body.description,
       category: req.body.category,
-      svgContent: req.body.svgContent,
-      // IMPORTANT: Preserve empty strings as valid content
-      htmlContent: req.body.htmlContent !== undefined ? req.body.htmlContent : null,
-      cssContent: req.body.cssContent !== undefined ? req.body.cssContent : null,
-      jsContent: req.body.jsContent !== undefined ? req.body.jsContent : null,
+      svgContent: req.body.svgContent || '', // Always ensure it's a string, never null
+      // CRITICAL FIX: Always preserve content as empty strings (not null)
+      htmlContent: req.body.htmlContent !== undefined ? req.body.htmlContent : '',
+      cssContent: req.body.cssContent !== undefined ? req.body.cssContent : '',
+      jsContent: req.body.jsContent !== undefined ? req.body.jsContent : '',
       pdfContent: req.body.pdfContent || null,
       isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       isPopular: req.body.isPopular !== undefined ? req.body.isPopular : false,
@@ -1727,10 +1735,10 @@ router.put("/:id", isAdmin, async (req, res) => {
       templateId: templateId,
       versionNumber: nextVersionNumber,
       svgContent: validatedData.svgContent,
-      // Preserve empty strings in version history too
-      htmlContent: validatedData.htmlContent !== undefined ? validatedData.htmlContent : null,
-      cssContent: validatedData.cssContent !== undefined ? validatedData.cssContent : null,
-      jsContent: validatedData.jsContent !== undefined ? validatedData.jsContent : null,
+      // CRITICAL FIX: Always preserve empty strings in version history too
+      htmlContent: validatedData.htmlContent !== undefined ? validatedData.htmlContent : '',
+      cssContent: validatedData.cssContent !== undefined ? validatedData.cssContent : '',
+      jsContent: validatedData.jsContent !== undefined ? validatedData.jsContent : '',
       pdfContent: validatedData.pdfContent || null,
       createdById: req.user?.id,
       changelog: req.body.changelog || `Version ${nextVersionNumber}`,
