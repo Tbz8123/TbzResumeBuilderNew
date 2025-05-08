@@ -69,7 +69,6 @@ export async function renderTemplateToImage(htmlString: string, outputPath: stri
     await page.screenshot({ 
       path: outputPath,
       fullPage: true,
-      quality: 100,
       omitBackground: false
     });
     

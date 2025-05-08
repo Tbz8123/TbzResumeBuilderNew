@@ -1,0 +1,78 @@
+<svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
+      <!-- Background with primary color header -->
+      <rect width="100%" height="100%" fill="white"/>
+      <rect width="100%" height="200" fill="#000000"/>
+      
+      <!-- Header content -->
+      <text x="50%" y="100" font-family="Arial" font-size="36" font-weight="bold" text-anchor="middle" fill="white">
+        New Template 45
+      </text>
+      <text x="50%" y="140" font-family="Arial" font-size="18" text-anchor="middle" fill="white">
+        Professional Position
+      </text>
+      
+      <!-- Accent bar -->
+      <rect x="50" y="230" width="700" height="8" rx="4" fill="#f97316"/>
+      
+      <!-- Contact information section -->
+      <text x="50" y="280" font-family="Arial" font-size="20" font-weight="bold" fill="#f97316">
+        Contact Information
+      </text>
+      
+      <!-- Contact items in row -->
+      <text x="50" y="310" font-family="Arial" font-size="14" fill="#444">📞 +600 123-4567</text>
+      <text x="300" y="310" font-family="Arial" font-size="14" fill="#444">✉️ email@example.com</text>
+      <text x="550" y="310" font-family="Arial" font-size="14" fill="#444">🏠 City, State</text>
+      
+      <!-- Summary section -->
+      <text x="50" y="360" font-family="Arial" font-size="20" font-weight="bold" fill="#f97316">
+        Professional Summary
+      </text>
+      
+      <!-- Summary content placeholder -->
+      <rect x="50" y="380" width="700" height="7" rx="3" fill="#eee"/>
+      <rect x="50" y="395" width="700" height="7" rx="3" fill="#eee"/>
+      <rect x="50" y="410" width="500" height="7" rx="3" fill="#eee"/>
+      
+      <!-- Two column layout for skills and education -->
+      <text x="50" y="460" font-family="Arial" font-size="20" font-weight="bold" fill="#f97316">
+        Skills
+      </text>
+      
+      <rect x="50" y="480" width="330" height="30" rx="15" fill="#f5f5f5"/>
+      <text x="65" y="500" font-family="Arial" font-size="14" fill="#444">Skill 1</text>
+      
+      <rect x="50" y="520" width="330" height="30" rx="15" fill="#f5f5f5"/>
+      <text x="65" y="540" font-family="Arial" font-size="14" fill="#444">Skill 2</text>
+      
+      <rect x="50" y="560" width="330" height="30" rx="15" fill="#f5f5f5"/>
+      <text x="65" y="580" font-family="Arial" font-size="14" fill="#444">Skill 3</text>
+      
+      <!-- Education section -->
+      <text x="420" y="460" font-family="Arial" font-size="20" font-weight="bold" fill="#f97316">
+        Education
+      </text>
+      
+      <text x="420" y="490" font-family="Arial" font-size="16" font-weight="bold" fill="#333">
+        Degree Name
+      </text>
+      <text x="420" y="515" font-family="Arial" font-size="14" fill="#555">
+        University Name | 2014 - 2018
+      </text>
+      
+      <!-- Experience section -->
+      <text x="50" y="620" font-family="Arial" font-size="20" font-weight="bold" fill="#f97316">
+        Work Experience
+      </text>
+      
+      <!-- Experience item -->
+      <text x="50" y="650" font-family="Arial" font-size="16" font-weight="bold" fill="#333">
+        Job Title
+      </text>
+      <text x="50" y="670" font-family="Arial" font-size="14" fill="#555">
+        Company Name | 2018 - Present
+      </text>
+      <rect x="50" y="690" width="700" height="7" rx="3" fill="#eee"/>
+      <rect x="50" y="705" width="650" height="7" rx="3" fill="#eee"/>
+      <rect x="50" y="720" width="600" height="7" rx="3" fill="#eee"/>
+    </svg>
