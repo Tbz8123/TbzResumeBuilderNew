@@ -31,8 +31,30 @@ jobsRouter.get("/titles", async (req, res) => {
     
     // Apply search filter if provided
     if (searchQuery) {
-      // This is a simple implementation - for production, consider using more advanced search techniques
+      console.log(`Searching for job titles matching: "${searchQuery}"`);
+      // Use more flexible search with special handling for exact match
       const searchPattern = `%${searchQuery}%`;
+      
+      // First try exact case-insensitive match
+      const exactQuery = db.select()
+                           .from(jobTitles)
+                           .where(sql`LOWER(${jobTitles.title}) = LOWER(${searchQuery})`);
+      
+      const exactMatches = await exactQuery.execute();
+      if (exactMatches.length > 0) {
+        console.log(`Found exact match for: "${searchQuery}"`);
+        return res.json({
+          data: exactMatches,
+          meta: {
+            page: 1,
+            limit,
+            totalCount: exactMatches.length,
+            totalPages: 1,
+          }
+        });
+      }
+      
+      // If no exact match, proceed with LIKE search
       query = query.where(
         sql`LOWER(${jobTitles.title}) LIKE LOWER(${searchPattern})
             OR LOWER(${jobTitles.category}) LIKE LOWER(${searchPattern})`
@@ -137,25 +159,55 @@ jobsRouter.get("/titles/:id/descriptions", async (req, res) => {
   }
 });
 
-// Get all job descriptions (optionally filtered by jobTitleId)
+// Get all job descriptions (optionally filtered by jobTitleId or search term)
 jobsRouter.get("/descriptions", async (req, res) => {
   try {
     const jobTitleId = req.query.jobTitleId ? parseInt(req.query.jobTitleId as string) : null;
-    console.log(`Fetching job descriptions${jobTitleId ? ` for job title ID: ${jobTitleId}` : ' (all)'}`);
+    const searchTerm = req.query.search as string || null;
     
-    let query = db.query.jobDescriptions;
+    console.log(`Fetching job descriptions${jobTitleId ? ` for job title ID: ${jobTitleId}` : ' (all)'}${searchTerm ? ` containing "${searchTerm}"` : ''}`);
+    
     let descriptions;
     
-    if (jobTitleId) {
-      descriptions = await query.findMany({
+    // Build query based on parameters
+    if (jobTitleId && searchTerm) {
+      // Filter by both job title ID and search term
+      const searchPattern = `%${searchTerm}%`;
+      descriptions = await db.select()
+        .from(jobDescriptions)
+        .where(
+          sql`${jobDescriptions.jobTitleId} = ${jobTitleId} AND 
+              LOWER(${jobDescriptions.content}) LIKE LOWER(${searchPattern})`
+        )
+        .orderBy(
+          desc(jobDescriptions.isRecommended),
+          asc(jobDescriptions.id)
+        );
+    } else if (jobTitleId) {
+      // Filter by job title ID only
+      descriptions = await db.query.jobDescriptions.findMany({
         where: eq(jobDescriptions.jobTitleId, jobTitleId),
         orderBy: [
           desc(jobDescriptions.isRecommended),
           asc(jobDescriptions.id)
         ]
       });
+    } else if (searchTerm) {
+      // Filter by search term only
+      const searchPattern = `%${searchTerm}%`;
+      descriptions = await db.select()
+        .from(jobDescriptions)
+        .where(
+          sql`LOWER(${jobDescriptions.content}) LIKE LOWER(${searchPattern})`
+        )
+        .orderBy(
+          desc(jobDescriptions.isRecommended),
+          asc(jobDescriptions.id)
+        )
+        .limit(100);
     } else {
-      descriptions = await query.findMany({
+      // No filters, get all descriptions with a limit
+      descriptions = await db.query.jobDescriptions.findMany({
         orderBy: [
           asc(jobDescriptions.jobTitleId),
           desc(jobDescriptions.isRecommended),
@@ -163,6 +215,19 @@ jobsRouter.get("/descriptions", async (req, res) => {
         ],
         limit: 100 // Limit to avoid returning too much data
       });
+    }
+    
+    // If no descriptions found but we have a job title ID, check if the title exists
+    if (descriptions.length === 0 && jobTitleId) {
+      const jobTitle = await db.query.jobTitles.findFirst({
+        where: eq(jobTitles.id, jobTitleId)
+      });
+      
+      if (jobTitle) {
+        console.log(`Job title "${jobTitle.title}" exists but has no descriptions`);
+      } else {
+        console.log(`Job title with ID ${jobTitleId} doesn't exist`);
+      }
     }
     
     console.log(`Retrieved ${descriptions.length} job descriptions`);

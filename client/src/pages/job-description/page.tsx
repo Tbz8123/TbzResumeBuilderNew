@@ -89,14 +89,25 @@ const JobDescriptionPage = () => {
     const fetchJobDescriptions = async () => {
       setIsLoadingDescriptions(true);
       try {
+        console.log("Searching for job title:", currentJob.jobTitle);
+        
         // First try to find the actual job title ID from the database based on the title
-        const titlesResponse = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(currentJob.jobTitle)}`);
+        const searchQuery = currentJob.jobTitle || "Manager";
+        const titlesResponse = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(searchQuery)}`);
         const titlesData = await titlesResponse.json();
+        
+        console.log("Job titles search results:", titlesData);
         
         let jobTitleIdFromDb = null;
         if (titlesData.data && titlesData.data.length > 0) {
           // Use the first matching job title's ID
           jobTitleIdFromDb = titlesData.data[0].id;
+          console.log("Found matching job title ID:", jobTitleIdFromDb);
+        } else {
+          console.log("No matching job title found in database");
+          
+          // If no specific title found, let's fetch a few default ones
+          console.log("Fetching all job descriptions as fallback");
         }
         
         // Fetch descriptions based on the found job title ID, or all descriptions if none found
@@ -105,12 +116,12 @@ const JobDescriptionPage = () => {
           descriptionsUrl += `?jobTitleId=${jobTitleIdFromDb}`;
         }
         
-        // If search term is provided, we would normally add it to the query
-        // But the backend doesn't currently support text search on descriptions
-        // so we'll filter on the client side
+        console.log("Fetching descriptions from:", descriptionsUrl);
         
         const response = await apiRequest('GET', descriptionsUrl);
         let descriptionsData = await response.json();
+        
+        console.log("Raw descriptions data:", descriptionsData);
         
         // Client-side filtering if search term is provided
         if (searchTerm && descriptionsData.length > 0) {
@@ -118,6 +129,15 @@ const JobDescriptionPage = () => {
           descriptionsData = descriptionsData.filter((desc: JobDescription) => 
             desc.content.toLowerCase().includes(searchTermLower)
           );
+          console.log("Filtered descriptions by search term:", searchTerm, "Results:", descriptionsData.length);
+        }
+        
+        // As a fallback, if we still have no descriptions, fetch all descriptions
+        if (descriptionsData.length === 0) {
+          console.log("No descriptions found, fetching all descriptions as fallback");
+          const allResponse = await apiRequest('GET', '/api/jobs/descriptions');
+          descriptionsData = await allResponse.json();
+          console.log("Fallback descriptions data:", descriptionsData);
         }
         
         setDescriptions(descriptionsData);
@@ -134,13 +154,43 @@ const JobDescriptionPage = () => {
   
   // Effect to update job title suggestions when search term changes
   useEffect(() => {
-    if (searchTerm.trim()) {
-      const suggestions = getJobTitleSuggestions(searchTerm, 5);
-      setJobTitleSuggestions(suggestions);
-      setShowJobTitleSuggestions(suggestions.length > 0);
-    } else {
-      setShowJobTitleSuggestions(false);
-    }
+    const fetchJobTitleSuggestions = async () => {
+      if (searchTerm.trim()) {
+        try {
+          // First try to get suggestions from the API
+          const apiResponse = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(searchTerm)}`);
+          const apiData = await apiResponse.json();
+          
+          console.log("Job title suggestions from API:", apiData);
+          
+          if (apiData.data && apiData.data.length > 0) {
+            // Convert database titles to JobTitle format
+            const apiSuggestions = apiData.data.map((item: any) => ({
+              id: item.id.toString(),
+              title: item.title,
+              category: item.category
+            }));
+            setJobTitleSuggestions(apiSuggestions);
+            setShowJobTitleSuggestions(true);
+          } else {
+            // Fallback to static data if no API results
+            const staticSuggestions = getJobTitleSuggestions(searchTerm, 5);
+            setJobTitleSuggestions(staticSuggestions);
+            setShowJobTitleSuggestions(staticSuggestions.length > 0);
+          }
+        } catch (error) {
+          console.error("Error fetching job title suggestions:", error);
+          // Fallback to static data if API fails
+          const staticSuggestions = getJobTitleSuggestions(searchTerm, 5);
+          setJobTitleSuggestions(staticSuggestions);
+          setShowJobTitleSuggestions(staticSuggestions.length > 0);
+        }
+      } else {
+        setShowJobTitleSuggestions(false);
+      }
+    };
+    
+    fetchJobTitleSuggestions();
   }, [searchTerm]);
   
   // Effect to handle clicks outside the suggestions dropdown
