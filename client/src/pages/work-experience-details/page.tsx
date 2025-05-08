@@ -158,9 +158,9 @@ const WorkExperienceDetailsPage = () => {
       </header>
       
       <main className="flex-grow py-10">
-        <div className="w-full max-w-3xl mx-auto px-4">
+        <div className="w-full max-w-3xl mx-auto px-6">
           {/* Back Button */}
-          <div className="mb-8">
+          <div className="mb-6">
             <button 
               onClick={handleBack}
               className="flex items-center text-purple-600 hover:text-purple-800 transition-colors text-sm font-medium"
@@ -173,13 +173,13 @@ const WorkExperienceDetailsPage = () => {
           {/* Main Content */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-2">
-              <h1 className="text-3xl font-bold">Tell us about your most recent job</h1>
+              <h1 className="text-2xl font-bold">Tell us about your most recent job</h1>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button className="text-purple-600">
                       <span className="flex items-center">
-                        <HelpCircle className="h-5 w-5 ml-1" />
+                        <HelpCircle className="h-4 w-4 ml-1" />
                         Tips
                       </span>
                     </button>
@@ -190,7 +190,7 @@ const WorkExperienceDetailsPage = () => {
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <p className="text-gray-600 text-lg">We'll start there and work backward.</p>
+            <p className="text-gray-600">We'll start there and work backward.</p>
           </div>
           
           <div className="text-xs text-gray-500 mb-6">
@@ -198,40 +198,42 @@ const WorkExperienceDetailsPage = () => {
           </div>
 
           {/* Form */}
-          <div className="space-y-6">
-            {/* Job Title */}
-            <div>
-              <label htmlFor="jobTitle" className="block text-sm font-medium mb-1">
-                JOB TITLE <span className="text-red-500">*</span>
-              </label>
-              <Input 
-                id="jobTitle"
-                value={workExperience.jobTitle}
-                onChange={(e) => handleInputChange('jobTitle', e.target.value)}
-                placeholder="e.g. Analyst"
-                className="rounded-md border-gray-300"
-                required
-              />
-            </div>
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 gap-4">
+              {/* Job Title */}
+              <div>
+                <label htmlFor="jobTitle" className="block text-xs uppercase font-medium mb-2">
+                  JOB TITLE <span className="text-red-500">*</span>
+                </label>
+                <Input 
+                  id="jobTitle"
+                  value={workExperience.jobTitle}
+                  onChange={(e) => handleInputChange('jobTitle', e.target.value)}
+                  placeholder="e.g. Analyst"
+                  className="rounded-sm border-gray-300 h-10"
+                  required
+                />
+              </div>
 
-            {/* Employer */}
-            <div>
-              <label htmlFor="employer" className="block text-sm font-medium mb-1">
-                EMPLOYER <span className="text-red-500">*</span>
-              </label>
-              <Input 
-                id="employer"
-                value={workExperience.employer}
-                onChange={(e) => handleInputChange('employer', e.target.value)}
-                placeholder="e.g. Tata Group"
-                className="rounded-md border-gray-300"
-                required
-              />
+              {/* Employer */}
+              <div>
+                <label htmlFor="employer" className="block text-xs uppercase font-medium mb-2">
+                  EMPLOYER <span className="text-red-500">*</span>
+                </label>
+                <Input 
+                  id="employer"
+                  value={workExperience.employer}
+                  onChange={(e) => handleInputChange('employer', e.target.value)}
+                  placeholder="e.g. Tata Group"
+                  className="rounded-sm border-gray-300 h-10"
+                  required
+                />
+              </div>
             </div>
 
             {/* Location */}
             <div>
-              <label htmlFor="location" className="block text-sm font-medium mb-1">
+              <label htmlFor="location" className="block text-xs uppercase font-medium mb-2">
                 LOCATION
               </label>
               <Input 
@@ -239,18 +241,19 @@ const WorkExperienceDetailsPage = () => {
                 value={workExperience.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
                 placeholder="e.g. New Delhi, India"
-                className="rounded-md border-gray-300"
+                className="rounded-sm border-gray-300 h-10"
               />
             </div>
 
             {/* Remote Checkbox */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-2">
               <Checkbox 
                 id="remote"
                 checked={workExperience.isRemote}
                 onCheckedChange={(checked) => 
                   handleInputChange('isRemote', Boolean(checked))
                 }
+                className="rounded-sm h-4 w-4"
               />
               <label htmlFor="remote" className="text-sm">
                 Remote
@@ -259,7 +262,7 @@ const WorkExperienceDetailsPage = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button>
-                      <HelpCircle className="h-4 w-4 text-gray-500" />
+                      <HelpCircle className="h-4 w-4 text-blue-600" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -270,10 +273,10 @@ const WorkExperienceDetailsPage = () => {
             </div>
 
             {/* Date Range */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-8 mt-4">
               {/* Start Date */}
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-xs uppercase font-medium mb-2">
                   START DATE
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -281,7 +284,7 @@ const WorkExperienceDetailsPage = () => {
                     value={workExperience.startMonth}
                     onValueChange={(value) => handleInputChange('startMonth', value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10 rounded-sm border-gray-300">
                       <SelectValue placeholder="Month" />
                     </SelectTrigger>
                     <SelectContent>
@@ -297,7 +300,7 @@ const WorkExperienceDetailsPage = () => {
                     value={workExperience.startYear}
                     onValueChange={(value) => handleInputChange('startYear', value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10 rounded-sm border-gray-300">
                       <SelectValue placeholder="Year" />
                     </SelectTrigger>
                     <SelectContent>
@@ -313,7 +316,7 @@ const WorkExperienceDetailsPage = () => {
 
               {/* End Date */}
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-xs uppercase font-medium mb-2">
                   END DATE
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -322,7 +325,7 @@ const WorkExperienceDetailsPage = () => {
                     onValueChange={(value) => handleInputChange('endMonth', value)}
                     disabled={workExperience.isCurrentJob}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10 rounded-sm border-gray-300">
                       <SelectValue placeholder="Month" />
                     </SelectTrigger>
                     <SelectContent>
@@ -339,7 +342,7 @@ const WorkExperienceDetailsPage = () => {
                     onValueChange={(value) => handleInputChange('endYear', value)}
                     disabled={workExperience.isCurrentJob}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10 rounded-sm border-gray-300">
                       <SelectValue placeholder="Year" />
                     </SelectTrigger>
                     <SelectContent>
@@ -355,11 +358,12 @@ const WorkExperienceDetailsPage = () => {
             </div>
 
             {/* Current Job Checkbox */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-2">
               <Checkbox 
                 id="currentJob"
                 checked={workExperience.isCurrentJob}
                 onCheckedChange={(checked) => handleCurrentJobChange(Boolean(checked))}
+                className="rounded-sm h-4 w-4"
               />
               <label htmlFor="currentJob" className="text-sm">
                 I currently work here
@@ -367,16 +371,16 @@ const WorkExperienceDetailsPage = () => {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-end items-center gap-6 pt-6">
+            <div className="flex justify-center items-center gap-6 pt-12 mt-10">
               <button 
                 onClick={handlePreview}
-                className="text-purple-600 hover:text-purple-800 border border-purple-600 hover:border-purple-800 font-medium rounded-full px-10 py-3 text-base"
+                className="text-purple-600 hover:text-purple-800 border border-purple-600 hover:border-purple-800 font-medium rounded-full px-10 py-2.5 text-base w-28"
               >
                 Preview
               </button>
               <button 
                 onClick={handleNext}
-                className="bg-amber-400 hover:bg-amber-500 text-black font-medium rounded-full px-10 py-3 text-base"
+                className="bg-amber-400 hover:bg-amber-500 text-black font-medium rounded-full px-10 py-2.5 text-base w-28"
               >
                 Next
               </button>
