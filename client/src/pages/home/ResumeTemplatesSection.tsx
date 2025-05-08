@@ -111,16 +111,30 @@ const TemplatePreview = ({
         {isLoading ? (
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         ) : (
-          <img 
-            src={template.thumbnailUrl} 
-            alt={template.name || "Template preview"} 
-            className="w-full h-full object-contain"
-            onError={() => {
-              console.error("Failed to load thumbnail");
-              setError(true);
-              if (onError) onError();
-            }}
-          />
+          <div className="relative w-full h-full">
+            <img 
+              src={template.thumbnailUrl} 
+              alt={template.name || "Template preview"} 
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                console.error("Failed to load thumbnail:", template.thumbnailUrl);
+                
+                // Add error message to the component
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  parent.innerHTML = `
+                    <div class="w-full h-full flex flex-col items-center justify-center bg-red-50 text-center p-4">
+                      <p class="text-red-500 font-medium mb-2">Error loading thumbnail</p>
+                      <p class="text-sm text-gray-600">${template.name}</p>
+                    </div>
+                  `;
+                }
+                
+                setError(true);
+                if (onError) onError();
+              }}
+            />
+          </div>
         )}
       </div>
     );

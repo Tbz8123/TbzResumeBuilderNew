@@ -17,12 +17,28 @@ import { renderTemplateToImage } from '../utils/templateImageRenderer';
  * @returns An SVG string representing the template preview
  */
 function generateTemplatePreviewSvg(templateName: string, primaryColor = "#2d2f35", secondaryColor = "#4a90e2"): string {
+  // Sanitize template name to prevent SVG injection
+  const safeTemplateName = templateName
+    ? templateName.replace(/[<>&'"]/g, (match) => {
+        switch (match) {
+          case '<': return '&lt;';
+          case '>': return '&gt;';
+          case '&': return '&amp;';
+          case "'": return '&apos;';
+          case '"': return '&quot;';
+          default: return match;
+        }
+      })
+    : "Professional Resume";
+  
   // Check if it's a two-column template with a dark sidebar
   const isDarkSidebarTemplate = primaryColor === "#2d2f35" || primaryColor === "#1e1e1e";
   
+  let svgContent = '';
+  
   if (isDarkSidebarTemplate) {
     // Two-column layout with dark sidebar on left, white main content on right
-    return `<svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
+    svgContent = `<svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
       <!-- Background -->
       <rect width="100%" height="100%" fill="white"/>
       
@@ -33,7 +49,7 @@ function generateTemplatePreviewSvg(templateName: string, primaryColor = "#2d2f3
       <!-- Left column header -->
       <rect x="20" y="50" width="240" height="50" fill="${secondaryColor}"/>
       <text x="30" y="85" font-family="Arial" font-size="20" font-weight="bold" fill="white">
-        ${templateName || "Professional Resume"}
+        ${safeTemplateName}
       </text>
       
       <!-- Left column content -->
@@ -109,14 +125,14 @@ function generateTemplatePreviewSvg(templateName: string, primaryColor = "#2d2f3
     </svg>`;
   } else {
     // Modern single column or creative layout
-    return `<svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
+    svgContent = `<svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
       <!-- Background with primary color header -->
       <rect width="100%" height="100%" fill="white"/>
       <rect width="100%" height="200" fill="${primaryColor}"/>
       
       <!-- Header content -->
       <text x="50%" y="100" font-family="Arial" font-size="36" font-weight="bold" text-anchor="middle" fill="white">
-        ${templateName || "Creative Resume"}
+        ${safeTemplateName}
       </text>
       <text x="50%" y="140" font-family="Arial" font-size="18" text-anchor="middle" fill="white">
         Professional Position
@@ -188,6 +204,13 @@ function generateTemplatePreviewSvg(templateName: string, primaryColor = "#2d2f3
       <rect x="50" y="720" width="600" height="7" rx="3" fill="#eee"/>
     </svg>`;
   }
+  
+  // Ensure the SVG is properly closed
+  if (!svgContent.trim().endsWith('</svg>')) {
+    svgContent = svgContent.trim() + '</svg>';
+  }
+  
+  return svgContent;
 }
 
 const router = Router();
@@ -2188,8 +2211,22 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
     
     // If preview wasn't successfully generated, create a fallback SVG
     if (!previewGenerated) {
-      const fallbackSvg = generateTemplatePreviewSvg(template.name, primaryColor, secondaryColor);
-      fs.writeFileSync(outputPath, fallbackSvg);
+      try {
+        const fallbackSvg = generateTemplatePreviewSvg(template.name, primaryColor, secondaryColor);
+        fs.writeFileSync(outputPath, fallbackSvg);
+        console.log(`Generated fallback SVG preview for template ${templateId}`);
+      } catch (svgError) {
+        console.error("Error generating fallback SVG:", svgError);
+        // Create an ultra-simple SVG if all else fails
+        const emergencySvg = `<svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="white"/>
+          <rect width="100%" height="100" fill="${primaryColor || '#5E17EB'}"/>
+          <text x="50%" y="60" text-anchor="middle" font-family="Arial" font-size="24" fill="white">${template.name || 'Template Preview'}</text>
+          <rect x="20" y="120" width="760" height="960" fill="#f5f5f5" stroke="#ddd" stroke-width="1"/>
+          <text x="50%" y="550" text-anchor="middle" font-family="Arial" font-size="16" fill="#999">Preview not available</text>
+        </svg>`;
+        fs.writeFileSync(outputPath, emergencySvg);
+      }
     }
     
     // Update the template with the new thumbnail URL
