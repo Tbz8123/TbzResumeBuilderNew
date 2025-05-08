@@ -15,7 +15,7 @@ import { renderTemplateToImage } from '../utils/templateImageRenderer';
  * @param templateId The ID of the template to sync
  * @returns Promise containing the updated template with new thumbnail URL
  */
-async function syncTemplateThumbnail(templateId: number): Promise<any> {
+export async function syncTemplateThumbnail(templateId: number): Promise<any> {
   console.log(`Syncing thumbnail for template ID ${templateId}...`);
   
   try {
