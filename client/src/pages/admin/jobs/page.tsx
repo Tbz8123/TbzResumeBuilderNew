@@ -201,6 +201,18 @@ export default function JobsAdminPage() {
   const createTitleMutation = useMutation({
     mutationFn: async (data: z.infer<typeof jobTitleSchema>) => {
       const res = await apiRequest('POST', '/api/jobs/titles', data);
+      
+      if (!res.ok) {
+        // Parse the error response
+        const errorData = await res.json();
+        // If it's a known error type (like duplicate), throw with the specific message
+        if (errorData.message) {
+          throw new Error(errorData.message);
+        }
+        // Otherwise throw a generic error
+        throw new Error('Failed to create job title');
+      }
+      
       return await res.json();
     },
     onSuccess: () => {
@@ -224,6 +236,18 @@ export default function JobsAdminPage() {
   const updateTitleMutation = useMutation({
     mutationFn: async (data: JobTitle) => {
       const res = await apiRequest('PUT', `/api/jobs/titles/${data.id}`, data);
+      
+      if (!res.ok) {
+        // Parse the error response
+        const errorData = await res.json();
+        // If it's a known error type (like duplicate), throw with the specific message
+        if (errorData.message) {
+          throw new Error(errorData.message);
+        }
+        // Otherwise throw a generic error
+        throw new Error('Failed to update job title');
+      }
+      
       return await res.json();
     },
     onSuccess: () => {
@@ -870,8 +894,8 @@ export default function JobsAdminPage() {
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
                       <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                        checked={field.value === true}
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">

@@ -178,12 +178,35 @@ jobsRouter.get("/descriptions", async (req, res) => {
 jobsRouter.post("/titles", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const validatedData = jobTitleSchema.parse(req.body);
+    
+    // First check if a job title with this name already exists
+    const existingTitle = await db.query.jobTitles.findFirst({
+      where: eq(jobTitles.title, validatedData.title)
+    });
+    
+    if (existingTitle) {
+      return res.status(409).json({ 
+        error: "Duplicate job title", 
+        message: `A job title with the name "${validatedData.title}" already exists.` 
+      });
+    }
+    
     const [newTitle] = await db.insert(jobTitles).values(validatedData).returning();
     return res.status(201).json(newTitle);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ errors: error.errors });
     }
+    
+    // Check for database constraint violations
+    const pgError = error as any;
+    if (pgError.code === '23505' && pgError.constraint === 'job_titles_title_key') {
+      return res.status(409).json({ 
+        error: "Duplicate job title", 
+        message: "A job title with this name already exists." 
+      });
+    }
+    
     console.error("Error creating job title:", error);
     return res.status(500).json({ error: "Failed to create job title" });
   }
@@ -198,6 +221,19 @@ jobsRouter.put("/titles/:id", isAuthenticated, isAdmin, async (req, res) => {
     }
 
     const validatedData = jobTitleSchema.parse(req.body);
+    
+    // Check if another job title with this name already exists (excluding current record)
+    const existingTitle = await db.query.jobTitles.findFirst({
+      where: sql`${jobTitles.title} = ${validatedData.title} AND ${jobTitles.id} != ${id}`
+    });
+    
+    if (existingTitle) {
+      return res.status(409).json({ 
+        error: "Duplicate job title", 
+        message: `A job title with the name "${validatedData.title}" already exists.` 
+      });
+    }
+    
     const [updatedTitle] = await db
       .update(jobTitles)
       .set({
@@ -216,6 +252,16 @@ jobsRouter.put("/titles/:id", isAuthenticated, isAdmin, async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ errors: error.errors });
     }
+    
+    // Check for database constraint violations
+    const pgError = error as any;
+    if (pgError.code === '23505' && pgError.constraint === 'job_titles_title_key') {
+      return res.status(409).json({ 
+        error: "Duplicate job title", 
+        message: "A job title with this name already exists." 
+      });
+    }
+    
     console.error("Error updating job title:", error);
     return res.status(500).json({ error: "Failed to update job title" });
   }
