@@ -1923,16 +1923,59 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
     } catch (renderError) {
       console.error(`Error generating ${sourceType} preview:`, renderError);
       
-      // Fallback: Create a more representative SVG based on the actual template
-      // Parse the template HTML to extract some key elements
+      // Fallback: Create a more representative SVG based on the actual template HTML
+      // Check if this is the Blue/Dark Gray template we expect
+      const isBlueAndDarkTemplate = template.htmlContent?.includes('font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif') && 
+                                    template.htmlContent?.includes('.left-section');
       
-      // Define colors based on template colors or use fallbacks that match your template
-      const primaryColor = (template as any).primaryColor || "#1e1e1e"; // Dark background color for sidebar
-      const secondaryColor = (template as any).secondaryColor || "#ffc107"; // Yellow accent color
+      // Define colors based on HTML content and template colors 
+      let primaryColor, secondaryColor;
       
-      // Create a visually rich SVG representation of the resume template
-      // This template more closely matches the screenshot showing a dark sidebar with yellow accent colors
-      const svgPlaceholder = `
+      if (isBlueAndDarkTemplate) {
+        // Use colors that match the blue/dark gray template
+        primaryColor = (template as any).primaryColor || "#2d2f35"; // Dark gray for left sidebar
+        secondaryColor = (template as any).secondaryColor || "#4a90e2"; // Blue accent color
+      } else {
+        // Default colors for other templates
+        primaryColor = (template as any).primaryColor || "#1e1e1e"; 
+        secondaryColor = (template as any).secondaryColor || "#ffc107";
+      }
+      
+      // Choose the appropriate SVG representation based on template analysis
+      const svgPlaceholder = isBlueAndDarkTemplate ? `
+      <svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background -->
+        <rect width="100%" height="100%" fill="white"/>
+        
+        <!-- Two-column layout -->
+        <rect width="280" height="100%" fill="${primaryColor}"/>
+        <rect x="280" y="0" width="520" height="100%" fill="white"/>
+        
+        <!-- Header for left column -->
+        <rect x="0" y="0" width="280" height="60" fill="${secondaryColor}"/>
+        <text x="20" y="40" font-family="Arial" font-size="20" font-weight="bold" fill="white">
+          Michael Brown
+        </text>
+        
+        <!-- Left column content -->
+        <text x="20" y="100" font-family="Arial" font-size="14" fill="white">
+          Job Position Here
+        </text>
+        
+        <text x="20" y="150" font-family="Arial" font-size="16" font-weight="bold" fill="white">
+          Contact
+        </text>
+        
+        <text x="20" y="180" font-family="Arial" font-size="12" fill="white">
+          +600 123-4567
+        </text>
+        <text x="20" y="200" font-family="Arial" font-size="12" fill="white">
+          yourinfo@example.com
+        </text>
+        <text x="20" y="220" font-family="Arial" font-size="12" fill="white">
+          123 Street, City, State 45678
+        </text>
+      ` : `
       <svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg">
         <!-- Background -->
         <rect width="100%" height="100%" fill="white"/>
