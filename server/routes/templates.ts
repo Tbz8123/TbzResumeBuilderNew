@@ -2164,15 +2164,76 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
     if (template.htmlContent) {
       const htmlContent = template.htmlContent;
       
-      // Check for two-column layout with dark sidebar, blue accents
+      // Enhanced color detection from HTML content
+      const colorMatches = {
+        // Common color formats extraction from HTML/CSS
+        hex6: /#([0-9a-fA-F]{6})\b/g,
+        hex3: /#([0-9a-fA-F]{3})\b/g,
+        rgb: /rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)/g,
+        rgba: /rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*([01]?\.?\d*)\s*\)/g,
+        namedColors: /color\s*:\s*(black|blue|gray|grey|white|red|green|purple|orange|yellow|brown|pink|cyan|magenta)/g
+      };
+      
+      // Get all color values from the HTML content
+      const extractedColors = [];
+      
+      // Extract hex colors
+      let match;
+      while ((match = colorMatches.hex6.exec(htmlContent)) !== null) {
+        extractedColors.push(`#${match[1]}`);
+      }
+      
+      // Extract 3-digit hex colors and convert to 6-digit
+      while ((match = colorMatches.hex3.exec(htmlContent)) !== null) {
+        const color = `#${match[1][0]}${match[1][0]}${match[1][1]}${match[1][1]}${match[1][2]}${match[1][2]}`;
+        extractedColors.push(color);
+      }
+      
+      // Check for primary design patterns
       const hasDarkSidebar = 
         htmlContent.includes('background-color: #2d2f35') || 
         htmlContent.includes('.left-section') ||
         (htmlContent.includes('display: flex') && htmlContent.includes('width: 35%'));
         
-      if (hasDarkSidebar) {
+      // Check for specific known color schemes based on content patterns
+      if (hasDarkSidebar || htmlContent.includes('#4a90e2') || htmlContent.includes('rgb(74, 144, 226)')) {
         primaryColor = "#2d2f35";
         secondaryColor = "#4a90e2";
+        console.log(`Detected dark sidebar with blue accents color scheme for template ${templateId}`);
+      } 
+      // Check for blue primary theme
+      else if (htmlContent.includes('#1e40af') || htmlContent.includes('rgb(30, 64, 175)')) {
+        primaryColor = "#1e40af";  
+        secondaryColor = "#3b82f6";
+        console.log(`Detected blue primary theme for template ${templateId}`);
+      }
+      // Check for green theme
+      else if (htmlContent.includes('#166534') || htmlContent.includes('rgb(22, 101, 52)')) {
+        primaryColor = "#166534";
+        secondaryColor = "#22c55e";
+        console.log(`Detected green theme for template ${templateId}`);
+      }
+      // Check for purple theme
+      else if (htmlContent.includes('#5E17EB') || htmlContent.includes('rgb(94, 23, 235)')) {
+        primaryColor = "#5E17EB";
+        secondaryColor = "#7c3aed";
+        console.log(`Detected purple theme for template ${templateId}`);
+      }
+      // If we have extracted colors but didn't match a known pattern, use the first unique colors
+      else if (extractedColors.length > 1) {
+        // Filter out white, black, and grayscale colors
+        const colorfulColors = extractedColors.filter(color => 
+          color !== '#ffffff' && color !== '#000000' && 
+          !color.match(/#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3/i)
+        );
+        
+        if (colorfulColors.length >= 2) {
+          // Use first two unique colorful colors
+          const uniqueColors = [...new Set(colorfulColors)];
+          primaryColor = uniqueColors[0];
+          secondaryColor = uniqueColors[1];
+          console.log(`Using extracted colors for template ${templateId}: Primary: ${primaryColor}, Secondary: ${secondaryColor}`);
+        }
       }
       
       // Update detected colors in the template
@@ -2183,6 +2244,8 @@ router.post("/:id/generate-preview", isAdmin, async (req, res) => {
             secondaryColor
           })
           .where(eq(resumeTemplates.id, templateId));
+          
+        console.log(`Updated template ${templateId} with detected colors: Primary: ${primaryColor}, Secondary: ${secondaryColor}`);
       }
     }
     

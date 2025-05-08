@@ -55,7 +55,18 @@ export const useCreateTemplate = () => {
         throw new Error(errorData.message || "Failed to create template");
       }
       
-      return await res.json();
+      const createdTemplate = await res.json();
+      
+      // Automatically generate a thumbnail for the new template
+      try {
+        await generateThumbnail(createdTemplate.id);
+        console.log(`Auto-generated thumbnail for new template ID: ${createdTemplate.id}`);
+      } catch (thumbnailError) {
+        console.error("Failed to auto-generate thumbnail:", thumbnailError);
+        // Continue anyway, since the template was created successfully
+      }
+      
+      return createdTemplate;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/templates"] });
@@ -63,12 +74,27 @@ export const useCreateTemplate = () => {
   });
 };
 
+// Helper function to generate a thumbnail
+async function generateThumbnail(templateId: number): Promise<string> {
+  const res = await apiRequest("POST", `/api/templates/${templateId}/generate-preview`, {
+    sourceType: 'html', // Default to HTML rendering
+  });
+  
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || "Failed to generate thumbnail");
+  }
+  
+  const data = await res.json();
+  return data.thumbnailUrl;
+}
+
 // Hook for updating a template
 export const useUpdateTemplate = (id: number | string | undefined) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (template: Partial<ResumeTemplate> & { changelog?: string }) => {
+    mutationFn: async (template: Partial<ResumeTemplate> & { changelog?: string, regenerateThumbnail?: boolean }) => {
       if (!id) {
         throw new Error("Template ID is required for updates");
       }
@@ -78,9 +104,12 @@ export const useUpdateTemplate = (id: number | string | undefined) => {
         throw new Error("Invalid template ID format");
       }
       
+      // Extract regenerateThumbnail flag and remove it from the data to send
+      const { regenerateThumbnail = true, ...templateData } = template;
+      
       // Remove any undefined fields that might cause validation errors
       const cleanedTemplate = Object.fromEntries(
-        Object.entries(template).filter(([_, v]) => v !== undefined)
+        Object.entries(templateData).filter(([_, v]) => v !== undefined)
       );
       
       console.log(`Updating template with ID: ${id}, data:`, cleanedTemplate);
@@ -92,7 +121,29 @@ export const useUpdateTemplate = (id: number | string | undefined) => {
         throw new Error(errorData.message || "Failed to update template");
       }
       
-      return await res.json();
+      const updatedTemplate = await res.json();
+      
+      // Check if we should regenerate the thumbnail (default is true)
+      // Always regenerate if HTML or CSS content was updated
+      const shouldRegenerateThumbnail = regenerateThumbnail || 
+        template.htmlContent !== undefined || 
+        template.cssContent !== undefined;
+        
+      if (shouldRegenerateThumbnail) {
+        try {
+          // Add a small delay to ensure the template update is fully saved
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Generate new thumbnail
+          await generateThumbnail(Number(id));
+          console.log(`Auto-generated thumbnail for updated template ID: ${id}`);
+        } catch (thumbnailError) {
+          console.error("Failed to auto-generate thumbnail after update:", thumbnailError);
+          // Continue anyway, since the template was updated successfully
+        }
+      }
+      
+      return updatedTemplate;
     },
     onSuccess: () => {
       if (id) {
