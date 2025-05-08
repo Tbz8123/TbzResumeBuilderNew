@@ -12,12 +12,14 @@ import AdditionalInfoOptions from '@/components/resume/AdditionalInfoOptions';
 import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
+import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
 
 const PersonalInformationPage = () => {
   const [, setLocation] = useLocation();
-  const { resumeData, updateResumeData, updateAdditionalInfo, removeAdditionalInfo, selectedTemplateId } = useResume();
+  const { resumeData, updateResumeData, updateAdditionalInfo, removeAdditionalInfo, selectedTemplateId, setSelectedTemplateId } = useResume();
   const [step, setStep] = useState(1); // For multi-step form navigation
   const { data: templates } = useTemplates(); // Fetch templates for displaying the correct template
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
   
   // Add debug logging
   console.log("Personal Information Page - Selected Template ID:", selectedTemplateId);
@@ -29,10 +31,11 @@ const PersonalInformationPage = () => {
     const storedTemplateId = localStorage.getItem('selectedTemplateId');
     console.log("Template ID from localStorage:", storedTemplateId);
     
-    if (storedTemplateId) {
+    if (storedTemplateId && !selectedTemplateId) {
       console.log("Using template ID from localStorage:", storedTemplateId);
+      setSelectedTemplateId(parseInt(storedTemplateId));
     }
-  }, [selectedTemplateId]);
+  }, [selectedTemplateId, setSelectedTemplateId]);
   
   const handleBack = () => {
     setLocation('/templates');
@@ -344,7 +347,7 @@ const PersonalInformationPage = () => {
                     <Button 
                       variant="link" 
                       className="text-indigo-600 text-xs font-medium hover:text-indigo-800"
-                      onClick={() => window.open('/templates', '_blank')}
+                      onClick={() => setTemplateModalOpen(true)}
                     >
                       Change template
                     </Button>
@@ -379,6 +382,12 @@ const PersonalInformationPage = () => {
           </div>
         </div>
       </footer>
+      
+      {/* Template Selection Modal */}
+      <TemplateSelectionModal 
+        open={templateModalOpen} 
+        onOpenChange={setTemplateModalOpen} 
+      />
     </div>
   );
 };
