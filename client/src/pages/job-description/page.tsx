@@ -365,6 +365,17 @@ const JobDescriptionPage = () => {
                                 onClick={() => {
                                   setSearchTerm(jobTitle.title);
                                   setShowJobTitleSuggestions(false);
+                                  
+                                  // Update current job title in resume data
+                                  const updatedWorkExperience = [...(resumeData.workExperience || [])];
+                                  if (updatedWorkExperience.length > 0) {
+                                    updatedWorkExperience[0] = {
+                                      ...updatedWorkExperience[0],
+                                      jobTitle: jobTitle.title
+                                    };
+                                    updateResumeData({ workExperience: updatedWorkExperience });
+                                    console.log(`Updated current job title to: ${jobTitle.title}`);
+                                  }
                                 }}
                               >
                                 <div>
@@ -399,7 +410,20 @@ const JobDescriptionPage = () => {
                     <button
                       key={job.id}
                       className="flex items-center border border-gray-300 rounded-md px-2 py-1 text-sm"
-                      onClick={() => setSearchTerm(job.title)}
+                      onClick={() => {
+                        setSearchTerm(job.title);
+                        
+                        // Update current job title in resume data
+                        const updatedWorkExperience = [...(resumeData.workExperience || [])];
+                        if (updatedWorkExperience.length > 0) {
+                          updatedWorkExperience[0] = {
+                            ...updatedWorkExperience[0],
+                            jobTitle: job.title
+                          };
+                          updateResumeData({ workExperience: updatedWorkExperience });
+                          console.log(`Updated current job title to: ${job.title}`);
+                        }
+                      }}
                     >
                       <Search className="h-3 w-3 mr-1 text-purple-600" />
                       {job.title}
