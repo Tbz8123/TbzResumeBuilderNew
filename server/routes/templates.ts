@@ -10,6 +10,116 @@ import { upload } from '../utils/upload';
 import { renderTemplateToImage } from '../utils/templateImageRenderer';
 
 /**
+ * Ensures that a template's thumbnail is in sync with its HTML content
+ * This is a utility function that should be called whenever a template's HTML is updated
+ * @param templateId The ID of the template to sync
+ * @returns Promise containing the updated template with new thumbnail URL
+ */
+async function syncTemplateThumbnail(templateId: number): Promise<any> {
+  console.log(`Syncing thumbnail for template ID ${templateId}...`);
+  
+  try {
+    // Get the template's current data
+    const templates = await db.select().from(resumeTemplates).where(eq(resumeTemplates.id, templateId));
+    
+    if (templates.length === 0) {
+      throw new Error(`Template with ID ${templateId} not found`);
+    }
+    
+    const template = templates[0];
+    
+    // Only proceed if template has HTML content
+    if (!template.htmlContent) {
+      console.log(`Template ${templateId} has no HTML content, skipping thumbnail generation`);
+      return template;
+    }
+    
+    // Generate a unique filename for the thumbnail
+    const outputFilename = `template-${templateId}-${Date.now()}.png`;
+    const outputPath = path.join(process.cwd(), 'public', 'uploads', 'previews', outputFilename);
+    
+    // Ensure the directory exists
+    const outputDir = path.dirname(outputPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
+    // Try to generate a PNG using Puppeteer
+    try {
+      await renderTemplateToImage(template.htmlContent, outputPath);
+      console.log(`Successfully generated PNG thumbnail for template ${templateId}`);
+      
+      // Update the template with the new thumbnail URL
+      const thumbnailUrl = `/uploads/previews/${outputFilename}`;
+      
+      const [updatedTemplate] = await db.update(resumeTemplates)
+        .set({
+          thumbnailUrl,
+          updatedAt: new Date()
+        })
+        .where(eq(resumeTemplates.id, templateId))
+        .returning();
+        
+      console.log(`Updated template ${templateId} with new thumbnail URL: ${thumbnailUrl}`);
+      return updatedTemplate;
+    } catch (error) {
+      console.error(`Failed to generate PNG thumbnail for template ${templateId}:`, error);
+      
+      // Fall back to SVG generation
+      try {
+        // Extract colors from template for preview generation
+        let primaryColor = template.primaryColor || "#2d2f35";
+        let secondaryColor = template.secondaryColor || "#4a90e2";
+        
+        // Try to detect colors from HTML content
+        const htmlContent = template.htmlContent;
+        if (htmlContent.includes('background: #1f2937') || 
+            htmlContent.includes('background-color: #1f2937') ||
+            htmlContent.includes('bg-gray-800')) {
+          primaryColor = "#1f2937";
+          secondaryColor = "#f97316";
+        } else if (htmlContent.includes('background: #000') || 
+                 htmlContent.includes('background-color: #000') ||
+                 htmlContent.includes('bg-black')) {
+          primaryColor = "#000000";
+          secondaryColor = "#f97316";
+        }
+        
+        // Generate SVG fallback
+        const svgFilename = outputFilename.replace(/\.png$/, '.svg');
+        const svgOutputPath = path.join(process.cwd(), 'public', 'uploads', 'previews', svgFilename);
+        
+        const fallbackSvg = generateTemplatePreviewSvg(template.name, primaryColor, secondaryColor);
+        fs.writeFileSync(svgOutputPath, fallbackSvg);
+        
+        // Update the template with the new SVG thumbnail URL
+        const thumbnailUrl = `/uploads/previews/${svgFilename}`;
+        
+        const [updatedTemplate] = await db.update(resumeTemplates)
+          .set({
+            thumbnailUrl,
+            primaryColor,
+            secondaryColor,
+            updatedAt: new Date()
+          })
+          .where(eq(resumeTemplates.id, templateId))
+          .returning();
+          
+        console.log(`Updated template ${templateId} with fallback SVG thumbnail: ${thumbnailUrl}`);
+        return updatedTemplate;
+      } catch (svgError) {
+        console.error(`Failed to generate SVG fallback for template ${templateId}:`, svgError);
+        // Return the template without updating thumbnail
+        return template;
+      }
+    }
+  } catch (error) {
+    console.error(`Error syncing thumbnail for template ${templateId}:`, error);
+    throw error;
+  }
+}
+
+/**
  * Generates a fallback SVG preview for a template when Puppeteer fails
  * @param templateName - The name of the template
  * @param primaryColor - The primary color to use (typically for backgrounds)

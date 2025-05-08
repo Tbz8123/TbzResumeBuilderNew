@@ -20,6 +20,7 @@ export async function renderTemplateToImage(htmlString: string, outputPath: stri
     // Launch browser with more reliable settings and longer timeout
     browser = await puppeteer.launch({
       headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/v1d3y56v2kx3gl03l0dfz0r5q1dc9yl8-chromium-117.0.5938.92/bin/chromium',
       args: [
         '--no-sandbox', 
         '--disable-setuid-sandbox',
