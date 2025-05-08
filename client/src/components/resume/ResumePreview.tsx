@@ -116,6 +116,9 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
       html = html.replace(/{{city}}/g, resumeData.city || '');
       html = html.replace(/{{country}}/g, resumeData.country || '');
       html = html.replace(/{{address}}/g, [resumeData.city, resumeData.country].filter(Boolean).join(', '));
+      html = html.replace(/{{summary}}/g, resumeData.summary || '');
+      html = html.replace(/{{profile}}/g, resumeData.summary || '');
+      html = html.replace(/{{aboutMe}}/g, resumeData.summary || '');
       
       // Handle profile photo if present
       if (resumeData.photo) {
@@ -252,7 +255,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
                 About Me
               </h2>
               <p className="text-xs text-gray-700">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce tempor, libero a tincidunt elementum, felis urna luctus leo, non efficitur nisl justo nec augue.
+                {resumeData.summary || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce tempor, libero a tincidunt elementum, felis urna luctus leo, non efficitur nisl justo nec augue.'}
               </p>
             </section>
             
