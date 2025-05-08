@@ -42,8 +42,22 @@ router.get("/", async (req, res) => {
         : eq(resumeTemplates.isActive, true)
     )
     .orderBy(desc(resumeTemplates.createdAt));
+
+    // TEMPORARY: Fix specific template colors for display
+    const processedTemplates = templates.map(template => {
+      // Fix the blue/dark template (ID 11) if needed
+      if (template.id === 11 && template.htmlContent && 
+          (template.htmlContent.indexOf('background-color: #2d2f35') !== -1 || 
+           template.htmlContent.indexOf('left-section') !== -1)) {
+        
+        // Override colors to match the actual template design
+        template.primaryColor = "#2d2f35";   // dark gray for left sidebar
+        template.secondaryColor = "#4a90e2"; // blue for headers
+      }
+      return template;
+    });
     
-    res.json(templates);
+    res.json(processedTemplates);
   } catch (error) {
     console.error("Error fetching templates:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -74,7 +88,33 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ message: "Template not found" });
     }
     
-    res.json(templates[0]);
+    let template = templates[0];
+    
+    // TEMPORARY: Fix for the blue/dark template (ID 11)
+    // Check if this is the blue/dark gray template we're troubleshooting
+    if (templateId === 11 && template.htmlContent && 
+        (template.htmlContent.indexOf('background-color: #2d2f35') !== -1 || 
+         template.htmlContent.indexOf('left-section') !== -1)) {
+      
+      // Fix colors if they don't match the actual template design
+      if (template.primaryColor !== "#2d2f35" || template.secondaryColor !== "#4a90e2") {
+        console.log("Updating template colors to match actual template design");
+        
+        // Update the template's stored colors to match the actual template
+        await db.update(resumeTemplates)
+          .set({
+            primaryColor: "#2d2f35",   // dark gray
+            secondaryColor: "#4a90e2", // blue
+          })
+          .where(eq(resumeTemplates.id, templateId));
+          
+        // Regenerate preview with correct colors
+        template.primaryColor = "#2d2f35";
+        template.secondaryColor = "#4a90e2";
+      }
+    }
+    
+    res.json(template);
   } catch (error) {
     console.error("Error fetching template:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -299,6 +339,14 @@ router.get("/:id/svg", async (req, res) => {
     // Extract template details for possible fallback
     const template = templates[0];
     let content = template.svgContent || '';
+    
+    // TEMPORARY: Fix for the blue/dark template (ID 11)
+    // Check if this is the blue/dark gray template by template ID
+    if (templateId === 11) {
+      // Override colors to match actual template design 
+      template.primaryColor = "#2d2f35";   // dark gray for left sidebar
+      template.secondaryColor = "#4a90e2"; // blue for headers
+    }
     
     console.log(`Serving template ${templateId} as text/html`); // Log for debugging
     
