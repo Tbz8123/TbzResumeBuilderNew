@@ -81,6 +81,7 @@ const JobDescriptionPage = () => {
   // Get job descriptions based on job title
   const [descriptions, setDescriptions] = useState<JobDescription[]>([]);
   const [isLoadingDescriptions, setIsLoadingDescriptions] = useState(false);
+  const [showingResults, setShowingResults] = useState<string>('');
   
   // Fetch job descriptions from API when job title changes or on search
   useEffect(() => {
@@ -326,7 +327,12 @@ const JobDescriptionPage = () => {
     }
   };
 
-  const showingResults = searchTerm ? 'Filtered' : 'Showing';
+  // Set initial value for showing results text
+  useEffect(() => {
+    if (!showingResults) {
+      setShowingResults(searchTerm ? 'Filtered' : 'Showing');
+    }
+  }, [searchTerm, showingResults]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
