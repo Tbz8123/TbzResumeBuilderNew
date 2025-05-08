@@ -441,8 +441,10 @@ const JobDescriptionPage = () => {
                                     // Immediately fetch the job descriptions for this title ID
                                     setIsLoadingDescriptions(true);
                                     try {
-                                      const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${jobTitle.id}`;
-                                      console.log(`Directly fetching descriptions from: ${descriptionsUrl}`);
+                                      // Ensure consistent numeric ID type for API calls
+                                      const jobTitleIdForApi = typeof jobTitle.id === 'string' ? parseInt(jobTitle.id) : jobTitle.id;
+                                      const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`;
+                                      console.log(`Directly fetching descriptions from: ${descriptionsUrl}`, "ID type:", typeof jobTitleIdForApi);
                                       
                                       const response = await apiRequest('GET', descriptionsUrl);
                                       const descriptionsData = await response.json();
@@ -453,8 +455,8 @@ const JobDescriptionPage = () => {
                                         setDescriptions(descriptionsData);
                                       } else {
                                         // Fallback to general descriptions if none found
-                                        // Pass the job title ID for prioritization
-                                        const allResponse = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${jobTitle.id}`);
+                                        // Pass the job title ID for prioritization, ensuring consistent numeric ID for API
+                                        const allResponse = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`);
                                         const allDescriptionsData = await allResponse.json();
                                         setDescriptions(allDescriptionsData);
                                       }
@@ -537,8 +539,10 @@ const JobDescriptionPage = () => {
                             // Fetch descriptions for this job title
                             if (dbJobTitleId) {
                               // If we have a database ID, use it directly
-                              const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${dbJobTitleId}`;
-                              console.log(`Directly fetching descriptions from: ${descriptionsUrl}`);
+                              // Ensure consistent numeric ID for API calls
+                              const jobTitleIdForApi = typeof dbJobTitleId === 'string' ? parseInt(dbJobTitleId) : dbJobTitleId;
+                              const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`;
+                              console.log(`Directly fetching descriptions from: ${descriptionsUrl}`, "ID type:", typeof jobTitleIdForApi);
                               
                               const response = await apiRequest('GET', descriptionsUrl);
                               const descriptionsData = await response.json();
@@ -549,7 +553,8 @@ const JobDescriptionPage = () => {
                                 setDescriptions(descriptionsData);
                               } else {
                                 // Fallback to general descriptions, but still prioritize this job title's descriptions
-                                const allResponse = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${dbJobTitleId}`);
+                                // Continue to use the jobTitleIdForApi to ensure consistent numeric ID for API
+                                const allResponse = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`);
                                 const allDescriptionsData = await allResponse.json();
                                 setDescriptions(allDescriptionsData);
                               }
@@ -609,7 +614,10 @@ const JobDescriptionPage = () => {
                             </div>
                           )}
                           {currentJob.dbJobTitleId && 
-                           (description.jobTitleId !== parseInt(currentJob.dbJobTitleId.toString())) && (
+                           // Ensure consistent type comparison by converting both to numbers
+                           (description.jobTitleId !== (typeof currentJob.dbJobTitleId === 'string' 
+                                                       ? parseInt(currentJob.dbJobTitleId) 
+                                                       : currentJob.dbJobTitleId)) && (
                             <div className="text-xs text-gray-600 mb-1">
                               <span className="italic">Related suggestion</span>
                             </div>

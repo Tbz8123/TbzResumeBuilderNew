@@ -164,7 +164,17 @@ jobsRouter.get("/descriptions", async (req, res) => {
   try {
     // Log the raw query parameter for debugging
     console.log("Raw jobTitleId from request:", req.query.jobTitleId, "Type:", typeof req.query.jobTitleId);
-    const jobTitleId = req.query.jobTitleId ? parseInt(req.query.jobTitleId as string) : null;
+    
+    // Handle jobTitleId more robustly - ensure proper parsing and validation
+    let jobTitleId: number | null = null;
+    if (req.query.jobTitleId) {
+      const parsedId = parseInt(req.query.jobTitleId as string);
+      if (!isNaN(parsedId) && parsedId > 0) {
+        jobTitleId = parsedId;
+      } else {
+        console.warn(`Invalid jobTitleId provided: ${req.query.jobTitleId}`);
+      }
+    }
     const searchTerm = req.query.search as string || null;
     
     console.log(`Fetching job descriptions${jobTitleId ? ` for job title ID: ${jobTitleId}` : ' (all)'}${searchTerm ? ` containing "${searchTerm}"` : ''}`);
