@@ -4,6 +4,7 @@ import { setupAuth } from "./auth";
 import templateRoutes from "./routes/templates";
 import exportRoutes from "./routes/export";
 import { triggerThumbnailRouter } from "./routes/triggerThumbnailUpdate";
+import { jobsRouter } from "./routes/jobs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -12,6 +13,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register API routes
   app.use("/api/templates", templateRoutes);
   app.use("/api/export", exportRoutes);
+  app.use("/api/jobs", jobsRouter);
   
   // Register development/test routes
   app.use("/api/triggers", triggerThumbnailRouter);
