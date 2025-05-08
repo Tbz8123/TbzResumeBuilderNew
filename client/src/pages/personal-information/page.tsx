@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, Link } from 'wouter';
-import { ArrowLeft, Info, Plus } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,28 +61,28 @@ const PersonalInformationPage = () => {
       </header>
       
       {/* Main content area */}
-      <div className="flex-1 max-w-[1140px] mx-auto px-4 sm:px-6 py-6">
-        {/* Back button */}
+      <div className="flex-1 max-w-[1080px] mx-auto px-4 py-6">
+        {/* Back button - exactly like Zety */}
         <div className="mb-6">
           <Button 
             variant="ghost" 
             onClick={handleBack}
-            className="flex items-center gap-1 text-blue-600 hover:bg-transparent hover:text-blue-800 px-0"
+            className="flex items-center gap-1 text-blue-600 hover:bg-transparent hover:text-blue-800 px-0 py-0"
             size="sm"
           >
-            <ArrowLeft size={14} />
-            <span className="text-sm">Go Back</span>
+            <ArrowLeft size={12} />
+            <span className="text-xs font-normal">Go Back</span>
           </Button>
         </div>
         
-        <div className="flex flex-col lg:flex-row lg:gap-20">
+        <div className="flex flex-col lg:flex-row gap-12">
           {/* Left column - Form Fields */}
-          <div className="lg:flex-1 max-w-[550px]">
-            <div className="mb-6">
-              <h1 className="text-xl font-bold text-gray-900">
+          <div className="lg:w-[58%]">
+            <div className="mb-5">
+              <h1 className="text-xl font-bold text-gray-900 mb-1.5">
                 What's the best way for employers to contact you?
               </h1>
-              <p className="text-gray-600 text-sm mt-1">
+              <p className="text-gray-600 text-sm">
                 We suggest including an email and phone number.
               </p>
             </div>
@@ -92,9 +92,9 @@ const PersonalInformationPage = () => {
               <span className="text-red-500">*</span> Indicates a required field
             </div>
             
-            {/* Image upload area as a separate element before the form fields */}
-            <div className="text-center mb-8">
-              <div className="inline-block w-[200px] h-[200px] border border-gray-200 mb-3">
+            {/* Photo upload area at the left side of the page */}
+            <div className="mb-6 flex">
+              <div className="w-[135px] h-[135px] border border-gray-200 flex items-center justify-center">
                 {resumeData.photo ? (
                   <img 
                     src={resumeData.photo} 
@@ -102,51 +102,52 @@ const PersonalInformationPage = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
-                    <div className="mb-2">
-                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M6 21V19C6 17.4087 6.63214 15.8826 7.75736 14.7574C8.88258 13.6321 10.4087 13 12 13C13.5913 13 15.1174 13.6321 16.2426 14.7574C17.3679 15.8826 18 17.4087 18 19V21" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M6 21V19C6 17.4087 6.63214 15.8826 7.75736 14.7574C8.88258 13.6321 10.4087 13 12 13C13.5913 13 15.1174 13.6321 16.2426 14.7574C17.3679 15.8826 18 17.4087 18 19V21" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </div>
                 )}
               </div>
-              <Button
-                variant="link"
-                className="text-blue-600 text-sm hover:text-blue-800"
-                onClick={() => document.getElementById('photo-upload')?.click()}
-              >
-                Upload Photo
-              </Button>
-              <input 
-                id="photo-upload" 
-                type="file" 
-                accept="image/*" 
-                className="hidden" 
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      updateResumeData({ photo: event.target?.result as string });
-                    };
-                    reader.readAsDataURL(file);
-                  }
-                }}
-              />
+              
+              <div className="ml-2">
+                <Button
+                  variant="link"
+                  className="text-blue-600 text-sm hover:text-blue-800 font-normal p-0"
+                  onClick={() => document.getElementById('photo-upload')?.click()}
+                >
+                  Upload Photo
+                </Button>
+                <input 
+                  id="photo-upload" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        updateResumeData({ photo: event.target?.result as string });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </div>
             </div>
             
-            {/* Form fields in a more organized layout */}
+            {/* Form fields laid out exactly like Zety */}
             <div className="space-y-5">
-              {/* Name Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* First Name & Surname - 2 columns */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="flex items-center mb-1">
+                  <div className="flex items-center mb-2">
                     <Label htmlFor="firstName" className="text-xs font-medium text-gray-700 uppercase">
                       First Name
                     </Label>
-                    <span className="text-red-500 ml-1">*</span>
+                    <span className="text-red-500 ml-1 font-medium">*</span>
                   </div>
                   <Input
                     id="firstName"
@@ -160,7 +161,7 @@ const PersonalInformationPage = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="surname" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                  <Label htmlFor="surname" className="text-xs font-medium text-gray-700 mb-2 block uppercase">
                     Surname
                   </Label>
                   <Input
@@ -176,7 +177,7 @@ const PersonalInformationPage = () => {
               
               {/* Profession - Full width */}
               <div>
-                <Label htmlFor="profession" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                <Label htmlFor="profession" className="text-xs font-medium text-gray-700 mb-2 block uppercase">
                   Profession
                 </Label>
                 <Input
@@ -189,10 +190,10 @@ const PersonalInformationPage = () => {
                 />
               </div>
               
-              {/* City and Country */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* City and Country - 2 columns */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="city" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                  <Label htmlFor="city" className="text-xs font-medium text-gray-700 mb-2 block uppercase">
                     City
                   </Label>
                   <Input
@@ -206,7 +207,7 @@ const PersonalInformationPage = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="country" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                  <Label htmlFor="country" className="text-xs font-medium text-gray-700 mb-2 block uppercase">
                     Country
                   </Label>
                   <Input
@@ -220,9 +221,9 @@ const PersonalInformationPage = () => {
                 </div>
               </div>
               
-              {/* PIN Code - Fixed width */}
+              {/* PIN Code - Single column */}
               <div>
-                <Label htmlFor="postalCode" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                <Label htmlFor="postalCode" className="text-xs font-medium text-gray-700 mb-2 block uppercase">
                   Pin Code
                 </Label>
                 <Input
@@ -231,13 +232,13 @@ const PersonalInformationPage = () => {
                   placeholder="e.g. 110034"
                   value={resumeData.postalCode}
                   onChange={handleInputChange}
-                  className="border-gray-300 h-10 rounded-md w-full sm:w-1/2"
+                  className="border-gray-300 h-10 rounded-md w-full"
                 />
               </div>
               
               {/* Phone */}
               <div>
-                <Label htmlFor="phone" className="text-xs font-medium text-gray-700 mb-1 uppercase">
+                <Label htmlFor="phone" className="text-xs font-medium text-gray-700 mb-2 block uppercase">
                   Phone
                 </Label>
                 <Input
@@ -253,11 +254,11 @@ const PersonalInformationPage = () => {
               
               {/* Email */}
               <div>
-                <div className="flex items-center mb-1">
+                <div className="flex items-center mb-2">
                   <Label htmlFor="email" className="text-xs font-medium text-gray-700 uppercase">
                     Email
                   </Label>
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-red-500 ml-1 font-medium">*</span>
                 </div>
                 <Input
                   id="email"
@@ -276,12 +277,9 @@ const PersonalInformationPage = () => {
                 <div className="flex items-center mb-2">
                   <span className="text-sm text-gray-700">Add additional information to your resume</span>
                   <span className="text-xs text-gray-500 ml-1">(optional)</span>
-                  <div className="ml-2 inline-flex items-center justify-center w-4 h-4">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12" cy="12" r="10" stroke="#718096" strokeWidth="1.5"/>
-                      <path d="M12 7V13M12 17H12.01" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
+                  <button className="ml-2 w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs">
+                    i
+                  </button>
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
@@ -292,7 +290,7 @@ const PersonalInformationPage = () => {
                     onClick={() => updateAdditionalInfo('linkedin', '')}
                   >
                     LinkedIn
-                    <Plus size={14} />
+                    <span className="text-gray-500 font-bold">+</span>
                   </Button>
                   
                   <Button
@@ -302,7 +300,7 @@ const PersonalInformationPage = () => {
                     onClick={() => updateAdditionalInfo('website', '')}
                   >
                     Website
-                    <Plus size={14} />
+                    <span className="text-gray-500 font-bold">+</span>
                   </Button>
                   
                   <Button
@@ -311,59 +309,63 @@ const PersonalInformationPage = () => {
                     className="rounded-full border-gray-300 text-xs py-1 px-3 flex items-center gap-1"
                     onClick={() => updateAdditionalInfo('drivingLicense', '')}
                   >
-                    Driving license
-                    <Plus size={14} />
+                    Driving licence
+                    <span className="text-gray-500 font-bold">+</span>
                   </Button>
                 </div>
               </div>
             </div>
             
-            {/* Navigation Buttons - well aligned at bottom */}
-            <div className="flex justify-between items-center mt-8 pt-5 border-t border-gray-100">
+            {/* Navigation Buttons - exact positioning */}
+            <div className="flex justify-between items-center mt-14">
               <Button
                 variant="default"
-                onClick={handlePreview}
-                className="border border-gray-300 bg-white hover:bg-gray-50 text-gray-800 rounded-full px-8 py-2"
+                onClick={() => {}}
+                className="bg-[#3a078f] hover:bg-[#33067c] text-white rounded-full px-8 py-2 font-normal"
               >
-                Preview
+                Optional: Personal details
               </Button>
               
-              <Button
-                variant="default"
-                onClick={handleNext}
-                className="bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-full px-8 py-2"
-              >
-                Next: Work history
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handlePreview}
+                  className="border border-gray-300 bg-white hover:bg-gray-50 text-gray-800 rounded-full px-8 py-2 font-normal"
+                >
+                  Preview
+                </Button>
+                
+                <Button
+                  variant="default"
+                  onClick={handleNext}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-black font-normal rounded-full px-8 py-2"
+                >
+                  Next: Work history
+                </Button>
+              </div>
             </div>
           </div>
           
           {/* Right column - Resume Preview */}
-          <div className="lg:w-[350px] mt-10 lg:mt-0">
+          <div className="lg:w-[42%] mt-10 lg:mt-0">
             {/* Results notification */}
             <div className="mb-4">
-              <div className="bg-blue-50 rounded-t-lg p-3 flex items-center">
+              <div className="bg-blue-50 rounded-lg p-2 px-3">
                 <p className="text-sm text-blue-800">Our Resume Builder delivers results¹</p>
               </div>
-              <div className="bg-blue-50 rounded-b-lg p-2 flex items-center justify-center text-sm text-blue-800 font-medium">
-                <svg className="w-4 h-4 mr-1 text-blue-700" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586l3.293-3.293A1 1 0 0114 7z" clipRule="evenodd"></path>
-                </svg>
-                <span>+22% Higher response rate from recruiters</span>
+              <div className="bg-blue-50 rounded-b-lg p-2 flex items-center justify-center text-sm text-blue-800 font-medium -mt-1">
+                <span className="mr-1">+22%</span>
+                <span>Higher response rate from recruiters</span>
               </div>
             </div>
             
-            {/* Resume Preview - Cleaner presentation */}
-            <div className="rounded-lg overflow-hidden shadow-md border border-gray-200">
-              <div
-                className="relative w-full bg-white overflow-hidden"
-                style={{ height: '470px' }}
-              >
-                {/* Resume preview */}
+            {/* Resume Preview - Exactly like Zety */}
+            <div className="border border-gray-200 overflow-hidden">
+              <div className="relative w-full bg-white overflow-hidden" style={{ height: '430px' }}>
                 <HybridResumePreview 
                   className="h-full w-full" 
-                  width={350} 
-                  height={470}
+                  width={400} 
+                  height={430}
                   scaleContent={true}
                 />
               </div>
@@ -373,7 +375,7 @@ const PersonalInformationPage = () => {
             <div className="text-center mt-3">
               <Button 
                 variant="link" 
-                className="text-blue-600 text-sm hover:text-blue-800"
+                className="text-blue-600 text-sm hover:text-blue-800 font-normal"
                 onClick={() => setTemplateModalOpen(true)}
               >
                 Change template
@@ -381,7 +383,7 @@ const PersonalInformationPage = () => {
             </div>
             
             {/* Study disclaimer */}
-            <div className="mt-4 text-xs text-gray-500">
+            <div className="mt-3 text-xs text-gray-500">
               <p>¹ The results are based on a study with over 1000 participants, among whom 287 used resume tools provided on our family sites.</p>
             </div>
           </div>
