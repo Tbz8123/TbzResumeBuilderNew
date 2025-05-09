@@ -39,8 +39,6 @@ jobsRouter.get("/titles", async (req, res) => {
     // Apply search filter if provided
     if (searchQuery) {
       console.log(`Searching for job titles matching: "${searchQuery}"`);
-      // Use more flexible search with special handling for exact match
-      const searchPattern = `%${searchQuery}%`;
       
       // First try exact case-insensitive match
       const exactQuery = db.select()
@@ -67,11 +65,30 @@ jobsRouter.get("/titles", async (req, res) => {
         });
       }
       
-      // If no exact match, proceed with LIKE search
-      query = query.where(
-        sql`LOWER(${jobTitles.title}) LIKE LOWER(${searchPattern})
-            OR LOWER(${jobTitles.category}) LIKE LOWER(${searchPattern})`
-      );
+      // If no exact match, proceed with more flexible search
+      // Split search query into words for more flexible matching
+      const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0);
+      
+      if (searchTerms.length > 1) {
+        // For multi-word searches, create individual pattern for each word
+        // This allows searching "New Test" to match "New Test Title"
+        const conditions = searchTerms.map(term => {
+          const pattern = `%${term}%`;
+          return sql`(LOWER(${jobTitles.title}) LIKE LOWER(${pattern}) 
+                    OR LOWER(${jobTitles.category}) LIKE LOWER(${pattern}))`;
+        });
+        
+        // Join conditions with AND so all terms must match
+        query = query.where(sql.join(conditions, sql` AND `));
+        console.log(`Using multi-word search for "${searchQuery}"`);
+      } else {
+        // Single word search uses simple pattern matching
+        const searchPattern = `%${searchQuery}%`;
+        query = query.where(
+          sql`LOWER(${jobTitles.title}) LIKE LOWER(${searchPattern})
+              OR LOWER(${jobTitles.category}) LIKE LOWER(${searchPattern})`
+        );
+      }
     }
     
     // Get the total count for pagination
@@ -84,11 +101,27 @@ jobsRouter.get("/titles", async (req, res) => {
     }
     
     if (searchQuery) {
-      const searchPattern = `%${searchQuery}%`;
-      countQuery = countQuery.where(
-        sql`LOWER(${jobTitles.title}) LIKE LOWER(${searchPattern})
-            OR LOWER(${jobTitles.category}) LIKE LOWER(${searchPattern})`
-      );
+      // Split search query into words for more flexible matching
+      const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0);
+      
+      if (searchTerms.length > 1) {
+        // For multi-word searches, create individual pattern for each word
+        const conditions = searchTerms.map(term => {
+          const pattern = `%${term}%`;
+          return sql`(LOWER(${jobTitles.title}) LIKE LOWER(${pattern}) 
+                      OR LOWER(${jobTitles.category}) LIKE LOWER(${pattern}))`;
+        });
+        
+        // Join conditions with AND so all terms must match
+        countQuery = countQuery.where(sql.join(conditions, sql` AND `));
+      } else {
+        // Single word search uses simple pattern matching
+        const searchPattern = `%${searchQuery}%`;
+        countQuery = countQuery.where(
+          sql`LOWER(${jobTitles.title}) LIKE LOWER(${searchPattern})
+              OR LOWER(${jobTitles.category}) LIKE LOWER(${searchPattern})`
+        );
+      }
     }
     
     const countResult = await countQuery.execute();
