@@ -131,54 +131,64 @@ const WorkHistorySummaryPage = () => {
           {/* Work Experience List */}
           <div className="space-y-4">
             {resumeData.workExperience && resumeData.workExperience.length > 0 ? (
-              resumeData.workExperience.map((job, index) => (
-                <div key={job.id || index} className="border border-gray-200 rounded-md p-6 relative">
-                  <div className="absolute top-4 left-4 bg-blue-100 text-blue-800 h-8 w-8 flex items-center justify-center rounded-full font-medium">
-                    {index + 1}
-                  </div>
-                  
-                  <div className="ml-10">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-lg">{job.jobTitle}</h3>
-                        <p className="text-gray-600">
-                          {job.employer}{job.location ? `, ${job.location}` : ''} | {job.startMonth} {job.startYear} - {job.isCurrentJob ? 'Present' : `${job.endMonth} ${job.endYear}`}
-                        </p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={() => handleEditDescription(job.id)}
-                          className="text-blue-600 hover:text-blue-800"
-                          aria-label="Edit job description"
-                        >
-                          <Edit className="h-5 w-5" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteJob(job.id)}
-                          className="text-red-600 hover:text-red-800"
-                          aria-label="Delete job"
-                        >
-                          <Trash className="h-5 w-5" />
-                        </button>
-                      </div>
+              // Filter out incomplete job entries - only show entries with minimum required data
+              resumeData.workExperience
+                .filter(job => 
+                  job.jobTitle && 
+                  job.employer && 
+                  job.startMonth && 
+                  job.startYear && 
+                  (job.isCurrentJob || (job.endMonth && job.endYear)) &&
+                  job.responsibilities
+                )
+                .map((job, index) => (
+                  <div key={job.id || index} className="border border-gray-200 rounded-md p-6 relative">
+                    <div className="absolute top-4 left-4 bg-blue-100 text-blue-800 h-8 w-8 flex items-center justify-center rounded-full font-medium">
+                      {index + 1}
                     </div>
                     
-                    <ul className="list-disc pl-5 mt-3 space-y-1">
-                      {job.responsibilities.split('\n').map((item, i) => (
-                        item.trim() && <li key={i} className="text-gray-700">{item.trim()}</li>
-                      ))}
-                    </ul>
-                    
-                    <button 
-                      onClick={() => handleEditDescription(job.id)}
-                      className="text-blue-600 hover:text-blue-800 text-sm mt-3 flex items-center"
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit description
-                    </button>
+                    <div className="ml-10">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium text-lg">{job.jobTitle}</h3>
+                          <p className="text-gray-600">
+                            {job.employer}{job.location ? `, ${job.location}` : ''} | {job.startMonth} {job.startYear} - {job.isCurrentJob ? 'Present' : `${job.endMonth} ${job.endYear}`}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => handleEditDescription(job.id)}
+                            className="text-blue-600 hover:text-blue-800"
+                            aria-label="Edit job description"
+                          >
+                            <Edit className="h-5 w-5" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteJob(job.id)}
+                            className="text-red-600 hover:text-red-800"
+                            aria-label="Delete job"
+                          >
+                            <Trash className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <ul className="list-disc pl-5 mt-3 space-y-1">
+                        {job.responsibilities.split('\n').map((item, i) => (
+                          item.trim() && <li key={i} className="text-gray-700">{item.trim()}</li>
+                        ))}
+                      </ul>
+                      
+                      <button 
+                        onClick={() => handleEditDescription(job.id)}
+                        className="text-blue-600 hover:text-blue-800 text-sm mt-3 flex items-center"
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Edit description
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                ))
             ) : (
               <div className="text-center py-8">
                 <p className="text-gray-500">No work experience added yet. Add a position to get started.</p>
