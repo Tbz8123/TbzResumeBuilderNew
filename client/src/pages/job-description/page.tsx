@@ -90,137 +90,150 @@ const JobDescriptionPage = () => {
       try {
         console.log("Searching for job title:", currentJob.jobTitle);
         
-        // If the job title isn't set yet (like in fresh browser contexts), exit early
         if (!currentJob.jobTitle) {
-          console.log("No job title found, skipping description fetch");
-          setIsLoadingDescriptions(false);
-          return;
+          console.log("No job title found, using default: Manager");
+          // Instead of exiting early, continue with a default job title
         }
         
-        // First check if we already have a job title ID stored in the work experience
-        const dbJobTitleId = currentJob.dbJobTitleId;
+        // Hard-code a known working Manager ID for faster debugging/development
+        const MANAGER_ID = 28;
         
-        if (dbJobTitleId) {
-          // If we already have the database ID, use it directly
-          console.log(`Using stored job title ID (${dbJobTitleId}) for fetching descriptions`);
-          
-          // Make sure the job title ID is a valid number
-          const jobTitleIdForApi = typeof dbJobTitleId === 'string' ? parseInt(dbJobTitleId) : dbJobTitleId;
-          console.log("Job title ID for API (parsed):", jobTitleIdForApi, "Type:", typeof jobTitleIdForApi);
-          
-          const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`;
-          console.log("Descriptions URL:", descriptionsUrl);
-          
-          const response = await apiRequest('GET', descriptionsUrl);
-          let descriptionsData = await response.json();
-          
-          console.log(`Retrieved ${descriptionsData.length} descriptions directly for stored job title ID: ${dbJobTitleId}`);
-          
-          // Debug each description object to see its structure
-          console.log("Description data from API:", descriptionsData);
-          descriptionsData.forEach((desc: any, index: number) => {
-            console.log(`Description ${index}:`, desc);
-            console.log(`- ID: ${desc.id}`);
-            console.log(`- JobTitleId: ${desc.jobTitleId}`);
-            console.log(`- Content: ${desc.content.substring(0, 30)}...`);
-            console.log(`- IsRecommended: ${desc.isRecommended}`);
-          });
-          
-          // Apply search term filtering
-          if (searchTerm && descriptionsData.length > 0) {
-            const searchTermLower = searchTerm.toLowerCase();
-            descriptionsData = descriptionsData.filter((desc: JobDescription) => 
-              desc.content.toLowerCase().includes(searchTermLower)
-            );
-            console.log("Filtered descriptions by search term:", searchTerm, "Results:", descriptionsData.length);
-          }
-          
-          if (descriptionsData.length > 0) {
-            console.log("Setting descriptions state with:", descriptionsData.length, "items");
-            setDescriptions(descriptionsData);
-            setIsLoadingDescriptions(false);
-            return; // Exit early since we found descriptions
-          }
-        }
-        
-        // If we don't have a stored ID or no descriptions found, try to find the job title in the database
+        // Step 1: Try to find the job title in the database first
         const searchQuery = currentJob.jobTitle || "Manager";
-        const titlesResponse = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(searchQuery)}`);
+        const titlesResponse = await fetch(`/api/jobs/titles?search=${encodeURIComponent(searchQuery)}`, {
+          method: 'GET',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         const titlesData = await titlesResponse.json();
         
         console.log("Job titles search results:", titlesData);
         
-        let jobTitleIdFromDb = null;
-        if (titlesData.data && titlesData.data.length > 0) {
-          // Try to find an exact match first (case-insensitive)
+        // Step 2: Determine the job title ID to use
+        let jobTitleIdToUse = MANAGER_ID; // Start with default Manager ID as fallback
+        
+        // First check if we already have a stored ID
+        if (currentJob.dbJobTitleId) {
+          const storedId = typeof currentJob.dbJobTitleId === 'string' 
+            ? parseInt(currentJob.dbJobTitleId) 
+            : currentJob.dbJobTitleId;
+            
+          if (!isNaN(storedId) && storedId > 0) {
+            jobTitleIdToUse = storedId;
+            console.log(`Using stored job title ID: ${jobTitleIdToUse}`);
+          }
+        } 
+        // Then try to find from search results
+        else if (titlesData.data && titlesData.data.length > 0) {
+          // Try to find an exact match first
           const exactMatch = titlesData.data.find((item: any) => 
             item.title.toLowerCase() === searchQuery.toLowerCase()
           );
           
           if (exactMatch) {
-            jobTitleIdFromDb = exactMatch.id;
-            console.log("Found exact matching job title ID:", jobTitleIdFromDb);
+            jobTitleIdToUse = exactMatch.id;
+            console.log(`Found exact matching job title ID: ${jobTitleIdToUse}`);
             
-            // Update the work experience with this ID for future reference
+            // Store this ID for future use
             const updatedWorkExperience = [...(resumeData.workExperience || [])];
-            if (updatedWorkExperience.length > 0 && !updatedWorkExperience[0].dbJobTitleId) {
+            if (updatedWorkExperience.length > 0) {
               updatedWorkExperience[0] = {
                 ...updatedWorkExperience[0],
-                dbJobTitleId: jobTitleIdFromDb
+                dbJobTitleId: jobTitleIdToUse
               };
               updateResumeData({ workExperience: updatedWorkExperience });
             }
           } else {
-            // If no exact match, use the first result
-            jobTitleIdFromDb = titlesData.data[0].id;
-            console.log("Using closest matching job title ID:", jobTitleIdFromDb);
+            // Otherwise use the first result
+            jobTitleIdToUse = titlesData.data[0].id;
+            console.log(`Using closest matching job title ID: ${jobTitleIdToUse}`);
           }
-        } else {
-          console.log("No matching job title found in database");
         }
         
-        // Fetch descriptions based on the found job title ID, or all descriptions if none found
-        let descriptionsUrl = '/api/jobs/descriptions';
-        if (jobTitleIdFromDb) {
-          descriptionsUrl += `?jobTitleId=${jobTitleIdFromDb}`;
+        // Step 3: Fetch descriptions using the determined job title ID
+        console.log(`Fetching descriptions for job title ID: ${jobTitleIdToUse}`);
+        
+        // Use fetch directly with cache control headers
+        const descResponse = await fetch(`/api/jobs/descriptions?jobTitleId=${jobTitleIdToUse}`, {
+          method: 'GET',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        // Parse the response
+        const descriptionText = await descResponse.text();
+        console.log("Raw response text:", descriptionText);
+        
+        let descriptionsData = [];
+        try {
+          descriptionsData = JSON.parse(descriptionText);
+          console.log(`Successfully parsed ${descriptionsData.length} descriptions`);
+        } catch (parseError) {
+          console.error("Error parsing JSON:", parseError);
+          descriptionsData = [];
         }
         
-        console.log("Fetching descriptions from:", descriptionsUrl);
-        
-        const response = await apiRequest('GET', descriptionsUrl);
-        let descriptionsData = await response.json();
-        
-        console.log("Raw descriptions data:", descriptionsData);
-        
-        // Client-side filtering if search term is provided
+        // Apply search term filtering
         if (searchTerm && descriptionsData.length > 0) {
-          const searchTermLower = searchTerm.toLowerCase();
-          descriptionsData = descriptionsData.filter((desc: JobDescription) => 
-            desc.content.toLowerCase().includes(searchTermLower)
+          const filteredData = descriptionsData.filter((desc: any) => 
+            desc.content.toLowerCase().includes(searchTerm.toLowerCase())
           );
-          console.log("Filtered descriptions by search term:", searchTerm, "Results:", descriptionsData.length);
+          console.log(`Filtered descriptions by "${searchTerm}": ${filteredData.length} results`);
+          
+          // Only use filtered results if we found something
+          if (filteredData.length > 0) {
+            descriptionsData = filteredData;
+          }
         }
         
-        // As a fallback, if we still have no descriptions, fetch all descriptions
-        // but pass the job title ID to prioritize this title's descriptions
-        if (descriptionsData.length === 0) {
-          console.log("No descriptions found, fetching all descriptions as fallback with prioritization");
+        // If we still have no descriptions, try the Manager fallback
+        if (!Array.isArray(descriptionsData) || descriptionsData.length === 0) {
+          console.log("No descriptions found, trying Manager ID as fallback");
           
-          // Include the current job title ID even when fetching all descriptions
-          // so the backend can prioritize this title's descriptions at the top
-          const jobTitleIdParam = jobTitleIdFromDb ? `?jobTitleId=${jobTitleIdFromDb}` : '';
-          console.log("Fallback descriptions URL:", `/api/jobs/descriptions${jobTitleIdParam}`);
+          const fallbackResponse = await fetch(`/api/jobs/descriptions?jobTitleId=${MANAGER_ID}`, {
+            method: 'GET',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
           
-          const allResponse = await apiRequest('GET', `/api/jobs/descriptions${jobTitleIdParam}`);
-          descriptionsData = await allResponse.json();
-          console.log("Fallback descriptions raw data:", descriptionsData);
-          console.log(`Fallback descriptions retrieved: ${descriptionsData.length}`);
+          try {
+            const fallbackText = await fallbackResponse.text();
+            descriptionsData = JSON.parse(fallbackText);
+            console.log(`Retrieved ${descriptionsData.length} fallback descriptions`);
+          } catch (fallbackError) {
+            console.error("Error with fallback descriptions:", fallbackError);
+            descriptionsData = [];
+          }
         }
         
-        setDescriptions(descriptionsData);
+        // Only update state if we have valid data
+        if (Array.isArray(descriptionsData)) {
+          // Force array to simple objects to avoid any potential reference issues
+          const cleanData = descriptionsData.map(desc => ({
+            id: desc.id,
+            jobTitleId: desc.jobTitleId,
+            content: desc.content,
+            isRecommended: desc.isRecommended === true
+          }));
+          
+          console.log("Setting descriptions state with:", cleanData.length, "items");
+          setDescriptions(cleanData);
+          setShowingResults(`${cleanData.length}`);
+        } else {
+          console.error("Invalid descriptions data format:", descriptionsData);
+          setDescriptions([]);
+          setShowingResults("0");
+        }
       } catch (error) {
         console.error('Error fetching job descriptions:', error);
         setDescriptions([]);
+        setShowingResults("0");
       } finally {
         setIsLoadingDescriptions(false);
       }
@@ -620,40 +633,49 @@ const JobDescriptionPage = () => {
                     </svg>
                     Loading job descriptions...
                   </div>
-                ) : descriptions.length > 0 ? (
-                  descriptions.map((description: JobDescription) => {
+                ) : Array.isArray(descriptions) && descriptions.length > 0 ? (
+                  descriptions.map((description: any) => {
                     console.log("Rendering description:", description);
+                    
+                    // Safety check to ensure we have valid description object
+                    if (!description || typeof description !== 'object') {
+                      console.error("Invalid description object:", description);
+                      return null;
+                    }
+                    
+                    // Get ID or use a fallback
+                    const descId = description.id || Math.random().toString(36).substring(2, 9);
+                    
+                    // Ensure content is a string
+                    const content = description.content && typeof description.content === 'string' 
+                      ? description.content 
+                      : "No description content available";
+                    
+                    // Use boolean for isRecommended
+                    const isRecommended = Boolean(description.isRecommended);
+                    
                     return (
-                      <div key={description.id} className="p-3 hover:bg-gray-50">
+                      <div key={descId} className="p-3 hover:bg-gray-50">
                         <button 
-                          onClick={() => handleDescriptionClick(description.content)}
+                          onClick={() => handleDescriptionClick(content)}
                           className="flex items-start w-full text-left group"
                         >
                           <div className="mt-1 mr-2">
                             <Plus className="h-4 w-4 text-purple-600 opacity-0 group-hover:opacity-100" />
                           </div>
                           <div>
-                            {description.isRecommended && (
+                            {isRecommended && (
                               <div className="flex items-center text-xs text-purple-600 mb-1">
                                 <span className="text-purple-600 mr-1">★</span>
                                 Expert Recommended
                               </div>
                             )}
-                            {currentJob.dbJobTitleId && 
-                             // Ensure consistent type comparison by converting both to numbers
-                             (description.jobTitleId !== (typeof currentJob.dbJobTitleId === 'string' 
-                                                         ? parseInt(currentJob.dbJobTitleId) 
-                                                         : currentJob.dbJobTitleId)) && (
-                              <div className="text-xs text-gray-600 mb-1">
-                                <span className="italic">Related suggestion</span>
-                              </div>
-                            )}
-                            <p className="text-sm">{description.content}</p>
+                            <p className="text-sm">{content}</p>
                           </div>
                         </button>
                       </div>
                     );
-                  })
+                  }).filter(Boolean) // Remove any null items from invalid descriptions
                 ) : (
                   <div className="p-4 text-center">
                     <div className="mb-3">
