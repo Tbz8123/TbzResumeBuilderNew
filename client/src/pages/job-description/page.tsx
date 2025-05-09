@@ -109,6 +109,16 @@ const JobDescriptionPage = () => {
           
           console.log(`Retrieved ${descriptionsData.length} descriptions directly for stored job title ID: ${dbJobTitleId}`);
           
+          // Debug each description object to see its structure
+          console.log("Description data from API:", descriptionsData);
+          descriptionsData.forEach((desc: any, index: number) => {
+            console.log(`Description ${index}:`, desc);
+            console.log(`- ID: ${desc.id}`);
+            console.log(`- JobTitleId: ${desc.jobTitleId}`);
+            console.log(`- Content: ${desc.content.substring(0, 30)}...`);
+            console.log(`- IsRecommended: ${desc.isRecommended}`);
+          });
+          
           // Apply search term filtering
           if (searchTerm && descriptionsData.length > 0) {
             const searchTermLower = searchTerm.toLowerCase();
@@ -119,6 +129,7 @@ const JobDescriptionPage = () => {
           }
           
           if (descriptionsData.length > 0) {
+            console.log("Setting descriptions state with:", descriptionsData.length, "items");
             setDescriptions(descriptionsData);
             setIsLoadingDescriptions(false);
             return; // Exit early since we found descriptions
@@ -603,36 +614,39 @@ const JobDescriptionPage = () => {
                     Loading job descriptions...
                   </div>
                 ) : descriptions.length > 0 ? (
-                  descriptions.map((description: JobDescription) => (
-                    <div key={description.id} className="p-3 hover:bg-gray-50">
-                      <button 
-                        onClick={() => handleDescriptionClick(description.content)}
-                        className="flex items-start w-full text-left group"
-                      >
-                        <div className="mt-1 mr-2">
-                          <Plus className="h-4 w-4 text-purple-600 opacity-0 group-hover:opacity-100" />
-                        </div>
-                        <div>
-                          {description.isRecommended && (
-                            <div className="flex items-center text-xs text-purple-600 mb-1">
-                              <span className="text-purple-600 mr-1">★</span>
-                              Expert Recommended
-                            </div>
-                          )}
-                          {currentJob.dbJobTitleId && 
-                           // Ensure consistent type comparison by converting both to numbers
-                           (description.jobTitleId !== (typeof currentJob.dbJobTitleId === 'string' 
-                                                       ? parseInt(currentJob.dbJobTitleId) 
-                                                       : currentJob.dbJobTitleId)) && (
-                            <div className="text-xs text-gray-600 mb-1">
-                              <span className="italic">Related suggestion</span>
-                            </div>
-                          )}
-                          <p className="text-sm">{description.content}</p>
-                        </div>
-                      </button>
-                    </div>
-                  ))
+                  descriptions.map((description: JobDescription) => {
+                    console.log("Rendering description:", description);
+                    return (
+                      <div key={description.id} className="p-3 hover:bg-gray-50">
+                        <button 
+                          onClick={() => handleDescriptionClick(description.content)}
+                          className="flex items-start w-full text-left group"
+                        >
+                          <div className="mt-1 mr-2">
+                            <Plus className="h-4 w-4 text-purple-600 opacity-0 group-hover:opacity-100" />
+                          </div>
+                          <div>
+                            {description.isRecommended && (
+                              <div className="flex items-center text-xs text-purple-600 mb-1">
+                                <span className="text-purple-600 mr-1">★</span>
+                                Expert Recommended
+                              </div>
+                            )}
+                            {currentJob.dbJobTitleId && 
+                             // Ensure consistent type comparison by converting both to numbers
+                             (description.jobTitleId !== (typeof currentJob.dbJobTitleId === 'string' 
+                                                         ? parseInt(currentJob.dbJobTitleId) 
+                                                         : currentJob.dbJobTitleId)) && (
+                              <div className="text-xs text-gray-600 mb-1">
+                                <span className="italic">Related suggestion</span>
+                              </div>
+                            )}
+                            <p className="text-sm">{description.content}</p>
+                          </div>
+                        </button>
+                      </div>
+                    );
+                  })
                 ) : (
                   <div className="p-4 text-center">
                     <div className="mb-3">
