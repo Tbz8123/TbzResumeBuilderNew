@@ -28,6 +28,133 @@ jobsRouter.get("/titles", async (req, res) => {
     
     console.log(`Fetching job titles (page: ${page}, limit: ${limit}, category: ${category || 'all'}, search: ${searchQuery || 'none'})`);
     
+    // Apply search filter if provided
+    if (searchQuery) {
+      console.log(`Searching for job titles matching: "${searchQuery}"`);
+      
+      // JavaScript-based search to avoid SQL operator issues
+      try {
+        const allTitles = await db.select().from(jobTitles).execute();
+        const lowercaseSearch = searchQuery.toLowerCase();
+        
+        // First try to find exact matches
+        const exactMatches = allTitles.filter(title => 
+          title.title.toLowerCase() === lowercaseSearch
+        );
+        
+        if (exactMatches.length > 0) {
+          console.log(`Found exact match for: "${searchQuery}"`);
+          
+          // Add cache control headers to prevent browser caching
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+          
+          return res.json({
+            data: exactMatches,
+            meta: {
+              page: 1,
+              limit,
+              totalCount: exactMatches.length,
+              totalPages: 1,
+            }
+          });
+        }
+        
+        // If no exact match, find titles that contain the search query
+        const partialMatches = allTitles
+          .filter(title => title.title.toLowerCase().includes(lowercaseSearch))
+          .sort((a, b) => {
+            // Sort by how closely the title matches the search string
+            const aTitle = a.title.toLowerCase();
+            const bTitle = b.title.toLowerCase();
+            
+            // Starts with search term
+            if (aTitle.startsWith(lowercaseSearch) && !bTitle.startsWith(lowercaseSearch)) return -1;
+            if (bTitle.startsWith(lowercaseSearch) && !aTitle.startsWith(lowercaseSearch)) return 1;
+            
+            // Ends with search term
+            if (aTitle.endsWith(lowercaseSearch) && !bTitle.endsWith(lowercaseSearch)) return -1;
+            if (bTitle.endsWith(lowercaseSearch) && !aTitle.endsWith(lowercaseSearch)) return 1;
+            
+            // Default to newest first
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          })
+          .slice(0, 10); // Limit to 10 results
+          
+        if (partialMatches.length > 0) {
+          console.log(`Found ${partialMatches.length} partial matches for search term: "${searchQuery}"`);
+          
+          // Add cache control headers to prevent browser caching
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+          
+          return res.json({
+            data: partialMatches,
+            meta: {
+              page: 1,
+              limit,
+              totalCount: partialMatches.length,
+              totalPages: 1,
+            }
+          });
+        }
+        
+        // If we have category filter, we need to apply it
+        if (category) {
+          const filteredTitles = allTitles.filter(title => title.category === category);
+          
+          console.log(`Retrieved ${filteredTitles.length} job titles in category: ${category}`);
+          
+          // Add cache control headers to prevent browser caching
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+          
+          // Apply pagination
+          const paginatedTitles = filteredTitles.slice(offset, offset + limit);
+          const totalFilteredCount = filteredTitles.length;
+          
+          return res.json({
+            data: paginatedTitles,
+            meta: {
+              page,
+              limit,
+              totalCount: totalFilteredCount,
+              totalPages: Math.ceil(totalFilteredCount / limit),
+            }
+          });
+        }
+        
+        // If no matches and no category filter, return all results with pagination
+        const paginatedTitles = allTitles.slice(offset, offset + limit);
+        
+        console.log(`No matches found for search term: "${searchQuery}", returning paginated results`);
+        
+        // Add cache control headers to prevent browser caching
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        
+        return res.json({
+          data: paginatedTitles,
+          meta: {
+            page,
+            limit,
+            totalCount: allTitles.length,
+            totalPages: Math.ceil(allTitles.length / limit),
+          }
+        });
+      } catch (error) {
+        console.error("Error during JavaScript-based search:", error);
+        // If JavaScript-based search fails, fall through to the standard SQL approach
+      }
+    }
+    
+    // If we reach here, either there was no search query or the JavaScript search failed
+    // Do a simple database query with pagination
+    
     // Build the query with optional filters
     let query = db.select().from(jobTitles);
     
@@ -36,134 +163,15 @@ jobsRouter.get("/titles", async (req, res) => {
       query = query.where(eq(jobTitles.category, category));
     }
     
-    // Apply search filter if provided
-    if (searchQuery) {
-      console.log(`Searching for job titles matching: "${searchQuery}"`);
-      
-      // First try exact case-insensitive match
-      const exactQuery = db.select()
-                         .from(jobTitles)
-                         .where(sql`LOWER(${jobTitles.title}) = LOWER(${searchQuery})`);
-      
-      const exactMatches = await exactQuery.execute();
-      if (exactMatches.length > 0) {
-        console.log(`Found exact match for: "${searchQuery}"`);
-        
-        // Add cache control headers to prevent browser caching
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        
-        return res.json({
-          data: exactMatches,
-          meta: {
-            page: 1,
-            limit,
-            totalCount: exactMatches.length,
-            totalPages: 1,
-          }
-        });
-      }
-      
-      // If no exact match, proceed with more flexible search approach
-      
-      // For simplicity, first try a direct case-insensitive LIKE search
-      // This prioritizes exact job title names as they appear in the database
-      const directMatches = await db.query.jobTitles.findMany({
-        where: sql`LOWER(${jobTitles.title}) LIKE LOWER(${'%' + searchQuery + '%'})`,
-        orderBy: [
-          // Sort by how closely the title matches the search string
-          sql`CASE WHEN LOWER(${jobTitles.title}) = LOWER(${searchQuery}) THEN 0
-               WHEN LOWER(${jobTitles.title}) LIKE LOWER(${searchQuery + '%'}) THEN 1
-               WHEN LOWER(${jobTitles.title}) LIKE LOWER('%' + ${searchQuery}) THEN 2
-               ELSE 3 END`,
-          desc(jobTitles.createdAt) // Then by newest first
-        ],
-        limit: 10
-      });
-      
-      if (directMatches.length > 0) {
-        console.log(`Found ${directMatches.length} direct matches for search term: "${searchQuery}"`);
-      }
-      
-      // Return direct matches if we found any
-      if (directMatches.length > 0) {
-        console.log(`Returning ${directMatches.length} direct matches for search term: "${searchQuery}"`);
-        
-        // Add cache control headers to prevent browser caching
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        
-        return res.json({
-          data: directMatches,
-          meta: {
-            page: 1,
-            limit,
-            totalCount: directMatches.length,
-            totalPages: 1,
-          }
-        });
-      }
-      
-      // Perform standard search with word-level matching
-      const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0);
-      
-      if (searchTerms.length > 1) {
-        // For multi-word searches, create individual pattern for each word
-        // This allows searching "New Test" to match "New Test Title"
-        const conditions = searchTerms.map(term => {
-          const pattern = `%${term}%`;
-          return sql`(LOWER(${jobTitles.title}) LIKE LOWER(${pattern}) 
-                    OR LOWER(${jobTitles.category}) LIKE LOWER(${pattern}))`;
-        });
-        
-        // Join conditions with AND so all terms must match
-        query = query.where(sql.join(conditions, sql` AND `));
-        console.log(`Using multi-word search for "${searchQuery}"`);
-      } else {
-        // Single word search uses simple pattern matching
-        const searchPattern = `%${searchQuery}%`;
-        query = query.where(
-          sql`LOWER(${jobTitles.title}) LIKE LOWER(${searchPattern})
-              OR LOWER(${jobTitles.category}) LIKE LOWER(${searchPattern})`
-        );
-      }
-    }
+    // Get total count for pagination
+    const countQuery = db.select({ count: sql`COUNT(*)` }).from(jobTitles);
     
-    // Get the total count for pagination
-    // Use a separate count query to avoid SQL injection issues with dynamic SQL
-    let countQuery = db.select({ count: sql`COUNT(*)` }).from(jobTitles);
-    
-    // Apply the same filters
+    // Apply same category filter to count query if needed
     if (category) {
-      countQuery = countQuery.where(eq(jobTitles.category, category));
+      countQuery.where(eq(jobTitles.category, category));
     }
     
-    if (searchQuery) {
-      // Split search query into words for more flexible matching
-      const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0);
-      
-      if (searchTerms.length > 1) {
-        // For multi-word searches, create individual pattern for each word
-        const conditions = searchTerms.map(term => {
-          const pattern = `%${term}%`;
-          return sql`(LOWER(${jobTitles.title}) LIKE LOWER(${pattern}) 
-                      OR LOWER(${jobTitles.category}) LIKE LOWER(${pattern}))`;
-        });
-        
-        // Join conditions with AND so all terms must match
-        countQuery = countQuery.where(sql.join(conditions, sql` AND `));
-      } else {
-        // Single word search uses simple pattern matching
-        const searchPattern = `%${searchQuery}%`;
-        countQuery = countQuery.where(
-          sql`LOWER(${jobTitles.title}) LIKE LOWER(${searchPattern})
-              OR LOWER(${jobTitles.category}) LIKE LOWER(${searchPattern})`
-        );
-      }
-    }
-    
+    // Execute count query
     const countResult = await countQuery.execute();
     const totalCount = parseInt(countResult[0].count.toString());
     
