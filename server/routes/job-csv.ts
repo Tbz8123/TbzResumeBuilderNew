@@ -664,9 +664,13 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
             
             // Use SQL to insert with a specific ID
             // Execute raw SQL query using db.execute
+            // Make sure ID is properly converted to a numeric value
+            const numericId = parseInt(id.toString(), 10);
+            console.log(`Attempting to insert job title with numeric ID: ${numericId}`);
+            
             await db.execute(sql`
               INSERT INTO job_titles (id, title, category) 
-              VALUES (${id}, ${titleText}, ${category})
+              VALUES (${numericId}, ${titleText}, ${category})
               ON CONFLICT (id) DO NOTHING
             `);
             
@@ -773,9 +777,13 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
             const category = item.category || 'General';
             
             // Execute raw SQL query using db.execute
+            // Make sure jobTitleId is properly converted to a numeric value
+            const numericId = parseInt(jobTitleId.toString(), 10);
+            console.log(`Attempting to insert job title with numeric ID: ${numericId}`);
+            
             await db.execute(sql`
               INSERT INTO job_titles (id, title, category) 
-              VALUES (${jobTitleId}, ${titleText}, ${category})
+              VALUES (${numericId}, ${titleText}, ${category})
               ON CONFLICT (id) DO NOTHING
             `);
             
@@ -793,8 +801,12 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
         // Check description uniqueness for this job title
         if (!titleDescriptionMapLocal.has(jobTitleId)) {
           // Fetch existing descriptions for this title
+          // Ensure jobTitleId is a properly converted number
+          const numericJobTitleId = parseInt(jobTitleId.toString(), 10);
+          console.log(`Fetching existing descriptions for job title ID ${numericJobTitleId}`);
+          
           const existingDescriptions = await db.query.jobDescriptions.findMany({
-            where: eq(jobDescriptions.jobTitleId, jobTitleId)
+            where: eq(jobDescriptions.jobTitleId, numericJobTitleId)
           });
           
           // Store lowercase content for duplicate checking
@@ -817,10 +829,14 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
         
         // Add the description
         try {
+          // Ensure jobTitleId is properly converted to a numeric value
+          const numericJobTitleId = parseInt(jobTitleId.toString(), 10);
+          console.log(`Inserting description for job title ID ${numericJobTitleId}`);
+          
           const result = await db.insert(jobDescriptions)
             .values({
               content: item.description,
-              jobTitleId: jobTitleId,
+              jobTitleId: numericJobTitleId,
               isRecommended: item.isRecommended
             })
             .returning();
@@ -893,8 +909,12 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
               console.log(`Checking for descriptions to delete for job title ID ${titleId}...`);
               
               // Get all existing descriptions for this job title from the database
+              // Ensure titleId is a properly converted number
+              const numericTitleId = parseInt(titleId.toString(), 10);
+              console.log(`Querying descriptions for job title ID ${numericTitleId}`);
+              
               const existingDescriptions = await db.query.jobDescriptions.findMany({
-                where: eq(jobDescriptions.jobTitleId, titleId)
+                where: eq(jobDescriptions.jobTitleId, numericTitleId)
               });
               
               // Filter out descriptions that aren't in the imported file
