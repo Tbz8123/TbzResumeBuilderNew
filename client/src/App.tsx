@@ -16,6 +16,7 @@ import UploadResumePage from "@/pages/upload-resume/page";
 import WhyNeedResumePage from "@/pages/work-history/page";
 import WorkExperienceDetailsPage from "@/pages/work-experience-details/page";
 import JobDescriptionPage from "@/pages/job-description/page";
+import WorkHistorySummaryPage from "@/pages/work-history-summary/page";
 import AuthPage from "@/pages/auth-page";
 import AdminJobsTestApiPage from "@/pages/admin/jobs/test-api";
 import AdminTemplatesPage from "@/pages/admin/templates/page";

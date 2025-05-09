@@ -313,9 +313,9 @@ const JobDescriptionPage = () => {
   };
 
   const handleNext = () => {
-    // Save and navigate to the next step
+    // Save and navigate to the work history summary page
     saveJobDescription();
-    setLocation('/education'); // Assuming education is the next step
+    setLocation('/work-history-summary');
   };
 
   const saveJobDescription = () => {
