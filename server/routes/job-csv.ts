@@ -1,26 +1,27 @@
 import { Router } from "express";
 import { db } from "@db";
-import { isAdmin } from "../auth";
+import { isAdmin, isAuthenticated } from "../auth";
 import { jobTitles, jobDescriptions } from "@shared/schema";
-import { eq, asc, sql } from "drizzle-orm";
-import { createObjectCsvStringifier } from "csv-writer";
+import { eq, asc, sql, inArray } from "drizzle-orm";
+import { createObjectCsvStringifier, createObjectCsvWriter } from "csv-writer";
 import multer from "multer";
 import { createReadStream } from "fs";
 import { parse } from "csv-parse";
 import { EventEmitter } from "events";
 import path from "path";
 import { unlink } from "fs/promises";
+import * as XLSX from 'xlsx';
+import * as fs from 'fs';
 
 export const jobCsvRouter = Router();
 
 // Create temp directory if it doesn't exist
-import fs from 'fs';
 if (!fs.existsSync('temp')) {
   fs.mkdirSync('temp', { recursive: true });
   console.log("Created temp directory for file uploads");
 }
 
-// Setup file upload middleware for CSV imports
+// Setup file upload middleware with expanded file type support
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     // Ensure temp directory exists
@@ -30,22 +31,33 @@ const storage = multer.diskStorage({
     cb(null, 'temp/');
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'job-data-' + uniqueSuffix + '.csv');
+    const timestamp = Date.now();
+    const randomNum = Math.round(Math.random() * 1E9);
+    // Use original file extension
+    const ext = path.extname(file.originalname).toLowerCase() || '.csv';
+    cb(null, `job-data-${timestamp}-${randomNum}${ext}`);
   }
 });
 
 const upload = multer({ 
   storage,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+    // Get the file extension
+    const ext = path.extname(file.originalname).toLowerCase();
+    
+    // Accept CSV, Excel, and JSON files
+    if (ext === '.csv' || file.mimetype === 'text/csv' || 
+        ext === '.xlsx' || ext === '.xls' || 
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+        file.mimetype === 'application/vnd.ms-excel' ||
+        ext === '.json' || file.mimetype === 'application/json') {
       cb(null, true);
     } else {
-      cb(new Error('Only CSV files are allowed'));
+      cb(new Error('Only CSV, Excel, and JSON files are allowed'));
     }
   },
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
+    fileSize: 50 * 1024 * 1024 // 50MB max file size
   }
 });
 
@@ -59,18 +71,51 @@ let importStatus = {
   isComplete: false
 };
 
+// Function to generate data for exports
+async function generateExportData() {
+  // Get all job titles
+  const allTitles = await db.query.jobTitles.findMany({
+    with: {
+      descriptions: true
+    },
+    orderBy: asc(jobTitles.title)
+  });
+  
+  // Prepare the data - flatten job titles and their descriptions
+  const records: any[] = [];
+  allTitles.forEach(title => {
+    if (title.descriptions.length === 0) {
+      // Include job titles with no descriptions
+      records.push({
+        JobTitleID: title.id,
+        JobTitle: title.title,
+        Category: title.category,
+        Description: '',
+        IsRecommended: false
+      });
+    } else {
+      // Include all descriptions for each job title
+      title.descriptions.forEach(desc => {
+        records.push({
+          JobTitleID: title.id,
+          JobTitle: title.title,
+          Category: title.category,
+          Description: desc.content,
+          IsRecommended: desc.isRecommended ? "true" : "false"
+        });
+      });
+    }
+  });
+  
+  return records;
+}
+
 // Function to download all job data as a CSV
 jobCsvRouter.get("/export-csv", isAdmin, async (req, res) => {
   try {
     console.log("Exporting all job data as CSV");
     
-    // Get all job titles
-    const allTitles = await db.query.jobTitles.findMany({
-      with: {
-        descriptions: true
-      },
-      orderBy: asc(jobTitles.title)
-    });
+    const records = await generateExportData();
     
     // Create the CSV structure
     const csvStringifier = createObjectCsvStringifier({
@@ -83,32 +128,6 @@ jobCsvRouter.get("/export-csv", isAdmin, async (req, res) => {
       ]
     });
     
-    // Prepare the data - flatten job titles and their descriptions
-    const records: any[] = [];
-    allTitles.forEach(title => {
-      if (title.descriptions.length === 0) {
-        // Include job titles with no descriptions
-        records.push({
-          JobTitleID: title.id,
-          JobTitle: title.title,
-          Category: title.category,
-          Description: '',
-          IsRecommended: false
-        });
-      } else {
-        // Include all descriptions for each job title
-        title.descriptions.forEach(desc => {
-          records.push({
-            JobTitleID: title.id,
-            JobTitle: title.title,
-            Category: title.category,
-            Description: desc.content,
-            IsRecommended: desc.isRecommended ? "true" : "false"
-          });
-        });
-      }
-    });
-    
     // Generate the CSV content
     const csvContent = csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(records);
     
@@ -116,12 +135,65 @@ jobCsvRouter.get("/export-csv", isAdmin, async (req, res) => {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename=job_data_export.csv');
     
-    console.log(`Exporting ${records.length} job data records`);
+    console.log(`Exporting ${records.length} job data records as CSV`);
     
     // Send the CSV
     return res.send(csvContent);
   } catch (error) {
     console.error("Error exporting job data to CSV:", error);
+    return res.status(500).json({ error: "Failed to export job data" });
+  }
+});
+
+// Function to download all job data as Excel
+jobCsvRouter.get("/export-excel", isAdmin, async (req, res) => {
+  try {
+    console.log("Exporting all job data as Excel");
+    
+    const records = await generateExportData();
+    
+    // Create a new workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(records);
+    
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Job Data");
+    
+    // Create a buffer with the Excel data
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    // Set headers for Excel download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=job_data_export.xlsx');
+    res.setHeader('Content-Length', excelBuffer.length);
+    
+    console.log(`Exporting ${records.length} job data records as Excel`);
+    
+    // Send the Excel file
+    return res.send(excelBuffer);
+  } catch (error) {
+    console.error("Error exporting job data to Excel:", error);
+    return res.status(500).json({ error: "Failed to export job data" });
+  }
+});
+
+// Function to download all job data as JSON
+jobCsvRouter.get("/export-json", isAdmin, async (req, res) => {
+  try {
+    console.log("Exporting all job data as JSON");
+    
+    const records = await generateExportData();
+    
+    // Set headers for JSON download
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename=job_data_export.json');
+    
+    console.log(`Exporting ${records.length} job data records as JSON`);
+    
+    // Send the JSON
+    return res.json(records);
+  } catch (error) {
+    console.error("Error exporting job data to JSON:", error);
     return res.status(500).json({ error: "Failed to export job data" });
   }
 });
@@ -154,15 +226,15 @@ jobCsvRouter.get("/import-csv-status", isAdmin, (req, res) => {
   });
 });
 
-// Import job data from CSV
+// Import job data from multiple formats (CSV, Excel, JSON)
 jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res) => {
-  console.log("CSV import request received:", req.headers);
+  console.log("Import request received:", req.headers);
   console.log("Request file:", req.file);
   console.log("Request body:", req.body);
   
   if (!req.file) {
     console.error("No file was uploaded");
-    return res.status(400).json({ error: "No CSV file uploaded" });
+    return res.status(400).json({ error: "No file uploaded" });
   }
   
   // Reset import status
@@ -181,71 +253,138 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
   res.status(200).json({ message: "Import started" });
   
   try {
-    // Set up CSV parsing and processing
     const filePath = req.file.path;
-    const fileStream = createReadStream(filePath);
-    const parser = fileStream.pipe(parse({
-      columns: true,
-      skipEmptyLines: true,
-      trim: true
-    }));
+    const fileExt = path.extname(req.file.originalname).toLowerCase();
+    let rows: any[] = [];
     
-    // Removed global map since we're using local map in processBatch function
-    const batchSize = 500; // Process in batches
-    let batch = [];
-    let rowNumber = 0;
+    console.log(`Processing ${fileExt} file: ${req.file.originalname}`);
     
-    // Process the file in streaming mode
-    for await (const row of parser) {
-      rowNumber++;
-      
+    // Parse the file based on its extension
+    if (fileExt === '.json') {
+      // Process JSON file
       try {
-        // Validate required columns
-        if (!row.JobTitleID && !row.JobTitle) {
+        const jsonData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        
+        if (Array.isArray(jsonData)) {
+          rows = jsonData;
+        } else {
           importStatus.errors.push({
-            row: rowNumber,
-            message: "Missing required JobTitleID or JobTitle"
+            row: 0,
+            message: "JSON data must be an array of job data objects"
           });
-          continue;
         }
-        
-        if (!row.Description) {
-          importStatus.errors.push({
-            row: rowNumber,
-            message: "Missing required Description"
-          });
-          continue;
-        }
-        
-        // Add to batch for processing
-        batch.push({
-          titleId: row.JobTitleID ? parseInt(row.JobTitleID) : null,
-          title: row.JobTitle,
-          category: row.Category || "",
-          description: row.Description,
-          isRecommended: row.IsRecommended === "true" || row.IsRecommended === "1" || row.IsRecommended === true
-        });
-        
-        // Process batch if it reaches the threshold
-        if (batch.length >= batchSize) {
-          await processBatch(batch);
-          batch = [];
-          
-          // Send status update
-          importStatusEmitter.emit('update', importStatus);
-        }
-      } catch (error: any) {
-        console.error(`Error processing row ${rowNumber}:`, error);
+      } catch (jsonError: any) {
         importStatus.errors.push({
-          row: rowNumber,
-          message: error.message || "Unknown error"
+          row: 0,
+          message: `Failed to parse JSON file: ${jsonError.message}`
+        });
+      }
+    } else if (fileExt === '.xlsx' || fileExt === '.xls') {
+      // Process Excel file
+      try {
+        const workbook = XLSX.readFile(filePath);
+        const sheetName = workbook.SheetNames[0]; // Get the first sheet
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert to JSON with headers
+        rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+      } catch (excelError: any) {
+        importStatus.errors.push({
+          row: 0,
+          message: `Failed to parse Excel file: ${excelError.message}`
+        });
+      }
+    } else {
+      // Default to CSV processing
+      try {
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        rows = await new Promise((resolve, reject) => {
+          parse(fileContent, {
+            columns: true,
+            skipEmptyLines: true,
+            trim: true
+          }, (err, output) => {
+            if (err) reject(err);
+            else resolve(output);
+          });
+        });
+      } catch (csvError: any) {
+        importStatus.errors.push({
+          row: 0,
+          message: `Failed to parse CSV file: ${csvError.message}`
         });
       }
     }
     
-    // Process any remaining items
-    if (batch.length > 0) {
-      await processBatch(batch);
+    // Process the parsed data in batches
+    if (rows.length > 0) {
+      const batchSize = 500;
+      let batch = [];
+      let rowNumber = 0;
+      
+      for (const row of rows) {
+        rowNumber++;
+        
+        try {
+          // Normalize field names - handle case sensitivity and different naming conventions
+          const normalizedRow = {
+            JobTitleID: row.JobTitleID || row.jobTitleID || row.jobtitleid || row['Job Title ID'] || row['job_title_id'] || null,
+            JobTitle: row.JobTitle || row.jobTitle || row.jobtitle || row['Job Title'] || row['job_title'] || '',
+            Category: row.Category || row.category || row['Job Category'] || row['job_category'] || '',
+            Description: row.Description || row.description || row['Job Description'] || row['job_description'] || '',
+            IsRecommended: row.IsRecommended || row.isRecommended || row.isrecommended || row['Is Recommended'] || row['is_recommended'] || false
+          };
+          
+          // Validate required fields
+          if (!normalizedRow.JobTitleID && !normalizedRow.JobTitle) {
+            importStatus.errors.push({
+              row: rowNumber,
+              message: "Missing required JobTitleID or JobTitle"
+            });
+            continue;
+          }
+          
+          if (!normalizedRow.Description) {
+            importStatus.errors.push({
+              row: rowNumber,
+              message: "Missing required Description"
+            });
+            continue;
+          }
+          
+          // Add to batch for processing
+          batch.push({
+            titleId: normalizedRow.JobTitleID ? parseInt(normalizedRow.JobTitleID.toString()) : null,
+            title: normalizedRow.JobTitle,
+            category: normalizedRow.Category || "",
+            description: normalizedRow.Description,
+            isRecommended: normalizedRow.IsRecommended === true || 
+                          normalizedRow.IsRecommended === "true" || 
+                          normalizedRow.IsRecommended === "1" || 
+                          normalizedRow.IsRecommended === 1
+          });
+          
+          // Process batch if it reaches the threshold
+          if (batch.length >= batchSize) {
+            await processBatch(batch);
+            batch = [];
+            
+            // Send status update
+            importStatusEmitter.emit('update', importStatus);
+          }
+        } catch (error: any) {
+          console.error(`Error processing row ${rowNumber}:`, error);
+          importStatus.errors.push({
+            row: rowNumber,
+            message: error.message || "Unknown error"
+          });
+        }
+      }
+      
+      // Process any remaining items
+      if (batch.length > 0) {
+        await processBatch(batch);
+      }
     }
     
     // Clean up the temp file
@@ -257,7 +396,7 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
     
     console.log(`Import completed: ${importStatus.processed} processed, ${importStatus.created} created, ${importStatus.updated} updated, ${importStatus.errors.length} errors`);
   } catch (error: any) {
-    console.error("Error processing CSV import:", error);
+    console.error("Error processing file import:", error);
     
     // Update status with error
     importStatus.errors.push({
