@@ -50,15 +50,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import { 
   Search, 
-  Filter, 
   Plus, 
   Pencil, 
   Trash, 
@@ -68,7 +68,9 @@ import {
   Upload, 
   Save,
   Check,
-  X
+  X,
+  Download,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -83,30 +85,83 @@ export default function JobsAdminPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [categoryFilter, setCategoryFilter] = useState("");
-  const pageSize = 10;
-
-  // Modal states
+  
+  // Dialog state
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
   const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false);
-  const [deleteTitleDialogOpen, setDeleteTitleDialogOpen] = useState(false);
-  const [deleteDescriptionDialogOpen, setDeleteDescriptionDialogOpen] = useState(false);
-  
   const [editingTitle, setEditingTitle] = useState<JobTitle | null>(null);
   const [editingDescription, setEditingDescription] = useState<JobDescription | null>(null);
+  const [deleteTitleDialogOpen, setDeleteTitleDialogOpen] = useState(false);
+  const [deleteDescriptionDialogOpen, setDeleteDescriptionDialogOpen] = useState(false);
   const [deletingTitle, setDeletingTitle] = useState<JobTitle | null>(null);
   const [deletingDescription, setDeletingDescription] = useState<JobDescription | null>(null);
-
-  // Queries with pagination
-  const { 
-    data: jobTitlesResponse,
-    isLoading: isLoadingTitles 
-  } = useQuery<{ data: JobTitle[], meta: { page: number, limit: number, totalCount: number, totalPages: number } }>({ 
+  
+  // CSV Export/Import functions
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<{
+    processed: number;
+    created: number;
+    updated: number;
+    errors: Array<{ row: number; message: string }>;
+    isComplete: boolean;
+  } | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // Categories list for filtering and suggestions
+  const [categories, setCategories] = useState<string[]>([]);
+  
+  // Forms
+  const titleForm = useForm<z.infer<typeof jobTitleSchema>>({
+    resolver: zodResolver(jobTitleSchema),
+    defaultValues: {
+      title: "",
+      category: "",
+    },
+  });
+  
+  const descriptionForm = useForm<z.infer<typeof jobDescriptionSchema>>({
+    resolver: zodResolver(jobDescriptionSchema),
+    defaultValues: {
+      content: "",
+      jobTitleId: 0,
+      isRecommended: false,
+    },
+  });
+  
+  // Set form values when editing
+  useEffect(() => {
+    if (editingTitle) {
+      titleForm.reset({
+        title: editingTitle.title,
+        category: editingTitle.category,
+      });
+    }
+  }, [editingTitle, titleForm]);
+  
+  useEffect(() => {
+    if (editingDescription) {
+      descriptionForm.reset({
+        content: editingDescription.content,
+        jobTitleId: editingDescription.jobTitleId,
+        isRecommended: editingDescription.isRecommended,
+      });
+    } else if (selectedJobTitle) {
+      descriptionForm.reset({
+        content: "",
+        jobTitleId: selectedJobTitle.id,
+        isRecommended: false,
+      });
+    }
+  }, [editingDescription, descriptionForm, selectedJobTitle]);
+  
+  // Fetch job titles
+  const { data: jobTitlesData, isLoading: isLoadingTitles } = useQuery({
     queryKey: ['/api/jobs/titles', page, titleSearchQuery],
     queryFn: async () => {
-      // Build query parameters for pagination, search, and filters
       const params = new URLSearchParams();
       params.append('page', page.toString());
-      params.append('limit', pageSize.toString());
+      params.append('limit', '10');
       
       if (titleSearchQuery) {
         params.append('search', titleSearchQuery);
@@ -116,103 +171,54 @@ export default function JobsAdminPage() {
         params.append('category', categoryFilter);
       }
       
-      const url = `/api/jobs/titles?${params.toString()}`;
-      const res = await apiRequest('GET', url);
+      const res = await fetch(`/api/jobs/titles?${params.toString()}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch job titles');
+      }
       return await res.json();
-    }
+    },
   });
   
-  // Extract job titles and pagination metadata
-  const jobTitles = jobTitlesResponse?.data || [];
+  // Derive job titles and total pages from data
+  const jobTitles = jobTitlesData?.data || [];
+  useEffect(() => {
+    if (jobTitlesData) {
+      setTotalPages(Math.ceil(jobTitlesData.total / 10) || 1);
+    }
+  }, [jobTitlesData]);
   
-  const { 
-    data: jobDescriptions = [], 
-    isLoading: isLoadingDescriptions 
-  } = useQuery<JobDescription[]>({ 
+  // Extract unique categories
+  useEffect(() => {
+    const uniqueCategories = [...new Set(jobTitles.map(title => title.category))].filter(Boolean);
+    setCategories(uniqueCategories);
+  }, [jobTitles]);
+  
+  // Fetch job descriptions for selected job title
+  const { data: jobDescriptions = [], isLoading: isLoadingDescriptions } = useQuery({
     queryKey: ['/api/jobs/descriptions', selectedJobTitle?.id],
     queryFn: async () => {
       if (!selectedJobTitle) return [];
-      const url = `/api/jobs/descriptions?jobTitleId=${selectedJobTitle.id}`;
-      const res = await apiRequest('GET', url);
+      
+      const res = await fetch(`/api/jobs/descriptions?jobTitleId=${selectedJobTitle.id}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch job descriptions');
+      }
       return await res.json();
     },
-    enabled: !!selectedJobTitle
-  });
-
-  // Extract unique categories from job titles
-  const categories = Array.from(new Set(jobTitles.map(title => title.category))).sort();
-
-  // Filter job descriptions based on search query
-  const filteredJobDescriptions = jobDescriptions.filter(desc => {
-    return desc.content.toLowerCase().includes(searchQuery.toLowerCase());
+    enabled: !!selectedJobTitle,
   });
   
-  // Set totalPages from server response
-  useEffect(() => {
-    if (jobTitlesResponse?.meta?.totalPages) {
-      setTotalPages(jobTitlesResponse.meta.totalPages);
-    }
-  }, [jobTitlesResponse?.meta?.totalPages]);
-
-  // Forms
-  const titleForm = useForm<z.infer<typeof jobTitleSchema>>({
-    resolver: zodResolver(jobTitleSchema),
-    defaultValues: {
-      title: "",
-      category: "",
-    },
-  });
-
-  const descriptionForm = useForm<z.infer<typeof jobDescriptionSchema>>({
-    resolver: zodResolver(jobDescriptionSchema),
-    defaultValues: {
-      content: "",
-      jobTitleId: selectedJobTitle?.id || 0,
-      isRecommended: false,
-    },
-  });
-
-  // Effect to update description form when selected job title changes
-  useEffect(() => {
-    if (selectedJobTitle) {
-      descriptionForm.setValue("jobTitleId", selectedJobTitle.id);
-    }
-  }, [selectedJobTitle, descriptionForm]);
-
-  // Effect to populate form fields when editing
-  useEffect(() => {
-    if (editingTitle) {
-      titleForm.reset({
-        title: editingTitle.title,
-        category: editingTitle.category,
-      });
-    }
-    
-    if (editingDescription) {
-      descriptionForm.reset({
-        content: editingDescription.content,
-        jobTitleId: editingDescription.jobTitleId,
-        isRecommended: editingDescription.isRecommended,
-      });
-    }
-  }, [editingTitle, editingDescription, titleForm, descriptionForm]);
-
+  // Filter job descriptions based on search query
+  const filteredJobDescriptions = searchQuery
+    ? jobDescriptions.filter(desc => 
+        desc.content.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : jobDescriptions;
+  
   // Mutations
   const createTitleMutation = useMutation({
     mutationFn: async (data: z.infer<typeof jobTitleSchema>) => {
       const res = await apiRequest('POST', '/api/jobs/titles', data);
-      
-      if (!res.ok) {
-        // Parse the error response
-        const errorData = await res.json();
-        // If it's a known error type (like duplicate), throw with the specific message
-        if (errorData.message) {
-          throw new Error(errorData.message);
-        }
-        // Otherwise throw a generic error
-        throw new Error('Failed to create job title');
-      }
-      
       return await res.json();
     },
     onSuccess: () => {
@@ -232,33 +238,26 @@ export default function JobsAdminPage() {
       });
     },
   });
-
+  
   const updateTitleMutation = useMutation({
     mutationFn: async (data: JobTitle) => {
       const res = await apiRequest('PUT', `/api/jobs/titles/${data.id}`, data);
-      
-      if (!res.ok) {
-        // Parse the error response
-        const errorData = await res.json();
-        // If it's a known error type (like duplicate), throw with the specific message
-        if (errorData.message) {
-          throw new Error(errorData.message);
-        }
-        // Otherwise throw a generic error
-        throw new Error('Failed to update job title');
-      }
-      
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedTitle) => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/titles'] });
+      
+      // If this is the selected title, update it
+      if (selectedJobTitle?.id === updatedTitle.id) {
+        setSelectedJobTitle(updatedTitle);
+      }
+      
       toast({
         title: "Success",
         description: "Job title updated successfully",
       });
       setTitleDialogOpen(false);
       setEditingTitle(null);
-      titleForm.reset();
     },
     onError: (error: Error) => {
       toast({
@@ -268,7 +267,7 @@ export default function JobsAdminPage() {
       });
     },
   });
-
+  
   const deleteTitleMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest('DELETE', `/api/jobs/titles/${id}`);
@@ -276,15 +275,18 @@ export default function JobsAdminPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/titles'] });
+      
+      // Clear selection if the deleted title was selected
+      if (selectedJobTitle?.id === deletingTitle?.id) {
+        setSelectedJobTitle(null);
+      }
+      
       toast({
         title: "Success",
         description: "Job title deleted successfully",
       });
       setDeleteTitleDialogOpen(false);
       setDeletingTitle(null);
-      if (selectedJobTitle && deletingTitle && selectedJobTitle.id === deletingTitle.id) {
-        setSelectedJobTitle(null);
-      }
     },
     onError: (error: Error) => {
       toast({
@@ -294,7 +296,7 @@ export default function JobsAdminPage() {
       });
     },
   });
-
+  
   const createDescriptionMutation = useMutation({
     mutationFn: async (data: z.infer<typeof jobDescriptionSchema>) => {
       const res = await apiRequest('POST', '/api/jobs/descriptions', data);
@@ -321,7 +323,7 @@ export default function JobsAdminPage() {
       });
     },
   });
-
+  
   const updateDescriptionMutation = useMutation({
     mutationFn: async (data: JobDescription) => {
       const res = await apiRequest('PUT', `/api/jobs/descriptions/${data.id}`, data);
@@ -335,11 +337,6 @@ export default function JobsAdminPage() {
       });
       setDescriptionDialogOpen(false);
       setEditingDescription(null);
-      descriptionForm.reset({
-        content: "",
-        jobTitleId: selectedJobTitle?.id || 0,
-        isRecommended: false,
-      });
     },
     onError: (error: Error) => {
       toast({
@@ -349,7 +346,7 @@ export default function JobsAdminPage() {
       });
     },
   });
-
+  
   const deleteDescriptionMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest('DELETE', `/api/jobs/descriptions/${id}`);
@@ -373,6 +370,136 @@ export default function JobsAdminPage() {
     },
   });
 
+  // Handle CSV export
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const res = await apiRequest('GET', '/api/jobs/export-csv');
+      
+      if (!res.ok) {
+        throw new Error('Failed to export CSV');
+      }
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'job_data_export.csv';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Export Successful",
+        description: "Job data has been exported to CSV",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : "An error occurred during export",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Handle CSV import
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    const file = event.target.files[0];
+    setIsImporting(true);
+    setUploadStatus({
+      processed: 0,
+      created: 0,
+      updated: 0,
+      errors: [],
+      isComplete: false
+    });
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Start SSE connection for real-time updates
+      const eventSource = new EventSource('/api/jobs/import-csv-status');
+      
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        setUploadStatus(prev => ({
+          ...prev!,
+          processed: data.processed,
+          created: data.created,
+          updated: data.updated,
+          errors: data.errors,
+          isComplete: data.isComplete
+        }));
+        
+        if (data.isComplete) {
+          eventSource.close();
+          
+          if (data.errors.length > 0) {
+            toast({
+              title: "Import Completed with Errors",
+              description: `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Errors: ${data.errors.length}`,
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Import Successful",
+              description: `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}`,
+            });
+          }
+          
+          // Refresh data
+          queryClient.invalidateQueries({ queryKey: ['/api/jobs/titles'] });
+          if (selectedJobTitle) {
+            queryClient.invalidateQueries({ queryKey: ['/api/jobs/descriptions', selectedJobTitle.id] });
+          }
+          
+          setIsImporting(false);
+          setUploadStatus(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }
+      };
+      
+      eventSource.onerror = () => {
+        eventSource.close();
+        setIsImporting(false);
+        toast({
+          title: "Import Failed",
+          description: "Lost connection to server during import",
+          variant: "destructive",
+        });
+      };
+      
+      // Submit the file
+      const res = await apiRequest('POST', '/api/jobs/import-csv', formData);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to import CSV');
+      }
+    } catch (error) {
+      setIsImporting(false);
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "An error occurred during import",
+        variant: "destructive",
+      });
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+  
   // Form handlers
   const handleTitleSubmit = (data: z.infer<typeof jobTitleSchema>) => {
     if (editingTitle) {
@@ -381,7 +508,7 @@ export default function JobsAdminPage() {
       createTitleMutation.mutate(data);
     }
   };
-
+  
   const handleDescriptionSubmit = (data: z.infer<typeof jobDescriptionSchema>) => {
     if (editingDescription) {
       updateDescriptionMutation.mutate({ ...editingDescription, ...data });
@@ -389,33 +516,33 @@ export default function JobsAdminPage() {
       createDescriptionMutation.mutate(data);
     }
   };
-
+  
   // Dialog handlers
   const openEditTitleDialog = (title: JobTitle) => {
     setEditingTitle(title);
     setTitleDialogOpen(true);
   };
-
+  
   const openDeleteTitleDialog = (title: JobTitle) => {
     setDeletingTitle(title);
     setDeleteTitleDialogOpen(true);
   };
-
+  
   const openEditDescriptionDialog = (description: JobDescription) => {
     setEditingDescription(description);
     setDescriptionDialogOpen(true);
   };
-
+  
   const openDeleteDescriptionDialog = (description: JobDescription) => {
     setDeletingDescription(description);
     setDeleteDescriptionDialogOpen(true);
   };
-
+  
   const selectJobTitle = (title: JobTitle) => {
     setSelectedJobTitle(title);
     setSearchQuery("");
   };
-
+  
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
@@ -545,30 +672,42 @@ export default function JobsAdminPage() {
                     )}
                   </h3>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Button 
                       size="sm" 
                       variant="outline"
                       className="flex items-center gap-1"
-                      onClick={() => {
-                        if (!selectedJobTitle) {
-                          toast({
-                            title: "Select a Job Title",
-                            description: "Please select a job title first",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        // TODO: Add CSV upload functionality
-                        toast({
-                          title: "Coming Soon",
-                          description: "Bulk CSV upload will be available soon",
-                        });
-                      }}
+                      onClick={handleExportCSV}
+                      disabled={isExporting}
                     >
-                      <Upload className="h-4 w-4" />
-                      Bulk CSV Upload
+                      <Download className="h-4 w-4" />
+                      {isExporting ? "Exporting..." : "Export CSV"}
                     </Button>
+                    
+                    <div className="relative">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="flex items-center gap-1"
+                        onClick={() => {
+                          if (fileInputRef.current) {
+                            fileInputRef.current.click();
+                          }
+                        }}
+                        disabled={isImporting}
+                      >
+                        <Upload className="h-4 w-4" />
+                        {isImporting ? "Importing..." : "Import CSV"}
+                      </Button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept=".csv"
+                        className="hidden"
+                        onChange={handleImportCSV}
+                        disabled={isImporting}
+                      />
+                    </div>
                     
                     <Button 
                       size="sm" 
@@ -606,7 +745,7 @@ export default function JobsAdminPage() {
                 )}
               </div>
               
-              {!selectedJobTitle ? (
+              {!selectedJobTitle && !uploadStatus ? (
                 <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
                   <div className="bg-gray-100 p-6 rounded-full mb-4">
                     <Search className="h-10 w-10 text-gray-400" />
@@ -619,6 +758,41 @@ export default function JobsAdminPage() {
               ) : isLoadingDescriptions ? (
                 <div className="flex justify-center py-16">
                   <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : uploadStatus ? (
+                <div className="text-center py-16 px-8">
+                  <h3 className="text-lg font-medium mb-2">Importing CSV Data</h3>
+                  <p className="text-gray-500 mb-6">
+                    Please wait while we process your CSV file. This may take a few moments.
+                  </p>
+                  
+                  <div className="max-w-md mx-auto space-y-4">
+                    <Progress value={(uploadStatus.processed / (uploadStatus.processed + 10)) * 100} className="h-2" />
+                    
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <div>Processed: {uploadStatus.processed}</div>
+                      <div>Created: {uploadStatus.created}</div>
+                      <div>Updated: {uploadStatus.updated}</div>
+                    </div>
+                    
+                    {uploadStatus.errors.length > 0 && (
+                      <div className="mt-4 text-left">
+                        <p className="text-sm font-medium text-red-500 mb-2">Errors:</p>
+                        <div className="bg-red-50 p-3 rounded text-sm text-red-700 max-h-32 overflow-y-auto">
+                          {uploadStatus.errors.slice(0, 5).map((error, i) => (
+                            <div key={i} className="mb-1">
+                              Row {error.row}: {error.message}
+                            </div>
+                          ))}
+                          {uploadStatus.errors.length > 5 && (
+                            <div className="mt-1 text-center">
+                              ...and {uploadStatus.errors.length - 5} more errors
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : filteredJobDescriptions.length === 0 ? (
                 <div className="text-center py-16">
@@ -859,7 +1033,7 @@ export default function JobsAdminPage() {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Select the job title this description applies to
+                      Choose which job title this description belongs to
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -874,13 +1048,13 @@ export default function JobsAdminPage() {
                     <FormLabel>Description Content</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Enter job description..." 
-                        {...field}
-                        rows={7}
+                        placeholder="Describe responsibilities and achievements..." 
+                        className="h-32 resize-none"
+                        {...field} 
                       />
                     </FormControl>
                     <FormDescription>
-                      Write a detailed job description that can be used as a template
+                      Write a professional job description. Use action verbs and quantifiable achievements.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -891,19 +1065,19 @@ export default function JobsAdminPage() {
                 control={descriptionForm.control}
                 name="isRecommended"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value === true}
-                        onCheckedChange={(checked) => field.onChange(checked === true)}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
                       <FormLabel>Recommended</FormLabel>
                       <FormDescription>
-                        Recommended descriptions are highlighted to users
+                        Mark this description as recommended to prioritize it in search results
                       </FormDescription>
                     </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -931,7 +1105,7 @@ export default function JobsAdminPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete the job title "{deletingTitle?.title}" and all its associated descriptions.
+              This will permanently delete the job title "{deletingTitle?.title}" and all of its associated descriptions.
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -953,8 +1127,7 @@ export default function JobsAdminPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete the selected job description.
-              This action cannot be undone.
+              This will permanently delete this job description. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
