@@ -41,7 +41,8 @@ function Router() {
                        location.startsWith("/personal-information") ||
                        location.startsWith("/work-history") ||
                        location.startsWith("/work-experience-details") ||
-                       location.startsWith("/job-description");
+                       location.startsWith("/job-description") ||
+                       location.startsWith("/work-history-summary");
   
   const isAdminPage = location.startsWith("/admin");
   
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/work-history" component={WhyNeedResumePage} />
       <Route path="/work-experience-details" component={WorkExperienceDetailsPage} />
       <Route path="/job-description" component={JobDescriptionPage} />
+      <Route path="/work-history-summary" component={WorkHistorySummaryPage} />
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}
@@ -87,7 +89,8 @@ function App() {
                        location.startsWith("/personal-information") || 
                        location.startsWith("/work-history") ||
                        location.startsWith("/work-experience-details") ||
-                       location.startsWith("/job-description");
+                       location.startsWith("/job-description") ||
+                       location.startsWith("/work-history-summary");
   
   const isAdminPage = location.startsWith("/admin");
   
