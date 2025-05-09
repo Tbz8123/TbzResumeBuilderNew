@@ -303,7 +303,26 @@ jobsRouter.get("/descriptions", async (req, res) => {
     // If we need to return all descriptions but have a preferred job title ID,
     // we'll organize them with that title's descriptions at the top
     if (descriptions.length > 0 && jobTitleId && !searchTerm) {
-      // Already sorted as needed - descriptions for this job title only
+      // If we have less than 50 descriptions but have a specific job title,
+      // we need to fetch more descriptions to meet the minimum requirement
+      if (descriptions.length < 50) {
+        console.log(`Only ${descriptions.length} descriptions found for job title ID ${jobTitleId}, fetching additional descriptions to meet minimum 50 requirement`);
+        
+        // Fetch additional descriptions from other job titles
+        const additionalDescriptions = await db.query.jobDescriptions.findMany({
+          where: sql`${jobDescriptions.jobTitleId} != ${jobTitleId}`,
+          orderBy: [
+            desc(jobDescriptions.isRecommended),
+            asc(jobDescriptions.id)
+          ],
+          limit: 50 - descriptions.length
+        });
+        
+        console.log(`Retrieved ${additionalDescriptions.length} additional descriptions from other job titles`);
+        
+        // Add the additional descriptions to the results
+        descriptions = [...descriptions, ...additionalDescriptions];
+      }
     } else if (descriptions.length > 0 && jobTitleId) {
       // We have a preferred job title ID, but we're showing other descriptions too
       // Re-sort the array to put the target title's descriptions first
@@ -329,10 +348,53 @@ jobsRouter.get("/descriptions", async (req, res) => {
         return a.id - b.id;
       });
       
-      // Combine the arrays with title descriptions first
-      descriptions = [...titleDescriptions, ...otherDescriptions];
+      // If we have less than 50 total descriptions, fetch more to meet minimum requirement
+      if (titleDescriptions.length + otherDescriptions.length < 50 && otherDescriptions.length < 50 - titleDescriptions.length) {
+        const neededCount = 50 - titleDescriptions.length - otherDescriptions.length;
+        console.log(`Need ${neededCount} more descriptions to meet minimum 50 requirement`);
+        
+        // Fetch additional descriptions from other job titles
+        const additionalDescriptions = await db.query.jobDescriptions.findMany({
+          where: sql`${jobDescriptions.jobTitleId} != ${jobTitleId} AND 
+                     ${jobDescriptions.id} NOT IN (${otherDescriptions.map(d => d.id).join(',') || 0})`,
+          orderBy: [
+            desc(jobDescriptions.isRecommended),
+            asc(jobDescriptions.id)
+          ],
+          limit: neededCount
+        });
+        
+        console.log(`Retrieved ${additionalDescriptions.length} additional descriptions from other job titles`);
+        
+        // Combine the arrays with title descriptions first, then other descriptions we already had, then additional ones
+        descriptions = [...titleDescriptions, ...otherDescriptions, ...additionalDescriptions];
+      } else {
+        // Combine the arrays with title descriptions first
+        descriptions = [...titleDescriptions, ...otherDescriptions];
+      }
       
-      console.log(`Prioritized ${titleDescriptions.length} descriptions for job title ID: ${jobTitleId}`);
+      console.log(`Prioritized ${titleDescriptions.length} descriptions for job title ID: ${jobTitleId} (total: ${descriptions.length})`);
+    } else if (descriptions.length < 50) {
+      // No job title specified but we have less than 50 descriptions, fetch more
+      console.log(`Only ${descriptions.length} descriptions found, fetching more to meet minimum 50 requirement`);
+      
+      // Get the IDs of descriptions we already have to avoid duplicates
+      const existingIds = descriptions.map(d => d.id);
+      
+      // Fetch additional descriptions
+      const additionalDescriptions = await db.query.jobDescriptions.findMany({
+        where: sql`${jobDescriptions.id} NOT IN (${existingIds.join(',') || 0})`,
+        orderBy: [
+          desc(jobDescriptions.isRecommended),
+          asc(jobDescriptions.id)
+        ],
+        limit: 50 - descriptions.length
+      });
+      
+      console.log(`Retrieved ${additionalDescriptions.length} additional descriptions`);
+      
+      // Add the additional descriptions to the results
+      descriptions = [...descriptions, ...additionalDescriptions];
     }
     
     // If no descriptions found but we have a job title ID, check if the title exists

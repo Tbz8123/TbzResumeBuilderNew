@@ -16,6 +16,7 @@ import UploadResumePage from "@/pages/upload-resume/page";
 import WhyNeedResumePage from "@/pages/work-history/page";
 import WorkExperienceDetailsPage from "@/pages/work-experience-details/page";
 import JobDescriptionPage from "@/pages/job-description/page";
+import TestJobApiPage from "@/pages/test-job-api";
 import AuthPage from "@/pages/auth-page";
 import AdminTemplatesPage from "@/pages/admin/templates/page";
 import AdminTemplateEditPage from "@/pages/admin/templates/edit";
@@ -54,6 +55,7 @@ function Router() {
       <Route path="/work-history" component={WhyNeedResumePage} />
       <Route path="/work-experience-details" component={WorkExperienceDetailsPage} />
       <Route path="/job-description" component={JobDescriptionPage} />
+      <Route path="/test-job-api" component={TestJobApiPage} />
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}

@@ -79,7 +79,7 @@ const JobDescriptionPage = () => {
   const relatedJobTitles = getRelatedJobTitles(currentJob.jobTitle);
   
   // Get job descriptions based on job title
-  const [descriptions, setDescriptions] = useState<JobDescription[]>([]);
+  const [descriptions, setDescriptions] = useState<any[]>([]);
   const [isLoadingDescriptions, setIsLoadingDescriptions] = useState(false);
   const [showingResults, setShowingResults] = useState<string>('');
   
@@ -352,7 +352,7 @@ const JobDescriptionPage = () => {
   const handleDescriptionClick = (description: string) => {
     // Add the selected description to the text area
     if (jobResponsibilities) {
-      setJobResponsibilities(prev => prev + '\n• ' + description);
+      setJobResponsibilities((prev: string) => prev + '\n• ' + description);
     } else {
       setJobResponsibilities('• ' + description);
     }
