@@ -791,12 +791,18 @@ export default function JobsAdminPage() {
           
           {uploadStatus.errors.length > 0 && (
             <div className="mt-2">
-              <div className="text-sm font-semibold mb-1">Errors:</div>
-              <ScrollArea className="h-24 w-full rounded-md border">
+              <div className="text-sm font-semibold mb-1">Errors ({uploadStatus.errors.length}):</div>
+              <ScrollArea className="h-40 w-full rounded-md border">
                 <div className="p-2">
                   {uploadStatus.errors.map((error, i) => (
-                    <div key={i} className="text-sm text-destructive mb-1">
-                      Row {error.row}: {error.message}
+                    <div key={i} className="text-sm text-destructive mb-2 p-2 border border-destructive/20 rounded bg-destructive/5">
+                      <div className="flex items-center gap-1 mb-1 font-medium">
+                        <span className="bg-destructive text-white px-1.5 py-0.5 rounded text-xs">Row {error.row}</span>
+                        <span className="text-destructive/70 text-xs">Error #{i+1}</span>
+                      </div>
+                      <div className="pl-1 whitespace-normal break-words">
+                        {error.message}
+                      </div>
                     </div>
                   ))}
                 </div>
