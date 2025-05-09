@@ -7,6 +7,7 @@ import { Loader2, Search } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function TestJobApi() {
   const [jobTitleId, setJobTitleId] = useState<string>("28"); // Default to Manager ID
@@ -187,6 +188,18 @@ export default function TestJobApi() {
         </div>
       )}
       
+      {descriptions.length > 0 && (
+        <Alert className="mb-6 bg-green-50 border-green-200 text-green-700">
+          <AlertTitle>API Working Correctly</AlertTitle>
+          <AlertDescription>
+            Found {totalCount} job descriptions (minimum 50 required). Showing the first 10 below.
+            {jobTitleId && <span className="block mt-1 text-sm">
+              Original job title descriptions shown first, followed by fallback descriptions.
+            </span>}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex justify-between">
@@ -203,18 +216,32 @@ export default function TestJobApi() {
             </div>
           ) : descriptions.length > 0 ? (
             <div className="space-y-4">
-              {descriptions.slice(0, 10).map((desc) => (
-                <div key={desc.id} className="border-b pb-3">
-                  <div className="flex justify-between">
-                    <span className="font-medium">ID: {desc.id}</span>
-                    <span className="text-sm text-gray-500">
-                      Job Title ID: {desc.jobTitleId}
-                      {desc.isRecommended && ' • Recommended'}
-                    </span>
+              {descriptions.slice(0, 10).map((desc, index) => {
+                // Check if this is the first non-matching job title ID in the list
+                const isFirstNonMatch = index > 0 && 
+                  descriptions[index-1].jobTitleId !== desc.jobTitleId && 
+                  descriptions[0].jobTitleId !== desc.jobTitleId;
+                
+                return (
+                  <div key={desc.id}>
+                    {isFirstNonMatch && (
+                      <div className="border-t border-dashed border-gray-300 my-4 pt-2 text-center text-sm text-gray-500">
+                        Additional descriptions from other job titles
+                      </div>
+                    )}
+                    <div className={`border-b pb-3 ${desc.jobTitleId === parseInt(jobTitleId) ? 'bg-blue-50 px-3 py-2 rounded-sm border-blue-100' : ''}`}>
+                      <div className="flex justify-between">
+                        <span className="font-medium">ID: {desc.id}</span>
+                        <span className="text-sm text-gray-500">
+                          Job Title ID: {desc.jobTitleId}
+                          {desc.isRecommended && ' • Recommended'}
+                        </span>
+                      </div>
+                      <p className="mt-1">{desc.content}</p>
+                    </div>
                   </div>
-                  <p className="mt-1">{desc.content}</p>
-                </div>
-              ))}
+                );
+              })}
               
               {descriptions.length > 10 && (
                 <div className="text-center pt-2">

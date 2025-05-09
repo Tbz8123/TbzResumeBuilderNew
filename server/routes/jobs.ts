@@ -37,8 +37,8 @@ jobsRouter.get("/titles", async (req, res) => {
       
       // First try exact case-insensitive match
       const exactQuery = db.select()
-                           .from(jobTitles)
-                           .where(sql`LOWER(${jobTitles.title}) = LOWER(${searchQuery})`);
+                         .from(jobTitles)
+                         .where(sql`LOWER(${jobTitles.title}) = LOWER(${searchQuery})`);
       
       const exactMatches = await exactQuery.execute();
       if (exactMatches.length > 0) {
@@ -217,7 +217,7 @@ jobsRouter.get("/descriptions", async (req, res) => {
     
     console.log(`Fetching job descriptions${jobTitleId ? ` for job title ID: ${jobTitleId}` : ' (all)'}${searchTerm ? ` containing "${searchTerm}"` : ''}`);
     
-    let descriptions;
+    let descriptions = [];
     
     // Build query based on parameters
     if (jobTitleId && searchTerm) {
@@ -403,29 +403,62 @@ jobsRouter.get("/descriptions", async (req, res) => {
       
       // Get the IDs of descriptions we already have to avoid duplicates
       const existingIds = descriptions.map(d => d.id);
+      let additionalDescriptions = [];
       
-      // Build the SQL clause for excluding existing IDs
-      let idsClause = sql`1=1`; // Default to true condition
-      if (existingIds.length > 0) {
-        // Convert all IDs to strings and join them with commas
-        const idsList = existingIds.join(',');
-        if (idsList) {
-          idsClause = sql`${jobDescriptions.id} NOT IN (${idsList})`;
+      try {
+        // If we have existing IDs to exclude
+        if (existingIds.length > 0) {
+          // If we also have a job title ID to filter by
+          if (jobTitleId) {
+            // Fetch descriptions from other job titles
+            additionalDescriptions = await db.query.jobDescriptions.findMany({
+              where: sql`${jobDescriptions.id} NOT IN (${existingIds.join(',')}) 
+                        AND ${jobDescriptions.jobTitleId} != ${jobTitleId}`,
+              orderBy: [
+                desc(jobDescriptions.isRecommended), 
+                asc(jobDescriptions.id)
+              ],
+              limit: Math.max(50 - descriptions.length, 0)
+            });
+          } else {
+            // No job title filter, just exclude existing IDs
+            additionalDescriptions = await db.query.jobDescriptions.findMany({
+              where: sql`${jobDescriptions.id} NOT IN (${existingIds.join(',')})`,
+              orderBy: [
+                desc(jobDescriptions.isRecommended), 
+                asc(jobDescriptions.id)
+              ],
+              limit: Math.max(50 - descriptions.length, 0)
+            });
+          }
+        } else {
+          // No existing IDs to exclude
+          if (jobTitleId) {
+            // Fetch descriptions from other job titles
+            additionalDescriptions = await db.query.jobDescriptions.findMany({
+              where: sql`${jobDescriptions.jobTitleId} != ${jobTitleId}`,
+              orderBy: [
+                desc(jobDescriptions.isRecommended), 
+                asc(jobDescriptions.id)
+              ],
+              limit: Math.max(50 - descriptions.length, 0)
+            });
+          } else {
+            // No job title filter, fetch any descriptions
+            additionalDescriptions = await db.query.jobDescriptions.findMany({
+              orderBy: [
+                desc(jobDescriptions.isRecommended), 
+                asc(jobDescriptions.id)
+              ],
+              limit: Math.max(50 - descriptions.length, 0)
+            });
+          }
         }
+      } catch (err) {
+        console.error("Error fetching additional descriptions:", err);
+        // Create an empty array as fallback
+        additionalDescriptions = [];
       }
-      
-      // Don't exclude the job title ID from this additional query - we need all descriptions
-      // We're just trying to get at least 50 results, regardless of where they come from
-      
-      // Fetch additional descriptions
-      const additionalDescriptions = await db.query.jobDescriptions.findMany({
-        where: idsClause,
-        orderBy: [
-          desc(jobDescriptions.isRecommended), 
-          asc(jobDescriptions.id)
-        ],
-        limit: Math.max(50 - descriptions.length, 0)
-      });
       
       console.log(`Retrieved ${additionalDescriptions.length} additional descriptions to meet minimum requirement`);
       
