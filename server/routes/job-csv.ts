@@ -13,9 +13,20 @@ import { unlink } from "fs/promises";
 
 export const jobCsvRouter = Router();
 
+// Create temp directory if it doesn't exist
+import fs from 'fs';
+if (!fs.existsSync('temp')) {
+  fs.mkdirSync('temp', { recursive: true });
+  console.log("Created temp directory for file uploads");
+}
+
 // Setup file upload middleware for CSV imports
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
+    // Ensure temp directory exists
+    if (!fs.existsSync('temp')) {
+      fs.mkdirSync('temp', { recursive: true });
+    }
     cb(null, 'temp/');
   },
   filename: function (req, file, cb) {
