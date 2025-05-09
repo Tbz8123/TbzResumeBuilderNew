@@ -648,7 +648,7 @@ export default function JobsAdminPage() {
                   CSV Format
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleExportData('excel')}>
-                  <Table className="h-4 w-4 mr-2" />
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
                   Excel Format
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleExportData('json')}>
@@ -711,11 +711,11 @@ export default function JobsAdminPage() {
         </div>
       </div>
       
-      {/* CSV Import Status */}
+      {/* File Import Status */}
       {uploadStatus && (
         <div className="mb-6 p-4 border rounded-lg bg-background">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-medium">CSV Import Progress</h3>
+            <h3 className="text-lg font-medium">File Import Progress</h3>
             {uploadStatus.isComplete && (
               <Button 
                 variant="ghost" 
@@ -911,7 +911,7 @@ export default function JobsAdminPage() {
                           CSV Format
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleExportData('excel')}>
-                          <Table className="h-4 w-4 mr-2" />
+                          <FileSpreadsheet className="h-4 w-4 mr-2" />
                           Excel Format
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleExportData('json')}>
@@ -934,7 +934,7 @@ export default function JobsAdminPage() {
                         disabled={isImporting}
                       >
                         <Upload className="h-4 w-4" />
-                        {isImporting ? "Importing..." : "Import CSV"}
+                        {isImporting ? "Importing..." : "Import File"}
                       </Button>
                       <input
                         type="file"
@@ -998,9 +998,9 @@ export default function JobsAdminPage() {
                 </div>
               ) : uploadStatus ? (
                 <div className="text-center py-16 px-8">
-                  <h3 className="text-lg font-medium mb-2">Importing CSV Data</h3>
+                  <h3 className="text-lg font-medium mb-2">Importing Data</h3>
                   <p className="text-gray-500 mb-6">
-                    Please wait while we process your CSV file. This may take a few moments.
+                    Please wait while we process your file. This may take a few moments.
                   </p>
                   
                   <div className="max-w-md mx-auto space-y-4">
