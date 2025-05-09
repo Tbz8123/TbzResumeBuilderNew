@@ -483,7 +483,13 @@ export default function JobsAdminPage() {
       };
       
       // Submit the file
-      const res = await apiRequest('POST', '/api/jobs/import-csv', formData);
+      // For FormData, we need to override the default headers (don't set Content-Type as browser will set it with boundary)
+      const res = await fetch('/api/jobs/import-csv', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+        // Let the browser set the content type for FormData with correct boundary
+      });
       
       if (!res.ok) {
         const errorData = await res.json();

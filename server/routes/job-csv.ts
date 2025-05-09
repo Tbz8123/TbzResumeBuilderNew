@@ -145,7 +145,12 @@ jobCsvRouter.get("/import-csv-status", isAdmin, (req, res) => {
 
 // Import job data from CSV
 jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res) => {
+  console.log("CSV import request received:", req.headers);
+  console.log("Request file:", req.file);
+  console.log("Request body:", req.body);
+  
   if (!req.file) {
+    console.error("No file was uploaded");
     return res.status(400).json({ error: "No CSV file uploaded" });
   }
   
