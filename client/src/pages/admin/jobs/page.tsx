@@ -483,12 +483,12 @@ export default function JobsAdminPage() {
       };
       
       // Submit the file
-      // For FormData, we need to override the default headers (don't set Content-Type as browser will set it with boundary)
+      // We need to use fetch directly for FormData to ensure the browser sets the correct multipart boundary
       const res = await fetch('/api/jobs/import-csv', {
         method: 'POST',
         credentials: 'include',
-        body: formData,
-        // Let the browser set the content type for FormData with correct boundary
+        body: formData
+        // Important: Do NOT set Content-Type header - browser will set it automatically with the correct boundary
       });
       
       if (!res.ok) {
