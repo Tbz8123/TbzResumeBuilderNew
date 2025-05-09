@@ -67,29 +67,28 @@ jobsRouter.get("/titles", async (req, res) => {
       
       // If no exact match, proceed with more flexible search approach
       
-      // Get the most recent imported titles (last 30 days)
-      // This ensures recently uploaded titles are prioritized
-      const recentlyAddedTitles = await db.query.jobTitles.findMany({
-        where: sql`${jobTitles.created_at} > NOW() - INTERVAL '30 days'`,
-        orderBy: [desc(jobTitles.created_at)],
-        limit: 20  // Limit to most recent 20
+      // For simplicity, first try a direct case-insensitive LIKE search
+      // This prioritizes exact job title names as they appear in the database
+      const directMatches = await db.query.jobTitles.findMany({
+        where: sql`LOWER(${jobTitles.title}) LIKE LOWER(${'%' + searchQuery + '%'})`,
+        orderBy: [
+          // Sort by how closely the title matches the search string
+          sql`CASE WHEN LOWER(${jobTitles.title}) = LOWER(${searchQuery}) THEN 0
+               WHEN LOWER(${jobTitles.title}) LIKE LOWER(${searchQuery + '%'}) THEN 1
+               WHEN LOWER(${jobTitles.title}) LIKE LOWER('%' + ${searchQuery}) THEN 2
+               ELSE 3 END`,
+          desc(jobTitles.createdAt) // Then by newest first
+        ],
+        limit: 10
       });
       
-      // Check if any of the recent titles are likely matches
-      const potentialMatches = recentlyAddedTitles.filter(title => {
-        // Compare normalized strings (no spaces, lowercase)
-        const normalizedTitle = title.title.toLowerCase().replace(/\s+/g, '');
-        const normalizedSearch = searchQuery.toLowerCase().replace(/\s+/g, '');
-        
-        // Check for partial match or common substrings (at least 3 chars)
-        return normalizedTitle.includes(normalizedSearch) || 
-               normalizedSearch.includes(normalizedTitle) ||
-               (normalizedTitle.length >= 3 && normalizedSearch.includes(normalizedTitle.substring(0, 3)));
-      });
+      if (directMatches.length > 0) {
+        console.log(`Found ${directMatches.length} direct matches for search term: "${searchQuery}"`);
+      }
       
-      // If we found potential matches in recent imports, return those
-      if (potentialMatches.length > 0) {
-        console.log(`Found ${potentialMatches.length} potential matches in recently added titles`);
+      // Return direct matches if we found any
+      if (directMatches.length > 0) {
+        console.log(`Returning ${directMatches.length} direct matches for search term: "${searchQuery}"`);
         
         // Add cache control headers to prevent browser caching
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -97,11 +96,11 @@ jobsRouter.get("/titles", async (req, res) => {
         res.setHeader('Expires', '0');
         
         return res.json({
-          data: potentialMatches,
+          data: directMatches,
           meta: {
             page: 1,
             limit,
-            totalCount: potentialMatches.length,
+            totalCount: directMatches.length,
             totalPages: 1,
           }
         });
@@ -390,7 +389,7 @@ jobsRouter.get("/descriptions", async (req, res) => {
         console.log(`Only ${descriptions.length} descriptions found for job title ID ${jobTitleId}, fetching additional descriptions to meet minimum 50 requirement`);
         
         // Fetch additional descriptions from other job titles
-        const additionalDescriptions = await db.query.jobDescriptions.findMany({
+        const additionalDescriptions: typeof descriptions = await db.query.jobDescriptions.findMany({
           where: sql`${jobDescriptions.jobTitleId} != ${jobTitleId}`,
           orderBy: [
             desc(jobDescriptions.isRecommended),
@@ -484,7 +483,7 @@ jobsRouter.get("/descriptions", async (req, res) => {
       
       // Get the IDs of descriptions we already have to avoid duplicates
       const existingIds = descriptions.map(d => d.id);
-      let additionalDescriptions = [];
+      let additionalDescriptions: typeof descriptions = [];
       
       try {
         // If we have existing IDs to exclude
