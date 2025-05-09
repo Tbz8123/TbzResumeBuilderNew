@@ -65,8 +65,49 @@ jobsRouter.get("/titles", async (req, res) => {
         });
       }
       
-      // If no exact match, proceed with more flexible search
-      // Split search query into words for more flexible matching
+      // If no exact match, proceed with more flexible search approach
+      
+      // Get the most recent imported titles (last 30 days)
+      // This ensures recently uploaded titles are prioritized
+      const recentlyAddedTitles = await db.query.jobTitles.findMany({
+        where: sql`${jobTitles.created_at} > NOW() - INTERVAL '30 days'`,
+        orderBy: [desc(jobTitles.created_at)],
+        limit: 20  // Limit to most recent 20
+      });
+      
+      // Check if any of the recent titles are likely matches
+      const potentialMatches = recentlyAddedTitles.filter(title => {
+        // Compare normalized strings (no spaces, lowercase)
+        const normalizedTitle = title.title.toLowerCase().replace(/\s+/g, '');
+        const normalizedSearch = searchQuery.toLowerCase().replace(/\s+/g, '');
+        
+        // Check for partial match or common substrings (at least 3 chars)
+        return normalizedTitle.includes(normalizedSearch) || 
+               normalizedSearch.includes(normalizedTitle) ||
+               (normalizedTitle.length >= 3 && normalizedSearch.includes(normalizedTitle.substring(0, 3)));
+      });
+      
+      // If we found potential matches in recent imports, return those
+      if (potentialMatches.length > 0) {
+        console.log(`Found ${potentialMatches.length} potential matches in recently added titles`);
+        
+        // Add cache control headers to prevent browser caching
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        
+        return res.json({
+          data: potentialMatches,
+          meta: {
+            page: 1,
+            limit,
+            totalCount: potentialMatches.length,
+            totalPages: 1,
+          }
+        });
+      }
+      
+      // Perform standard search with word-level matching
       const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0);
       
       if (searchTerms.length > 1) {
