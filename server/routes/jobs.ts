@@ -403,16 +403,25 @@ jobsRouter.get("/descriptions", async (req, res) => {
       
       // Get the IDs of descriptions we already have to avoid duplicates
       const existingIds = descriptions.map(d => d.id);
-      const idsClause = existingIds.length > 0 ? sql`${jobDescriptions.id} NOT IN (${existingIds.join(',')})` : sql`1=1`;
       
-      // If we have a job title ID, exclude it from this additional query
-      const titleClause = jobTitleId ? sql`${jobDescriptions.jobTitleId} != ${jobTitleId}` : sql`1=1`;
+      // Build the SQL clause for excluding existing IDs
+      let idsClause = sql`1=1`; // Default to true condition
+      if (existingIds.length > 0) {
+        // Convert all IDs to strings and join them with commas
+        const idsList = existingIds.join(',');
+        if (idsList) {
+          idsClause = sql`${jobDescriptions.id} NOT IN (${idsList})`;
+        }
+      }
+      
+      // Don't exclude the job title ID from this additional query - we need all descriptions
+      // We're just trying to get at least 50 results, regardless of where they come from
       
       // Fetch additional descriptions
       const additionalDescriptions = await db.query.jobDescriptions.findMany({
-        where: sql`${idsClause} AND ${titleClause}`,
+        where: idsClause,
         orderBy: [
-          desc(jobDescriptions.isRecommended),
+          desc(jobDescriptions.isRecommended), 
           asc(jobDescriptions.id)
         ],
         limit: Math.max(50 - descriptions.length, 0)
