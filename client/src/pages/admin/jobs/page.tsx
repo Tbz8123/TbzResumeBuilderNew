@@ -9,6 +9,15 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import {
   Table,
   TableBody,
   TableCell,
@@ -71,9 +80,12 @@ import {
   X,
   Download,
   Loader2,
-  UploadIcon,
-  DownloadIcon,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  FileText,
+  FileSpreadsheet,
+  FileJson,
+  Code
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -612,39 +624,76 @@ export default function JobsAdminPage() {
         </div>
         <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
           <div className="flex gap-2">
-            <Button
-              onClick={handleExportCSV}
-              variant="outline"
-              className="flex items-center gap-2"
-              disabled={isExporting}
-            >
-              {isExporting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              Export CSV
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  Export Data
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Choose format</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleExportData('csv')}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  CSV Format
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportData('excel')}>
+                  <Table className="h-4 w-4 mr-2" />
+                  Excel Format
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportData('json')}>
+                  <Code className="h-4 w-4 mr-2" />
+                  JSON Format
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              variant="outline"
-              className="flex items-center gap-2"
-              disabled={isImporting}
-            >
-              {isImporting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4" />
-              )}
-              Import CSV
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  disabled={isImporting}
+                >
+                  {isImporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  Import Data
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Choose file format</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  CSV, Excel, or JSON File
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  Supports .csv, .xlsx, .xls, and .json files
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls,.json"
               className="hidden"
-              onChange={handleImportCSV}
+              onChange={handleFileImport}
               disabled={isImporting}
             />
           </div>
@@ -843,16 +892,34 @@ export default function JobsAdminPage() {
                   </h3>
                   
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="flex items-center gap-1"
-                      onClick={handleExportCSV}
-                      disabled={isExporting}
-                    >
-                      <Download className="h-4 w-4" />
-                      {isExporting ? "Exporting..." : "Export CSV"}
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="flex items-center gap-1"
+                          disabled={isExporting}
+                        >
+                          <Download className="h-4 w-4" />
+                          {isExporting ? "Exporting..." : "Export Format"}
+                          <ChevronDown className="h-3 w-3 ml-1" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleExportData('csv')}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          CSV Format
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportData('excel')}>
+                          <Table className="h-4 w-4 mr-2" />
+                          Excel Format
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportData('json')}>
+                          <Code className="h-4 w-4 mr-2" />
+                          JSON Format
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     
                     <div className="relative">
                       <Button 
@@ -872,9 +939,9 @@ export default function JobsAdminPage() {
                       <input
                         type="file"
                         ref={fileInputRef}
-                        accept=".csv"
+                        accept=".csv,.xlsx,.xls,.json"
                         className="hidden"
-                        onChange={handleImportCSV}
+                        onChange={handleFileImport}
                         disabled={isImporting}
                       />
                     </div>
