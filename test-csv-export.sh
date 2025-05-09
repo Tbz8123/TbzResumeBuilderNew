@@ -21,5 +21,9 @@ curl -b cookie.txt \
 echo "Showing the first few lines of the CSV file:"
 head -n 5 exported-job-data.csv
 
+# Step 4: Check for our test entries
+echo -e "\nChecking for 'Tbz test upload' entries:"
+grep "Tbz test upload" exported-job-data.csv
+
 echo ""
 echo "Export test complete. Full data saved to exported-job-data.csv"

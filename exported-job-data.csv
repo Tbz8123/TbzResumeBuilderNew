@@ -104,6 +104,11 @@ JobTitleID,JobTitle,Category,Description,IsRecommended
 108,National Sales Manager,Sales,"As a National Sales Manager, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true
 61,Network Engineer,Technology,"As a Network Engineer, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true
 157,New Test Title,Technology,This is a test description for CSV import,true
+157,New Test Title,Technology,upload test 1,false
+157,New Test Title,Technology,upload test 2,false
+157,New Test Title,Technology,upload test 3,false
+157,New Test Title,Technology,upload test 4,false
+157,New Test Title,Technology,upload test 5,false
 32,Operations Manager,Management,"As a Operations Manager, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true
 101,Outside Sales Representative,Sales,"As a Outside Sales Representative, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true
 126,PR Specialist,Marketing,"As a PR Specialist, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true
@@ -160,8 +165,14 @@ JobTitleID,JobTitle,Category,Description,IsRecommended
 6,Tbz,Management,"Integrated advanced job description suggestion features using natural language processing techniques, resulting in 40% faster resume completion.",true
 6,Tbz,Management,"Created responsive design systems with dynamic animations and UI elements, improving user engagement metrics by 35%.",false
 6,Tbz,Management,"Implemented a comprehensive admin interface for managing over 500 job titles and descriptions, with robust search and filtering capabilities.",false
+158,Tbz test upload,Technology,upload test 1,true
+158,Tbz test upload,Technology,upload test 2,true
+158,Tbz test upload,Technology,upload test 3,true
+158,Tbz test upload,Technology,upload test 4,true
+158,Tbz test upload,Technology,upload test 5,true
 155,Tbz1,Finance,Test tbz 1,false
 156,Tbz23,Management,Testing 23 ,true
+156,Tbz23,Management,Testing 23,false
 140,Technical Recruiter,Human Resources,"As a Technical Recruiter, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true
 71,Technical Support Specialist,Technology,"As a Technical Support Specialist, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true
 106,Territory Sales Manager,Sales,"As a Territory Sales Manager, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true

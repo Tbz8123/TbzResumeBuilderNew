@@ -1,0 +1,11 @@
+Testing CSV export from /api/jobs/export-csv
+Logging in as admin...
+{"id":3,"username":"admin_test","isAdmin":true}Downloading CSV file...
+Showing the first few lines of the CSV file:
+JobTitleID,JobTitle,Category,Description,IsRecommended
+67,AI Engineer,Technology,"As a AI Engineer, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true
+96,Account Executive,Sales,"As a Account Executive, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true
+33,Account Manager,Management,"As a Account Manager, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true
+74,Accountant,Finance,"As a Accountant, I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives.",true
+
+Export test complete. Full data saved to exported-job-data.csv
