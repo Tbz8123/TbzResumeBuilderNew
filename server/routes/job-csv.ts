@@ -546,8 +546,23 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
     
     // First pass - collect all job title IDs from the CSV that need verification
     for (const item of items) {
-      if (item.titleId && !isNaN(parseInt(item.titleId))) {
-        missingJobTitleIds.add(parseInt(item.titleId));
+      if (item.titleId) {
+        // Check if we have a comma-separated list of IDs
+        if (typeof item.titleId === 'string' && item.titleId.includes(',')) {
+          console.log(`Found comma-separated list of IDs: ${item.titleId}`);
+          
+          // Split the comma-separated values and process each ID
+          const idList = item.titleId.split(',').map(id => id.trim());
+          for (const idString of idList) {
+            if (idString && !isNaN(parseInt(idString))) {
+              missingJobTitleIds.add(parseInt(idString));
+            } else if (idString) {
+              console.warn(`Invalid job title ID in comma-separated list: ${idString}`);
+            }
+          }
+        } else if (!isNaN(parseInt(item.titleId))) {
+          missingJobTitleIds.add(parseInt(item.titleId));
+        }
       }
     }
     
@@ -556,15 +571,73 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
       console.log(`Pre-checking ${missingJobTitleIds.size} job title IDs from CSV...`);
       
       // Get all existing title IDs
-      const existingTitles = await db.query.jobTitles.findMany({
-        where: sql`${jobTitles.id} IN (${Array.from(missingJobTitleIds).join(',')})`
-      });
+      // We need to handle the IDs properly in SQL by preparing a proper array
+      console.log(`Converting job title IDs to proper SQL array parameters...`);
+      
+      // Convert the Set of IDs to an array
+      const idArray = Array.from(missingJobTitleIds);
+      
+      // Create a parameterized query for safety - don't join with commas
+      console.log(`Querying for ${idArray.length} job title IDs...`);
+      
+      // For smaller arrays, use parameterized queries with direct IN clause
+      let existingTitles: any[] = [];
+      
+      try {
+        // First, ensure all IDs are properly parsed as integers
+        const parsedIdArray = idArray.map(id => {
+          const numId = parseInt(id as string, 10);
+          if (isNaN(numId)) {
+            console.error(`Invalid job title ID found: ${id}, cannot convert to integer`);
+            throw new Error(`Invalid job title ID: ${id}`);
+          }
+          return numId;
+        });
+        
+        console.log(`Converted ${parsedIdArray.length} job title IDs to integers`);
+        
+        if (parsedIdArray.length < 100) {
+          existingTitles = await db.query.jobTitles.findMany({
+            where: inArray(jobTitles.id, parsedIdArray)
+          });
+        } else {
+          // For very large arrays, use multiple queries to avoid hitting parameter limits
+          console.log(`Large ID set detected (${parsedIdArray.length} IDs), splitting into batches...`);
+          const batchSize = 50;
+          
+          for (let i = 0; i < parsedIdArray.length; i += batchSize) {
+            const batchIds = parsedIdArray.slice(i, i + batchSize);
+            console.log(`Querying batch ${Math.floor(i/batchSize) + 1} with ${batchIds.length} IDs...`);
+            
+            const batchTitles = await db.query.jobTitles.findMany({
+              where: inArray(jobTitles.id, batchIds)
+            });
+            
+            existingTitles = [...existingTitles, ...batchTitles];
+          }
+        }
+      } catch (error) {
+        console.error("Error processing job title IDs:", error);
+        importStatus.errors.push({
+          row: 0,
+          message: `Error processing job title IDs: ${error}`
+        });
+        return []; // Return empty array to continue processing
+      }
       
       // Create a set of existing IDs for faster lookup
-      const existingTitleIds = new Set(existingTitles.map(t => t.id));
+      const existingTitleIds = new Set(existingTitles.map((t:any) => t.id));
       
       // Find IDs that don't exist and need to be created
-      const titlesToCreate = Array.from(missingJobTitleIds).filter(id => !existingTitleIds.has(id));
+      const titlesToCreate = Array.from(missingJobTitleIds).filter(id => {
+        // Parse the ID to ensure it's a number
+        const numId = parseInt(id as string, 10);
+        if (isNaN(numId)) {
+          console.error(`Invalid job title ID found during filtering: ${id}`);
+          return false; // Skip invalid IDs
+        }
+        return !existingTitleIds.has(numId);
+      });
       
       if (titlesToCreate.length > 0) {
         console.log(`Found ${titlesToCreate.length} missing job title IDs: ${titlesToCreate.join(', ')}`);
@@ -573,7 +646,17 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
         for (const id of titlesToCreate) {
           try {
             // Find the first item in the batch with this job title ID to get the title text
-            const matchingItem = items.find(item => parseInt(item.titleId) === id);
+            const matchingItem = items.find(item => {
+              if (!item.titleId) return false;
+              
+              if (typeof item.titleId === 'string' && item.titleId.includes(',')) {
+                // Check if the ID is in the comma-separated list
+                const idList = item.titleId.split(',').map(idStr => parseInt(idStr.trim()));
+                return idList.includes(id as number);
+              } else {
+                return parseInt(item.titleId) === id;
+              }
+            });
             const titleText = matchingItem && matchingItem.title ? matchingItem.title : `Imported Title ${id}`;
             const category = matchingItem && matchingItem.category ? matchingItem.category : 'General';
             
@@ -606,7 +689,24 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
       
       try {
         // Find or create job title
-        let jobTitleId = item.titleId ? parseInt(item.titleId) : null;
+        let jobTitleId: number | null = null;
+        
+        // Handle various titleId formats including comma-separated lists
+        if (item.titleId) {
+          if (typeof item.titleId === 'string' && item.titleId.includes(',')) {
+            // If we have a comma-separated list, use the first valid ID
+            const idList = item.titleId.split(',').map(id => id.trim());
+            for (const idString of idList) {
+              if (idString && !isNaN(parseInt(idString))) {
+                jobTitleId = parseInt(idString);
+                console.log(`Using first valid ID (${jobTitleId}) from comma-separated list: ${item.titleId}`);
+                break; // Use the first valid ID
+              }
+            }
+          } else if (!isNaN(parseInt(item.titleId))) {
+            jobTitleId = parseInt(item.titleId);
+          }
+        }
         
         // Track this job title ID for sync operations
         if (jobTitleId) {
