@@ -373,21 +373,48 @@ export default function JobsAdminPage() {
     },
   });
 
-  // Handle CSV export
-  const handleExportCSV = async () => {
+  // Handle data export in different formats
+  const handleExportData = async (format: 'csv' | 'excel' | 'json') => {
     setIsExporting(true);
+    let endpoint = '';
+    let filename = '';
+    let description = '';
+    
+    // Set the appropriate endpoint and filename based on format
+    switch (format) {
+      case 'csv':
+        endpoint = '/api/jobs/export-csv';
+        filename = 'job_data_export.csv';
+        description = "Job data has been exported to CSV";
+        break;
+      case 'excel':
+        endpoint = '/api/jobs/export-excel';
+        filename = 'job_data_export.xlsx';
+        description = "Job data has been exported to Excel";
+        break;
+      case 'json':
+        endpoint = '/api/jobs/export-json';
+        filename = 'job_data_export.json';
+        description = "Job data has been exported to JSON";
+        break;
+      default:
+        endpoint = '/api/jobs/export-csv';
+        filename = 'job_data_export.csv';
+        description = "Job data has been exported to CSV";
+    }
+    
     try {
-      const res = await apiRequest('GET', '/api/jobs/export-csv');
+      const res = await apiRequest('GET', endpoint);
       
       if (!res.ok) {
-        throw new Error('Failed to export CSV');
+        throw new Error(`Failed to export ${format.toUpperCase()}`);
       }
       
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'job_data_export.csv';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -395,12 +422,12 @@ export default function JobsAdminPage() {
       
       toast({
         title: "Export Successful",
-        description: "Job data has been exported to CSV",
+        description: description,
       });
     } catch (error) {
       toast({
         title: "Export Failed",
-        description: error instanceof Error ? error.message : "An error occurred during export",
+        description: error instanceof Error ? error.message : `An error occurred during ${format} export`,
         variant: "destructive",
       });
     } finally {
@@ -408,13 +435,28 @@ export default function JobsAdminPage() {
     }
   };
 
-  // Handle CSV import
-  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file import (CSV, Excel, JSON)
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) {
       return;
     }
 
     const file = event.target.files[0];
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
+    
+    // Validate file format
+    if (!['csv', 'xlsx', 'xls', 'json'].includes(fileExt)) {
+      toast({
+        title: "Invalid File Format",
+        description: "Please upload a CSV, Excel, or JSON file",
+        variant: "destructive",
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+    
     setIsImporting(true);
     setUploadStatus({
       processed: 0,
