@@ -3,7 +3,9 @@ import { useLocation } from 'wouter';
 import { useResume } from '@/contexts/ResumeContext';
 import Logo from '@/components/Logo';
 import { ArrowLeft, HelpCircle, Search, X } from 'lucide-react';
-import { getJobTitleSuggestions, JobTitle } from '@/utils/jobTitlesData';
+import { getJobTitleSuggestions } from '@/utils/jobTitlesData';
+import { apiRequest } from '@/lib/queryClient';
+import { JobTitle } from '@shared/schema';
 import { 
   Select,
   SelectContent,
@@ -67,13 +69,36 @@ const WorkExperienceDetailsPage = () => {
   
   // Effect to update job title suggestions when the job title input changes
   useEffect(() => {
-    if (workExperience.jobTitle.trim()) {
-      const suggestions = getJobTitleSuggestions(workExperience.jobTitle, 10);
-      setJobTitleSuggestions(suggestions);
-      setShowSuggestions(suggestions.length > 0);
-    } else {
-      setShowSuggestions(false);
-    }
+    const fetchJobTitles = async () => {
+      if (workExperience.jobTitle.trim()) {
+        try {
+          console.log('Searching for job title:', workExperience.jobTitle);
+          const response = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(workExperience.jobTitle)}&limit=10`);
+          const data = await response.json();
+          console.log('Job titles search results:', data);
+          
+          if (data.data && Array.isArray(data.data)) {
+            setJobTitleSuggestions(data.data);
+            setShowSuggestions(data.data.length > 0);
+          } else {
+            console.error('Invalid job titles data structure:', data);
+            setShowSuggestions(false);
+          }
+        } catch (error) {
+          console.error('Error fetching job titles:', error);
+          setShowSuggestions(false);
+        }
+      } else {
+        setShowSuggestions(false);
+      }
+    };
+    
+    // Debounce the API call to prevent excessive requests
+    const timeoutId = setTimeout(() => {
+      fetchJobTitles();
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
   }, [workExperience.jobTitle]);
   
   // Effect to handle clicks outside the suggestions dropdown
@@ -121,8 +146,11 @@ const WorkExperienceDetailsPage = () => {
       updatedWorkExperience.unshift({
         ...workExperience,
         id: Date.now().toString(), // Generate a unique ID
+        // Ensure dbJobTitleId is saved - console log for debugging
+        ...(workExperience.dbJobTitleId ? { dbJobTitleId: workExperience.dbJobTitleId } : {})
       });
       
+      console.log('Saving work experience with job title ID:', workExperience.dbJobTitleId);
       updateResumeData({ workExperience: updatedWorkExperience });
     }
   };
@@ -155,7 +183,8 @@ const WorkExperienceDetailsPage = () => {
   const handleSelectJobTitle = (jobTitle: JobTitle) => {
     setWorkExperience(prev => ({
       ...prev,
-      jobTitle: jobTitle.title
+      jobTitle: jobTitle.title,
+      dbJobTitleId: jobTitle.id // Store the database job title ID
     }));
     
     // Update the resume preview
@@ -163,12 +192,14 @@ const WorkExperienceDetailsPage = () => {
     tempWorkExperience.unshift({
       ...workExperience,
       jobTitle: jobTitle.title,
+      dbJobTitleId: jobTitle.id, // Store the database job title ID
       id: 'temp-' + Date.now(),
     });
     updateResumeData({ workExperience: tempWorkExperience });
     
     // Hide suggestions after selection
     setShowSuggestions(false);
+    console.log('Selected job title:', jobTitle.title, 'with ID:', jobTitle.id);
   };
 
   const handleCurrentJobChange = (checked: boolean) => {
