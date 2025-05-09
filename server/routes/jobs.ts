@@ -397,7 +397,34 @@ jobsRouter.get("/descriptions", async (req, res) => {
       descriptions = [...descriptions, ...additionalDescriptions];
     }
     
-    // If no descriptions found but we have a job title ID, check if the title exists
+    // ALWAYS ensure we have at least 50 descriptions, even if none match the criteria
+    if (descriptions.length < 50) {
+      console.log(`Only ${descriptions.length} descriptions found. Fetching more to ensure at least 50 results.`);
+      
+      // Get the IDs of descriptions we already have to avoid duplicates
+      const existingIds = descriptions.map(d => d.id);
+      const idsClause = existingIds.length > 0 ? sql`${jobDescriptions.id} NOT IN (${existingIds.join(',')})` : sql`1=1`;
+      
+      // If we have a job title ID, exclude it from this additional query
+      const titleClause = jobTitleId ? sql`${jobDescriptions.jobTitleId} != ${jobTitleId}` : sql`1=1`;
+      
+      // Fetch additional descriptions
+      const additionalDescriptions = await db.query.jobDescriptions.findMany({
+        where: sql`${idsClause} AND ${titleClause}`,
+        orderBy: [
+          desc(jobDescriptions.isRecommended),
+          asc(jobDescriptions.id)
+        ],
+        limit: Math.max(50 - descriptions.length, 0)
+      });
+      
+      console.log(`Retrieved ${additionalDescriptions.length} additional descriptions to meet minimum requirement`);
+      
+      // Add the additional descriptions to the results
+      descriptions = [...descriptions, ...additionalDescriptions];
+    }
+    
+    // If STILL no descriptions found but we have a job title ID, check if the title exists
     if (descriptions.length === 0 && jobTitleId) {
       const jobTitle = await db.query.jobTitles.findFirst({
         where: eq(jobTitles.id, jobTitleId)
