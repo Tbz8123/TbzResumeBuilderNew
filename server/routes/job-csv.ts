@@ -297,6 +297,7 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
           
           if (existingTitle) {
             jobTitleId = existingTitle.id;
+            console.log(`Found existing job title: "${existingTitle.title}" (ID: ${existingTitle.id})`);
             
             // Update category if provided and different
             if (item.category && existingTitle.category !== item.category) {
@@ -305,15 +306,25 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
                 .where(eq(jobTitles.id, jobTitleId));
                 
               importStatus.updated++;
+              console.log(`Updated category for job title "${existingTitle.title}" to: ${item.category}`);
             }
           } else {
-            // Create new job title
-            const newTitle = await db.insert(jobTitles)
-              .values({ title: item.title, category: item.category })
+            // Create new job title - use the exact title as in the CSV
+            console.log(`Creating new job title: "${item.title}" with category: ${item.category}`);
+            const insertResult = await db.insert(jobTitles)
+              .values({ 
+                title: item.title, 
+                category: item.category || 'General' 
+              })
               .returning();
             
-            jobTitleId = newTitle[0].id;
-            importStatus.created++;
+            if (insertResult && insertResult.length > 0) {
+              jobTitleId = insertResult[0].id;
+              console.log(`Successfully created job title "${item.title}" with ID: ${jobTitleId}`);
+              importStatus.created++;
+            } else {
+              throw new Error(`Failed to create job title: ${item.title}`);
+            }
           }
         }
         

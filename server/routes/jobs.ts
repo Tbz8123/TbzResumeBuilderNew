@@ -37,10 +37,17 @@ jobsRouter.get("/titles", async (req, res) => {
         const allTitles = await db.select().from(jobTitles).execute();
         const lowercaseSearch = searchQuery.toLowerCase();
         
-        // First try to find exact matches
-        const exactMatches = allTitles.filter(title => 
-          title.title.toLowerCase() === lowercaseSearch
-        );
+        // First try to find exact matches (case insensitive)
+        console.log(`Performing case-insensitive search for exact matches of: "${searchQuery}"`);
+        const exactMatches = allTitles.filter(title => {
+          const titleLower = title.title.toLowerCase().trim();
+          const searchLower = lowercaseSearch.trim();
+          const isMatch = titleLower === searchLower;
+          if (isMatch) {
+            console.log(`Found exact match: "${title.title}" (id: ${title.id}) matches "${searchQuery}"`);
+          }
+          return isMatch;
+        });
         
         if (exactMatches.length > 0) {
           console.log(`Found exact match for: "${searchQuery}"`);
@@ -62,8 +69,17 @@ jobsRouter.get("/titles", async (req, res) => {
         }
         
         // If no exact match, find titles that contain the search query
+        console.log(`No exact matches found, looking for titles containing: "${searchQuery}"`);
         const partialMatches = allTitles
-          .filter(title => title.title.toLowerCase().includes(lowercaseSearch))
+          .filter(title => {
+            const titleLower = title.title.toLowerCase().trim();
+            const searchLower = lowercaseSearch.trim();
+            const contains = titleLower.includes(searchLower);
+            if (contains) {
+              console.log(`Found partial match: "${title.title}" (id: ${title.id}) contains "${searchQuery}"`);
+            }
+            return contains;
+          })
           .sort((a, b) => {
             // Sort by how closely the title matches the search string
             const aTitle = a.title.toLowerCase();
