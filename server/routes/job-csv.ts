@@ -67,8 +67,10 @@ let importStatus = {
   processed: 0,
   created: 0,
   updated: 0,
+  deleted: 0,
   errors: [] as Array<{ row: number; message: string }>,
-  isComplete: false
+  isComplete: false,
+  syncMode: 'update-only' as string
 };
 
 // Function to generate data for exports
@@ -237,13 +239,19 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
     return res.status(400).json({ error: "No file uploaded" });
   }
   
+  // Check if sync mode is specified (defaults to update-only)
+  const syncMode = req.body.syncMode || 'update-only';
+  console.log(`Import sync mode: ${syncMode}`);
+  
   // Reset import status
   importStatus = {
     processed: 0,
     created: 0,
     updated: 0,
+    deleted: 0,
     errors: [],
-    isComplete: false
+    isComplete: false,
+    syncMode: syncMode
   };
   
   // Emit the initial status
@@ -282,13 +290,52 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
     } else if (fileExt === '.xlsx' || fileExt === '.xls') {
       // Process Excel file
       try {
+        console.log(`Reading Excel file: ${filePath}`);
         const workbook = XLSX.readFile(filePath);
-        const sheetName = workbook.SheetNames[0]; // Get the first sheet
-        const worksheet = workbook.Sheets[sheetName];
         
-        // Convert to JSON with headers
-        rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+        if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+          throw new Error('Excel file has no sheets');
+        }
+        
+        const sheetName = workbook.SheetNames[0]; // Get the first sheet
+        console.log(`Using first sheet: ${sheetName}`);
+        
+        const worksheet = workbook.Sheets[sheetName];
+        if (!worksheet) {
+          throw new Error(`Could not access sheet "${sheetName}"`);
+        }
+        
+        // Check if worksheet has data
+        if (!worksheet['!ref']) {
+          throw new Error('Excel sheet is empty');
+        }
+        
+        // Convert to JSON with headers and more debug info
+        console.log(`Converting Excel data to JSON format`);
+        rows = XLSX.utils.sheet_to_json(worksheet, { 
+          defval: "",
+          raw: false, // Convert all data to strings
+          blankrows: false // Skip blank rows
+        });
+        
+        console.log(`Successfully parsed ${rows.length} rows from Excel`);
+        
+        // Validate required columns
+        if (rows.length > 0) {
+          const firstRow = rows[0];
+          const requiredColumns = ['JobTitle', 'Description'];
+          const foundColumns = Object.keys(firstRow).map(k => k.toLowerCase());
+          
+          const missingColumns = requiredColumns.filter(col => 
+            !foundColumns.some(f => f.toLowerCase() === col.toLowerCase() || 
+                                 f.toLowerCase().includes(col.toLowerCase().replace(/\s+/g, ''))));
+          
+          if (missingColumns.length > 0) {
+            throw new Error(`Required columns missing: ${missingColumns.join(', ')}. Please ensure your Excel file has the following headers: JobTitleID or JobTitle, and Description.`);
+          }
+        }
       } catch (excelError: any) {
+        console.error("Excel parsing error:", excelError);
         importStatus.errors.push({
           row: 0,
           message: `Failed to parse Excel file: ${excelError.message}`
@@ -420,6 +467,10 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
   async function processBatch(items: any[]) {
     // The titleDescriptionMap needs to be accessible to this function
     const titleDescriptionMapLocal: Map<number, Set<string>> = new Map();
+    
+    // Track job titles and descriptions in import file for potential deletion
+    const importedTitleIds = new Set<number>();
+    const importedDescriptionHashes = new Map<number, Set<string>>();
     
     // First, collect all job title IDs that need to be created
     const missingJobTitleIds = new Set<number>();
