@@ -174,8 +174,7 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
       trim: true
     }));
     
-    // Track unique descriptions per job title to avoid duplicates
-    const titleDescriptionMap = new Map<number, Set<string>>();
+    // Removed global map since we're using local map in processBatch function
     const batchSize = 500; // Process in batches
     let batch = [];
     let rowNumber = 0;
@@ -264,6 +263,9 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
   
   // Helper function to process batches of CSV data
   async function processBatch(items: any[]) {
+    // The titleDescriptionMap needs to be accessible to this function
+    const titleDescriptionMapLocal: Map<number, Set<string>> = new Map();
+    
     for (const item of items) {
       importStatus.processed++;
       
@@ -300,20 +302,20 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
         }
         
         // Check description uniqueness for this job title
-        if (!titleDescriptionMap.has(jobTitleId)) {
+        if (!titleDescriptionMapLocal.has(jobTitleId)) {
           // Fetch existing descriptions for this title
           const existingDescriptions = await db.query.jobDescriptions.findMany({
             where: eq(jobDescriptions.jobTitleId, jobTitleId)
           });
           
           // Store lowercase content for duplicate checking
-          titleDescriptionMap.set(
+          titleDescriptionMapLocal.set(
             jobTitleId, 
             new Set(existingDescriptions.map(d => d.content.toLowerCase()))
           );
         }
         
-        const descriptionSet = titleDescriptionMap.get(jobTitleId);
+        const descriptionSet = titleDescriptionMapLocal.get(jobTitleId);
         if (!descriptionSet) continue; // Satisfy TypeScript
         
         const normalizedDescription = item.description.toLowerCase();
