@@ -10,6 +10,21 @@ app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 // Serve static files from the public directory (for uploads)
 app.use(express.static(path.join(process.cwd(), 'public')));
 
+// Add CORS headers for cross-browser compatibility
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

@@ -90,6 +90,13 @@ const JobDescriptionPage = () => {
       try {
         console.log("Searching for job title:", currentJob.jobTitle);
         
+        // If the job title isn't set yet (like in fresh browser contexts), exit early
+        if (!currentJob.jobTitle) {
+          console.log("No job title found, skipping description fetch");
+          setIsLoadingDescriptions(false);
+          return;
+        }
+        
         // First check if we already have a job title ID stored in the work experience
         const dbJobTitleId = currentJob.dbJobTitleId;
         
