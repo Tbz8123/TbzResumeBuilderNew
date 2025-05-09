@@ -153,7 +153,7 @@ export default function TestJobApi() {
         <div>
           <div className="flex items-center mb-2">
             <Button asChild variant="ghost" className="p-0 mr-2">
-              <Link href="/admin/dashboard">
+              <Link href="/admin/home">
                 <ChevronLeft className="h-5 w-5" />
               </Link>
             </Button>
