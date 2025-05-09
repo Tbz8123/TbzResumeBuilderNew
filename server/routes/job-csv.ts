@@ -539,6 +539,19 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
         // Find or create job title
         let jobTitleId = item.titleId ? parseInt(item.titleId) : null;
         
+        // Track this job title ID for sync operations
+        if (jobTitleId) {
+          importedTitleIds.add(jobTitleId);
+        } else if (item.title) {
+          // Also try to track by title text for sync operations
+          const existingTitle = await db.query.jobTitles.findFirst({
+            where: sql`LOWER(${jobTitles.title}) = LOWER(${item.title})`
+          });
+          if (existingTitle) {
+            importedTitleIds.add(existingTitle.id);
+          }
+        }
+        
         if (!jobTitleId) {
           // Try to find existing title by name
           const existingTitle = await db.query.jobTitles.findFirst({
@@ -635,7 +648,7 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
         
         // Add the description
         try {
-          await db.insert(jobDescriptions)
+          const result = await db.insert(jobDescriptions)
             .values({
               content: item.description,
               jobTitleId: jobTitleId,
@@ -646,6 +659,12 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
           // Add to the set to prevent duplicates in further rows
           descriptionSet.add(normalizedDescription);
           importStatus.created++;
+          
+          // Track this description for sync operations
+          if (!importedDescriptionHashes.has(jobTitleId)) {
+            importedDescriptionHashes.set(jobTitleId, new Set());
+          }
+          importedDescriptionHashes.get(jobTitleId)?.add(normalizedDescription);
         } catch (error: any) {
           // Handle specific FK violation errors
           if (error.code === '23503' && error.constraint === 'job_descriptions_job_title_id_fkey') {
@@ -672,6 +691,110 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
         importStatus.errors.push({
           row: importStatus.processed,
           message: error.message || "Unknown error"
+        });
+      }
+    }
+    
+    // Handle deletion of entries in full sync mode
+    if (importStatus.syncMode === 'full-sync' && items.length > 0) {
+      try {
+        console.log(`Running in full-sync mode - checking for entries to delete...`);
+        
+        // Only apply deletion if we have a significant number of entries in the file
+        // to prevent accidental mass deletion when importing a small test file
+        const minEntriesForDeletion = 10;
+        if (importStatus.processed < minEntriesForDeletion) {
+          console.log(`Skipping deletion check - only ${importStatus.processed} entries processed, minimum ${minEntriesForDeletion} required for safety`);
+          importStatus.errors.push({
+            row: 0,
+            message: `Warning: Deletion skipped because file contains only ${importStatus.processed} entries. For safety, at least ${minEntriesForDeletion} entries are required to perform deletion in full-sync mode.`
+          });
+        } else {
+          // 1. Handle job descriptions deletion - delete descriptions that aren't in the imported file
+          if (importedDescriptionHashes.size > 0) {
+            for (const [titleId, importedDescriptions] of importedDescriptionHashes.entries()) {
+              // Skip if there are no imported descriptions for this title
+              if (!importedDescriptions || importedDescriptions.size === 0) continue;
+              
+              console.log(`Checking for descriptions to delete for job title ID ${titleId}...`);
+              
+              // Get all existing descriptions for this job title from the database
+              const existingDescriptions = await db.query.jobDescriptions.findMany({
+                where: eq(jobDescriptions.jobTitleId, titleId)
+              });
+              
+              // Filter out descriptions that aren't in the imported file
+              const descriptionsToDelete = existingDescriptions.filter(desc => 
+                !importedDescriptions.has(desc.content.toLowerCase())
+              );
+              
+              if (descriptionsToDelete.length > 0) {
+                console.log(`Found ${descriptionsToDelete.length} descriptions to delete for job title ID ${titleId}`);
+                
+                // Delete these descriptions
+                for (const desc of descriptionsToDelete) {
+                  await db.delete(jobDescriptions)
+                    .where(eq(jobDescriptions.id, desc.id));
+                    
+                  importStatus.deleted++;
+                }
+              }
+            }
+          }
+          
+          // 2. Handle job titles deletion if we have importedTitleIds
+          if (importedTitleIds.size > 0) {
+            console.log(`Checking for job titles to delete...`);
+            
+            // Get all existing job title IDs from the database
+            const existingTitles = await db.query.jobTitles.findMany();
+            
+            // Filter out titles that aren't in the imported file
+            const titlesToDelete = existingTitles.filter(title => 
+              !importedTitleIds.has(title.id)
+            );
+            
+            if (titlesToDelete.length > 0) {
+              console.log(`Found ${titlesToDelete.length} job titles to delete`);
+              
+              // Safety check - don't delete more than 20% of titles in a single operation
+              const maxDeletePercent = 0.2;
+              const deletePercent = titlesToDelete.length / existingTitles.length;
+              
+              if (deletePercent > maxDeletePercent) {
+                console.warn(`Warning: Attempting to delete ${titlesToDelete.length} out of ${existingTitles.length} job titles (${Math.round(deletePercent * 100)}% of all titles). Limiting deletion for safety.`);
+                
+                importStatus.errors.push({
+                  row: 0,
+                  message: `Warning: Deletion operation would remove ${titlesToDelete.length} job titles (${Math.round(deletePercent * 100)}% of database). For safety, deletion was limited. Use a more complete data file for full synchronization.`
+                });
+              } else {
+                // Delete these titles - note this will cascade delete their descriptions as well
+                for (const title of titlesToDelete) {
+                  // First delete all descriptions
+                  const deletedDescriptions = await db.delete(jobDescriptions)
+                    .where(eq(jobDescriptions.jobTitleId, title.id))
+                    .returning();
+                    
+                  importStatus.deleted += deletedDescriptions.length;
+                  
+                  // Then delete the title
+                  await db.delete(jobTitles)
+                    .where(eq(jobTitles.id, title.id));
+                    
+                  importStatus.deleted++;
+                  
+                  console.log(`Deleted job title "${title.title}" (ID: ${title.id}) and its ${deletedDescriptions.length} descriptions`);
+                }
+              }
+            }
+          }
+        }
+      } catch (error: any) {
+        console.error(`Error during sync deletion operations:`, error);
+        importStatus.errors.push({
+          row: 0,
+          message: `Error during sync deletion: ${error.message}`
         });
       }
     }

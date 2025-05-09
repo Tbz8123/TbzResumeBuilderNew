@@ -114,12 +114,15 @@ export default function JobsAdminPage() {
   // CSV Export/Import functions
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [syncMode, setSyncMode] = useState<'update-only' | 'full-sync'>('update-only');
   const [uploadStatus, setUploadStatus] = useState<{
     processed: number;
     created: number;
     updated: number;
+    deleted: number;
     errors: Array<{ row: number; message: string }>;
     isComplete: boolean;
+    syncMode?: string;
   } | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
@@ -474,13 +477,16 @@ export default function JobsAdminPage() {
       processed: 0,
       created: 0,
       updated: 0,
+      deleted: 0,
       errors: [],
-      isComplete: false
+      isComplete: false,
+      syncMode
     });
 
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('syncMode', syncMode);
       
       // Start SSE connection for real-time updates
       const eventSource = new EventSource('/api/jobs/import-csv-status');
@@ -492,6 +498,7 @@ export default function JobsAdminPage() {
           processed: data.processed,
           created: data.created,
           updated: data.updated,
+          deleted: data.deleted || 0,
           errors: data.errors,
           isComplete: data.isComplete
         }));
