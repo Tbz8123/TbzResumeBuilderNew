@@ -282,12 +282,72 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
     // The titleDescriptionMap needs to be accessible to this function
     const titleDescriptionMapLocal: Map<number, Set<string>> = new Map();
     
+    // First, collect all job title IDs that need to be created
+    const missingJobTitleIds = new Set<number>();
+    
+    // First pass - collect all job title IDs from the CSV that need verification
+    for (const item of items) {
+      if (item.titleId && !isNaN(parseInt(item.titleId))) {
+        missingJobTitleIds.add(parseInt(item.titleId));
+      }
+    }
+    
+    // Pre-check all job title IDs and create any missing ones
+    if (missingJobTitleIds.size > 0) {
+      console.log(`Pre-checking ${missingJobTitleIds.size} job title IDs from CSV...`);
+      
+      // Get all existing title IDs
+      const existingTitles = await db.query.jobTitles.findMany({
+        where: sql`${jobTitles.id} IN (${Array.from(missingJobTitleIds).join(',')})`
+      });
+      
+      // Create a set of existing IDs for faster lookup
+      const existingTitleIds = new Set(existingTitles.map(t => t.id));
+      
+      // Find IDs that don't exist and need to be created
+      const titlesToCreate = Array.from(missingJobTitleIds).filter(id => !existingTitleIds.has(id));
+      
+      if (titlesToCreate.length > 0) {
+        console.log(`Found ${titlesToCreate.length} missing job title IDs: ${titlesToCreate.join(', ')}`);
+        
+        // Create placeholder job titles for missing IDs
+        for (const id of titlesToCreate) {
+          try {
+            // Find the first item in the batch with this job title ID to get the title text
+            const matchingItem = items.find(item => parseInt(item.titleId) === id);
+            const titleText = matchingItem && matchingItem.title ? matchingItem.title : `Imported Title ${id}`;
+            const category = matchingItem && matchingItem.category ? matchingItem.category : 'General';
+            
+            console.log(`Creating placeholder job title with ID ${id}: "${titleText}"`);
+            
+            // Use SQL to insert with a specific ID
+            // Execute raw SQL query using db.execute
+            await db.execute(sql`
+              INSERT INTO job_titles (id, title, category) 
+              VALUES (${id}, ${titleText}, ${category})
+              ON CONFLICT (id) DO NOTHING
+            `);
+            
+            importStatus.created++;
+            console.log(`Successfully created placeholder job title with ID ${id}`);
+          } catch (error: any) {
+            console.error(`Error creating placeholder job title with ID ${id}:`, error);
+            importStatus.errors.push({
+              row: 0,
+              message: `Failed to create placeholder job title with ID ${id}: ${error.message || "Unknown error"}`
+            });
+          }
+        }
+      }
+    }
+    
+    // Now process the individual items in the batch
     for (const item of items) {
       importStatus.processed++;
       
       try {
         // Find or create job title
-        let jobTitleId = item.titleId;
+        let jobTitleId = item.titleId ? parseInt(item.titleId) : null;
         
         if (!jobTitleId) {
           // Try to find existing title by name
@@ -326,6 +386,36 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
               throw new Error(`Failed to create job title: ${item.title}`);
             }
           }
+        } else {
+          // Double-check that job title ID exists
+          const existingTitle = await db.query.jobTitles.findFirst({
+            where: eq(jobTitles.id, jobTitleId)
+          });
+          
+          if (!existingTitle) {
+            // This shouldn't happen due to our pre-check, but just in case:
+            console.warn(`Job title ID ${jobTitleId} not found, creating placeholder...`);
+            
+            // Create placeholder job title
+            const titleText = item.title || `Imported Title ${jobTitleId}`;
+            const category = item.category || 'General';
+            
+            // Execute raw SQL query using db.execute
+            await db.execute(sql`
+              INSERT INTO job_titles (id, title, category) 
+              VALUES (${jobTitleId}, ${titleText}, ${category})
+              ON CONFLICT (id) DO NOTHING
+            `);
+            
+            importStatus.created++;
+            console.log(`Created placeholder job title with ID ${jobTitleId}`);
+          }
+        }
+        
+        // Skip if we don't have a description to add
+        if (!item.description) {
+          console.log(`Skipping item ${importStatus.processed} - no description provided`);
+          continue;
         }
         
         // Check description uniqueness for this job title
@@ -349,21 +439,36 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
         
         // Skip if this description already exists for this job title
         if (descriptionSet.has(normalizedDescription)) {
+          console.log(`Skipping duplicate description for job title ID ${jobTitleId}`);
           continue;
         }
         
         // Add the description
-        await db.insert(jobDescriptions)
-          .values({
-            content: item.description,
-            jobTitleId: jobTitleId,
-            isRecommended: item.isRecommended
-          })
-          .returning();
-        
-        // Add to the set to prevent duplicates in further rows
-        descriptionSet.add(normalizedDescription);
-        importStatus.created++;
+        try {
+          await db.insert(jobDescriptions)
+            .values({
+              content: item.description,
+              jobTitleId: jobTitleId,
+              isRecommended: item.isRecommended
+            })
+            .returning();
+          
+          // Add to the set to prevent duplicates in further rows
+          descriptionSet.add(normalizedDescription);
+          importStatus.created++;
+        } catch (error: any) {
+          // Handle specific FK violation errors
+          if (error.code === '23503' && error.constraint === 'job_descriptions_job_title_id_fkey') {
+            console.error(`Foreign key error for job title ID ${jobTitleId} - job title does not exist`);
+            importStatus.errors.push({
+              row: importStatus.processed,
+              message: `Job title ID ${jobTitleId} does not exist in the database - try importing the job title first`
+            });
+          } else {
+            // Re-throw other errors to be caught by the outer catch
+            throw error;
+          }
+        }
         
         // Check if we're exceeding the max descriptions per title (100)
         if (descriptionSet.size > 100) {

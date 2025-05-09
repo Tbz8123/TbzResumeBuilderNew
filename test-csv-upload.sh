@@ -21,7 +21,7 @@ curl -c cookie.txt -s -X POST \
 echo "Uploading CSV file..."
 curl -v -X POST \
   -b cookie.txt \
-  -F "file=@temp/test-csv.csv" \
+  -F "file=@temp/test-problem-csv.csv" \
   http://localhost:5000/api/jobs/import-csv
 
 echo ""
