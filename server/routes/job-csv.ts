@@ -421,9 +421,40 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
           }
         } catch (error: any) {
           console.error(`Error processing row ${rowNumber}:`, error);
+          
+          // Provide more detailed error information
+          let errorMessage = error.message || "Unknown error";
+          
+          // For row debugging - need to use the variable from the outer scope
+          try {
+            // Safe access to row data for debugging
+            const rowData = row || {};
+            const jobTitleId = rowData.JobTitleID || rowData.jobTitleID || rowData.jobtitleid || rowData['Job Title ID'] || rowData['job_title_id'] || 'N/A';
+            const jobTitle = rowData.JobTitle || rowData.jobTitle || rowData.jobtitle || rowData['Job Title'] || rowData['job_title'] || 'N/A';
+            const description = rowData.Description || rowData.description || rowData['Job Description'] || rowData['job_description'] || '';
+            
+            errorMessage += `\n\nRow data: JobTitleID=${jobTitleId}, JobTitle="${jobTitle}", Description length=${description ? description.length : 0}`;
+          } catch (debugError: any) {
+            errorMessage += `\n\nUnable to extract row data for debugging: ${debugError.message || 'Unknown error'}`;
+          }
+          
+          // Add database error code if available
+          if (error.code) {
+            errorMessage += `\n\nDatabase error code: ${error.code}`;
+            
+            // Add helpful messages for common database errors
+            if (error.code === '23505') {
+              errorMessage += ' (Unique constraint violation - this record may already exist)';
+            } else if (error.code === '23503') {
+              errorMessage += ' (Foreign key constraint violation - referenced record does not exist)';
+            } else if (error.code === '22P02') {
+              errorMessage += ' (Invalid input syntax - check data types)';
+            }
+          }
+          
           importStatus.errors.push({
             row: rowNumber,
-            message: error.message || "Unknown error"
+            message: errorMessage
           });
         }
       }
@@ -445,10 +476,48 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
   } catch (error: any) {
     console.error("Error processing file import:", error);
     
-    // Update status with error
+    // Enhance error information
+    let errorMessage = `System error: ${error.message || "Unknown error"}`;
+    
+    // Include file information if available
+    if (req.file) {
+      const fileInfo = {
+        originalName: req.file.originalname,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+        encoding: req.file.encoding
+      };
+      errorMessage += `\n\nFile details: ${JSON.stringify(fileInfo, null, 2)}`;
+    }
+    
+    // Add full stack trace for debugging
+    if (process.env.NODE_ENV !== 'production' && error.stack) {
+      errorMessage += `\n\nStack trace: ${error.stack}`;
+    }
+    
+    // Add database error details
+    if (error.code) {
+      errorMessage += `\n\nDatabase error code: ${error.code}`;
+      
+      // Add helpful messages for common database errors
+      if (error.code === '23505') {
+        errorMessage += ' (Unique constraint violation)';
+      } else if (error.code === '23503') {
+        errorMessage += ' (Foreign key constraint violation)';
+      } else if (error.code === '22P02') {
+        errorMessage += ' (Invalid input syntax)';
+      }
+      
+      // Add constraint name if available
+      if (error.constraint) {
+        errorMessage += `\nConstraint: ${error.constraint}`;
+      }
+    }
+    
+    // Update status with enhanced error
     importStatus.errors.push({
       row: 0,
-      message: `System error: ${error.message || "Unknown error"}`
+      message: errorMessage
     });
     importStatus.isComplete = true;
     importStatusEmitter.emit('update', importStatus);
@@ -712,7 +781,12 @@ jobCsvRouter.post("/import-csv", isAdmin, upload.single('file'), async (req, res
         } else {
           // 1. Handle job descriptions deletion - delete descriptions that aren't in the imported file
           if (importedDescriptionHashes.size > 0) {
-            for (const [titleId, importedDescriptions] of importedDescriptionHashes.entries()) {
+            // Convert the Map to an array of entries and iterate
+            const importedDescriptionEntries = Array.from(importedDescriptionHashes.entries());
+            
+            for (let i = 0; i < importedDescriptionEntries.length; i++) {
+              const [titleId, importedDescriptions] = importedDescriptionEntries[i];
+              
               // Skip if there are no imported descriptions for this title
               if (!importedDescriptions || importedDescriptions.size === 0) continue;
               
