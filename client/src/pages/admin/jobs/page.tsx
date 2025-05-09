@@ -66,6 +66,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { 
   Search, 
   Plus, 
@@ -509,13 +511,17 @@ export default function JobsAdminPage() {
           if (data.errors.length > 0) {
             toast({
               title: "Import Completed with Errors",
-              description: `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Errors: ${data.errors.length}`,
+              description: syncMode === 'full-sync' 
+                ? `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Deleted: ${data.deleted}, Errors: ${data.errors.length}`
+                : `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Errors: ${data.errors.length}`,
               variant: "destructive",
             });
           } else {
             toast({
               title: "Import Successful",
-              description: `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}`,
+              description: syncMode === 'full-sync'
+                ? `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Deleted: ${data.deleted}`
+                : `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}`,
             });
           }
           
@@ -684,6 +690,24 @@ export default function JobsAdminPage() {
               <DropdownMenuContent>
                 <DropdownMenuLabel>Choose file format</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <div className="px-2 py-2">
+                  <div className="mb-2 text-sm font-medium">Sync Mode:</div>
+                  <RadioGroup 
+                    value={syncMode} 
+                    onValueChange={(value) => setSyncMode(value as 'update-only' | 'full-sync')}
+                    className="flex flex-col space-y-1"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="update-only" id="update-only" />
+                      <Label htmlFor="update-only" className="text-sm">Update Only</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="full-sync" id="full-sync" />
+                      <Label htmlFor="full-sync" className="text-sm">Full Sync (with deletion)</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
                   <FileText className="h-4 w-4 mr-2" />
                   CSV, Excel, or JSON File
@@ -746,7 +770,7 @@ export default function JobsAdminPage() {
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-4 gap-4 mb-4">
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Processed</div>
               <div className="text-xl font-semibold">{uploadStatus.processed}</div>
@@ -756,8 +780,12 @@ export default function JobsAdminPage() {
               <div className="text-xl font-semibold">{uploadStatus.created}</div>
             </div>
             <div className="text-center">
-              <div className="text-sm text-muted-foreground">Errors</div>
-              <div className="text-xl font-semibold">{uploadStatus.errors.length}</div>
+              <div className="text-sm text-muted-foreground">Updated</div>
+              <div className="text-xl font-semibold">{uploadStatus.updated}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">{uploadStatus.syncMode === 'full-sync' ? 'Deleted' : 'Errors'}</div>
+              <div className="text-xl font-semibold">{uploadStatus.syncMode === 'full-sync' ? uploadStatus.deleted : uploadStatus.errors.length}</div>
             </div>
           </div>
           
