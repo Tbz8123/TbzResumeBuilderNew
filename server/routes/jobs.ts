@@ -43,6 +43,12 @@ jobsRouter.get("/titles", async (req, res) => {
       const exactMatches = await exactQuery.execute();
       if (exactMatches.length > 0) {
         console.log(`Found exact match for: "${searchQuery}"`);
+        
+        // Add cache control headers to prevent browser caching
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        
         return res.json({
           data: exactMatches,
           meta: {
@@ -92,6 +98,11 @@ jobsRouter.get("/titles", async (req, res) => {
     
     console.log(`Retrieved ${allTitles.length} job titles (total: ${totalCount})`);
     
+    // Add cache control headers to prevent browser caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
     // Return the results with pagination metadata
     return res.json({
       data: allTitles,
@@ -126,6 +137,11 @@ jobsRouter.get("/titles/:id", async (req, res) => {
     if (!title) {
       return res.status(404).json({ error: "Job title not found" });
     }
+    
+    // Add cache control headers to prevent browser caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     return res.json(title);
   } catch (error) {
@@ -152,6 +168,12 @@ jobsRouter.get("/titles/:id/descriptions", async (req, res) => {
     });
     
     console.log(`Retrieved ${descriptions.length} descriptions for job title ID: ${id}`);
+    
+    // Add cache control headers to prevent browser caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
     return res.json(descriptions);
   } catch (error) {
     console.error("Error fetching job descriptions:", error);
@@ -327,6 +349,12 @@ jobsRouter.get("/descriptions", async (req, res) => {
     }
     
     console.log(`Retrieved ${descriptions.length} job descriptions`);
+    
+    // Add cache control headers to prevent browser caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
     return res.json(descriptions);
   } catch (error) {
     console.error("Error fetching job descriptions:", error);
