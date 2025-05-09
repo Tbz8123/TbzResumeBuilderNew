@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'wouter';
+import { ChevronLeft } from 'lucide-react';
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Loader2, Search } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth } from '@/hooks/use-auth';
 
 export default function TestJobApi() {
   const [jobTitleId, setJobTitleId] = useState<string>("28"); // Default to Manager ID
@@ -19,6 +20,16 @@ export default function TestJobApi() {
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [searchResults, setSearchResults] = useState<string>("");
+  
+  // Auth checks
+  const { user, isLoading } = useAuth();
+  
+  // Redirect if not authenticated or not admin
+  useEffect(() => {
+    if (!isLoading && (!user || !user.isAdmin)) {
+      window.location.href = '/auth';
+    }
+  }, [user, isLoading]);
 
   const fetchDescriptionsById = async () => {
     setLoading(true);
@@ -118,9 +129,41 @@ export default function TestJobApi() {
     }
   };
 
+  // Loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+      </div>
+    );
+  }
+
+  // If not authenticated or not admin
+  if (!user || !user.isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-6">Job Descriptions API Test</h1>
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+          <div className="flex items-center mb-2">
+            <Button asChild variant="ghost" className="p-0 mr-2">
+              <Link href="/admin/dashboard">
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
+            </Button>
+            <h1 className="text-3xl font-bold">Job API Testing</h1>
+          </div>
+          <p className="text-gray-500">
+            Test job titles and descriptions API functionality.
+          </p>
+        </div>
+      </div>
       
       <Tabs defaultValue="name" onValueChange={(value) => setSearchMethod(value as "id" | "name")}>
         <TabsList className="mb-4">

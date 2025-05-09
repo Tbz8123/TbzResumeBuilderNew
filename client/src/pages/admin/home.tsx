@@ -86,6 +86,13 @@ const AdminHomePage = () => {
           icon: <Briefcase className="h-5 w-5" />,
           path: '/admin/jobs',
           color: 'bg-emerald-500'
+        },
+        {
+          title: 'Job API Test',
+          description: 'Test job descriptions API functionality',
+          icon: <Server className="h-5 w-5" />,
+          path: '/admin/jobs/test-api',
+          color: 'bg-indigo-500'
         }
       ]
     },

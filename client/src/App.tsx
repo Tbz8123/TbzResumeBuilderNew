@@ -16,8 +16,8 @@ import UploadResumePage from "@/pages/upload-resume/page";
 import WhyNeedResumePage from "@/pages/work-history/page";
 import WorkExperienceDetailsPage from "@/pages/work-experience-details/page";
 import JobDescriptionPage from "@/pages/job-description/page";
-import TestJobApiPage from "@/pages/test-job-api";
 import AuthPage from "@/pages/auth-page";
+import AdminJobsTestApiPage from "@/pages/admin/jobs/test-api";
 import AdminTemplatesPage from "@/pages/admin/templates/page";
 import AdminTemplateEditPage from "@/pages/admin/templates/edit";
 import AdvancedTemplateEditPage from "@/pages/admin/templates/advanced-edit";
@@ -55,7 +55,6 @@ function Router() {
       <Route path="/work-history" component={WhyNeedResumePage} />
       <Route path="/work-experience-details" component={WorkExperienceDetailsPage} />
       <Route path="/job-description" component={JobDescriptionPage} />
-      <Route path="/test-job-api" component={TestJobApiPage} />
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}
@@ -63,6 +62,7 @@ function Router() {
       <ProtectedRoute path="/admin/home" component={AdminHomePage} adminOnly />
       <ProtectedRoute path="/admin" component={AdminHomePage} adminOnly />
       <ProtectedRoute path="/admin/jobs" component={AdminJobsPage} adminOnly />
+      <ProtectedRoute path="/admin/jobs/test-api" component={AdminJobsTestApiPage} adminOnly />
       <ProtectedRoute path="/admin/templates" component={AdminTemplatesPage} adminOnly />
       <ProtectedRoute path="/admin/templates/management" component={AdminTemplateManagementPage} adminOnly />
       <ProtectedRoute path="/admin/templates/new/basic" component={CreateNewTemplateAdminPage} adminOnly />
