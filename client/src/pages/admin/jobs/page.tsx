@@ -56,6 +56,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { 
   Search, 
   Plus, 
@@ -561,7 +562,126 @@ export default function JobsAdminPage() {
             Manage job titles and their associated descriptions for the resume wizard.
           </p>
         </div>
+        <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0">
+          <div className="flex gap-2">
+            <Button
+              onClick={handleExportCSV}
+              variant="outline"
+              className="flex items-center gap-2"
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              Export CSV
+            </Button>
+            
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              variant="outline"
+              className="flex items-center gap-2"
+              disabled={isImporting}
+            >
+              {isImporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
+              Import CSV
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleImportCSV}
+              disabled={isImporting}
+            />
+          </div>
+          
+          <Button
+            onClick={() => {
+              setEditingTitle(null);
+              setTitleDialogOpen(true);
+            }}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Job Title
+          </Button>
+        </div>
       </div>
+      
+      {/* CSV Import Status */}
+      {uploadStatus && (
+        <div className="mb-6 p-4 border rounded-lg bg-background">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-medium">CSV Import Progress</h3>
+            {uploadStatus.isComplete && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setUploadStatus(null)}
+                className="h-8 px-2"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
+          <div className="mb-4">
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-primary h-2 rounded-full transition-all" 
+                style={{ 
+                  width: `${uploadStatus.isComplete ? 100 : (uploadStatus.processed > 0 ? (uploadStatus.processed / (uploadStatus.processed + 10)) * 100 : 20)}%` 
+                }}
+              ></div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">Processed</div>
+              <div className="text-xl font-semibold">{uploadStatus.processed}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">Created</div>
+              <div className="text-xl font-semibold">{uploadStatus.created}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">Errors</div>
+              <div className="text-xl font-semibold">{uploadStatus.errors.length}</div>
+            </div>
+          </div>
+          
+          {uploadStatus.errors.length > 0 && (
+            <div className="mt-2">
+              <div className="text-sm font-semibold mb-1">Errors:</div>
+              <ScrollArea className="h-24 w-full rounded-md border">
+                <div className="p-2">
+                  {uploadStatus.errors.map((error, i) => (
+                    <div key={i} className="text-sm text-destructive mb-1">
+                      Row {error.row}: {error.message}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+          
+          {uploadStatus.isComplete && (
+            <div className="mt-4 text-center">
+              <Button onClick={() => setUploadStatus(null)} variant="outline" className="gap-2">
+                <Check className="h-4 w-4" />
+                Close
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Panel: Job Titles */}
@@ -769,7 +889,14 @@ export default function JobsAdminPage() {
                   </p>
                   
                   <div className="max-w-md mx-auto space-y-4">
-                    <Progress value={(uploadStatus.processed / (uploadStatus.processed + 10)) * 100} className="h-2" />
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-primary h-2 rounded-full transition-all" 
+                        style={{ 
+                          width: `${(uploadStatus.processed / (uploadStatus.processed + 10)) * 100}%` 
+                        }}
+                      ></div>
+                    </div>
                     
                     <div className="flex justify-between text-sm text-gray-500">
                       <div>Processed: {uploadStatus.processed}</div>
