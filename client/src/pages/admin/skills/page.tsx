@@ -817,100 +817,80 @@ export default function SkillsAdminPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Panel: Skill Categories */}
+        {/* Left Panel: Job Titles */}
         <div className="md:col-span-1">
           <Card className="shadow-md h-full">
             <CardContent className="p-0">
               <div className="p-4 border-b">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xl font-semibold flex items-center">
-                    <Search className="h-5 w-5 mr-2 text-gray-500" />
-                    Search Job Titles
+                    <Briefcase className="h-5 w-5 mr-2 text-gray-500" />
+                    Job Titles
                   </h2>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => {
-                      setEditingCategory(null);
-                      setCategoryDialogOpen(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Skill Category
-                  </Button>
+                  <Link href="/admin/jobs">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Manage Jobs
+                    </Button>
+                  </Link>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     className="pl-9"
                     placeholder="Search job titles..."
-                    value={categorySearchQuery}
-                    onChange={(e) => setCategorySearchQuery(e.target.value)}
+                    value={jobTitleSearchQuery}
+                    onChange={(e) => setJobTitleSearchQuery(e.target.value)}
                   />
                 </div>
               </div>
 
-              {isLoadingCategories ? (
+              {isLoadingJobTitles ? (
                 <div className="p-8 text-center">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                  <p className="mt-2 text-muted-foreground">Loading categories...</p>
+                  <p className="mt-2 text-muted-foreground">Loading job titles...</p>
                 </div>
-              ) : categories.length === 0 ? (
+              ) : jobTitles.length === 0 ? (
                 <div className="p-8 text-center">
-                  <p className="text-muted-foreground">No categories found</p>
-                  <Button 
-                    onClick={() => {
-                      setEditingCategory(null);
-                      setCategoryDialogOpen(true);
-                    }}
-                    variant="outline"
-                    className="mt-2"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add New Category
-                  </Button>
+                  <p className="text-muted-foreground">No job titles found</p>
+                  <Link href="/admin/jobs">
+                    <Button 
+                      variant="outline"
+                      className="mt-2"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Manage Job Titles
+                    </Button>
+                  </Link>
                 </div>
               ) : (
                 <ScrollArea className="h-[calc(100vh-320px)]">
                   <div>
-                    {categories.map((category: SkillCategory) => (
+                    {jobTitles.map((jobTitle: JobTitle) => (
                       <div
-                        key={category.id}
-                        className={`p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors ${selectedCategory?.id === category.id ? 'bg-gray-50' : ''}`}
-                        onClick={() => setSelectedCategory(category)}
+                        key={jobTitle.id}
+                        className={`p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors ${selectedJobTitle?.id === jobTitle.id ? 'bg-gray-50' : ''}`}
+                        onClick={() => setSelectedJobTitle(jobTitle)}
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <h3 className="font-medium">{category.name}</h3>
-                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                              {category.description}
+                            <h3 className="font-medium">{jobTitle.title}</h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                              {jobTitle.category}
                             </p>
                           </div>
-                          <div className="flex">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingCategory(category);
-                                setCategoryDialogOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeletingCategory(category);
-                                setDeleteCategoryDialogOpen(true);
-                              }}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
+                          <div className="flex items-center">
+                            {selectedJobTitle?.id === jobTitle.id && jobTitleSkillsData && (
+                              <Badge variant="outline" className="mr-2">
+                                <span className="flex items-center justify-center bg-primary/10 text-primary rounded-full h-5 w-5 mr-1">
+                                  {jobTitleSkillsData.length}
+                                </span>
+                                skills
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -919,25 +899,25 @@ export default function SkillsAdminPage() {
                 </ScrollArea>
               )}
 
-              {totalPages > 1 && (
+              {jobTitleTotalPages > 1 && (
                 <div className="flex justify-between p-4 border-t">
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setPage(Math.max(1, page - 1))}
-                    disabled={page === 1}
+                    onClick={() => setJobTitlePage(Math.max(1, jobTitlePage - 1))}
+                    disabled={jobTitlePage === 1}
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Prev
                   </Button>
                   <span className="text-sm py-2">
-                    Page {page} of {totalPages}
+                    Page {jobTitlePage} of {jobTitleTotalPages}
                   </span>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setPage(Math.min(totalPages, page + 1))}
-                    disabled={page === totalPages}
+                    onClick={() => setJobTitlePage(Math.min(jobTitleTotalPages, jobTitlePage + 1))}
+                    disabled={jobTitlePage === jobTitleTotalPages}
                   >
                     Next
                     <ChevronRight className="h-4 w-4 ml-1" />
