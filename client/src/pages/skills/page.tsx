@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 
+
 // Sample skills by category
 const SKILL_CATEGORIES = [
   {
@@ -638,18 +639,18 @@ const SkillsPage = () => {
                           </div>
                           
                           <div className="flex gap-1">
-                            <button
+                            <div
                               onClick={() => editSkill(skill)}
-                              className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-50"
+                              className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-50 cursor-pointer"
                             >
                               <Star className="h-4 w-4" />
-                            </button>
-                            <button
+                            </div>
+                            <div
                               onClick={() => removeSkill(skill.id)}
-                              className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
+                              className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 cursor-pointer"
                             >
                               <X className="h-4 w-4" />
-                            </button>
+                            </div>
                           </div>
                         </div>
                       </motion.div>
