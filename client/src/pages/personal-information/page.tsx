@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
-import { ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft, Info, CheckCircle, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,12 +10,38 @@ import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const PersonalInformationPage = () => {
   const [, setLocation] = useLocation();
-  const { resumeData, updateResumeData, updateAdditionalInfo, selectedTemplateId, setSelectedTemplateId } = useResume();
+  const { resumeData, updateResumeData, updateAdditionalInfo, removeAdditionalInfo, selectedTemplateId, setSelectedTemplateId } = useResume();
   const { data: templates } = useTemplates();
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [additionalInfoInputs, setAdditionalInfoInputs] = useState<{[key: string]: string}>({});
+  const [activeAdditionalInfo, setActiveAdditionalInfo] = useState<string[]>([]);
+  
+  // Show success message when inputs are filled
+  useEffect(() => {
+    if (resumeData.firstName && resumeData.surname && resumeData.email) {
+      setShowSuccessMessage(true);
+      const timer = setTimeout(() => setShowSuccessMessage(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [resumeData.firstName, resumeData.surname, resumeData.email]);
+  
+  // Set active additional info from resumeData
+  useEffect(() => {
+    const active = Object.keys(resumeData.additionalInfo || {});
+    setActiveAdditionalInfo(active);
+    
+    // Initialize input values from resumeData
+    const inputs: {[key: string]: string} = {};
+    active.forEach(key => {
+      inputs[key] = resumeData.additionalInfo?.[key] || '';
+    });
+    setAdditionalInfoInputs(inputs);
+  }, []);
   
   // Find the selected template
   const selectedTemplate = Array.isArray(templates) 
@@ -44,15 +70,53 @@ const PersonalInformationPage = () => {
     updateResumeData({ [name]: value } as any);
   };
   
+  // Handle additional info input change
+  const handleAdditionalInfoChange = (key: string, value: string) => {
+    setAdditionalInfoInputs(prev => ({
+      ...prev,
+      [key]: value
+    }));
+    updateAdditionalInfo(key, value);
+  };
+  
+  // Add additional info field
+  const handleAddAdditionalInfo = (key: string) => {
+    if (!activeAdditionalInfo.includes(key)) {
+      setActiveAdditionalInfo(prev => [...prev, key]);
+      updateAdditionalInfo(key, '');
+    }
+  };
+  
+  // Remove additional info field
+  const handleRemoveAdditionalInfo = (key: string) => {
+    setActiveAdditionalInfo(prev => prev.filter(k => k !== key));
+    removeAdditionalInfo(key);
+  };
+  
   // Preview resume
   const handlePreview = () => {
     console.log('Preview resume');
   };
   
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-blue-50">
+      {/* Success notification */}
+      <AnimatePresence>
+        {showSuccessMessage && (
+          <motion.div 
+            className="fixed top-4 right-4 z-50 bg-green-500 text-white px-5 py-3 rounded-lg shadow-lg flex items-center"
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+          >
+            <CheckCircle className="mr-2 h-5 w-5" />
+            <span>Your information has been saved!</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       {/* Header with logo */}
-      <header className="py-4 border-b border-gray-100 bg-white">
+      <header className="py-4 border-b border-gray-100 bg-white shadow-sm">
         <div className="container mx-auto px-4">
           <Logo size="medium" />
         </div>
@@ -64,7 +128,7 @@ const PersonalInformationPage = () => {
         <div className="mb-6">
           <button 
             onClick={handleBack}
-            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 bg-transparent px-0 py-0 text-xs"
+            className="flex items-center gap-1 text-purple-600 hover:text-purple-800 bg-transparent px-0 py-0 text-xs hover:-translate-x-1 transition-transform duration-300"
           >
             <ArrowLeft size={12} />
             <span>Go Back</span>
@@ -75,7 +139,7 @@ const PersonalInformationPage = () => {
           {/* Left column - Form Fields - EXPANDED */}
           <div className="lg:w-[68%]">
             <div className="mb-2">
-              <h1 className="text-xl font-bold text-gray-900 mb-1">
+              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500 mb-1">
                 What's the best way for employers to contact you?
               </h1>
               <p className="text-gray-600 text-sm mb-4">
@@ -88,7 +152,7 @@ const PersonalInformationPage = () => {
               <span className="text-red-500">*</span> Indicates a required field
             </div>
             
-            {/* Form layout - EXACTLY like the screenshot */}
+            {/* Form layout */}
             <div className="mb-10">
               {/* Photo and Name Row */}
               <div className="flex mb-5">
@@ -275,34 +339,94 @@ const PersonalInformationPage = () => {
                   <span className="text-sm text-gray-700">Add additional information to your resume</span>
                   <span className="text-xs text-gray-500 ml-1">(optional)</span>
                   <div className="ml-2 inline-flex items-center justify-center">
-                    <Info size={16} className="text-gray-500" />
+                    <Info size={16} className="text-blue-500" />
                   </div>
                 </div>
                 
-                <div className="flex gap-3">
-                  <button
-                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                    onClick={() => updateAdditionalInfo('linkedin', '')}
-                  >
-                    LinkedIn
-                    <span className="ml-2 font-bold">+</span>
-                  </button>
+                <div className="flex flex-wrap gap-3">
+                  {/* LinkedIn Button */}
+                  {activeAdditionalInfo.includes('linkedin') ? (
+                    <div className="flex gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg">
+                      <label className="text-sm text-gray-700">LinkedIn:</label>
+                      <input
+                        type="text"
+                        value={additionalInfoInputs.linkedin || ''}
+                        onChange={(e) => handleAdditionalInfoChange('linkedin', e.target.value)}
+                        placeholder="Your LinkedIn URL"
+                        className="border border-gray-200 p-1 text-sm rounded"
+                      />
+                      <button
+                        onClick={() => handleRemoveAdditionalInfo('linkedin')}
+                        className="p-1 text-red-500 hover:text-red-700 rounded-full"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm"
+                      onClick={() => handleAddAdditionalInfo('linkedin')}
+                    >
+                      LinkedIn
+                      <Plus className="ml-1 h-4 w-4" />
+                    </button>
+                  )}
                   
-                  <button
-                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                    onClick={() => updateAdditionalInfo('website', '')}
-                  >
-                    Website
-                    <span className="ml-2 font-bold">+</span>
-                  </button>
+                  {/* Website Button */}
+                  {activeAdditionalInfo.includes('website') ? (
+                    <div className="flex gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg">
+                      <label className="text-sm text-gray-700">Website:</label>
+                      <input
+                        type="text"
+                        value={additionalInfoInputs.website || ''}
+                        onChange={(e) => handleAdditionalInfoChange('website', e.target.value)}
+                        placeholder="Your website URL"
+                        className="border border-gray-200 p-1 text-sm rounded"
+                      />
+                      <button
+                        onClick={() => handleRemoveAdditionalInfo('website')}
+                        className="p-1 text-red-500 hover:text-red-700 rounded-full"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm"
+                      onClick={() => handleAddAdditionalInfo('website')}
+                    >
+                      Website
+                      <Plus className="ml-1 h-4 w-4" />
+                    </button>
+                  )}
                   
-                  <button
-                    className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                    onClick={() => updateAdditionalInfo('drivingLicense', '')}
-                  >
-                    Driving licence
-                    <span className="ml-2 font-bold">+</span>
-                  </button>
+                  {/* Driving License Button */}
+                  {activeAdditionalInfo.includes('drivingLicense') ? (
+                    <div className="flex gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg">
+                      <label className="text-sm text-gray-700">Driving License:</label>
+                      <input
+                        type="text"
+                        value={additionalInfoInputs.drivingLicense || ''}
+                        onChange={(e) => handleAdditionalInfoChange('drivingLicense', e.target.value)}
+                        placeholder="Your license details"
+                        className="border border-gray-200 p-1 text-sm rounded"
+                      />
+                      <button
+                        onClick={() => handleRemoveAdditionalInfo('drivingLicense')}
+                        className="p-1 text-red-500 hover:text-red-700 rounded-full"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm"
+                      onClick={() => handleAddAdditionalInfo('drivingLicense')}
+                    >
+                      Driving licence
+                      <Plus className="ml-1 h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -355,7 +479,7 @@ const PersonalInformationPage = () => {
             </div>
             
             {/* Resume Preview */}
-            <div className="border border-gray-200 overflow-hidden mx-auto" style={{ maxWidth: '280px' }}>
+            <div className="border border-gray-200 overflow-hidden mx-auto shadow-lg rounded-md" style={{ maxWidth: '280px' }}>
               <div className="relative bg-white" style={{ height: '400px' }}>
                 <HybridResumePreview 
                   className="h-full w-full" 
