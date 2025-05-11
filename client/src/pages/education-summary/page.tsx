@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Education } from '@/types/resume';
+import { Education } from '@/contexts/ResumeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const EducationSummaryPage = () => {
@@ -21,11 +21,11 @@ const EducationSummaryPage = () => {
   // Show success notification when page loads with education entries
   useEffect(() => {
     const validEducations = resumeData.education.filter(edu => 
-      edu.schoolName && 
+      edu.institution && 
       edu.degree && 
-      edu.fieldOfStudy && 
-      edu.graduationMonth && 
-      edu.graduationYear
+      edu.location && 
+      edu.startDate && 
+      edu.endDate
     );
     
     if (validEducations.length > 0) {
@@ -73,11 +73,11 @@ const EducationSummaryPage = () => {
 
   // Filter out incomplete education entries
   const validEducations = resumeData.education.filter(edu => 
-    edu.schoolName && 
+    edu.institution && 
     edu.degree && 
-    edu.fieldOfStudy && 
-    edu.graduationMonth && 
-    edu.graduationYear
+    edu.location && 
+    edu.startDate && 
+    edu.endDate
   );
   
   // Animation variants
