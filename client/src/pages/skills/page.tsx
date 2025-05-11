@@ -11,7 +11,10 @@ import {
   Star, 
   X, 
   RefreshCw,
-  ArrowDownUp 
+  ArrowDownUp,
+  ArrowRight,
+  RotateCw,
+  Undo2
 } from 'lucide-react';
 import {
   Tooltip,
@@ -236,20 +239,26 @@ const SkillsPage = () => {
             {/* Left column - Search and list */}
             <div>
               {/* Search by skill */}
-              <h2 className="text-xs uppercase font-bold text-gray-500 mb-3">
+              <h2 className="text-xs uppercase font-bold text-gray-600 mb-2">
                 SEARCH BY SKILL FOR PRE-WRITTEN EXAMPLES
               </h2>
 
-              {/* Search input */}
-              <div className="relative rounded-lg shadow-sm mb-6">
-                <div className="absolute inset-0 bg-gradient-to-r from-pink-200 to-purple-200 rounded-lg opacity-30 -m-0.5 blur-sm"></div>
-                <div className="relative">
-                  <Input
+              {/* Search input with purple glow effect - exact copy from job description page */}
+              <div className="relative group mb-6">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg opacity-50 group-hover:opacity-70 blur group-hover:blur-md transition duration-300"></div>
+                <div className="relative bg-white rounded-lg">
+                  <Input 
                     type="text"
-                    placeholder="Search skills (e.g. JavaScript, Leadership)"
+                    ref={searchInputRef}
+                    placeholder="Search by skill"
                     value={searchTerm}
                     onChange={handleSearchChange}
-                    className="pl-4 pr-10 py-6 border-purple-200 rounded-lg"
+                    className="rounded-lg border-gray-300 pr-10 py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
+                    onFocus={() => {
+                      if (activeSkillResults.length > 0) {
+                        setShowSkillSuggestions(true);
+                      }
+                    }}
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                     <Search className="h-5 w-5 text-purple-400" />
@@ -257,57 +266,112 @@ const SkillsPage = () => {
                 </div>
               </div>
 
-              {/* Related Skill Categories */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center">
-                    <div className="h-3 w-3 rounded-full bg-purple-600 mr-2"></div>
-                    <h2 className="text-sm font-medium">Related Skill Categories</h2>
-                  </div>
-                  <button className="text-purple-600 text-sm flex items-center hover:underline">
-                    View All <ChevronRight className="h-4 w-4 ml-1" />
+              {/* Related Job Titles - exact copy from job description page */}
+              <motion.div 
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="mb-6 bg-white p-5 rounded-xl shadow-sm border border-gray-100"
+              >
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-base font-semibold text-gray-800">Related Skill Categories</h2>
+                  <button className="text-purple-600 text-sm font-medium hover:text-purple-800 transition-colors duration-300 flex items-center gap-1 group">
+                    More <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform duration-300" />
                   </button>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {SKILL_CATEGORIES.map((category) => (
-                    <div 
-                      key={category.id}
-                      className="p-3 rounded-md border border-gray-200 hover:border-purple-300 transition-colors"
-                    >
-                      <h3 className="font-medium">{category.name}</h3>
-                      <p className="text-xs text-gray-500">{category.skills} skills</p>
-                    </div>
-                  ))}
+                
+                <div className="flex flex-wrap gap-2">
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="flex items-center border border-gray-200 rounded-full px-3 py-2 text-sm bg-gray-50 hover:bg-purple-50 hover:border-purple-200 transition-all duration-300"
+                    onClick={() => setSearchTerm('Programming')}
+                  >
+                    Programming
+                  </motion.button>
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="flex items-center border border-gray-200 rounded-full px-3 py-2 text-sm bg-gray-50 hover:bg-purple-50 hover:border-purple-200 transition-all duration-300"
+                    onClick={() => setSearchTerm('Leadership')}
+                  >
+                    Leadership
+                  </motion.button>
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="flex items-center border border-gray-200 rounded-full px-3 py-2 text-sm bg-gray-50 hover:bg-purple-50 hover:border-purple-200 transition-all duration-300"
+                    onClick={() => setSearchTerm('Communication')}
+                  >
+                    Communication
+                  </motion.button>
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.6 }}
+                    className="flex items-center border border-gray-200 rounded-full px-3 py-2 text-sm bg-gray-50 hover:bg-purple-50 hover:border-purple-200 transition-all duration-300"
+                    onClick={() => setSearchTerm('Teamwork')}
+                  >
+                    Teamwork
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Results */}
-              <div className="rounded-md mb-6">
+              {/* Results - exact copy from job description page */}
+              <motion.div
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 p-5"
+              >
                 <div className="flex justify-between items-center mb-4">
-                  <div className="text-sm font-medium">{activeSkillResults.length} results</div>
-                  <div className="flex space-x-2">
-                    <button className="text-gray-500 hover:text-purple-600">
-                      <RefreshCw className="h-4 w-4" />
+                  <h2 className="font-semibold">{activeSkillResults.length} results</h2>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
+                      title="Clear search"
+                    >
+                      <Undo2 className="h-4 w-4" />
                     </button>
-                    <button className="text-gray-500 hover:text-purple-600">
-                      <ArrowDownUp className="h-4 w-4" />
+                    <button
+                      onClick={() => {
+                        setSearchTerm(searchTerm); 
+                      }}
+                      className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
+                      title="Refresh results"
+                    >
+                      <RotateCw className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
-
-                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                  {activeSkillResults.map((skill, index) => (
-                    <div
-                      key={`${skill}-${index}`}
-                      className="p-3 border border-gray-200 rounded-md hover:border-purple-300 cursor-pointer transition-colors"
-                      onClick={() => handleSkillClick(skill)}
-                    >
-                      <p className="text-sm text-gray-800">{skill}</p>
-                    </div>
-                  ))}
+                
+                <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 py-2">
+                  <motion.div 
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="space-y-3"
+                  >
+                    {activeSkillResults.map((skill, index) => (
+                      <motion.div
+                        key={`${skill}-${index}`}
+                        variants={itemVariants}
+                        className={`p-3 border border-gray-200 bg-gray-50 rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
+                        onClick={() => handleSkillClick(skill)}
+                      >
+                        <p className="text-gray-800 text-sm">
+                          {skill}
+                        </p>
+                      </motion.div>
+                    ))}
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
             </div>
 
             {/* Right column - Text editor / Skill rating */}
