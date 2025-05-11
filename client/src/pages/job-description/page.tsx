@@ -637,7 +637,7 @@ const JobDescriptionPage = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-3 py-2">
+                  <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 py-2 bg-transparent">
                     <motion.div 
                       variants={containerVariants}
                       initial="hidden"
