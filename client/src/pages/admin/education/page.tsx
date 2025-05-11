@@ -33,7 +33,7 @@ interface ExampleFormData {
   isRecommended: boolean;
 }
 
-const EducationAdminPage: React.FC = () => {
+const AdminEducationPage: React.FC = () => {
   const [, setLocation] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
@@ -362,166 +362,166 @@ const EducationAdminPage: React.FC = () => {
         <h1 className="text-3xl font-bold">Education Content Management</h1>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Sidebar - Categories List */}
-        <div className="col-span-1">
-          <Card className="h-full">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xl">Education Categories</CardTitle>
-              <Button size="sm" onClick={() => {
+        <div>
+          <div className="flex items-center justify-between pb-2">
+            <h2 className="text-xl font-bold">Education Categories</h2>
+            <Button 
+              size="sm" 
+              variant="default"
+              className="bg-purple-600 hover:bg-purple-700"
+              onClick={() => {
                 resetCategoryForm();
                 setShowAddCategoryDialog(true);
-              }}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {isCategoriesLoading ? (
-                <div className="flex justify-center py-4">
-                  <div className="animate-spin h-6 w-6 border-t-2 border-b-2 border-primary rounded-full"></div>
-                </div>
-              ) : (
-                <ScrollArea className="h-[calc(100vh-280px)]">
-                  <div className="space-y-2">
-                    {categoriesData?.data?.map((category: EducationCategory) => (
-                      <div 
-                        key={category.id}
-                        className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                          selectedCategoryId === category.id 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-card hover:bg-muted'
-                        }`}
-                        onClick={() => setSelectedCategoryId(category.id)}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="font-medium">{category.name}</h3>
-                            <p className="text-sm truncate">{category.type}</p>
-                          </div>
-                          <div className="flex space-x-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEditCategoryDialog(category);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="h-7 w-7 text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedCategoryId(category.id);
-                                setShowDeleteCategoryDialog(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
+          
+          <div className="bg-white shadow rounded-md border">
+            {isCategoriesLoading ? (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin h-6 w-6 border-t-2 border-b-2 border-purple-500 rounded-full"></div>
+              </div>
+            ) : (
+              <ScrollArea className="h-[calc(100vh-280px)]">
+                <div className="divide-y">
+                  {categoriesData?.data?.map((category: EducationCategory) => (
+                    <div 
+                      key={category.id}
+                      className={`px-4 py-3 ${
+                        selectedCategoryId === category.id 
+                          ? 'bg-gray-100'
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setSelectedCategoryId(category.id)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-medium">{category.name}</h3>
+                          <p className="text-sm text-gray-500">{category.type}</p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditCategoryDialog(category);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-500"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCategoryId(category.id);
+                              setShowDeleteCategoryDialog(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                    ))}
-                    
-                    {categoriesData?.data?.length === 0 && (
-                      <div className="text-center py-4 text-muted-foreground">
-                        No categories found. Create one to get started.
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
+                    </div>
+                  ))}
+                  
+                  {categoriesData?.data?.length === 0 && (
+                    <div className="text-center py-4 text-gray-500">
+                      No categories found. Create one to get started.
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
         </div>
         
         {/* Right Content - Examples List and Management */}
-        <div className="col-span-1 md:col-span-2">
-          <Card className="h-full">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div>
-                <CardTitle className="text-xl">Education Examples</CardTitle>
-                {selectedCategoryId && categoriesData?.data && (
-                  <p className="text-sm text-muted-foreground">
-                    For category: {
-                      categoriesData.data.find((c: EducationCategory) => c.id === selectedCategoryId)?.name || 'Unknown'
-                    }
-                  </p>
-                )}
+        <div>
+          <div className="flex items-center justify-between pb-2">
+            <h2 className="text-xl font-bold">Education Examples</h2>
+            <div className="flex items-center space-x-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search examples..."
+                  className="pl-8 h-9 w-48 md:w-56"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
-              <div className="flex space-x-2">
-                <div className="relative w-64">
-                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search examples..."
-                    className="pl-8"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <Button 
-                  size="sm" 
-                  onClick={() => {
-                    resetExampleForm();
-                    setExampleForm(prev => ({ ...prev, categoryId: selectedCategoryId || 0 }));
-                    setShowAddExampleDialog(true);
-                  }}
-                  disabled={!selectedCategoryId}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
+              <Button 
+                size="sm"
+                variant="default"
+                className="bg-purple-600 hover:bg-purple-700"
+                onClick={() => {
+                  resetExampleForm();
+                  setExampleForm(prev => ({ ...prev, categoryId: selectedCategoryId || 0 }));
+                  setShowAddExampleDialog(true);
+                }}
+                disabled={!selectedCategoryId}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            </div>
+          </div>
+            
+          <div className="bg-white shadow rounded-md border overflow-hidden">
+            {isExamplesLoading ? (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin h-6 w-6 border-t-2 border-b-2 border-purple-500 rounded-full"></div>
               </div>
-            </CardHeader>
-            <CardContent>
-              {isExamplesLoading ? (
-                <div className="flex justify-center py-4">
-                  <div className="animate-spin h-6 w-6 border-t-2 border-b-2 border-primary rounded-full"></div>
-                </div>
-              ) : (
-                <ScrollArea className="h-[calc(100vh-280px)]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50%]">Content</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Recommended</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredExamples.map((example: EducationExample) => (
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50%]">Content</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="w-[120px] text-center">Recommended</TableHead>
+                    <TableHead className="w-[100px] text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredExamples.length > 0 ? (
+                    filteredExamples.map((example: EducationExample) => {
+                      const category = categoriesData?.data?.find(
+                        (c: EducationCategory) => c.id === example.categoryId
+                      );
+                      
+                      return (
                         <TableRow key={example.id}>
-                          <TableCell className="font-medium">{example.content}</TableCell>
-                          <TableCell>
-                            {categoriesData?.data?.find((c: EducationCategory) => c.id === example.categoryId)?.name || 'Unknown'}
-                          </TableCell>
-                          <TableCell>
+                          <TableCell className="align-middle">{example.content}</TableCell>
+                          <TableCell className="align-middle">{category?.name || 'Unknown'}</TableCell>
+                          <TableCell className="text-center align-middle">
                             {example.isRecommended ? (
-                              <CheckCircle className="h-5 w-5 text-green-500" />
+                              <CheckCircle className="h-5 w-5 text-green-500 inline-block" />
                             ) : (
-                              <XCircle className="h-5 w-5 text-gray-300" />
+                              <XCircle className="h-5 w-5 text-gray-300 inline-block" />
                             )}
                           </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end space-x-2">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                className="h-8 w-8"
+                          <TableCell>
+                            <div className="flex justify-center space-x-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
                                 onClick={() => openEditExampleDialog(example)}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                className="h-8 w-8 text-destructive"
+                              <Button
+                                variant="ghost"
+                                size="sm" 
+                                className="h-8 w-8 p-0 text-red-500"
                                 onClick={() => openDeleteExampleDialog(example.id)}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -529,23 +529,21 @@ const EducationAdminPage: React.FC = () => {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
-                      
-                      {filteredExamples.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                            {selectedCategoryId 
-                              ? 'No examples found for this category. Add one to get started.'
-                              : 'Please select a category to view examples.'}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-gray-500 h-32">
+                        {searchQuery 
+                          ? 'No examples found matching your search criteria.' 
+                          : 'No examples found. Add one to get started.'}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </div>
         </div>
       </div>
       
@@ -553,73 +551,59 @@ const EducationAdminPage: React.FC = () => {
       <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Category</DialogTitle>
+            <DialogTitle>Add Education Category</DialogTitle>
             <DialogDescription>
-              Create a new education category to organize education examples.
+              Create a new education category that users can choose from.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Category Name</Label>
-              <Input 
-                id="name" 
+              <Label htmlFor="category-name">Category Name</Label>
+              <Input
+                id="category-name"
+                placeholder="e.g. Academic Achievements"
                 value={categoryForm.name}
-                onChange={(e) => setCategoryForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Academic Achievements"
+                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
               />
             </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
-              <Select 
-                value={categoryForm.type}
-                onValueChange={(value) => setCategoryForm(prev => ({ ...prev, type: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="achievement">Achievement</SelectItem>
-                  <SelectItem value="prize">Prize</SelectItem>
-                  <SelectItem value="coursework">Coursework</SelectItem>
-                  <SelectItem value="activity">Activity</SelectItem>
-                  <SelectItem value="study_abroad">Study Abroad</SelectItem>
-                  <SelectItem value="apprenticeship">Apprenticeship</SelectItem>
-                  <SelectItem value="project">Project</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea 
-                id="description"
+              <Label htmlFor="category-description">Description</Label>
+              <Textarea
+                id="category-description"
+                placeholder="A brief description of this category"
                 value={categoryForm.description}
-                onChange={(e) => setCategoryForm(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Describe this category"
+                onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
                 rows={3}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="category-type">Type</Label>
+              <Select
+                value={categoryForm.type}
+                onValueChange={(value) => setCategoryForm({ ...categoryForm, type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="achievement">Achievement</SelectItem>
+                  <SelectItem value="project">Project</SelectItem>
+                  <SelectItem value="coursework">Coursework</SelectItem>
+                  <SelectItem value="activity">Activity</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowAddCategoryDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setShowAddCategoryDialog(false)}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleAddCategory}
-              disabled={createCategoryMutation.isPending}
-            >
-              {createCategoryMutation.isPending ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
-                  Creating...
-                </>
-              ) : 'Create Category'}
+            <Button onClick={handleAddCategory} disabled={!categoryForm.name || createCategoryMutation.isPending}>
+              {createCategoryMutation.isPending && (
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              )}
+              Add Category
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -629,104 +613,86 @@ const EducationAdminPage: React.FC = () => {
       <Dialog open={showEditCategoryDialog} onOpenChange={setShowEditCategoryDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Category</DialogTitle>
+            <DialogTitle>Edit Education Category</DialogTitle>
             <DialogDescription>
-              Update the details of this education category.
+              Update the education category details.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Category Name</Label>
-              <Input 
-                id="edit-name" 
+              <Label htmlFor="edit-category-name">Category Name</Label>
+              <Input
+                id="edit-category-name"
+                placeholder="e.g. Academic Achievements"
                 value={categoryForm.name}
-                onChange={(e) => setCategoryForm(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
               />
             </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="edit-type">Type</Label>
-              <Select 
-                value={categoryForm.type}
-                onValueChange={(value) => setCategoryForm(prev => ({ ...prev, type: value }))}
-              >
-                <SelectTrigger id="edit-type">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="achievement">Achievement</SelectItem>
-                  <SelectItem value="prize">Prize</SelectItem>
-                  <SelectItem value="coursework">Coursework</SelectItem>
-                  <SelectItem value="activity">Activity</SelectItem>
-                  <SelectItem value="study_abroad">Study Abroad</SelectItem>
-                  <SelectItem value="apprenticeship">Apprenticeship</SelectItem>
-                  <SelectItem value="project">Project</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea 
-                id="edit-description"
+              <Label htmlFor="edit-category-description">Description</Label>
+              <Textarea
+                id="edit-category-description"
+                placeholder="A brief description of this category"
                 value={categoryForm.description}
-                onChange={(e) => setCategoryForm(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
                 rows={3}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-category-type">Type</Label>
+              <Select
+                value={categoryForm.type}
+                onValueChange={(value) => setCategoryForm({ ...categoryForm, type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="achievement">Achievement</SelectItem>
+                  <SelectItem value="project">Project</SelectItem>
+                  <SelectItem value="coursework">Coursework</SelectItem>
+                  <SelectItem value="activity">Activity</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowEditCategoryDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setShowEditCategoryDialog(false)}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleEditCategory}
-              disabled={updateCategoryMutation.isPending}
-            >
-              {updateCategoryMutation.isPending ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
-                  Updating...
-                </>
-              ) : 'Update Category'}
+            <Button onClick={handleEditCategory} disabled={!categoryForm.name || updateCategoryMutation.isPending}>
+              {updateCategoryMutation.isPending && (
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              )}
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Delete Category Confirmation Dialog */}
+      {/* Delete Category Dialog */}
       <Dialog open={showDeleteCategoryDialog} onOpenChange={setShowDeleteCategoryDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Category</DialogTitle>
+            <DialogTitle>Delete Education Category</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this category? This will also delete all examples associated with this category. This action cannot be undone.
+              Are you sure you want to delete this category? This action cannot be undone, and all examples in this category will also be deleted.
             </DialogDescription>
           </DialogHeader>
-          
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowDeleteCategoryDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setShowDeleteCategoryDialog(false)}>
               Cancel
             </Button>
             <Button 
-              variant="destructive"
+              variant="destructive" 
               onClick={handleDeleteCategory}
               disabled={deleteCategoryMutation.isPending}
             >
-              {deleteCategoryMutation.isPending ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
-                  Deleting...
-                </>
-              ) : 'Delete Category'}
+              {deleteCategoryMutation.isPending && (
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              )}
+              Delete Category
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -736,72 +702,61 @@ const EducationAdminPage: React.FC = () => {
       <Dialog open={showAddExampleDialog} onOpenChange={setShowAddExampleDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Example</DialogTitle>
+            <DialogTitle>Add Education Example</DialogTitle>
             <DialogDescription>
-              Create a new education example for the selected category.
+              Create a new education example for users to choose from.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="example-category">Category</Label>
-              <Select 
-                value={exampleForm.categoryId.toString()}
-                onValueChange={(value) => setExampleForm(prev => ({ ...prev, categoryId: parseInt(value) }))}
+              <Select
+                value={String(exampleForm.categoryId)}
+                onValueChange={(value) => setExampleForm({ ...exampleForm, categoryId: parseInt(value) })}
               >
-                <SelectTrigger id="example-category">
-                  <SelectValue placeholder="Select category" />
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
                   {categoriesData?.data?.map((category: EducationCategory) => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
+                    <SelectItem key={category.id} value={String(category.id)}>
                       {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
             <div className="space-y-2">
               <Label htmlFor="example-content">Content</Label>
-              <Textarea 
+              <Textarea
                 id="example-content"
+                placeholder="The example content that will be shown to users"
                 value={exampleForm.content}
-                onChange={(e) => setExampleForm(prev => ({ ...prev, content: e.target.value }))}
-                placeholder="Enter the example content"
+                onChange={(e) => setExampleForm({ ...exampleForm, content: e.target.value })}
                 rows={3}
               />
             </div>
-            
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="is-recommended" 
+              <Switch
+                id="example-recommended"
                 checked={exampleForm.isRecommended}
-                onCheckedChange={(checked) => 
-                  setExampleForm(prev => ({ ...prev, isRecommended: checked === true ? true : false }))
-                }
+                onCheckedChange={(checked) => setExampleForm({ ...exampleForm, isRecommended: checked })}
               />
-              <Label htmlFor="is-recommended">Recommended example</Label>
+              <Label htmlFor="example-recommended">Recommended Example</Label>
             </div>
           </div>
-          
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowAddExampleDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setShowAddExampleDialog(false)}>
               Cancel
             </Button>
             <Button 
-              onClick={handleAddExample}
-              disabled={createExampleMutation.isPending || !exampleForm.content.trim() || !exampleForm.categoryId}
+              onClick={handleAddExample} 
+              disabled={!exampleForm.content || !exampleForm.categoryId || createExampleMutation.isPending}
             >
-              {createExampleMutation.isPending ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
-                  Creating...
-                </>
-              ) : 'Create Example'}
+              {createExampleMutation.isPending && (
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              )}
+              Add Example
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -811,104 +766,88 @@ const EducationAdminPage: React.FC = () => {
       <Dialog open={showEditExampleDialog} onOpenChange={setShowEditExampleDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Example</DialogTitle>
+            <DialogTitle>Edit Education Example</DialogTitle>
             <DialogDescription>
-              Update the details of this education example.
+              Update the education example details.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="edit-example-category">Category</Label>
-              <Select 
-                value={exampleForm.categoryId.toString()}
-                onValueChange={(value) => setExampleForm(prev => ({ ...prev, categoryId: parseInt(value) }))}
+              <Select
+                value={String(exampleForm.categoryId)}
+                onValueChange={(value) => setExampleForm({ ...exampleForm, categoryId: parseInt(value) })}
               >
-                <SelectTrigger id="edit-example-category">
-                  <SelectValue placeholder="Select category" />
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
                   {categoriesData?.data?.map((category: EducationCategory) => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
+                    <SelectItem key={category.id} value={String(category.id)}>
                       {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
             <div className="space-y-2">
               <Label htmlFor="edit-example-content">Content</Label>
-              <Textarea 
+              <Textarea
                 id="edit-example-content"
+                placeholder="The example content that will be shown to users"
                 value={exampleForm.content}
-                onChange={(e) => setExampleForm(prev => ({ ...prev, content: e.target.value }))}
+                onChange={(e) => setExampleForm({ ...exampleForm, content: e.target.value })}
                 rows={3}
               />
             </div>
-            
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="edit-is-recommended" 
+              <Switch
+                id="edit-example-recommended"
                 checked={exampleForm.isRecommended}
-                onCheckedChange={(checked) => 
-                  setExampleForm(prev => ({ ...prev, isRecommended: checked === true ? true : false }))
-                }
+                onCheckedChange={(checked) => setExampleForm({ ...exampleForm, isRecommended: checked })}
               />
-              <Label htmlFor="edit-is-recommended">Recommended example</Label>
+              <Label htmlFor="edit-example-recommended">Recommended Example</Label>
             </div>
           </div>
-          
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowEditExampleDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setShowEditExampleDialog(false)}>
               Cancel
             </Button>
             <Button 
-              onClick={handleEditExample}
-              disabled={updateExampleMutation.isPending || !exampleForm.content.trim() || !exampleForm.categoryId}
+              onClick={handleEditExample} 
+              disabled={!exampleForm.content || !exampleForm.categoryId || updateExampleMutation.isPending}
             >
-              {updateExampleMutation.isPending ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
-                  Updating...
-                </>
-              ) : 'Update Example'}
+              {updateExampleMutation.isPending && (
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              )}
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Delete Example Confirmation Dialog */}
+      {/* Delete Example Dialog */}
       <Dialog open={showDeleteExampleDialog} onOpenChange={setShowDeleteExampleDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Example</DialogTitle>
+            <DialogTitle>Delete Education Example</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this example? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowDeleteExampleDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setShowDeleteExampleDialog(false)}>
               Cancel
             </Button>
             <Button 
-              variant="destructive"
+              variant="destructive" 
               onClick={handleDeleteExample}
               disabled={deleteExampleMutation.isPending}
             >
-              {deleteExampleMutation.isPending ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
-                  Deleting...
-                </>
-              ) : 'Delete Example'}
+              {deleteExampleMutation.isPending && (
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              )}
+              Delete Example
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -917,4 +856,4 @@ const EducationAdminPage: React.FC = () => {
   );
 };
 
-export default EducationAdminPage;
+export default AdminEducationPage;

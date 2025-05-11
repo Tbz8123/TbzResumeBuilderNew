@@ -56,97 +56,32 @@ const months = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-// Achievement category examples
-const achievementCategories = [
-  {
-    id: 'educational-achievements',
-    title: 'Educational Achievements',
-    description: 'Would you like to include any honours, rank or CGPA score?',
-    options: [
-      { id: 'honours', label: 'Honours' },
-      { id: 'graduation-distinction', label: 'Graduation with Distinction' },
-      { id: 'gpa-number', label: 'Number GPA/CGPA' },
-      { id: 'gpa-letter', label: 'Grade Letter GPA/CGPA' },
-    ],
-    type: 'achievement'
-  },
-  {
-    id: 'prizes-scholarships',
-    title: 'Prizes and Scholarships',
-    description: 'Have you received any academic awards or scholarships?',
-    options: [
-      { id: 'merit-scholarship', label: 'Merit Scholarship' },
-      { id: 'academic-award', label: 'Academic Award' },
-      { id: 'research-grant', label: 'Research Grant' },
-      { id: 'competition-winner', label: 'Competition Winner' },
-    ],
-    type: 'prize'
-  },
-  {
-    id: 'coursework',
-    title: 'Coursework and Professional Development',
-    description: 'Include any relevant coursework or professional development activities.',
-    options: [
-      { id: 'specialized-course', label: 'Specialized Course' },
-      { id: 'workshop', label: 'Workshop' },
-      { id: 'certification', label: 'Certification' },
-      { id: 'training-program', label: 'Training Program' },
-    ],
-    type: 'coursework'
-  },
-  {
-    id: 'activities',
-    title: 'Activities and Organizations',
-    description: 'Were you involved in any clubs, organizations, or extracurricular activities?',
-    options: [
-      { id: 'student-club', label: 'Student Club' },
-      { id: 'volunteer-work', label: 'Volunteer Work' },
-      { id: 'leadership-role', label: 'Leadership Role' },
-      { id: 'sports-team', label: 'Sports Team' },
-    ],
-    type: 'activity'
-  },
-  {
-    id: 'study-abroad',
-    title: 'Study Abroad',
-    description: 'Have you studied overseas? Include your international educational experience here.',
-    options: [
-      { id: 'study-abroad', label: 'Study Abroad' },
-      { id: 'exchange-program', label: 'Exchange Program' },
-      { id: 'international-project', label: 'International Project' },
-      { id: 'global-internship', label: 'Global Internship' },
-    ],
-    type: 'study_abroad'
-  },
-  {
-    id: 'apprenticeship',
-    title: 'Apprenticeship and Internship',
-    description: 'Have you had hands-on experience developing skills that are relevant to your desired job?',
-    options: [
-      { id: 'apprenticeship', label: 'Apprenticeship' },
-      { id: 'internship', label: 'Internship' },
-      { id: 'co-op', label: 'Co-op' },
-      { id: 'practical-training', label: 'Practical Training' },
-    ],
-    type: 'apprenticeship'
-  },
-  {
-    id: 'major-projects',
-    title: 'Major Projects',
-    description: 'What noteworthy projects would you like to list?',
-    options: [
-      { id: 'thesis', label: 'Thesis Paper' },
-      { id: 'capstone', label: 'Capstone Project' },
-      { id: 'research', label: 'Research Projects' },
-      { id: 'dissertation', label: 'Dissertation' },
-    ],
-    type: 'project'
-  }
-];
+// Type definitions for education categories and examples from the API
+interface EducationExample {
+  id: number;
+  categoryId: number;
+  content: string;
+  isRecommended: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface EducationCategory {
+  id: number;
+  name: string;
+  description: string;
+  type: string;
+  createdAt: string;
+  updatedAt: string;
+  examples: EducationExample[];
+}
 
 const EducationPage = () => {
   const [, setLocation] = useLocation();
   const { resumeData, updateResumeData } = useResume();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [educationCategories, setEducationCategories] = useState<EducationCategory[]>([]);
   
   // Get current education or initialize if none exists
   const defaultEducation: Education = {
@@ -173,6 +108,31 @@ const EducationPage = () => {
   
   // State for showing additional coursework section
   const [showAdditionalCoursework, setShowAdditionalCoursework] = useState(false);
+
+  // Fetch education categories and examples from the API
+  useEffect(() => {
+    const fetchEducationCategories = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/education/categories');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch education categories');
+        }
+        
+        const data = await response.json();
+        setEducationCategories(data.data || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching education categories:', err);
+        setError('Failed to load education options. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchEducationCategories();
+  }, []);
   
   // Handle education form changes
   const handleEducationChange = (field: keyof Education, value: string) => {
@@ -531,54 +491,64 @@ const EducationPage = () => {
                         <div className="space-y-4">
                           <h3 className="text-sm font-medium mb-2">Ready-to-use-examples</h3>
                           
-                          {achievementCategories.map((category) => (
-                            <div key={category.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                              <button
-                                onClick={() => toggleSection(category.id)}
-                                className="w-full flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition-colors duration-200"
-                              >
-                                <span className="font-medium">{category.title}</span>
-                                {expandedSection === category.id ? (
-                                  <ChevronUp className="h-5 w-5 text-gray-600" />
-                                ) : (
-                                  <ChevronDown className="h-5 w-5 text-gray-600" />
-                                )}
-                              </button>
-                              
-                              <AnimatePresence>
-                                {expandedSection === category.id && (
-                                  <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{ duration: 0.3 }}
-                                    className="px-4 pt-2 pb-4 bg-white"
-                                  >
-                                    <p className="text-sm text-gray-600 mb-3">{category.description}</p>
-                                    <div className="flex flex-wrap gap-2">
-                                      {category.options.map(option => (
-                                        <button
-                                          key={option.id}
-                                          className="flex items-center gap-1 border border-purple-200 rounded-full px-3 py-2 bg-white hover:bg-purple-50 transition-colors duration-200"
-                                          onClick={() => {
-                                            // Instead of adding as an achievement, directly insert into description field
-                                            const currentText = currentEducation.description || '';
-                                            const newText = currentText ? `${currentText}\n• ${option.label}` : `• ${option.label}`;
-                                            handleEducationChange('description', newText);
-                                            // Close the section after inserting
-                                            setExpandedSection(null);
-                                          }}
-                                        >
-                                          <Plus className="h-4 w-4 text-purple-600" />
-                                          <span className="text-sm">{option.label}</span>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
+                          {isLoading ? (
+                            <div className="flex justify-center py-4">
+                              <div className="animate-spin h-6 w-6 border-t-2 border-b-2 border-purple-500 rounded-full"></div>
                             </div>
-                          ))}
+                          ) : error ? (
+                            <div className="text-red-500 p-4 text-center">
+                              {error}
+                            </div>
+                          ) : (
+                            educationCategories.map((category) => (
+                              <div key={category.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                                <button
+                                  onClick={() => toggleSection(String(category.id))}
+                                  className="w-full flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition-colors duration-200"
+                                >
+                                  <span className="font-medium">{category.name}</span>
+                                  {expandedSection === String(category.id) ? (
+                                    <ChevronUp className="h-5 w-5 text-gray-600" />
+                                  ) : (
+                                    <ChevronDown className="h-5 w-5 text-gray-600" />
+                                  )}
+                                </button>
+                                
+                                <AnimatePresence>
+                                  {expandedSection === String(category.id) && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.3 }}
+                                      className="px-4 pt-2 pb-4 bg-white"
+                                    >
+                                      <p className="text-sm text-gray-600 mb-3">{category.description}</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {category.examples && category.examples.map(example => (
+                                          <button
+                                            key={example.id}
+                                            className="flex items-center gap-1 border border-purple-200 rounded-full px-3 py-2 bg-white hover:bg-purple-50 transition-colors duration-200"
+                                            onClick={() => {
+                                              // Instead of adding as an achievement, directly insert into description field
+                                              const currentText = currentEducation.description || '';
+                                              const newText = currentText ? `${currentText}\n• ${example.content}` : `• ${example.content}`;
+                                              handleEducationChange('description', newText);
+                                              // Close the section after inserting
+                                              setExpandedSection(null);
+                                            }}
+                                          >
+                                            <Plus className="h-4 w-4 text-purple-600" />
+                                            <span className="text-sm">{example.content}</span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            ))
+                          )}
                         </div>
                         
                         {/* Right Column - Education Description */}
