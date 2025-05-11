@@ -125,6 +125,7 @@ export const jobDescriptions = pgTable("job_descriptions", {
 // Relations
 export const jobTitlesRelations = relations(jobTitles, ({ many }) => ({
   descriptions: many(jobDescriptions),
+  skills: many(skills),
 }));
 
 export const jobDescriptionsRelations = relations(jobDescriptions, ({ one }) => ({
@@ -213,6 +214,7 @@ export const skills = pgTable("skills", {
   categoryId: integer("category_id").references(() => skillCategories.id).notNull(),
   description: text("description"),
   isRecommended: boolean("is_recommended").default(false),
+  jobTitleId: integer("job_title_id").references(() => jobTitles.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -227,6 +229,10 @@ export const skillsRelations = relations(skills, ({ one }) => ({
     fields: [skills.categoryId],
     references: [skillCategories.id],
   }),
+  jobTitle: one(jobTitles, {
+    fields: [skills.jobTitleId],
+    references: [jobTitles.id],
+  }),
 }));
 
 // Schemas for validation
@@ -238,6 +244,7 @@ export const skillCategorySchema = createInsertSchema(skillCategories, {
 export const skillSchema = createInsertSchema(skills, {
   name: (schema) => schema.min(2, "Name must be at least 2 characters"),
   description: (schema) => schema.optional(),
+  jobTitleId: (schema) => schema.optional(),
 });
 
 export type SkillCategory = typeof skillCategories.$inferSelect;
