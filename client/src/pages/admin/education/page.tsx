@@ -778,7 +778,7 @@ const EducationAdminPage: React.FC = () => {
                 id="is-recommended" 
                 checked={exampleForm.isRecommended}
                 onCheckedChange={(checked) => 
-                  setExampleForm(prev => ({ ...prev, isRecommended: checked === true }))
+                  setExampleForm(prev => ({ ...prev, isRecommended: checked === true ? true : false }))
                 }
               />
               <Label htmlFor="is-recommended">Recommended example</Label>
@@ -852,7 +852,7 @@ const EducationAdminPage: React.FC = () => {
                 id="edit-is-recommended" 
                 checked={exampleForm.isRecommended}
                 onCheckedChange={(checked) => 
-                  setExampleForm(prev => ({ ...prev, isRecommended: checked === true }))
+                  setExampleForm(prev => ({ ...prev, isRecommended: checked === true ? true : false }))
                 }
               />
               <Label htmlFor="edit-is-recommended">Recommended example</Label>

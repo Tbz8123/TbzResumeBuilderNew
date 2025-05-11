@@ -70,7 +70,7 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminHomePage} adminOnly />
       <ProtectedRoute path="/admin/jobs" component={AdminJobsPage} adminOnly />
       <ProtectedRoute path="/admin/jobs/test-api" component={AdminJobsTestApiPage} adminOnly />
-      <ProtectedRoute path="/admin/education" component={AdminEducationPage} adminOnly />
+      <ProtectedRoute path="/admin/education" component={() => <AdminEducationPage />} adminOnly />
       <ProtectedRoute path="/admin/templates" component={AdminTemplatesPage} adminOnly />
       <ProtectedRoute path="/admin/templates/management" component={AdminTemplateManagementPage} adminOnly />
       <ProtectedRoute path="/admin/templates/new/basic" component={CreateNewTemplateAdminPage} adminOnly />

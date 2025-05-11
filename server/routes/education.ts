@@ -23,15 +23,13 @@ educationRouter.get("/categories", async (req, res) => {
       }
     });
 
-    // Count total for pagination
-    const totalCount = await db
-      .select({ count: db.$dynamic.count() })
-      .from(educationCategories);
-
+    // For pagination, just use the length of the entire result set
+    // This is simpler than trying to use count() with the ORM
+    
     res.json({
       data: categories,
       pagination: {
-        total: Number(totalCount[0].count),
+        total: categories.length,
         page,
         limit
       }
