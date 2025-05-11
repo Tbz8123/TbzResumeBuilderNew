@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation, Link } from 'wouter';
-import { ArrowLeft, Info, CheckCircle, X, Plus } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,38 +10,12 @@ import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const PersonalInformationPage = () => {
   const [, setLocation] = useLocation();
   const { resumeData, updateResumeData, updateAdditionalInfo, removeAdditionalInfo, selectedTemplateId, setSelectedTemplateId } = useResume();
   const { data: templates } = useTemplates();
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [additionalInfoInputs, setAdditionalInfoInputs] = useState<{[key: string]: string}>({});
-  const [activeAdditionalInfo, setActiveAdditionalInfo] = useState<string[]>([]);
-  
-  // Show success message when inputs are filled
-  useEffect(() => {
-    if (resumeData.firstName && resumeData.surname && resumeData.email) {
-      setShowSuccessMessage(true);
-      const timer = setTimeout(() => setShowSuccessMessage(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [resumeData.firstName, resumeData.surname, resumeData.email]);
-  
-  // Set active additional info from resumeData
-  useEffect(() => {
-    const active = Object.keys(resumeData.additionalInfo || {});
-    setActiveAdditionalInfo(active);
-    
-    // Initialize input values from resumeData
-    const inputs: {[key: string]: string} = {};
-    active.forEach(key => {
-      inputs[key] = resumeData.additionalInfo?.[key] || '';
-    });
-    setAdditionalInfoInputs(inputs);
-  }, []);
   
   // Find the selected template
   const selectedTemplate = Array.isArray(templates) 
@@ -70,65 +44,50 @@ const PersonalInformationPage = () => {
     updateResumeData({ [name]: value } as any);
   };
   
-  // Handle additional info input change
-  const handleAdditionalInfoChange = (key: string, value: string) => {
-    setAdditionalInfoInputs(prev => ({
-      ...prev,
-      [key]: value
-    }));
-    updateAdditionalInfo(key, value);
-  };
-  
-  // Add additional info field
-  const handleAddAdditionalInfo = (key: string) => {
-    if (!activeAdditionalInfo.includes(key)) {
-      setActiveAdditionalInfo(prev => [...prev, key]);
-      updateAdditionalInfo(key, '');
-    }
-  };
-  
-  // Remove additional info field
-  const handleRemoveAdditionalInfo = (key: string) => {
-    setActiveAdditionalInfo(prev => prev.filter(k => k !== key));
-    removeAdditionalInfo(key);
-  };
-  
   // Preview resume
   const handlePreview = () => {
     console.log('Preview resume');
   };
   
+  // Handle additional information
+  const handleAddInfo = (type: string) => {
+    updateAdditionalInfo(type, '');
+  };
+  
+  const handleRemoveInfo = (type: string) => {
+    removeAdditionalInfo(type);
+  };
+  
+  const handleInfoChange = (type: string, value: string) => {
+    updateAdditionalInfo(type, value);
+  };
+  
+  // Check if specific additional info exists
+  const hasAdditionalInfo = (type: string) => {
+    return resumeData.additionalInfo && type in resumeData.additionalInfo;
+  };
+  
+  // Get additional info value
+  const getAdditionalInfoValue = (type: string) => {
+    return resumeData.additionalInfo?.[type] || '';
+  };
+
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-blue-50 relative overflow-auto">
-      {/* Success notification */}
-      <AnimatePresence>
-        {showSuccessMessage && (
-          <motion.div 
-            className="fixed top-4 right-4 z-50 bg-green-500 text-white px-5 py-3 rounded-lg shadow-lg flex items-center"
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-          >
-            <CheckCircle className="mr-2 h-5 w-5" />
-            <span>Your information has been saved!</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
+    <div className="flex flex-col min-h-screen" style={{ overflowY: 'auto', maxHeight: '100vh' }}>
       {/* Header with logo */}
-      <header className="py-4 border-b border-gray-100 bg-white shadow-sm sticky top-0 z-10">
+      <header className="py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
         <div className="container mx-auto px-4">
           <Logo size="medium" />
         </div>
       </header>
       
       {/* Main content */}
-      <div className="flex-1 max-w-[1200px] mx-auto px-4 py-8 overflow-visible">
+      <div className="flex-1 max-w-[1200px] mx-auto px-4 py-8 bg-gradient-to-b from-white to-blue-50">
         {/* Back button */}
         <div className="mb-6">
           <button 
             onClick={handleBack}
-            className="flex items-center gap-1 text-purple-600 hover:text-purple-800 bg-transparent px-0 py-0 text-xs hover:-translate-x-1 transition-transform duration-300"
+            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 bg-transparent px-0 py-0 text-xs"
           >
             <ArrowLeft size={12} />
             <span>Go Back</span>
@@ -139,7 +98,7 @@ const PersonalInformationPage = () => {
           {/* Left column - Form Fields - EXPANDED */}
           <div className="lg:w-[68%]">
             <div className="mb-2">
-              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500 mb-1">
+              <h1 className="text-xl font-bold text-gray-900 mb-1">
                 What's the best way for employers to contact you?
               </h1>
               <p className="text-gray-600 text-sm mb-4">
@@ -152,7 +111,7 @@ const PersonalInformationPage = () => {
               <span className="text-red-500">*</span> Indicates a required field
             </div>
             
-            {/* Form layout */}
+            {/* Form layout - EXACTLY like the screenshot */}
             <div className="mb-10">
               {/* Photo and Name Row */}
               <div className="flex mb-5">
@@ -334,129 +293,129 @@ const PersonalInformationPage = () => {
               </div>
               
               {/* Additional Information Section */}
-              <div className="mb-14">
+              <div className="mb-20">
                 <div className="flex items-center mb-4">
                   <span className="text-sm text-gray-700">Add additional information to your resume</span>
                   <span className="text-xs text-gray-500 ml-1">(optional)</span>
                   <div className="ml-2 inline-flex items-center justify-center">
-                    <Info size={16} className="text-blue-500" />
+                    <Info size={16} className="text-gray-500" />
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap gap-3">
-                  {/* LinkedIn Button */}
-                  {activeAdditionalInfo.includes('linkedin') ? (
-                    <div className="flex flex-wrap gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2">
+                <div className="flex flex-wrap gap-3 mb-8">
+                  {/* LinkedIn */}
+                  {hasAdditionalInfo('linkedin') ? (
+                    <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
                       <label className="text-sm text-gray-700 whitespace-nowrap">LinkedIn:</label>
                       <input
                         type="text"
-                        value={additionalInfoInputs.linkedin || ''}
-                        onChange={(e) => handleAdditionalInfoChange('linkedin', e.target.value)}
+                        value={getAdditionalInfoValue('linkedin')}
+                        onChange={(e) => handleInfoChange('linkedin', e.target.value)}
                         placeholder="Your LinkedIn URL"
-                        className="border border-gray-200 p-1 text-sm rounded flex-1 min-w-[150px]"
+                        className="border border-gray-200 p-1 text-sm rounded flex-1"
                       />
                       <button
-                        onClick={() => handleRemoveAdditionalInfo('linkedin')}
-                        className="p-1 text-red-500 hover:text-red-700 rounded-full ml-1"
+                        onClick={() => handleRemoveInfo('linkedin')}
+                        className="p-1 text-red-500 hover:text-red-700 rounded-full"
                       >
-                        <X size={16} />
+                        ×
                       </button>
                     </div>
                   ) : (
                     <button
-                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm mb-2"
-                      onClick={() => handleAddAdditionalInfo('linkedin')}
+                      className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                      onClick={() => handleAddInfo('linkedin')}
                     >
                       LinkedIn
-                      <Plus className="ml-1 h-4 w-4" />
+                      <span className="ml-2 font-bold">+</span>
                     </button>
                   )}
                   
-                  {/* Website Button */}
-                  {activeAdditionalInfo.includes('website') ? (
-                    <div className="flex flex-wrap gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2">
+                  {/* Website */}
+                  {hasAdditionalInfo('website') ? (
+                    <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
                       <label className="text-sm text-gray-700 whitespace-nowrap">Website:</label>
                       <input
                         type="text"
-                        value={additionalInfoInputs.website || ''}
-                        onChange={(e) => handleAdditionalInfoChange('website', e.target.value)}
+                        value={getAdditionalInfoValue('website')}
+                        onChange={(e) => handleInfoChange('website', e.target.value)}
                         placeholder="Your website URL"
-                        className="border border-gray-200 p-1 text-sm rounded flex-1 min-w-[150px]"
+                        className="border border-gray-200 p-1 text-sm rounded flex-1"
                       />
                       <button
-                        onClick={() => handleRemoveAdditionalInfo('website')}
-                        className="p-1 text-red-500 hover:text-red-700 rounded-full ml-1"
+                        onClick={() => handleRemoveInfo('website')}
+                        className="p-1 text-red-500 hover:text-red-700 rounded-full"
                       >
-                        <X size={16} />
+                        ×
                       </button>
                     </div>
                   ) : (
                     <button
-                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm mb-2"
-                      onClick={() => handleAddAdditionalInfo('website')}
+                      className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                      onClick={() => handleAddInfo('website')}
                     >
                       Website
-                      <Plus className="ml-1 h-4 w-4" />
+                      <span className="ml-2 font-bold">+</span>
                     </button>
                   )}
                   
-                  {/* Driving License Button */}
-                  {activeAdditionalInfo.includes('drivingLicense') ? (
-                    <div className="flex flex-wrap gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2">
+                  {/* Driving License */}
+                  {hasAdditionalInfo('drivingLicense') ? (
+                    <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
                       <label className="text-sm text-gray-700 whitespace-nowrap">Driving License:</label>
                       <input
                         type="text"
-                        value={additionalInfoInputs.drivingLicense || ''}
-                        onChange={(e) => handleAdditionalInfoChange('drivingLicense', e.target.value)}
+                        value={getAdditionalInfoValue('drivingLicense')}
+                        onChange={(e) => handleInfoChange('drivingLicense', e.target.value)}
                         placeholder="Your license details"
-                        className="border border-gray-200 p-1 text-sm rounded flex-1 min-w-[150px]"
+                        className="border border-gray-200 p-1 text-sm rounded flex-1"
                       />
                       <button
-                        onClick={() => handleRemoveAdditionalInfo('drivingLicense')}
-                        className="p-1 text-red-500 hover:text-red-700 rounded-full ml-1"
+                        onClick={() => handleRemoveInfo('drivingLicense')}
+                        className="p-1 text-red-500 hover:text-red-700 rounded-full"
                       >
-                        <X size={16} />
+                        ×
                       </button>
                     </div>
                   ) : (
                     <button
-                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm mb-2"
-                      onClick={() => handleAddAdditionalInfo('drivingLicense')}
+                      className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                      onClick={() => handleAddInfo('drivingLicense')}
                     >
                       Driving licence
-                      <Plus className="ml-1 h-4 w-4" />
+                      <span className="ml-2 font-bold">+</span>
                     </button>
                   )}
                 </div>
               </div>
-            </div>
-            
-            {/* Navigation Buttons */}
-            <div className="pt-10 pb-4 flex flex-col sm:flex-row justify-between gap-4 sticky bottom-0 bg-gradient-to-t from-blue-50 to-transparent z-10">
-              <Button
-                variant="default"
-                onClick={() => {}}
-                className="bg-[#400b92] hover:bg-[#33076c] text-white rounded-full px-8 py-2 font-normal shadow-lg hover:shadow-xl transition-all"
-              >
-                Optional: Personal details
-              </Button>
               
-              <div className="flex gap-4 flex-wrap justify-end">
-                <Button
-                  variant="outline"
-                  onClick={handlePreview}
-                  className="border border-gray-400 bg-white hover:bg-gray-50 text-gray-800 rounded-full px-8 py-2 font-normal shadow-lg hover:shadow-xl transition-all"
-                >
-                  Preview
-                </Button>
-                
+              {/* Navigation Buttons */}
+              <div className="pb-10 flex justify-between">
                 <Button
                   variant="default"
-                  onClick={handleNext}
-                  className="bg-[#ffc431] hover:bg-[#ffbb1c] text-black font-normal rounded-full px-8 py-2 shadow-lg hover:shadow-xl transition-all"
+                  onClick={() => {}}
+                  className="bg-[#400b92] hover:bg-[#33076c] text-white rounded-full px-8 py-2 font-normal"
                 >
-                  Next: Work history
+                  Optional: Personal details
                 </Button>
+                
+                <div className="flex gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={handlePreview}
+                    className="border border-gray-400 bg-white hover:bg-gray-50 text-gray-800 rounded-full px-8 py-2 font-normal"
+                  >
+                    Preview
+                  </Button>
+                  
+                  <Button
+                    variant="default"
+                    onClick={handleNext}
+                    className="bg-[#ffc431] hover:bg-[#ffbb1c] text-black font-normal rounded-full px-8 py-2"
+                  >
+                    Next: Work history
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -479,7 +438,7 @@ const PersonalInformationPage = () => {
             </div>
             
             {/* Resume Preview */}
-            <div className="border border-gray-200 overflow-hidden mx-auto shadow-lg rounded-md" style={{ maxWidth: '280px' }}>
+            <div className="border border-gray-200 overflow-hidden mx-auto" style={{ maxWidth: '280px' }}>
               <div className="relative bg-white" style={{ height: '400px' }}>
                 <HybridResumePreview 
                   className="h-full w-full" 
@@ -509,7 +468,7 @@ const PersonalInformationPage = () => {
       </div>
       
       {/* Footer */}
-      <footer className="mt-auto py-4 border-t border-gray-200">
+      <footer className="py-4 border-t border-gray-200">
         <div className="container mx-auto px-4">
           <div className="flex flex-wrap justify-center text-xs text-gray-500 gap-4">
             <Link href="/terms" className="hover:text-indigo-600">TERMS AND CONDITIONS</Link>
