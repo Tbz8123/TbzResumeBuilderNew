@@ -113,7 +113,7 @@ skillsRouter.get("/", async (req, res) => {
       // Get the job title to determine its category
       try {
         const jobTitle = await db.query.jobTitles.findFirst({
-          where: eq(db.query.jobTitles.id, jobTitleId),
+          where: eq(jobTitles.id, jobTitleId),
         });
         
         if (jobTitle) {

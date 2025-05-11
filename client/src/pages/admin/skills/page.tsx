@@ -778,7 +778,7 @@ export default function SkillsAdminPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xl font-semibold flex items-center">
                     <Search className="h-5 w-5 mr-2 text-gray-500" />
-                    Search Categories
+                    Search Job Titles
                   </h2>
                   <Button 
                     size="sm" 
