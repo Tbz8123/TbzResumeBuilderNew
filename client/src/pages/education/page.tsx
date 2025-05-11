@@ -195,10 +195,7 @@ const EducationPage = () => {
       title
     };
     
-    setCurrentEducation(prev => ({
-      ...prev,
-      achievements: [...(prev.achievements || []), newAchievement]
-    }));
+    setAchievements(prev => [...prev, newAchievement]);
   };
   
   // Generate years for graduation date dropdown (recent 20 years)
@@ -231,18 +228,27 @@ const EducationPage = () => {
   
   // Save education data to resume context
   const saveEducation = () => {
-    if (currentEducation.schoolName.trim()) {
+    if (currentEducation.institution.trim()) {
       const updatedEducation = [...(resumeData.education || [])];
       
-      // Find the index of the current education entry, if it exists
-      const existingIndex = updatedEducation.findIndex(edu => edu.id === currentEducation.id);
+      // Combine achievements with education description
+      const achievementsText = achievements.map(a => `• ${a.title}`).join('\n');
+      const fullDescription = currentEducation.description 
+        ? (achievementsText ? `${currentEducation.description}\n\n${achievementsText}` : currentEducation.description)
+        : achievementsText;
+        
+      const updatedEntry = {
+        ...currentEducation,
+        description: fullDescription
+      };
       
-      if (existingIndex >= 0) {
-        // Update existing education
-        updatedEducation[existingIndex] = currentEducation;
+      // Find if we already have an education entry
+      if (updatedEducation.length > 0) {
+        // Update the first education entry
+        updatedEducation[0] = updatedEntry;
       } else {
         // Add new education
-        updatedEducation.push(currentEducation);
+        updatedEducation.push(updatedEntry);
       }
       
       updateResumeData({ education: updatedEducation });
@@ -354,30 +360,30 @@ const EducationPage = () => {
             >
               {/* School Name */}
               <motion.div variants={itemVariants} className="space-y-2">
-                <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="institution" className="block text-sm font-medium text-gray-700">
                   SCHOOL NAME <span className="text-red-500">*</span>
                 </label>
                 <Input
-                  id="schoolName"
+                  id="institution"
                   type="text"
                   placeholder="e.g. Delhi University"
-                  value={currentEducation.schoolName}
-                  onChange={(e) => handleEducationChange('schoolName', e.target.value)}
+                  value={currentEducation.institution}
+                  onChange={(e) => handleEducationChange('institution', e.target.value)}
                   className="w-full py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                 />
               </motion.div>
               
               {/* School Location */}
               <motion.div variants={itemVariants} className="space-y-2">
-                <label htmlFor="schoolLocation" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700">
                   SCHOOL LOCATION
                 </label>
                 <Input
-                  id="schoolLocation"
+                  id="location"
                   type="text"
                   placeholder="e.g. Delhi, India"
-                  value={currentEducation.schoolLocation}
-                  onChange={(e) => handleEducationChange('schoolLocation', e.target.value)}
+                  value={currentEducation.location}
+                  onChange={(e) => handleEducationChange('location', e.target.value)}
                   className="w-full py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                 />
               </motion.div>
@@ -406,7 +412,7 @@ const EducationPage = () => {
                 </Select>
               </motion.div>
               
-              {/* Field of Study */}
+              {/* Field of Study - We'll add this to the description later */}
               <motion.div variants={itemVariants} className="space-y-2">
                 <label htmlFor="fieldOfStudy" className="block text-sm font-medium text-gray-700">
                   FIELD OF STUDY
@@ -415,8 +421,8 @@ const EducationPage = () => {
                   id="fieldOfStudy"
                   type="text"
                   placeholder="e.g. Financial Accounting"
-                  value={currentEducation.fieldOfStudy}
-                  onChange={(e) => handleEducationChange('fieldOfStudy', e.target.value)}
+                  value={currentEducation.description || ''}
+                  onChange={(e) => handleEducationChange('description', e.target.value)}
                   className="w-full py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                 />
               </motion.div>
@@ -427,9 +433,14 @@ const EducationPage = () => {
                   GRADUATION DATE (OR EXPECTED GRADUATION DATE)
                 </label>
                 <div className="grid grid-cols-2 gap-4">
+                  {/* For startDate we'll use it as month/year format */}
                   <Select
-                    value={currentEducation.graduationMonth}
-                    onValueChange={(value) => handleEducationChange('graduationMonth', value)}
+                    value={currentEducation.startDate || ''}
+                    onValueChange={(value) => {
+                      // Format the date as "Month Year"
+                      const currentYear = new Date().getFullYear();
+                      handleEducationChange('startDate', value);
+                    }}
                   >
                     <SelectTrigger className="w-full py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300">
                       <SelectValue placeholder="Month" />
@@ -446,8 +457,8 @@ const EducationPage = () => {
                   </Select>
                   
                   <Select
-                    value={currentEducation.graduationYear}
-                    onValueChange={(value) => handleEducationChange('graduationYear', value)}
+                    value={currentEducation.endDate || ''}
+                    onValueChange={(value) => handleEducationChange('endDate', value)}
                   >
                     <SelectTrigger className="w-full py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300">
                       <SelectValue placeholder="Year" />
@@ -611,14 +622,14 @@ const EducationPage = () => {
               </motion.div>
               
               {/* Selected Achievements Display */}
-              {currentEducation.achievements && currentEducation.achievements.length > 0 && (
+              {achievements && achievements.length > 0 && (
                 <motion.div
                   variants={itemVariants}
                   className="mt-6 p-4 border border-gray-200 rounded-lg bg-white"
                 >
                   <h3 className="font-medium mb-3">Selected Achievements</h3>
                   <div className="flex flex-wrap gap-2">
-                    {currentEducation.achievements.map((achievement) => (
+                    {achievements.map((achievement) => (
                       <div
                         key={achievement.id}
                         className="flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full"
@@ -626,10 +637,9 @@ const EducationPage = () => {
                         <span>{achievement.title}</span>
                         <button
                           onClick={() => {
-                            setCurrentEducation(prev => ({
-                              ...prev,
-                              achievements: prev.achievements?.filter(a => a.id !== achievement.id) || []
-                            }));
+                            setAchievements(prev => 
+                              prev.filter(a => a.id !== achievement.id)
+                            );
                           }}
                           className="text-purple-600 hover:text-purple-800"
                         >
