@@ -178,7 +178,7 @@ const EducationPage = () => {
   
   const handleNext = () => {
     saveEducation();
-    setLocation('/skills');
+    setLocation('/education-summary');
   };
   
   const handlePreview = () => {
