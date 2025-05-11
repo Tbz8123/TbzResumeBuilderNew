@@ -95,6 +95,13 @@ const AdminHomePage = () => {
           color: 'bg-blue-500'
         },
         {
+          title: 'Skills Management',
+          description: 'Manage skill categories and skills',
+          icon: <Star className="h-5 w-5" />,
+          path: '/admin/skills',
+          color: 'bg-cyan-500'
+        },
+        {
           title: 'Job API Test',
           description: 'Test job descriptions API functionality',
           icon: <Server className="h-5 w-5" />,
