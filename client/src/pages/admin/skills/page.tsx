@@ -98,9 +98,13 @@ export default function SkillsAdminPage() {
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
+  const [jobTitleSearchQuery, setJobTitleSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<SkillCategory | null>(null);
+  const [selectedJobTitle, setSelectedJobTitle] = useState<JobTitle | null>(null);
   const [page, setPage] = useState(1);
+  const [jobTitlePage, setJobTitlePage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [jobTitleTotalPages, setJobTitleTotalPages] = useState(1);
   
   // Dialog state
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
@@ -194,6 +198,26 @@ export default function SkillsAdminPage() {
     },
   });
   
+  // Fetch job titles
+  const { data: jobTitlesData, isLoading: isLoadingJobTitles } = useQuery({
+    queryKey: ['/api/jobs/titles', jobTitlePage, jobTitleSearchQuery],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('page', jobTitlePage.toString());
+      params.append('limit', '10');
+      
+      if (jobTitleSearchQuery) {
+        params.append('search', jobTitleSearchQuery);
+      }
+      
+      const res = await fetch(`/api/jobs/titles?${params.toString()}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch job titles');
+      }
+      return await res.json();
+    },
+  });
+  
   // Derive categories and total pages from data
   const categories = categoriesData || [];
   useEffect(() => {
@@ -201,6 +225,14 @@ export default function SkillsAdminPage() {
       setTotalPages(Math.ceil(categoriesData.total / 10) || 1);
     }
   }, [categoriesData]);
+  
+  // Derive job titles and their total pages from data
+  const jobTitles = jobTitlesData?.data || [];
+  useEffect(() => {
+    if (jobTitlesData && jobTitlesData.total) {
+      setJobTitleTotalPages(Math.ceil(jobTitlesData.total / 10) || 1);
+    }
+  }, [jobTitlesData]);
   
   // Fetch skills for selected category
   const { data: skillsData = [], isLoading: isLoadingSkills } = useQuery({
@@ -215,6 +247,21 @@ export default function SkillsAdminPage() {
       return await res.json();
     },
     enabled: !!selectedCategory,
+  });
+  
+  // Fetch skills for selected job title
+  const { data: jobTitleSkillsData = [], isLoading: isLoadingJobTitleSkills } = useQuery({
+    queryKey: ['/api/skills/by-job-title', selectedJobTitle?.id],
+    queryFn: async () => {
+      if (!selectedJobTitle) return [];
+      
+      const res = await fetch(`/api/skills/by-job-title/${selectedJobTitle.id}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch skills for job title');
+      }
+      return await res.json();
+    },
+    enabled: !!selectedJobTitle,
   });
   
   // Filter skills based on search query
