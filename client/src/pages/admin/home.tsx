@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { AnimatedSection, AnimatedItem } from '@/components/AnimatedSection';
-import { FileText, Users, Settings, Code, Layers, LayoutGrid, FileEdit, Plus, Database, Palette, Server, Shield, Briefcase, BookText } from 'lucide-react';
+import { FileText, Users, Settings, Code, Layers, LayoutGrid, FileEdit, Plus, Database, Palette, Server, Shield, Briefcase, BookText, Star } from 'lucide-react';
 
 const AdminHomePage = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
