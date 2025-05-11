@@ -87,7 +87,10 @@ import {
   FileText,
   FileSpreadsheet,
   FileJson,
-  Code
+  Code,
+  Briefcase,
+  ExternalLink,
+  FolderOpen
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -935,13 +938,13 @@ export default function SkillsAdminPage() {
               <div className="p-4 border-b">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xl font-semibold flex items-center">
-                    {selectedCategory ? (
-                      <>Skills for <span className="text-primary ml-1">{selectedCategory.name}</span></>
+                    {selectedJobTitle ? (
+                      <>Skills for <span className="text-primary ml-1">{selectedJobTitle.title}</span></>
                     ) : (
-                      <>Select a Category</>
+                      <>Select a Job Title</>
                     )}
                   </h2>
-                  {selectedCategory && (
+                  {selectedJobTitle && (
                     <div className="flex space-x-2">
                       <Button 
                         size="sm" 
@@ -960,7 +963,7 @@ export default function SkillsAdminPage() {
                           setEditingSkill(null);
                           setSkillDialogOpen(true);
                         }}
-                        disabled={!selectedCategory}
+                        disabled={!selectedJobTitle}
                       >
                         <Plus className="h-4 w-4 mr-1" />
                         Add Skill
@@ -968,7 +971,7 @@ export default function SkillsAdminPage() {
                     </div>
                   )}
                 </div>
-                {selectedCategory && (
+                {selectedJobTitle && (
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
@@ -981,22 +984,22 @@ export default function SkillsAdminPage() {
                 )}
               </div>
 
-              {!selectedCategory ? (
+              {!selectedJobTitle ? (
                 <div className="flex flex-col items-center justify-center p-8 h-[calc(100vh-280px)]">
                   <div className="rounded-full bg-gray-100 p-3 mb-4">
-                    <Search className="h-10 w-10 text-gray-400" />
+                    <Briefcase className="h-10 w-10 text-gray-400" />
                   </div>
-                  <h3 className="text-xl font-medium mb-2">Select a Category</h3>
+                  <h3 className="text-xl font-medium mb-2">Select a Job Title</h3>
                   <p className="text-muted-foreground text-center max-w-md">
-                    Choose a skill category from the list on the left to view, add, or edit skills in that category.
+                    Choose a job title from the list on the left to view, add, or edit skills for that job.
                   </p>
                 </div>
-              ) : isLoadingSkills ? (
+              ) : isLoadingJobTitleSkills ? (
                 <div className="p-8 text-center h-[calc(100vh-280px)] flex flex-col items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                  <p className="mt-2 text-muted-foreground">Loading skills...</p>
+                  <p className="mt-2 text-muted-foreground">Loading skills for {selectedJobTitle.title}...</p>
                 </div>
-              ) : filteredSkills.length === 0 ? (
+              ) : jobTitleSkillsData.length === 0 ? (
                 <div className="p-8 text-center h-[calc(100vh-280px)] flex flex-col items-center justify-center">
                   <div className="rounded-full bg-gray-100 p-3 mb-4">
                     <Search className="h-10 w-10 text-gray-400" />
@@ -1020,9 +1023,9 @@ export default function SkillsAdminPage() {
                     </>
                   ) : (
                     <>
-                      <h3 className="text-xl font-medium mb-2">No skills in this category</h3>
+                      <h3 className="text-xl font-medium mb-2">No skills for this job title</h3>
                       <p className="text-muted-foreground mb-4">
-                        Add your first skill to get started.
+                        Add skills for this job title to get started.
                       </p>
                     </>
                   )}
@@ -1047,7 +1050,12 @@ export default function SkillsAdminPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredSkills.map((skill: Skill) => (
+                      {jobTitleSkillsData
+                        .filter(skill => !searchQuery.trim() || 
+                          skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (skill.description && skill.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                        )
+                        .map((skill: Skill) => (
                         <TableRow key={skill.id}>
                           <TableCell>
                             <div>
