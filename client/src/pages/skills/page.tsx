@@ -169,7 +169,7 @@ const SkillsPage = () => {
         setApiSkills(response);
         
         // Extract skill names for suggestions
-        const skillNames = response.map(skill => skill.name);
+        const skillNames = response.map((skill: ApiSkill) => skill.name);
         setSkillSuggestions(skillNames);
         
         console.log(`Loaded ${skillNames.length} skills for job title ID: ${jobTitleId || MANAGER_ID}`);
@@ -206,10 +206,16 @@ const SkillsPage = () => {
       console.log("Searching for job title:", firstJob.jobTitle);
       const response = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(firstJob.jobTitle)}`);
       
-      if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+      // Type check the response structure
+      if (response && 
+          typeof response === 'object' && 
+          'data' in response && 
+          Array.isArray(response.data) && 
+          response.data.length > 0) {
+        
         // Try to find an exact match
         const exactMatch = response.data.find((job: JobTitle) => 
-          job.title.toLowerCase() === firstJob.jobTitle.toLowerCase()
+          job.title.toLowerCase() === firstJob.jobTitle?.toLowerCase()
         );
         
         if (exactMatch) {
@@ -572,18 +578,30 @@ const SkillsPage = () => {
                               } rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
                               onClick={() => handleSkillClick(skill)}
                             >
-                          {index < 3 && (
-                            <div className="text-xs text-purple-700 font-medium mb-1">
-                              Expert Recommended
-                            </div>
-                          )}
-                          <p className="text-gray-800 text-sm">
-                            {skill}
-                          </p>
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  </div>
+                              {index < 3 && (
+                                <div className="text-xs text-purple-700 font-medium mb-1">
+                                  Expert Recommended
+                                </div>
+                              )}
+                              <p className="text-gray-800 text-sm">
+                                {skill}
+                              </p>
+                            </motion.div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8">
+                            <p className="text-gray-500">No skills found matching your search.</p>
+                            <button 
+                              onClick={() => setSearchTerm('')}
+                              className="mt-2 text-purple-600 hover:text-purple-800 font-medium"
+                            >
+                              Clear search
+                            </button>
+                          </div>
+                        )}
+                      </motion.div>
+                    </div>
+                  )}
                 </motion.div>
               </div>
               
