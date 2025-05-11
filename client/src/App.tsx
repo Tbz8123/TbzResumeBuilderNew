@@ -33,6 +33,7 @@ import AdminHomePage from "@/pages/admin/home";
 import AdminDashboardPage from "@/pages/admin/page";
 import AdminJobsPage from "@/pages/admin/jobs/page";
 import AdminEducationPage from "@/pages/admin/education/page";
+import AdminSkillsPage from "@/pages/admin/skills/page";
 import AdminLink from "@/components/AdminLink";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -80,6 +81,7 @@ function Router() {
       <ProtectedRoute path="/admin/jobs" component={AdminJobsPage} adminOnly />
       <ProtectedRoute path="/admin/jobs/test-api" component={AdminJobsTestApiPage} adminOnly />
       <ProtectedRoute path="/admin/education" component={() => <AdminEducationPage />} adminOnly />
+      <ProtectedRoute path="/admin/skills" component={AdminSkillsPage} adminOnly />
       <ProtectedRoute path="/admin/templates" component={AdminTemplatesPage} adminOnly />
       <ProtectedRoute path="/admin/templates/management" component={AdminTemplateManagementPage} adminOnly />
       <ProtectedRoute path="/admin/templates/new/basic" component={CreateNewTemplateAdminPage} adminOnly />
