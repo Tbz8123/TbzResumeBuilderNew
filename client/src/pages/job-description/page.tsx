@@ -532,7 +532,7 @@ const JobDescriptionPage = () => {
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
-                className="mb-6 bg-white p-5 rounded-xl shadow-sm border border-gray-100"
+                className="mb-6"
               >
                 <div className="flex justify-between items-center mb-3">
                   <h2 className="text-base font-semibold text-gray-800">Related Job Titles</h2>
@@ -603,7 +603,7 @@ const JobDescriptionPage = () => {
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 p-5"
+                className="mb-6"
               >
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="font-semibold">{showingResults} results for <span className="text-purple-600">{currentJob.jobTitle}</span></h2>
