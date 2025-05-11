@@ -19,6 +19,8 @@ import JobDescriptionPage from "@/pages/job-description/page";
 import WorkHistorySummaryPage from "@/pages/work-history-summary/page";
 import EducationPage from "@/pages/education/page";
 import EducationSummaryPage from "@/pages/education-summary/page";
+import SkillsPage from "@/pages/skills/page";
+import SkillsSummaryPage from "@/pages/skills-summary/page";
 import AuthPage from "@/pages/auth-page";
 import AdminJobsTestApiPage from "@/pages/admin/jobs/test-api";
 import AdminTemplatesPage from "@/pages/admin/templates/page";
@@ -65,6 +67,8 @@ function Router() {
       <Route path="/work-history-summary" component={WorkHistorySummaryPage} />
       <Route path="/education" component={EducationPage} />
       <Route path="/education-summary" component={EducationSummaryPage} />
+      <Route path="/skills" component={SkillsPage} />
+      <Route path="/skills-summary" component={SkillsSummaryPage} />
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}
