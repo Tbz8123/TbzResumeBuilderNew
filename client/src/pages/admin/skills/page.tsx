@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Skill, SkillCategory, skillSchema, skillCategorySchema } from "@shared/schema";
+import { Skill, SkillCategory, JobTitle, skillSchema, skillCategorySchema } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -789,14 +789,14 @@ export default function SkillsAdminPage() {
                     }}
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Add Category
+                    Add Skill Category
                   </Button>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     className="pl-9"
-                    placeholder="Search skill categories..."
+                    placeholder="Search job titles..."
                     value={categorySearchQuery}
                     onChange={(e) => setCategorySearchQuery(e.target.value)}
                   />

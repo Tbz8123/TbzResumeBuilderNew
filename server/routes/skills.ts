@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@db";
 import { isAdmin, isAuthenticated } from "../auth";
-import { skills, skillCategories, skillSchema, skillCategorySchema } from "@shared/schema";
+import { skills, skillCategories, skillSchema, skillCategorySchema, jobTitles } from "@shared/schema";
 import { eq, asc, desc, sql, and, like } from "drizzle-orm";
 import { z } from "zod";
 import { createObjectCsvStringifier } from "csv-writer";
