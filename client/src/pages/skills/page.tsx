@@ -413,8 +413,7 @@ const SkillsPage = () => {
                       <div
                         ref={editorRef}
                         contentEditable
-                        className="min-h-[150px] focus:outline-none border border-gray-200 rounded-md p-4 mb-4"
-                        placeholder="Add your skills here."
+                        className="min-h-[150px] focus:outline-none border border-gray-200 rounded-md p-4 mb-4 empty:before:content-['Add_your_skills_here...'] empty:before:text-gray-400 empty:before:italic"
                       ></div>
                       
                       <div className="flex justify-end">
