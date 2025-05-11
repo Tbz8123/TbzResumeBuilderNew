@@ -974,7 +974,12 @@ export default function SkillsAdminPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xl font-semibold flex items-center">
                     {selectedJobTitle ? (
-                      <>Skills for <span className="text-primary ml-1">{selectedJobTitle.title}</span></>
+                      <>
+                        Skills for <span className="text-primary ml-1">{selectedJobTitle.title}</span>
+                        <Badge variant="outline" className="ml-2 bg-muted/50">
+                          {selectedJobTitle.category}
+                        </Badge>
+                      </>
                     ) : (
                       <>Select a Job Title</>
                     )}
@@ -1241,7 +1246,9 @@ export default function SkillsAdminPage() {
             <DialogDescription>
               {editingSkill 
                 ? "Update the details for this skill." 
-                : "Create a new skill in the selected category."}
+                : selectedJobTitle 
+                  ? `Create a new skill for the job title "${selectedJobTitle.title}".`
+                  : "Create a new skill in the selected category."}
             </DialogDescription>
           </DialogHeader>
 
@@ -1279,7 +1286,14 @@ export default function SkillsAdminPage() {
                   name="categoryId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <div className="flex items-center space-x-2">
+                        <FormLabel>Category</FormLabel>
+                        {selectedJobTitle && (
+                          <Badge variant="outline" className="bg-muted/50">
+                            For {selectedJobTitle.title}
+                          </Badge>
+                        )}
+                      </div>
                       <Select 
                         defaultValue={field.value.toString()} 
                         onValueChange={(value) => field.onChange(parseInt(value))}
