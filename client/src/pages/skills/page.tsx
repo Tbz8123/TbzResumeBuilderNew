@@ -272,12 +272,7 @@ const SkillsPage = () => {
         </div>
       </header>
       
-      <motion.main 
-        className="flex-grow py-6 md:py-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
+      <main className="flex-grow py-6 md:py-10 overflow-x-hidden">
         <div className="w-full max-w-6xl mx-auto px-4 md:px-6">
           {/* Back Button */}
           <motion.div 
@@ -308,7 +303,7 @@ const SkillsPage = () => {
               </h1>
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger>
+                  <TooltipTrigger asChild>
                     <button className="text-purple-600 hover:text-purple-700 bg-purple-50 p-2 rounded-full">
                       <HelpCircle className="h-5 w-5" />
                     </button>
@@ -357,7 +352,7 @@ const SkillsPage = () => {
                     />
                     {searchTerm ? (
                       <button 
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-500 hover:text-purple-700 transition-colors duration-300"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
                         onClick={() => setSearchTerm('')}
                       >
                         <X className="h-5 w-5" />
@@ -416,159 +411,88 @@ const SkillsPage = () => {
                 transition={{ duration: 0.4, delay: 0.2 }}
                 className="mb-6 relative rounded-xl shadow-lg"
               >
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-fuchsia-600 rounded-lg opacity-20 blur-md"></div>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg opacity-20 blur-md"></div>
                 <div className="relative bg-white p-5 rounded-xl border border-purple-100">
                   <div className="flex justify-between items-center mb-3">
                     <h2 className="text-base font-semibold text-gray-800 flex items-center">
                       <span className="h-3 w-3 rounded-full bg-purple-600 mr-2"></span>
-                      Related Job Titles
+                      Related Skill Categories
                     </h2>
                     <button 
                       className="bg-purple-100 text-purple-600 text-sm font-medium hover:bg-purple-200 transition-colors duration-300 flex items-center gap-1 group px-2 py-1 rounded-md"
                       onClick={() => setActiveCategory(null)}
                     >
-                      More <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform duration-300" />
+                      View All <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform duration-300" />
                     </button>
                   </div>
-                  
                   <div className="grid grid-cols-2 gap-3">
                     {relatedCategories.map((category, index) => (
-                      <motion.div
+                      <motion.button 
                         key={category.id}
-                        initial={{ opacity: 0, y: 15 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ 
-                          duration: 0.3, 
-                          delay: index * 0.08,
-                          ease: [0.43, 0.13, 0.23, 0.96]
-                        }}
+                        transition={{ delay: 0.2 + (index * 0.1) }}
+                        className={`flex flex-col items-start justify-between p-3 rounded-lg border transition-all duration-300 hover:shadow-md ${activeCategory === category.id ? 'border-purple-300 bg-purple-50' : 'border-gray-200 hover:border-purple-200'}`}
+                        onClick={() => setActiveCategory(category.id)}
                       >
-                        <motion.button
-                          onClick={() => setActiveCategory(category.id)}
-                          className={`w-full px-3 py-2 rounded-lg text-left text-sm ${
-                            activeCategory === category.id 
-                              ? 'bg-gradient-to-r from-purple-100 to-fuchsia-100 text-purple-800 border-purple-200' 
-                              : 'bg-white text-gray-700 hover:bg-purple-50 border-gray-200'
-                          } transition-all duration-200 border shadow-sm hover:shadow-md`}
-                          whileHover={{ 
-                            scale: 1.03, 
-                            y: -2, 
-                            boxShadow: "0 4px 12px rgba(124, 58, 237, 0.15)" 
-                          }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          {category.name}
-                        </motion.button>
-                      </motion.div>
+                        <div className="font-medium text-left">{category.name}</div>
+                        <div className="text-xs text-gray-500">{category.skills.length} skills</div>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
               </motion.div>
               
-              {/* Skill Suggestions List */}
+              {/* Popular Skills */}
               <motion.div 
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
-                className="relative rounded-xl shadow-lg"
+                className="bg-white rounded-xl shadow-sm border border-gray-100 p-5"
               >
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-fuchsia-500 rounded-lg opacity-30 blur-md"></div>
-                <div className="relative bg-white rounded-xl p-5 border border-purple-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="font-semibold flex items-center">
-                      <span className="h-3 w-3 rounded-full bg-purple-600 mr-2"></span>
-                      <span>{showingResults} results for </span>
-                      <span className="text-purple-600 ml-1">
-                        {activeCategory 
-                          ? SKILL_CATEGORIES.find(cat => cat.id === activeCategory)?.name 
-                          : searchTerm || "All Skills"}
-                      </span>
-                    </h2>
-                    
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setSearchTerm('')}
-                        className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
-                        title="Clear search"
-                      >
-                        <Undo2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          // Refresh by forcing a re-render
-                          setSearchTerm(searchTerm);
-                        }}
-                        className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
-                        title="Refresh results"
-                      >
-                        <RotateCw className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="font-semibold">{showingResults} results</h2>
                   
-                  <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 py-2">
-                    <motion.div 
-                      variants={containerVariants}
-                      initial="hidden"
-                      animate="visible"
-                      className="space-y-3"
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
+                      title="Clear search"
                     >
-                      {filteredSkills.map((skill, index) => (
-                        <motion.div
-                          key={`${skill.name}-${index}`}
-                          variants={itemVariants}
-                          whileHover={{ 
-                            scale: 1.02, 
-                            boxShadow: "0 4px 12px rgba(124, 58, 237, 0.15)",
-                            borderColor: "#a78bfa",
-                            y: -2
-                          }}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ 
-                            opacity: 1, 
-                            y: 0,
-                            transition: { 
-                              duration: 0.4, 
-                              delay: index * 0.05, 
-                              ease: [0.43, 0.13, 0.23, 0.96] 
-                            }
-                          }}
-                          className={`p-3 border ${
-                            selectedSkills.some(s => s.name === skill.name)
-                              ? 'border-purple-200 bg-gradient-to-r from-purple-50 to-fuchsia-50' 
-                              : 'border-gray-200 bg-white'
-                          } rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-md relative`}
-                          onClick={() => handleSkillClick(skill.name)}
-                        >
-                          {selectedSkills.some(s => s.name === skill.name) && (
-                            <motion.div 
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              className="absolute -top-1 -right-1 h-5 w-5 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs shadow-md"
-                            >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </motion.div>
-                          )}
-                          <div className="flex justify-between items-center">
-                            <p className="text-gray-800 font-medium">
-                              {skill.name}
-                            </p>
-                            <div className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-600 font-medium">
-                              {SKILL_CATEGORIES.find(cat => cat.id === skill.category)?.name}
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </motion.div>
+                      <Undo2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSearchTerm(searchTerm); 
+                      }}
+                      className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
+                      title="Refresh results"
+                    >
+                      <RotateCw className="h-4 w-4" />
+                    </button>
                   </div>
-                  
-                  {filteredSkills.length === 0 && (
-                    <div className="p-6 text-center">
-                      <p className="text-gray-500">No skills found. Try a different search term.</p>
-                    </div>
-                  )}
+                </div>
+                
+                <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 py-2">
+                  <motion.div 
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="space-y-3"
+                  >
+                    {filteredSkills.slice(0, 10).map((skill, index) => (
+                      <motion.div
+                        key={`${skill.name}-card-${index}`}
+                        variants={itemVariants}
+                        className={`p-3 border border-gray-200 bg-gray-50 rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
+                        onClick={() => handleSkillClick(skill.name)}
+                      >
+                        <p className="text-gray-800 text-sm">
+                          {skill.name}
+                        </p>
+                      </motion.div>
+                    ))}
+                  </motion.div>
                 </div>
               </motion.div>
             </div>
@@ -578,320 +502,219 @@ const SkillsPage = () => {
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
             >
               {/* Tabs */}
-              <div className="flex border-b">
-                <div 
-                  onClick={() => setActiveTab("text-editor")}
-                  className={cn(
-                    "flex-1 px-6 py-3 text-center font-medium transition-colors cursor-pointer",
-                    activeTab === "text-editor" 
-                      ? "text-indigo-600 border-b-2 border-indigo-600" 
-                      : "text-gray-600 hover:text-indigo-500"
-                  )}
-                >
-                  Text Editor
-                </div>
-                <div
-                  onClick={() => setActiveTab("skills-rating")}
-                  className={cn(
-                    "flex-1 px-6 py-3 text-center font-medium transition-colors cursor-pointer",
-                    activeTab === "skills-rating" 
-                      ? "text-indigo-600 border-b-2 border-indigo-600" 
-                      : "text-gray-600 hover:text-indigo-500"
-                  )}
-                >
-                  Skills Rating
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => setActiveTab("text-editor")}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-full transition-colors",
+                      activeTab === "text-editor" 
+                        ? "bg-purple-100 text-purple-700" 
+                        : "text-gray-600 hover:text-purple-700 hover:bg-purple-50"
+                    )}
+                  >
+                    Text Editor
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("skills-rating")}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-full transition-colors",
+                      activeTab === "skills-rating" 
+                        ? "bg-purple-100 text-purple-700" 
+                        : "text-gray-600 hover:text-purple-700 hover:bg-purple-50"
+                    )}
+                  >
+                    Skills Rating
+                  </button>
                 </div>
               </div>
               
               {/* Tab Content */}
               {activeTab === "text-editor" ? (
-                <div className="p-6">
+                <div>
                   <div className="mb-4">
-                    <h3 className="font-medium text-gray-700 mb-2 flex items-center">
-                      <span className="h-3 w-3 rounded-full bg-purple-600 mr-2"></span>
-                      List Your Professional Skills:
-                    </h3>
-                    <div className="relative">
-                      <div className="absolute -inset-0.5 bg-gradient-to-br from-purple-500 to-fuchsia-600 rounded-lg opacity-30 blur-md"></div>
-                      <div className="relative">
-                        <div
-                          ref={editorRef}
-                          contentEditable
-                          className="min-h-[300px] focus:outline-none border border-purple-200 rounded-md p-4 bg-white empty:before:content-['Add_your_skills_here...'] empty:before:text-gray-400 empty:before:italic shadow-inner"
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center space-x-2">
-                      <motion.button 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="p-2 border border-purple-200 rounded hover:bg-purple-50 transition-colors"
-                      >
-                        <Bold className="h-4 w-4 text-purple-600" />
-                      </motion.button>
-                      <motion.button 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="p-2 border border-purple-200 rounded hover:bg-purple-50 transition-colors"
-                      >
-                        <Italic className="h-4 w-4 text-purple-600" />
-                      </motion.button>
-                      <motion.button 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="p-2 border border-purple-200 rounded hover:bg-purple-50 transition-colors"
-                      >
-                        <Underline className="h-4 w-4 text-purple-600" />
-                      </motion.button>
-                      <motion.button 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="p-2 border border-purple-200 rounded hover:bg-purple-50 transition-colors"
-                      >
-                        <List className="h-4 w-4 text-purple-600" />
-                      </motion.button>
-                      <motion.button 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="p-2 border border-purple-200 rounded bg-purple-50 text-purple-600"
-                      >
-                        <span className="font-bold text-xs">AB</span>
-                      </motion.button>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <motion.button 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="p-2 border border-purple-200 rounded hover:bg-purple-50 transition-colors"
-                      >
-                        <svg className="h-4 w-4 rotate-180 text-purple-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M5 12H19M5 12L11 6M5 12L11 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </motion.button>
-                      <motion.button 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="p-2 border border-purple-200 rounded hover:bg-purple-50 transition-colors"
-                      >
-                        <svg className="h-4 w-4 text-purple-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </motion.button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col mt-5">
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-gray-700 font-medium">Skills: {selectedSkills.length}</span>
-                      </div>
-                      <motion.button
-                        onClick={() => {
-                          addCustomSkill();
-                        }}
-                        whileHover={{ scale: 1.03, y: -2, boxShadow: "0 4px 12px rgba(124, 58, 237, 0.25)" }}
-                        whileTap={{ scale: 0.97 }}
-                        className="bg-gradient-to-r from-purple-500 to-fuchsia-600 text-white px-4 py-2 rounded-md transition-all shadow-sm"
-                      >
-                        <div className="flex items-center gap-1">
-                          <span>Enhance with AI</span>
-                        </div>
-                      </motion.button>
+                      <h2 className="text-lg font-semibold text-gray-800">
+                        Your Professional Skills
+                      </h2>
                     </div>
-                    
-                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, selectedSkills.length * 10)}%` }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                        className="bg-gradient-to-r from-purple-500 to-fuchsia-600 h-2.5 rounded-full"
-                      ></motion.div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600 mb-3">List your key skills below:</p>
+                  
+                  <div className="relative">
+                    <div className="absolute -inset-0.5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg opacity-30 blur"></div>
+                    <div className="relative">
+                      <div
+                        ref={editorRef}
+                        contentEditable
+                        className="w-full h-[300px] p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 empty:before:content-['Add_your_skills_here...'] empty:before:text-gray-400 empty:before:italic"
+                      ></div>
                     </div>
-                    
-                    <div className="flex justify-end mt-1">
-                      <motion.button 
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="flex items-center text-purple-600 text-sm"
-                      >
-                        <span className="h-5 w-5 rounded-full bg-purple-100 flex items-center justify-center text-purple-800 mr-1">?</span>
-                      </motion.button>
-                    </div>
+                  </div>
+                  
+                  {/* Character count and tips */}
+                  <div className="flex justify-between items-center mt-3 text-sm">
+                    <span className="text-gray-500">
+                      Use a bullet (•) before each skill
+                    </span>
+                    <span className="text-purple-600">
+                      Be specific and relevant
+                    </span>
                   </div>
                 </div>
               ) : (
-                <div className="p-6">
-                  {/* Skills Rating View */}
-                  {showRatingUI && currentSkill ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div className="flex items-start mb-8">
-                        <div className="p-1 rounded-full bg-purple-600 text-white cursor-pointer hover:bg-purple-700 transition-colors"
-                          onClick={() => {
-                            if (currentSkill.level > 1) {
-                              setSkillRating(currentSkill, currentSkill.level - 1);
-                            }
-                          }}
-                        >
-                          <Minus className="h-4 w-4" />
+                <div>
+                  {currentSkill ? (
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-800 mb-4">Rate your proficiency in {currentSkill.name}</h3>
+                      
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-6">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-xs text-gray-500">Beginner</span>
+                          <span className="text-xs text-gray-500">Expert</span>
                         </div>
-                        <div className="flex ml-3">
-                          {[1, 2, 3, 4, 5].map((rating) => (
-                            <motion.div
-                              key={rating}
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                        <div className="flex items-center justify-between">
+                          {[1, 2, 3, 4, 5].map((level) => (
+                            <button 
+                              key={level}
+                              className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${level <= currentSkill.level ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-purple-200'}`}
+                              onClick={() => setSkillRating(currentSkill, level)}
                             >
-                              <Star
-                                onClick={() => setSkillRating(currentSkill, rating)}
-                                className={`h-8 w-8 ${
-                                  rating <= currentSkill.level
-                                    ? 'text-purple-600 fill-current'
-                                    : 'text-gray-300'
-                                } cursor-pointer`}
-                              />
-                            </motion.div>
+                              <Star className={`h-5 w-5 ${level <= currentSkill.level ? 'fill-current' : ''}`} />
+                            </button>
                           ))}
                         </div>
-                      </div>
-                      
-                      <div className="relative">
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg opacity-30 blur-sm"></div>
-                        <div className="relative border border-purple-200 rounded-md p-4 mb-4 bg-white">
-                          <div className="font-medium text-xl">{currentSkill.name}</div>
+                        <div className="flex justify-between mt-2">
+                          <span className="text-xs font-medium">
+                            {currentSkill.level === 1 && 'Basic understanding'}
+                            {currentSkill.level === 2 && 'Working knowledge'}
+                            {currentSkill.level === 3 && 'Proficient'}
+                            {currentSkill.level === 4 && 'Advanced'}
+                            {currentSkill.level === 5 && 'Expert level'}
+                          </span>
+                          <span className="text-xs text-purple-600 font-medium">{currentSkill.level}/5</span>
                         </div>
                       </div>
                       
                       <div className="flex justify-end mt-8">
                         <motion.button
-                          onClick={() => {
-                            setActiveTab('text-editor');
-                            setShowRatingUI(false);
-                            setCurrentSkill(null);
-                            setSkillDescription('');
-                          }}
+                          onClick={addOneMore}
                           whileHover={{ scale: 1.03, y: -2 }}
-                          whileTap={{ scale: 0.97 }}
-                          className="flex items-center gap-2 px-4 py-2 border border-purple-600 text-purple-600 rounded-md hover:bg-purple-50 transition-colors"
+                          className="bg-purple-600 text-white font-medium rounded-full px-5 py-2 text-sm shadow-sm hover:bg-purple-700 transition-colors"
                         >
-                          <Plus className="h-4 w-4" /> Add one more
+                          Add Another Skill
                         </motion.button>
                       </div>
-                    </motion.div>
+                    </div>
                   ) : (
-                    <div className="text-center py-10 text-gray-500 flex flex-col items-center">
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.5 }}
-                        className="mb-4 text-purple-400"
-                      >
-                        <Star className="h-16 w-16 opacity-30" />
-                      </motion.div>
-                      <p>Select a skill to rate or add a new skill from the left panel.</p>
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <div className="text-gray-400 mb-3">
+                        <Plus className="w-12 h-12" />
+                      </div>
+                      <h3 className="text-xl font-medium text-gray-700 mb-2">Add a Skill to Rate</h3>
+                      <p className="text-gray-600 text-center mb-6 max-w-md">
+                        Click on a skill from the list on the left, or add a custom one below.
+                      </p>
+                      
+                      <div className="w-full max-w-sm">
+                        <Input
+                          placeholder="Enter custom skill name"
+                          value={skillDescription}
+                          onChange={(e) => setSkillDescription(e.target.value)}
+                          className="mb-3"
+                        />
+                        <Button 
+                          onClick={addCustomSkill}
+                          disabled={!skillDescription.trim()}
+                          className="w-full bg-purple-600 hover:bg-purple-700"
+                        >
+                          Add Custom Skill
+                        </Button>
+                      </div>
                     </div>
                   )}
-                  
-                  {/* Skills Progress Bar */}
-                  <div className="flex flex-col mt-16">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-gray-700 font-medium">Skills: {selectedSkills.length}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
-                      <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: `${Math.min(100, selectedSkills.length * 10)}%` }}></div>
-                    </div>
-                    
-                    <div className="flex justify-end mt-1">
-                      <button className="flex items-center text-indigo-600 text-sm">
-                        <span className="h-5 w-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-800 mr-1">?</span>
-                      </button>
-                    </div>
-                  </div>
                 </div>
               )}
+              
+              {/* Navigation buttons */}
+              <div className="flex justify-between items-center mt-8">
+                <button
+                  onClick={handlePreview}
+                  className="text-purple-600 hover:text-purple-800 border border-purple-600 hover:border-purple-800 font-medium rounded-full px-10 py-2.5 text-base transition-colors duration-300 hover:bg-purple-50"
+                >
+                  Preview
+                </button>
+                <button 
+                  onClick={handleNext}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium rounded-full px-10 py-2.5 text-base transition-colors duration-300 shadow-sm hover:shadow"
+                >
+                  Next
+                </button>
+              </div>
             </motion.div>
-            
-            {/* Selected Skills Display (Below Tabs) */}
-            {selectedSkills.length > 0 && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-6"
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800">
-                    Your Selected Skills
-                  </h2>
-                  <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">
-                    {selectedSkills.length} skills
-                  </Badge>
-                </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  {selectedSkills.map((skill) => (
-                    <Badge 
-                      key={skill.id} 
-                      className="bg-purple-100 text-purple-800 hover:bg-purple-200 px-3 py-1.5 flex items-center gap-1"
-                      onClick={() => editSkill(skill)}
-                    >
-                      {skill.name} ({skill.level}/5)
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeSkill(skill.id);
-                        }}
-                        className="ml-1 text-purple-600 hover:text-purple-800 cursor-pointer"
-                      >
-                        <X className="h-3 w-3" />
-                      </div>
-                    </Badge>
-                  ))}
-                </div>
-              </motion.div>
-            )}
           </div>
           
-          {/* Navigation Buttons */}
-          <motion.div 
-            className="flex justify-end space-x-4 mt-10"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-          >
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                onClick={handlePreview}
-                variant="outline"
-                className="border-purple-600 text-purple-600 hover:bg-purple-50 px-6 py-2 rounded-md font-medium"
-              >
-                Preview
-              </Button>
+          {/* Selected Skills Display (Below Tabs) */}
+          {selectedSkills.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mt-8 bg-white p-6 rounded-xl shadow-md border border-gray-100"
+            >
+              <h3 className="text-lg font-medium text-gray-800 mb-4">Your Selected Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {selectedSkills.map((skill) => (
+                  <Badge
+                    key={skill.id}
+                    variant="outline"
+                    className="px-3 py-2 rounded-full text-sm font-medium bg-gray-50 border-gray-200 text-gray-700 flex items-center gap-1"
+                  >
+                    <div className="flex items-center">
+                      {skill.name}
+                      <span className="ml-2 flex">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star 
+                            key={i} 
+                            className={`h-3 w-3 ${i < skill.level ? 'fill-purple-500 text-purple-500' : 'text-gray-300'}`} 
+                          />
+                        ))}
+                      </span>
+                    </div>
+                    <div className="ml-1 flex space-x-1">
+                      <button 
+                        className="text-gray-400 hover:text-purple-600 p-0.5 rounded-full focus:outline-none"
+                        onClick={() => editSkill(skill)}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                        </svg>
+                      </button>
+                      <button 
+                        className="text-gray-400 hover:text-red-600 p-0.5 rounded-full focus:outline-none"
+                        onClick={() => removeSkill(skill.id)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </Badge>
+                ))}
+              </div>
             </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                onClick={handleNext}
-                className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-black px-6 py-2 rounded-md shadow-md flex items-center font-medium"
-              >
-                Next: Skills Summary
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </motion.div>
-          </motion.div>
+          )}
         </div>
-      </motion.main>
+      </main>
+      
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 py-4 mt-10">
+        <div className="container mx-auto px-4 text-center text-sm text-gray-500">
+          © 2025 TbzResumeBuilder. All rights reserved.
+        </div>
+      </footer>
     </div>
   );
 };
