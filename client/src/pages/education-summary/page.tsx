@@ -60,6 +60,23 @@ const EducationSummaryPage = () => {
   };
   
   const handleAddNewEducation = () => {
+    // Create a new empty education entry
+    const newEducation = {
+      degree: '',
+      institution: '',
+      location: '',
+      startDate: '',
+      endDate: '',
+      description: ''
+    };
+    
+    // Add it to the existing education entries
+    const updatedEducation = [...resumeData.education, newEducation];
+    
+    // Save to context and navigate to education page
+    updateResumeData({ education: updatedEducation });
+    
+    // Navigate to the education page - when it loads, it will show the first education entry
     setLocation('/education');
   };
   
