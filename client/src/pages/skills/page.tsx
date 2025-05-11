@@ -14,7 +14,8 @@ import {
   ArrowDownUp,
   ArrowRight,
   RotateCw,
-  Undo2
+  Undo2,
+  Loader
 } from 'lucide-react';
 import {
   Tooltip,
@@ -27,6 +28,8 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
+import { apiRequest } from '@/lib/queryClient';
+import { JobTitle } from '@/utils/jobTitlesData';
 
 // Sample skill categories
 const SKILL_CATEGORIES = [
@@ -81,8 +84,19 @@ const getRelatedSkillCategories = (currentSkill: string | null): string[] => {
   return relatedSkillsMap[category] || relatedSkillsMap['programming'];
 };
 
-// Default skills to show
-const defaultSkills = [
+// Interface for our API response
+interface ApiSkill {
+  id: number;
+  name: string;
+  categoryId: number;
+  description: string | null;
+  isRecommended: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Fallback skills to show if API fails
+const fallbackSkills = [
   'Team Leadership',
   'Strategic Planning',
   'Project Management',
@@ -100,6 +114,9 @@ const defaultSkills = [
   'Presentation Skills'
 ];
 
+// Constant for Manager job title ID (fallback)
+const MANAGER_ID = 28;
+
 const SkillsPage = () => {
   const [, setLocation] = useLocation();
   const { resumeData, updateResumeData } = useResume();
@@ -109,6 +126,10 @@ const SkillsPage = () => {
   const [activeTab, setActiveTab] = useState('text-editor');
   const [currentSkill, setCurrentSkill] = useState<Skill | null>(null);
   const [skillText, setSkillText] = useState('');
+  const [isLoadingSkills, setIsLoadingSkills] = useState(false);
+  const [skillSuggestions, setSkillSuggestions] = useState<string[]>([]);
+  const [jobTitleId, setJobTitleId] = useState<number | null>(null);
+  const [apiSkills, setApiSkills] = useState<ApiSkill[]>([]);
   
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -137,12 +158,94 @@ const SkillsPage = () => {
     }
   };
   
+  // Function to fetch skills based on job title
+  const fetchSkillsForJobTitle = async (jobTitleId: number | null) => {
+    setIsLoadingSkills(true);
+    try {
+      // Get the skills from our API
+      const response = await apiRequest('GET', `/api/skills?jobTitleId=${jobTitleId || MANAGER_ID}`);
+      
+      if (response && Array.isArray(response)) {
+        setApiSkills(response);
+        
+        // Extract skill names for suggestions
+        const skillNames = response.map(skill => skill.name);
+        setSkillSuggestions(skillNames);
+        
+        console.log(`Loaded ${skillNames.length} skills for job title ID: ${jobTitleId || MANAGER_ID}`);
+      } else {
+        console.error("Invalid API response format for skills:", response);
+        // Use fallback skills
+        setSkillSuggestions(fallbackSkills);
+      }
+    } catch (error) {
+      console.error("Error fetching skills:", error);
+      // Use fallback skills on error
+      setSkillSuggestions(fallbackSkills);
+    } finally {
+      setIsLoadingSkills(false);
+    }
+  };
+  
+  // Function to find the job title ID from the resume work experience
+  const findJobTitleIdFromWorkExperience = async () => {
+    if (!resumeData.workExperience || resumeData.workExperience.length === 0) {
+      console.log("No work experience found, using default Manager ID");
+      return null;
+    }
+    
+    // Get the first work experience job title
+    const firstJob = resumeData.workExperience[0];
+    if (!firstJob.jobTitle) {
+      console.log("No job title found in work experience, using default Manager ID");
+      return null;
+    }
+    
+    // Search for this job title
+    try {
+      console.log("Searching for job title:", firstJob.jobTitle);
+      const response = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(firstJob.jobTitle)}`);
+      
+      if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+        // Try to find an exact match
+        const exactMatch = response.data.find((job: JobTitle) => 
+          job.title.toLowerCase() === firstJob.jobTitle.toLowerCase()
+        );
+        
+        if (exactMatch) {
+          console.log(`Found exact matching job title ID: ${exactMatch.id}`);
+          return exactMatch.id;
+        } else {
+          // Use the first result if no exact match
+          console.log(`No exact match found, using first result with ID: ${response.data[0].id}`);
+          return response.data[0].id;
+        }
+      }
+    } catch (error) {
+      console.error("Error searching for job title:", error);
+    }
+    
+    // Return null if job title search fails
+    return null;
+  };
+  
+  // Initial fetch of skills based on job title
+  useEffect(() => {
+    const initializeSkills = async () => {
+      const titleId = await findJobTitleIdFromWorkExperience();
+      setJobTitleId(titleId);
+      fetchSkillsForJobTitle(titleId);
+    };
+    
+    initializeSkills();
+  }, [resumeData.workExperience]);
+  
   // Filter skills based on search term
   const filteredSkills = searchTerm.trim() !== ''
-    ? defaultSkills.filter(skill => 
+    ? skillSuggestions.filter(skill => 
         skill.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : defaultSkills.slice(0, 15);
+    : skillSuggestions.slice(0, 15);
   
   const relatedSkills = getRelatedSkillCategories(searchTerm);
   
@@ -409,42 +512,66 @@ const SkillsPage = () => {
                   className="mb-6"
                 >
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="font-semibold">{filteredSkills.length} results</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-semibold">{filteredSkills.length} results</h2>
+                      {isLoadingSkills && (
+                        <Loader className="h-4 w-4 animate-spin text-purple-500" />
+                      )}
+                      {jobTitleId && (
+                        <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                          Job-specific skills
+                        </span>
+                      )}
+                    </div>
                     
                     <div className="flex gap-2">
                       <button
                         onClick={() => setSearchTerm('')}
                         className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
                         title="Clear search"
+                        disabled={isLoadingSkills}
                       >
                         <Undo2 className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => {
-                          setSearchTerm(searchTerm); 
+                          // Re-fetch skills for the current job title
+                          fetchSkillsForJobTitle(jobTitleId);
                         }}
                         className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
                         title="Refresh results"
+                        disabled={isLoadingSkills}
                       >
-                        <RotateCw className="h-4 w-4" />
+                        <RotateCw className={`h-4 w-4 ${isLoadingSkills ? 'animate-spin' : ''}`} />
                       </button>
                     </div>
                   </div>
                   
-                  <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 py-2 bg-transparent">
-                    <motion.div 
-                      variants={containerVariants}
-                      initial="hidden"
-                      animate="visible"
-                      className="space-y-3"
-                    >
-                      {filteredSkills.map((skill, index) => (
-                        <motion.div
-                          key={`${skill}-card-${index}`}
-                          variants={itemVariants}
-                          className={`p-3 border border-gray-200 ${index < 3 ? 'bg-purple-50' : 'bg-gray-50'} rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
-                          onClick={() => handleSkillClick(skill)}
-                        >
+                  {isLoadingSkills ? (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <Loader className="h-8 w-8 animate-spin text-purple-500 mb-4" />
+                      <p className="text-gray-500">Loading skills for your job title...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 py-2 bg-transparent">
+                      <motion.div 
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="space-y-3"
+                      >
+                        {filteredSkills.length > 0 ? (
+                          filteredSkills.map((skill, index) => (
+                            <motion.div
+                              key={`${skill}-card-${index}`}
+                              variants={itemVariants}
+                              className={`p-3 border border-gray-200 ${
+                                apiSkills.find(s => s.name === skill && s.isRecommended) 
+                                  ? 'bg-purple-50 border-purple-200' 
+                                  : index < 3 ? 'bg-purple-50' : 'bg-gray-50'
+                              } rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
+                              onClick={() => handleSkillClick(skill)}
+                            >
                           {index < 3 && (
                             <div className="text-xs text-purple-700 font-medium mb-1">
                               Expert Recommended
