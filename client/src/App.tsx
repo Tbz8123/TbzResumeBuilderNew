@@ -17,6 +17,7 @@ import WhyNeedResumePage from "@/pages/work-history/page";
 import WorkExperienceDetailsPage from "@/pages/work-experience-details/page";
 import JobDescriptionPage from "@/pages/job-description/page";
 import WorkHistorySummaryPage from "@/pages/work-history-summary/page";
+import EducationPage from "@/pages/education/page";
 import AuthPage from "@/pages/auth-page";
 import AdminJobsTestApiPage from "@/pages/admin/jobs/test-api";
 import AdminTemplatesPage from "@/pages/admin/templates/page";
@@ -42,7 +43,8 @@ function Router() {
                        location.startsWith("/work-history") ||
                        location.startsWith("/work-experience-details") ||
                        location.startsWith("/job-description") ||
-                       location.startsWith("/work-history-summary");
+                       location.startsWith("/work-history-summary") ||
+                       location.startsWith("/education");
   
   const isAdminPage = location.startsWith("/admin");
   
@@ -58,6 +60,7 @@ function Router() {
       <Route path="/work-experience-details" component={WorkExperienceDetailsPage} />
       <Route path="/job-description" component={JobDescriptionPage} />
       <Route path="/work-history-summary" component={WorkHistorySummaryPage} />
+      <Route path="/education" component={EducationPage} />
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}

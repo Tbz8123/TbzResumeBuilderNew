@@ -17,6 +17,25 @@ export interface WorkExperience {
   dbJobTitleId?: number | string; // Add database job title ID for direct API access
 }
 
+export interface Education {
+  id?: string;
+  schoolName: string;
+  schoolLocation: string;
+  degree: string;
+  fieldOfStudy: string;
+  graduationMonth: string;
+  graduationYear: string;
+  description: string;
+  achievements?: EducationAchievement[];
+}
+
+export interface EducationAchievement {
+  id?: string;
+  type: 'achievement' | 'prize' | 'coursework' | 'activity' | 'study_abroad' | 'apprenticeship' | 'project';
+  title: string;
+  description?: string;
+}
+
 export interface ResumeData {
   firstName: string;
   surname: string;
@@ -30,7 +49,7 @@ export interface ResumeData {
   summary: string;
   skills: string[];
   workExperience: WorkExperience[];
-  education?: any[];
+  education: Education[];
   certifications?: any[];
   languages?: any[];
   selectedTemplateId?: number; 
