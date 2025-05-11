@@ -278,7 +278,7 @@ const SkillsPage = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="container mx-auto px-4 max-w-5xl">
+        <div className="w-full max-w-6xl mx-auto px-4 md:px-6">
           {/* Back Button */}
           <motion.div 
             initial={{ x: -20, opacity: 0 }}
