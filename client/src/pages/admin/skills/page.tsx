@@ -163,6 +163,31 @@ export default function SkillsAdminPage() {
     }
   }, [editingCategory, categoryForm]);
   
+  // Helper function to get a category ID for a job title
+  const getCategoryIdForJobTitle = (jobTitle: JobTitle): number => {
+    // Map job title categories to skill categories
+    // This is a temporary solution during transition
+    const categoryMappings: Record<string, number> = {
+      'Technology': 1,
+      'Development': 1,
+      'Data': 1,
+      'Design': 5,
+      'Management': 3,
+      'Marketing': 4,
+      'Sales': 4,
+      'Support': 6,
+      'Finance': 2,
+      'HR': 3,
+      'Legal': 2,
+      'Operations': 3,
+      'Product': 1,
+      'Research': 1
+    };
+    
+    // Use the mapping or fall back to a default category (1 for Technical)
+    return categoryMappings[jobTitle.category] || 1;
+  };
+
   useEffect(() => {
     if (editingSkill) {
       skillForm.reset({
@@ -170,6 +195,16 @@ export default function SkillsAdminPage() {
         categoryId: editingSkill.categoryId,
         description: editingSkill.description || "",
         isRecommended: editingSkill.isRecommended,
+      });
+    } else if (selectedJobTitle) {
+      // For job title selected, use an appropriate category
+      // This is needed until we fully transition to job-title based skills
+      const suggestedCategoryId = getCategoryIdForJobTitle(selectedJobTitle);
+      skillForm.reset({
+        name: "",
+        categoryId: suggestedCategoryId,
+        description: "",
+        isRecommended: false,
       });
     } else if (selectedCategory) {
       skillForm.reset({
@@ -179,7 +214,7 @@ export default function SkillsAdminPage() {
         isRecommended: false,
       });
     }
-  }, [editingSkill, skillForm, selectedCategory]);
+  }, [editingSkill, skillForm, selectedCategory, selectedJobTitle]);
   
   // Fetch skill categories
   const { data: categoriesData, isLoading: isLoadingCategories } = useQuery({
