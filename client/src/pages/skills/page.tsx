@@ -338,17 +338,17 @@ const SkillsPage = () => {
                 transition={{ duration: 0.4, delay: 0.1 }}
                 className="mb-6 transform transition-all hover:scale-[1.01] duration-300"
               >
-                <h2 className="text-xs uppercase font-bold text-purple-800 mb-2">SEARCH BY SKILL FOR PRE-WRITTEN EXAMPLES</h2>
+                <h2 className="text-xs uppercase font-bold text-gray-600 mb-2">SEARCH BY SKILL FOR PRE-WRITTEN EXAMPLES</h2>
                 <div className="relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-lg opacity-60 group-hover:opacity-100 blur-md group-hover:blur-lg transition duration-300"></div>
-                  <div className="relative bg-white rounded-lg shadow-lg">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg opacity-50 group-hover:opacity-70 blur group-hover:blur-md transition duration-300"></div>
+                  <div className="relative bg-white rounded-lg">
                     <Input 
                       type="text"
                       ref={searchInputRef}
                       placeholder="Search skills (e.g. JavaScript, Leadership)"
                       value={searchTerm}
                       onChange={handleSearchChange}
-                      className="rounded-lg border-purple-200 pr-10 py-7 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white shadow-inner text-lg"
+                      className="rounded-lg border-gray-300 pr-10 py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
                       onFocus={() => {
                         if (filteredSkills.length > 0) {
                           setShowSkillSuggestions(true);
