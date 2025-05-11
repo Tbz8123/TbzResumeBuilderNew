@@ -245,3 +245,33 @@ export type InsertSkillCategory = z.infer<typeof skillCategorySchema>;
 
 export type Skill = typeof skills.$inferSelect;
 export type InsertSkill = z.infer<typeof skillSchema>;
+
+// Job Title - Skills mapping (many-to-many relationship)
+export const jobTitleSkills = pgTable("job_title_skills", {
+  id: serial("id").primaryKey(),
+  jobTitleId: integer("job_title_id").notNull().references(() => jobTitles.id),
+  skillId: integer("skill_id").notNull().references(() => skills.id),
+  isRecommended: boolean("is_recommended").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Define additional relations
+export const jobTitlesSkillsRelations = relations(jobTitles, ({ many }) => ({
+  jobTitleSkills: many(jobTitleSkills),
+}));
+
+export const skillsJobTitlesRelations = relations(skills, ({ many }) => ({
+  jobTitleSkills: many(jobTitleSkills),
+}));
+
+export const jobTitleSkillsRelations = relations(jobTitleSkills, ({ one }) => ({
+  jobTitle: one(jobTitles, {
+    fields: [jobTitleSkills.jobTitleId],
+    references: [jobTitles.id],
+  }),
+  skill: one(skills, {
+    fields: [jobTitleSkills.skillId],
+    references: [skills.id],
+  }),
+}));
