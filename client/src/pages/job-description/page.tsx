@@ -14,6 +14,7 @@ import { JobTitle, getJobTitleSuggestions, findJobTitleById } from '@/utils/jobT
 import { JobDescription } from '@shared/schema';
 import { apiRequest } from '@/lib/queryClient';
 import { WorkExperience } from '@/types/resume';
+import { motion } from 'framer-motion';
 
 // Related job titles
 const getRelatedJobTitles = (jobTitle: string): JobTitle[] => {
@@ -73,8 +74,6 @@ const JobDescriptionPage = () => {
   // Initialize job responsibilities from currentJob if available
   const [jobResponsibilities, setJobResponsibilities] = useState(currentJob.responsibilities || '');
   
-  // Job title ID will be set in the fetchJobDescriptions function
-  
   // Get related job titles
   const relatedJobTitles = getRelatedJobTitles(currentJob.jobTitle);
   
@@ -82,6 +81,29 @@ const JobDescriptionPage = () => {
   const [descriptions, setDescriptions] = useState<any[]>([]);
   const [isLoadingDescriptions, setIsLoadingDescriptions] = useState(false);
   const [showingResults, setShowingResults] = useState<string>('');
+  
+  // Animation variants for framer-motion
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+  
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.4,
+        ease: "easeOut"
+      }
+    }
+  };
   
   // Fetch job descriptions from API when job title changes or on search
   useEffect(() => {
@@ -366,177 +388,167 @@ const JobDescriptionPage = () => {
   }, [searchTerm, showingResults]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-blue-50">
       {/* Header with logo */}
-      <header className="py-4 border-b border-gray-100 bg-white">
+      <header className="py-4 border-b border-gray-100 bg-white shadow-sm sticky top-0 z-30">
         <div className="container mx-auto px-4">
           <Logo size="medium" />
         </div>
       </header>
       
-      <main className="flex-grow py-10">
-        <div className="w-full max-w-5xl mx-auto px-6">
+      <main className="flex-grow py-6 md:py-10 overflow-x-hidden">
+        <div className="w-full max-w-6xl mx-auto px-4 md:px-6">
           {/* Back Button */}
-          <div className="mb-6">
+          <motion.div 
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-8"
+          >
             <button 
               onClick={handleBack}
-              className="flex items-center text-purple-600 hover:text-purple-800 transition-colors text-sm font-medium"
+              className="flex items-center gap-1 text-purple-600 hover:text-purple-800 transition-all hover:-translate-x-1 duration-300 text-sm font-medium"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Go Back
+              <ArrowLeft className="h-4 w-4" />
+              <span>Go Back</span>
             </button>
-          </div>
+          </motion.div>
           
           {/* Main Content */}
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-2">
-              <h1 className="text-2xl font-bold">What did you do as a {currentJob.jobTitle}?</h1>
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="mb-10"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
+                What did you do as a {currentJob.jobTitle}?
+              </h1>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button className="text-purple-600">
-                      <span className="flex items-center">
-                        <HelpCircle className="h-4 w-4 ml-1" />
-                        Tips
-                      </span>
+                    <button className="flex items-center gap-1 text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 p-2 rounded-full transition-all duration-300">
+                      <HelpCircle className="h-5 w-5" />
+                      <span className="hidden sm:inline font-medium">Tips</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs p-4">
-                    <p>Be specific about your achievements. Use action verbs and quantify results when possible.</p>
+                  <TooltipContent className="max-w-xs p-4 bg-white border border-purple-100 shadow-lg text-gray-700">
+                    <p className="font-medium text-gray-900 mb-2">💡 Writing Tips:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Be specific about your achievements</li>
+                      <li>Use action verbs to start each bullet point</li>
+                      <li>Quantify results when possible (e.g., "increased sales by 20%")</li>
+                      <li>Highlight leadership and teamwork skills</li>
+                    </ul>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <p className="text-gray-600">To get started, you can choose from our expert recommended examples below.</p>
-          </div>
+            <p className="text-gray-600 text-lg">To get started, you can choose from our expert recommended examples below.</p>
+          </motion.div>
           
           {/* Two Column Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Left Column - Examples */}
             <div>
-              <div className="mb-4">
+              <motion.div 
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="mb-6 transform transition-all hover:scale-[1.01] duration-300"
+              >
                 <h2 className="text-xs uppercase font-bold text-gray-600 mb-2">SEARCH BY JOB TITLE FOR PRE-WRITTEN EXAMPLES</h2>
-                <div className="relative" style={{ position: 'relative' }}>
-                  <Input 
-                    type="text"
-                    ref={searchInputRef}
-                    placeholder="Search by job title"
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    className="rounded-sm border-gray-300 pr-10"
-                    onFocus={() => {
-                      if (jobTitleSuggestions.length > 0) {
-                        setShowJobTitleSuggestions(true);
-                      }
-                    }}
-                  />
-                  {searchTerm ? (
-                    <button 
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      onClick={() => setSearchTerm('')}
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  ) : (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-600">
-                      <Search className="h-5 w-5" />
-                    </div>
-                  )}
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg opacity-50 group-hover:opacity-70 blur group-hover:blur-md transition duration-300"></div>
+                  <div className="relative bg-white rounded-lg">
+                    <Input 
+                      type="text"
+                      ref={searchInputRef}
+                      placeholder="Search by job title"
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                      className="rounded-lg border-gray-300 pr-10 py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
+                      onFocus={() => {
+                        if (jobTitleSuggestions.length > 0) {
+                          setShowJobTitleSuggestions(true);
+                        }
+                      }}
+                    />
+                    {searchTerm ? (
+                      <button 
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
+                        onClick={() => setSearchTerm('')}
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    ) : (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-600 animate-pulse">
+                        <Search className="h-5 w-5" />
+                      </div>
+                    )}
 
-                  {/* Job title suggestions dropdown positioned directly below search input */}
-                  {showJobTitleSuggestions && (
-                    <div 
-                      ref={suggestionsRef}
-                      className="absolute z-50 mt-1 w-full"
-                      style={{ top: '100%', left: 0 }}
-                    >
-                      <div className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                        <div className="py-1">
-                          {jobTitleSuggestions.length > 0 ? (
-                            jobTitleSuggestions.map((jobTitle: JobTitle) => (
-                              <button
-                                key={jobTitle.id}
-                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex justify-between items-center"
-                                onClick={async () => {
-                                  setSearchTerm(jobTitle.title);
-                                  setShowJobTitleSuggestions(false);
-                                  
-                                  // Update current job title in resume data
-                                  const updatedWorkExperience = [...(resumeData.workExperience || [])];
-                                  if (updatedWorkExperience.length > 0) {
-                                    // Update job title
-                                    updatedWorkExperience[0] = {
-                                      ...updatedWorkExperience[0],
-                                      jobTitle: jobTitle.title,
-                                      // Store the database ID to use directly in the descriptions API
-                                      // Ensure ID is stored as a number for API consistency
-                                      dbJobTitleId: typeof jobTitle.id === 'string' ? parseInt(jobTitle.id) : jobTitle.id
-                                    };
-                                    updateResumeData({ workExperience: updatedWorkExperience });
-                                    console.log(`Updated current job title to: ${jobTitle.title} (DB ID: ${jobTitle.id})`);
-                                    
-                                    // Immediately fetch the job descriptions for this title ID
-                                    setIsLoadingDescriptions(true);
-                                    try {
-                                      // Ensure consistent numeric ID type for API calls
-                                      const jobTitleIdForApi = typeof jobTitle.id === 'string' ? parseInt(jobTitle.id) : jobTitle.id;
-                                      const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`;
-                                      console.log(`Directly fetching descriptions from: ${descriptionsUrl}`, "ID type:", typeof jobTitleIdForApi);
-                                      
-                                      const response = await apiRequest('GET', descriptionsUrl);
-                                      const descriptionsData = await response.json();
-                                      
-                                      console.log(`Retrieved ${descriptionsData.length} descriptions directly for job title ID: ${jobTitle.id}`);
-                                      
-                                      if (descriptionsData.length > 0) {
-                                        setDescriptions(descriptionsData);
-                                      } else {
-                                        // Fallback to general descriptions if none found
-                                        // Pass the job title ID for prioritization, ensuring consistent numeric ID for API
-                                        const allResponse = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`);
-                                        const allDescriptionsData = await allResponse.json();
-                                        setDescriptions(allDescriptionsData);
-                                      }
-                                    } catch (error) {
-                                      console.error('Error fetching job descriptions:', error);
-                                    } finally {
-                                      setIsLoadingDescriptions(false);
-                                    }
-                                  }
-                                }}
-                              >
-                                <div>
-                                  <span className="font-medium">{jobTitle.title}</span>
-                                  <span className="text-xs text-gray-500 ml-2">({jobTitle.category})</span>
-                                </div>
-                              </button>
-                            ))
-                          ) : (
-                            <div className="px-4 py-2 text-sm text-gray-500">
-                              No job titles found matching your search
-                            </div>
-                          )}
+                    {/* Job title suggestions dropdown */}
+                    {showJobTitleSuggestions && (
+                      <div 
+                        ref={suggestionsRef}
+                        className="absolute z-50 mt-1 w-full"
+                        style={{ top: '100%', left: 0 }}
+                      >
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto backdrop-blur-sm bg-white/80">
+                          <div className="py-1">
+                            {jobTitleSuggestions.length > 0 ? (
+                              jobTitleSuggestions.map((jobTitle: JobTitle, index) => (
+                                <motion.div
+                                  key={jobTitle.id}
+                                  initial={{ opacity: 0, y: 5 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: index * 0.05 }}
+                                  className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
+                                  onClick={() => {
+                                    setSearchTerm(jobTitle.title);
+                                    setShowJobTitleSuggestions(false);
+                                  }}
+                                >
+                                  <div className="font-medium text-gray-900">{jobTitle.title}</div>
+                                  <div className="text-xs text-gray-500">{jobTitle.category}</div>
+                                </motion.div>
+                              ))
+                            ) : (
+                              <div className="px-4 py-3 text-sm text-gray-500">
+                                No suggestions found
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              </motion.div>
               
               {/* Related Job Titles */}
-              <div className="mb-4">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-sm font-medium mb-2">Related Job Titles</h2>
-                  <button className="text-purple-600 text-sm">
-                    More <ArrowRight className="h-3 w-3 inline-block" />
+              <motion.div 
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="mb-6 bg-white p-5 rounded-xl shadow-sm border border-gray-100"
+              >
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-base font-semibold text-gray-800">Related Job Titles</h2>
+                  <button className="text-purple-600 text-sm font-medium hover:text-purple-800 transition-colors duration-300 flex items-center gap-1 group">
+                    More <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform duration-300" />
                   </button>
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
-                  {relatedJobTitles.map((job: JobTitle) => (
-                    <button
+                  {relatedJobTitles.map((job: JobTitle, index) => (
+                    <motion.button
                       key={job.id}
-                      className="flex items-center border border-gray-300 rounded-md px-2 py-1 text-sm"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.3 + (index * 0.1) }}
+                      className="flex items-center border border-gray-200 rounded-full px-3 py-2 text-sm bg-gray-50 hover:bg-purple-50 hover:border-purple-200 transition-all duration-300"
                       onClick={async () => {
                         setSearchTerm(job.title);
                         
@@ -567,264 +579,170 @@ const JobDescriptionPage = () => {
                             updatedWorkExperience[0] = {
                               ...updatedWorkExperience[0],
                               jobTitle: job.title,
-                              // Store the database ID if found
-                              ...(dbJobTitleId && { dbJobTitleId })
+                              ...(dbJobTitleId ? { dbJobTitleId } : {})
                             };
-                            updateResumeData({ workExperience: updatedWorkExperience });
-                            console.log(`Updated current job title to: ${job.title}`);
                             
-                            // Fetch descriptions for this job title
-                            if (dbJobTitleId) {
-                              // If we have a database ID, use it directly
-                              // Ensure consistent numeric ID for API calls
-                              const jobTitleIdForApi = typeof dbJobTitleId === 'string' ? parseInt(dbJobTitleId) : dbJobTitleId;
-                              const descriptionsUrl = `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`;
-                              console.log(`Directly fetching descriptions from: ${descriptionsUrl}`, "ID type:", typeof jobTitleIdForApi);
-                              
-                              const response = await apiRequest('GET', descriptionsUrl);
-                              const descriptionsData = await response.json();
-                              
-                              console.log(`Retrieved ${descriptionsData.length} descriptions directly for job title ID: ${dbJobTitleId}`);
-                              
-                              if (descriptionsData.length > 0) {
-                                setDescriptions(descriptionsData);
-                              } else {
-                                // Fallback to general descriptions, but still prioritize this job title's descriptions
-                                // Continue to use the jobTitleIdForApi to ensure consistent numeric ID for API
-                                const allResponse = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`);
-                                const allDescriptionsData = await allResponse.json();
-                                setDescriptions(allDescriptionsData);
-                              }
-                            }
+                            updateResumeData({ workExperience: updatedWorkExperience });
+                            
                           } catch (error) {
-                            console.error('Error fetching job title data:', error);
+                            console.error("Error updating job title:", error);
                           } finally {
                             setIsLoadingDescriptions(false);
                           }
                         }
                       }}
                     >
-                      <Search className="h-3 w-3 mr-1 text-purple-600" />
-                      {job.title}
-                    </button>
+                      <span>{job.title}</span>
+                    </motion.button>
                   ))}
                 </div>
-              </div>
+              </motion.div>
               
-
-              
-              {/* Results heading */}
-              <div className="flex justify-between items-center mb-2">
-                <p className="text-sm text-gray-500">
-                  {showingResults} results for <span className="font-medium">{searchTerm || currentJob.jobTitle}</span>
-                </p>
-                <button className="text-purple-600 text-sm flex items-center">
-                  Filter by Keyword <ArrowRight className="h-3 w-3 ml-1" />
-                </button>
-              </div>
-              
-              {/* Examples list */}
-              <div className="border border-gray-200 rounded-sm divide-y divide-gray-200">
-                {isLoadingDescriptions ? (
-                  <div className="p-4 text-center text-gray-500">
-                    <svg className="animate-spin h-5 w-5 mx-auto mb-2 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Loading job descriptions...
+              {/* Job Descriptions List */}
+              <motion.div 
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 p-5"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="font-semibold">{showingResults} results for <span className="text-purple-600">{currentJob.jobTitle}</span></h2>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
+                      title="Clear search"
+                    >
+                      <Undo2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        // Refresh descriptions by forcing a fetch 
+                        setSearchTerm(searchTerm);
+                      }}
+                      className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
+                      title="Refresh results"
+                    >
+                      <RotateCw className="h-4 w-4" />
+                    </button>
                   </div>
-                ) : Array.isArray(descriptions) && descriptions.length > 0 ? (
-                  descriptions.map((description: any) => {
-                    console.log("Rendering description:", description);
-                    
-                    // Safety check to ensure we have valid description object
-                    if (!description || typeof description !== 'object') {
-                      console.error("Invalid description object:", description);
-                      return null;
-                    }
-                    
-                    // Get ID or use a fallback
-                    const descId = description.id || Math.random().toString(36).substring(2, 9);
-                    
-                    // Ensure content is a string
-                    const content = description.content && typeof description.content === 'string' 
-                      ? description.content 
-                      : "No description content available";
-                    
-                    // Use boolean for isRecommended
-                    const isRecommended = Boolean(description.isRecommended);
-                    
-                    return (
-                      <div key={descId} className="p-3 hover:bg-gray-50">
-                        <button 
-                          onClick={() => handleDescriptionClick(content)}
-                          className="flex items-start w-full text-left group"
-                        >
-                          <div className="mt-1 mr-2">
-                            <Plus className="h-4 w-4 text-purple-600 opacity-0 group-hover:opacity-100" />
-                          </div>
-                          <div>
-                            {isRecommended && (
-                              <div className="flex items-center text-xs text-purple-600 mb-1">
-                                <span className="text-purple-600 mr-1">★</span>
-                                Expert Recommended
-                              </div>
-                            )}
-                            <p className="text-sm">{content}</p>
-                          </div>
-                        </button>
-                      </div>
-                    );
-                  }).filter(Boolean) // Remove any null items from invalid descriptions
+                </div>
+                
+                {isLoadingDescriptions ? (
+                  <div className="p-6 flex justify-center items-center">
+                    <div className="relative w-12 h-12">
+                      <div className="absolute top-0 left-0 w-full h-full border-4 border-purple-200 rounded-full"></div>
+                      <div className="absolute top-0 left-0 w-full h-full border-4 border-t-purple-500 animate-spin rounded-full"></div>
+                    </div>
+                  </div>
                 ) : (
-                  <div className="p-4 text-center">
-                    <div className="mb-3">
-                      <p className="text-gray-500 mb-2">No specific descriptions found for "{currentJob.jobTitle}"</p>
-                      <p className="text-gray-500 text-sm">
-                        This could be due to a connection issue or because this job title doesn't have descriptions yet.
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <button 
-                        onClick={async () => {
-                          setIsLoadingDescriptions(true);
-                          try {
-                            // First try to fetch with current job title ID again
-                            if (currentJob.dbJobTitleId) {
-                              const jobTitleIdForApi = typeof currentJob.dbJobTitleId === 'string' 
-                                ? parseInt(currentJob.dbJobTitleId) 
-                                : currentJob.dbJobTitleId;
-                              
-                              console.log(`Re-attempting to fetch descriptions for job title ID: ${jobTitleIdForApi}`);
-                              const response = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${jobTitleIdForApi}`);
-                              const data = await response.json();
-                              
-                              if (data && data.length > 0) {
-                                console.log(`Successfully retrieved ${data.length} descriptions on retry`);
-                                setDescriptions(data);
-                                setIsLoadingDescriptions(false);
-                                return;
-                              }
-                            }
-                            
-                            // If that fails or no ID, get general descriptions
-                            console.log('Fetching generic job descriptions as fallback');
-                            const allResponse = await apiRequest('GET', '/api/jobs/descriptions?limit=200');
-                            const allDescriptionsData = await allResponse.json();
-                            setDescriptions(allDescriptionsData);
-                            setShowingResults(`${allDescriptionsData.length} generic`);
-                          } catch (error) {
-                            console.error('Error fetching fallback job descriptions:', error);
-                          } finally {
-                            setIsLoadingDescriptions(false);
-                          }
-                        }}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                      >
-                        Get Generic Suggestions
-                      </button>
-                      
-                      <button 
-                        onClick={async () => {
-                          setIsLoadingDescriptions(true);
-                          try {
-                            // Try to find a similar job title that might have descriptions
-                            const response = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(currentJob.jobTitle.split(' ')[0])}&limit=5`);
-                            const relatedTitles = await response.json();
-                            
-                            if (relatedTitles?.data?.length > 0) {
-                              // Find the first related title that isn't exactly the same
-                              const similarTitle = relatedTitles.data.find((t: any) => 
-                                t.title.toLowerCase() !== currentJob.jobTitle.toLowerCase()
-                              );
-                              
-                              if (similarTitle) {
-                                console.log(`Trying similar job title: ${similarTitle.title} (ID: ${similarTitle.id})`);
-                                const descResponse = await apiRequest('GET', `/api/jobs/descriptions?jobTitleId=${similarTitle.id}`);
-                                const descData = await descResponse.json();
-                                
-                                if (descData && descData.length > 0) {
-                                  setDescriptions(descData);
-                                  setShowingResults(`${descData.length} from similar title "${similarTitle.title}"`);
-                                } else {
-                                  // If still no descriptions, fall back to generic ones
-                                  const allResponse = await apiRequest('GET', '/api/jobs/descriptions?limit=100');
-                                  const allData = await allResponse.json();
-                                  setDescriptions(allData);
-                                  setShowingResults(`${allData.length} generic`);
-                                }
-                              }
-                            }
-                          } catch (error) {
-                            console.error('Error fetching similar job titles:', error);
-                          } finally {
-                            setIsLoadingDescriptions(false);
-                          }
-                        }}
-                        className="px-4 py-2 border border-purple-600 text-purple-600 rounded-md hover:bg-purple-50 transition-colors"
-                      >
-                        Try Similar Jobs
-                      </button>
-                    </div>
+                  <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 py-2">
+                    <motion.div 
+                      variants={containerVariants}
+                      initial="hidden"
+                      animate="visible"
+                      className="space-y-3"
+                    >
+                      {descriptions.map((description: any, index) => (
+                        <motion.div
+                          key={description.id || index}
+                          variants={itemVariants}
+                          className={`p-3 border ${description.isRecommended ? 'border-purple-200 bg-purple-50' : 'border-gray-200 bg-gray-50'} rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
+                          onClick={() => handleDescriptionClick(description.content)}
+                        >
+                          <div className="flex mb-1">
+                            {description.isRecommended && (
+                              <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full mr-1">
+                                Expert Recommended
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-gray-800 text-sm">
+                            {description.content}
+                          </p>
+                        </motion.div>
+                      ))}
+                    </motion.div>
                   </div>
                 )}
-              </div>
+                
+                {!isLoadingDescriptions && descriptions.length === 0 && (
+                  <div className="p-6 text-center">
+                    <p className="text-gray-500">No descriptions found. Try a different search term.</p>
+                  </div>
+                )}
+              </motion.div>
             </div>
             
-            {/* Right Column - Job Description Editor */}
-            <div>
-              <div className="mb-2">
-                <div className="text-sm text-gray-700">
-                  <span className="font-medium">{currentJob.jobTitle}</span> | {currentJob.employer}
+            {/* Right column - Job Description Textarea */}
+            <motion.div 
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
+            >
+              <div className="mb-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    {currentJob.employer} | {currentJob.jobTitle}
+                  </h2>
                 </div>
-                <div className="text-xs text-gray-500">
-                  {currentJob.startMonth} {currentJob.startYear} - {currentJob.endMonth} {currentJob.endYear}
-                </div>
+                <p className="text-gray-500 text-sm">
+                  {currentJob.startMonth} {currentJob.startYear} - {currentJob.isCurrentJob ? 'Present' : `${currentJob.endMonth} ${currentJob.endYear}`}
+                </p>
               </div>
               
-              <div className="mb-2">
-                <h2 className="text-sm font-medium">Job description:</h2>
-              </div>
+              <p className="text-sm text-gray-600 mb-3">Job description:</p>
               
-              {/* Text editor */}
-              <div className="border border-gray-300 rounded-sm mb-3">
-                <textarea
-                  value={jobResponsibilities}
-                  onChange={(e) => setJobResponsibilities(e.target.value)}
-                  placeholder="Type your achievements and responsibilities here."
-                  className="w-full h-52 p-3 text-sm resize-none focus:outline-none"
-                />
-                
-                {/* Editor toolbar */}
-                <div className="flex items-center border-t border-gray-300 p-2">
-                  <button className="p-1 text-gray-500 hover:text-gray-800">
-                    <Undo2 className="h-4 w-4" />
-                  </button>
-                  <button className="p-1 text-gray-500 hover:text-gray-800">
-                    <RotateCw className="h-4 w-4" />
-                  </button>
+              <div className="relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg opacity-30 blur"></div>
+                <div className="relative">
+                  <textarea
+                    className="w-full h-[300px] p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                    placeholder="Click on any example from the left to add it to your job description, or write your own."
+                    value={jobResponsibilities}
+                    onChange={(e) => setJobResponsibilities(e.target.value)}
+                  />
                 </div>
               </div>
               
-              {/* Navigation Buttons */}
-              <div className="flex justify-center items-center gap-6 mt-10">
-                <button 
+              {/* Character count and tips */}
+              <div className="flex justify-between items-center mt-3 text-sm">
+                <span className="text-gray-500">
+                  {jobResponsibilities.length} characters
+                </span>
+                <span className="text-purple-600">
+                  Use • to create bullet points
+                </span>
+              </div>
+              
+              {/* Navigation buttons */}
+              <div className="flex justify-between items-center mt-8">
+                <button
                   onClick={handlePreview}
-                  className="text-purple-600 hover:text-purple-800 border border-purple-600 hover:border-purple-800 font-medium rounded-full px-10 py-2.5 text-base w-28"
+                  className="text-purple-600 hover:text-purple-800 border border-purple-600 hover:border-purple-800 font-medium rounded-full px-10 py-2.5 text-base transition-colors duration-300 hover:bg-purple-50"
                 >
                   Preview
                 </button>
                 <button 
                   onClick={handleNext}
-                  className="bg-amber-400 hover:bg-amber-500 text-black font-medium rounded-full px-10 py-2.5 text-base w-28"
+                  className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium rounded-full px-10 py-2.5 text-base transition-colors duration-300 shadow-sm hover:shadow"
                 >
                   Next
                 </button>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </main>
+      
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 py-4 mt-10">
+        <div className="container mx-auto px-4 text-center text-sm text-gray-500">
+          © 2025 TbzResumeBuilder. All rights reserved.
+        </div>
+      </footer>
     </div>
   );
 };
