@@ -560,7 +560,14 @@ const EducationPage = () => {
                                         <button
                                           key={option.id}
                                           className="flex items-center gap-1 border border-purple-200 rounded-full px-3 py-2 bg-white hover:bg-purple-50 transition-colors duration-200"
-                                          onClick={() => addAchievement(category.type, option.label)}
+                                          onClick={() => {
+                                            // Instead of adding as an achievement, directly insert into description field
+                                            const currentText = currentEducation.description || '';
+                                            const newText = currentText ? `${currentText}\n• ${option.label}` : `• ${option.label}`;
+                                            handleEducationChange('description', newText);
+                                            // Close the section after inserting
+                                            setExpandedSection(null);
+                                          }}
                                         >
                                           <Plus className="h-4 w-4 text-purple-600" />
                                           <span className="text-sm">{option.label}</span>

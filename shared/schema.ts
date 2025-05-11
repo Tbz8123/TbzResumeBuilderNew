@@ -149,3 +149,51 @@ export type InsertJobTitle = z.infer<typeof jobTitleSchema>;
 
 export type JobDescription = typeof jobDescriptions.$inferSelect;
 export type InsertJobDescription = z.infer<typeof jobDescriptionSchema>;
+
+// Education Categories and Examples Schema
+export const educationCategories = pgTable("education_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description").notNull(),
+  type: text("type").notNull(), // Like 'achievement', 'prize', 'coursework', etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const educationExamples = pgTable("education_examples", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").references(() => educationCategories.id).notNull(),
+  content: text("content").notNull(),
+  isRecommended: boolean("is_recommended").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Relations
+export const educationCategoriesRelations = relations(educationCategories, ({ many }) => ({
+  examples: many(educationExamples),
+}));
+
+export const educationExamplesRelations = relations(educationExamples, ({ one }) => ({
+  category: one(educationCategories, {
+    fields: [educationExamples.categoryId],
+    references: [educationCategories.id],
+  }),
+}));
+
+// Schemas for validation
+export const educationCategorySchema = createInsertSchema(educationCategories, {
+  name: (schema) => schema.min(2, "Name must be at least 2 characters"),
+  description: (schema) => schema.min(10, "Description must be at least 10 characters"),
+  type: (schema) => schema.min(2, "Type must be at least 2 characters"),
+});
+
+export const educationExampleSchema = createInsertSchema(educationExamples, {
+  content: (schema) => schema.min(3, "Example content must be at least 3 characters"),
+});
+
+export type EducationCategory = typeof educationCategories.$inferSelect;
+export type InsertEducationCategory = z.infer<typeof educationCategorySchema>;
+
+export type EducationExample = typeof educationExamples.$inferSelect;
+export type InsertEducationExample = z.infer<typeof educationExampleSchema>;

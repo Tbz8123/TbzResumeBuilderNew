@@ -6,6 +6,7 @@ import exportRoutes from "./routes/export";
 import { triggerThumbnailRouter } from "./routes/triggerThumbnailUpdate";
 import { jobsRouter } from "./routes/jobs";
 import { jobCsvRouter } from "./routes/job-csv";
+import { educationRouter } from "./routes/education";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -16,6 +17,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/export", exportRoutes);
   app.use("/api/jobs", jobsRouter);
   app.use("/api/jobs", jobCsvRouter);
+  app.use("/api/education", educationRouter);
   
   // Register development/test routes
   app.use("/api/triggers", triggerThumbnailRouter);
