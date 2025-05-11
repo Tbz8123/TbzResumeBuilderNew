@@ -25,7 +25,7 @@ educationRouter.get("/categories", async (req, res) => {
 
     // Count total for pagination
     const totalCount = await db
-      .select({ count: db.sql`count(*)` })
+      .select({ count: db.$dynamic.count() })
       .from(educationCategories);
 
     res.json({

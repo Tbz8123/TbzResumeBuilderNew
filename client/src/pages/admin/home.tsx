@@ -88,6 +88,13 @@ const AdminHomePage = () => {
           color: 'bg-emerald-500'
         },
         {
+          title: 'Education Content',
+          description: 'Manage education categories and examples',
+          icon: <BookText className="h-5 w-5" />,
+          path: '/admin/education',
+          color: 'bg-blue-500'
+        },
+        {
           title: 'Job API Test',
           description: 'Test job descriptions API functionality',
           icon: <Server className="h-5 w-5" />,
