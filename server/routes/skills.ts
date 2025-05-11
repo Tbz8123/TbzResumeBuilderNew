@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@db";
 import { isAdmin, isAuthenticated } from "../auth";
-import { skills, skillCategories, skillSchema, skillCategorySchema, jobTitles } from "@shared/schema";
+import { skills, skillCategories, skillSchema, skillCategorySchema, jobTitles, jobTitleSkills } from "@shared/schema";
 import { eq, asc, desc, sql, and, like } from "drizzle-orm";
 import { z } from "zod";
 import { createObjectCsvStringifier } from "csv-writer";
@@ -42,6 +42,46 @@ skillsRouter.get("/categories", async (req, res) => {
   } catch (error) {
     console.error("Error fetching skill categories:", error);
     return res.status(500).json({ error: "Failed to fetch skill categories" });
+  }
+});
+
+// Get skills by job title ID
+skillsRouter.get("/by-job-title/:jobTitleId", async (req, res) => {
+  try {
+    const jobTitleId = parseInt(req.params.jobTitleId);
+    if (isNaN(jobTitleId)) {
+      return res.status(400).json({ error: "Invalid job title ID" });
+    }
+
+    // Get job title to verify it exists
+    const jobTitle = await db.query.jobTitles.findFirst({
+      where: eq(jobTitles.id, jobTitleId),
+    });
+
+    if (!jobTitle) {
+      return res.status(404).json({ error: "Job title not found" });
+    }
+
+    // Find all skills linked to this job title through the junction table
+    const skillMappings = await db.query.jobTitleSkills.findMany({
+      where: eq(jobTitleSkills.jobTitleId, jobTitleId),
+      with: {
+        skill: true
+      }
+    });
+
+    // Extract just the skills from the mappings
+    const linkedSkills = skillMappings.map(mapping => mapping.skill);
+
+    // Add cache control headers to prevent browser caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    return res.json(linkedSkills);
+  } catch (error) {
+    console.error(`Error fetching skills for job title ID ${req.params.jobTitleId}:`, error);
+    return res.status(500).json({ error: "Failed to fetch skills for this job title" });
   }
 });
 
@@ -277,8 +317,34 @@ skillsRouter.delete("/categories/:id", isAuthenticated, isAdmin, async (req, res
 // Create a new skill (admin only)
 skillsRouter.post("/", isAuthenticated, isAdmin, async (req, res) => {
   try {
-    const validatedData = skillSchema.parse(req.body);
+    // Extract job title ID from the request if present
+    const { jobTitleId, ...skillData } = req.body;
+    
+    // Validate the skill data
+    const validatedData = skillSchema.parse(skillData);
+    
+    // Create the skill
     const [newSkill] = await db.insert(skills).values(validatedData).returning();
+    
+    // If a job title ID was provided, create the relationship
+    if (jobTitleId) {
+      console.log(`Creating relationship between skill ${newSkill.id} and job title ${jobTitleId}`);
+      
+      try {
+        // Insert into the junction table to establish the many-to-many relationship
+        await db.insert(jobTitleSkills).values({
+          jobTitleId: jobTitleId,
+          skillId: newSkill.id,
+          isRecommended: true // New skills added to job titles are recommended by default
+        });
+        
+        console.log(`Successfully mapped skill to job title`);
+      } catch (mappingError) {
+        console.error("Error mapping skill to job title:", mappingError);
+        // We don't fail the entire operation if mapping fails, the skill is still created
+      }
+    }
+    
     return res.status(201).json(newSkill);
   } catch (error) {
     console.error("Error creating skill:", error);

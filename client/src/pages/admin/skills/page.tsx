@@ -394,19 +394,39 @@ export default function SkillsAdminPage() {
   
   const createSkillMutation = useMutation({
     mutationFn: async (data: z.infer<typeof skillSchema>) => {
-      const res = await apiRequest('POST', '/api/skills', data);
+      // Create enhanced data object with job title ID if we're in job title mode
+      const enhancedData = selectedJobTitle 
+        ? { 
+            ...data, 
+            jobTitleId: selectedJobTitle.id,  // Include job title ID for backend association
+          } 
+        : data;
+        
+      const res = await apiRequest('POST', '/api/skills', enhancedData);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/skills', selectedCategory?.id] });
+      // Invalidate both queries to refresh the data
+      if (selectedJobTitle) {
+        queryClient.invalidateQueries({ queryKey: ['/api/skills/by-job-title', selectedJobTitle.id] });
+      }
+      if (selectedCategory) {
+        queryClient.invalidateQueries({ queryKey: ['/api/skills', selectedCategory?.id] });
+      }
+      
       toast({
         title: "Success",
-        description: "Skill created successfully",
+        description: selectedJobTitle 
+          ? `Skill added to ${selectedJobTitle.title} successfully`
+          : "Skill created successfully",
       });
+      
       setSkillDialogOpen(false);
       skillForm.reset({
         name: "",
-        categoryId: selectedCategory?.id || 0,
+        categoryId: selectedJobTitle 
+          ? getCategoryIdForJobTitle(selectedJobTitle)
+          : selectedCategory?.id || 0,
         description: "",
         isRecommended: false,
       });
