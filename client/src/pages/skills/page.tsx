@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useResume, Skill } from '@/contexts/ResumeContext';
 import Logo from '@/components/Logo';
+import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { 
   ArrowLeft, 
   HelpCircle, 
@@ -28,60 +30,27 @@ import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 
-// Sample skill categories
-const SKILL_CATEGORIES = [
-  {
-    id: 'technical',
-    title: 'Technical',
-    skills: ['JavaScript', 'React', 'TypeScript', 'Python', 'SQL']
-  },
-  {
-    id: 'soft',
-    title: 'Soft Skills',
-    skills: ['Communication', 'Leadership', 'Teamwork', 'Problem Solving']
-  },
-  {
-    id: 'management',
-    title: 'Management',
-    skills: ['Project Management', 'Team Leadership', 'Strategic Planning']
-  },
-  {
-    id: 'tools',
-    title: 'Tools',
-    skills: ['Microsoft Office', 'Adobe Creative Suite', 'Figma', 'Git']
-  }
-];
+// Interface for API skill data
+interface APISkill {
+  id: number;
+  name: string;
+  description: string | null;
+  isRecommended: boolean | null;
+  categoryId: number;
+  categoryName?: string;
+  relevanceToJob?: 'high' | 'medium' | 'low';
+}
 
-// Get related skill categories
-const getRelatedSkillCategories = (currentSkill: string | null): string[] => {
-  if (!currentSkill) {
-    return ['Programming', 'Leadership', 'Communication', 'Teamwork'];
+// Extract job titles from work experience
+const extractJobTitles = (workExperience: any[]): string[] => {
+  if (!workExperience || workExperience.length === 0) {
+    return [];
   }
   
-  // Map of related skills
-  const relatedSkillsMap: Record<string, string[]> = {
-    'programming': ['javascript', 'react', 'python', 'web development'],
-    'leadership': ['team management', 'strategic planning', 'mentoring', 'decision making'],
-    'communication': ['presentation', 'writing', 'negotiation', 'customer service'],
-    'design': ['ui design', 'graphic design', 'figma', 'adobe creative suite'],
-  };
-  
-  // Try to match the current skill to a category
-  const lowerCaseSkill = currentSkill.toLowerCase();
-  let category = 'programming'; // Default
-  
-  for (const [key, _] of Object.entries(relatedSkillsMap)) {
-    if (lowerCaseSkill.includes(key)) {
-      category = key;
-      break;
-    }
-  }
-  
-  // Return the related skills
-  return relatedSkillsMap[category] || relatedSkillsMap['programming'];
+  return workExperience.map(job => job.jobTitle).filter(Boolean);
 };
 
-// Default skills to show
+// Default skills to show (fallback)
 const defaultSkills = [
   'Team Leadership',
   'Strategic Planning',
@@ -109,6 +78,29 @@ const SkillsPage = () => {
   const [activeTab, setActiveTab] = useState('text-editor');
   const [currentSkill, setCurrentSkill] = useState<Skill | null>(null);
   const [skillText, setSkillText] = useState('');
+  
+  // Extract the main job title from resume data
+  const jobTitles = extractJobTitles(resumeData.workExperience || []);
+  const primaryJobTitle = jobTitles[0] || '';
+  
+  // Fetch skills from API based on the primary job title
+  const { data: apiSkills, isLoading, error } = useQuery<APISkill[]>({
+    queryKey: ['/api/skills/by-job-title-name', primaryJobTitle],
+    queryFn: async () => {
+      if (!primaryJobTitle) {
+        return [];
+      }
+      const response = await fetch(`/api/skills/by-job-title-name/${encodeURIComponent(primaryJobTitle)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch skills');
+      }
+      return response.json();
+    },
+    enabled: !!primaryJobTitle, // Only run the query if we have a job title
+  });
+  
+  // Fallback to default skills when no API data is available
+  const availableSkills = apiSkills?.map(skill => skill.name) || defaultSkills;
   
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -139,12 +131,63 @@ const SkillsPage = () => {
   
   // Filter skills based on search term
   const filteredSkills = searchTerm.trim() !== ''
-    ? defaultSkills.filter(skill => 
+    ? availableSkills.filter(skill => 
         skill.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : defaultSkills.slice(0, 15);
+    : availableSkills.slice(0, 15);
   
-  const relatedSkills = getRelatedSkillCategories(searchTerm);
+  // Get skill categories from API data
+  const skillCategories = React.useMemo(() => {
+    if (!apiSkills) return [];
+    
+    const categories: Record<string, string[]> = {};
+    apiSkills.forEach(skill => {
+      const categoryName = skill.categoryName || 'Uncategorized';
+      if (!categories[categoryName]) {
+        categories[categoryName] = [];
+      }
+      categories[categoryName].push(skill.name);
+    });
+    
+    return Object.entries(categories).map(([name, skills]) => ({
+      id: name.toLowerCase().replace(/\s/g, '-'),
+      title: name,
+      skills: skills.slice(0, 5) // limit to 5 skills per category
+    }));
+  }, [apiSkills]);
+  
+  // Related skills based on categories or relevance
+  const relatedSkills = React.useMemo(() => {
+    if (apiSkills && apiSkills.length > 0) {
+      // Get skills with high relevance to job
+      const highRelevanceSkills = apiSkills
+        .filter(skill => skill.relevanceToJob === 'high')
+        .map(skill => skill.name)
+        .slice(0, 5);
+      
+      if (highRelevanceSkills.length >= 4) {
+        return highRelevanceSkills;
+      }
+      
+      // If not enough high relevance skills, add some from popular categories
+      const categoryNames = apiSkills
+        .map(s => s.categoryName)
+        .filter(Boolean) as string[];
+        
+      const popularCategoriesSet = new Set(categoryNames);
+      const popularCategories = Array.from(popularCategoriesSet).slice(0, 2);
+      
+      const additionalSkills = apiSkills
+        .filter(s => s.categoryName && popularCategories.includes(s.categoryName))
+        .map(s => s.name)
+        .slice(0, 5 - highRelevanceSkills.length);
+      
+      return [...highRelevanceSkills, ...additionalSkills];
+    }
+    
+    // Fallback if no API data
+    return ['Programming', 'Leadership', 'Communication', 'Teamwork', 'Problem Solving'];
+  }, [apiSkills, searchTerm]);
   
   // Navigation handlers
   const handleBack = () => {
@@ -376,10 +419,17 @@ const SkillsPage = () => {
                   className="mb-6"
                 >
                   <div className="flex justify-between items-center mb-3">
-                    <h2 className="text-base font-semibold text-gray-800">Related Skill Categories</h2>
-                    <button className="text-purple-600 text-sm font-medium hover:text-purple-800 transition-colors duration-300 flex items-center gap-1 group">
-                      More <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform duration-300" />
-                    </button>
+                    <h2 className="text-base font-semibold text-gray-800">
+                      {primaryJobTitle 
+                        ? `Skills Related to ${primaryJobTitle}` 
+                        : "Related Skill Categories"}
+                    </h2>
+                    {isLoading && (
+                      <div className="text-sm text-purple-600 flex items-center gap-1">
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                        Loading skills...
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
@@ -400,6 +450,42 @@ const SkillsPage = () => {
                     ))}
                   </div>
                 </motion.div>
+                
+                {/* Skill Categories from API */}
+                {skillCategories.length > 0 && (
+                  <motion.div 
+                    initial={{ y: 30, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.4, delay: 0.3 }}
+                    className="mb-6"
+                  >
+                    <div className="flex justify-between items-center mb-3">
+                      <h2 className="text-base font-semibold text-gray-800">Skill Categories</h2>
+                      <button className="text-purple-600 text-sm font-medium hover:text-purple-800 transition-colors duration-300 flex items-center gap-1 group">
+                        More <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform duration-300" />
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {skillCategories.slice(0, 3).map((category) => (
+                        <div key={category.id} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                          <h3 className="text-sm font-medium text-gray-700 mb-2">{category.title}</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {category.skills.map((skill) => (
+                              <button
+                                key={`${category.id}-${skill}`}
+                                className="text-xs bg-gray-50 hover:bg-purple-50 px-2 py-1 rounded border border-gray-200 hover:border-purple-200 transition-colors"
+                                onClick={() => handleSkillClick(skill)}
+                              >
+                                {skill}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
                 
                 {/* Results */}
                 <motion.div
