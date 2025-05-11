@@ -1,7 +1,7 @@
 import express from "express";
 import { db } from "../../db";
 import { isAuthenticated, isAdmin } from "../auth";
-import { skillCategories, skills, skillCategorySchema, skillSchema } from "../../shared/schema";
+import { skillCategories, skills, skillCategorySchema, skillSchema, jobTitles } from "../../shared/schema";
 import { eq, desc, and, asc, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -339,5 +339,90 @@ skillsRouter.delete("/:id", isAuthenticated, isAdmin, async (req, res) => {
   } catch (error) {
     console.error("Error deleting skill:", error);
     res.status(500).json({ error: "Failed to delete skill" });
+  }
+});
+
+// Get skills by job title (uses text search instead of ID reference)
+skillsRouter.get("/by-job-title-name/:jobTitle", async (req, res) => {
+  try {
+    const jobTitle = req.params.jobTitle;
+    
+    if (!jobTitle) {
+      return res.status(400).json({ error: "Job title is required" });
+    }
+    
+    // 1. First, try to find the job title in the database
+    const jobTitleRecord = await db.query.jobTitles.findFirst({
+      where: sql`LOWER(${jobTitles.title}) = LOWER(${jobTitle})`
+    });
+    
+    const jobTitleId = jobTitleRecord?.id;
+    console.log(`Found job title "${jobTitle}" with ID: ${jobTitleId || 'not found'}`);
+    
+    // 2. Get skills that match this job title (by name or category that sounds related)
+    const jobTitleLower = jobTitle.toLowerCase();
+    const results = await db.select().from(skills)
+      .where(
+        sql`LOWER(${skills.name}) LIKE ${'%' + jobTitleLower + '%'} OR 
+           EXISTS (
+             SELECT 1 FROM ${skillCategories} 
+             WHERE ${skillCategories.id} = ${skills.categoryId} 
+             AND LOWER(${skillCategories.name}) LIKE ${'%' + jobTitleLower + '%'}
+           )`
+      )
+      .orderBy(desc(skills.isRecommended), asc(skills.name))
+      .limit(50)
+      .execute();
+    
+    // 3. If no results, get recommended skills
+    let skillResults = results;
+    if (results.length < 10) {
+      console.log(`Limited results for "${jobTitle}", adding recommended skills`);
+      const recommendedSkills = await db.select().from(skills)
+        .where(eq(skills.isRecommended, true))
+        .orderBy(asc(skills.name))
+        .limit(40)
+        .execute();
+      
+      // Merge and deduplicate results
+      const existingIds = new Set(results.map(skill => skill.id));
+      const additionalSkills = recommendedSkills.filter(skill => !existingIds.has(skill.id));
+      
+      skillResults = [...results, ...additionalSkills].slice(0, 50);
+    }
+    
+    // 4. If still not enough, add general skills
+    if (skillResults.length < 10) {
+      console.log(`Still limited results, adding general skills`);
+      const generalSkills = await db.select().from(skills)
+        .orderBy(asc(skills.name))
+        .limit(50 - skillResults.length)
+        .execute();
+      
+      // Merge and deduplicate
+      const existingIds = new Set(skillResults.map(skill => skill.id));
+      const additionalSkills = generalSkills.filter(skill => !existingIds.has(skill.id));
+      
+      skillResults = [...skillResults, ...additionalSkills].slice(0, 50);
+    }
+    
+    // 5. Fetch categories for the skills to include in response
+    const skillsWithCategories = await Promise.all(
+      skillResults.map(async (skill) => {
+        const category = await db.query.skillCategories.findFirst({
+          where: eq(skillCategories.id, skill.categoryId)
+        });
+        return {
+          ...skill,
+          categoryName: category?.name || "Uncategorized",
+          relevanceToJob: skill.name.toLowerCase().includes(jobTitleLower) ? "high" : "medium"
+        };
+      })
+    );
+    
+    res.json(skillsWithCategories);
+  } catch (error) {
+    console.error("Error fetching skills by job title:", error);
+    res.status(500).json({ error: "Failed to fetch skills by job title" });
   }
 });
