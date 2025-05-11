@@ -197,3 +197,51 @@ export type InsertEducationCategory = z.infer<typeof educationCategorySchema>;
 
 export type EducationExample = typeof educationExamples.$inferSelect;
 export type InsertEducationExample = z.infer<typeof educationExampleSchema>;
+
+// Skills Categories and Skills Schema
+export const skillCategories = pgTable("skill_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const skills = pgTable("skills", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  categoryId: integer("category_id").references(() => skillCategories.id).notNull(),
+  description: text("description"),
+  isRecommended: boolean("is_recommended").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Relations
+export const skillCategoriesRelations = relations(skillCategories, ({ many }) => ({
+  skills: many(skills),
+}));
+
+export const skillsRelations = relations(skills, ({ one }) => ({
+  category: one(skillCategories, {
+    fields: [skills.categoryId],
+    references: [skillCategories.id],
+  }),
+}));
+
+// Schemas for validation
+export const skillCategorySchema = createInsertSchema(skillCategories, {
+  name: (schema) => schema.min(2, "Name must be at least 2 characters"),
+  description: (schema) => schema.min(5, "Description must be at least 5 characters"),
+});
+
+export const skillSchema = createInsertSchema(skills, {
+  name: (schema) => schema.min(2, "Name must be at least 2 characters"),
+  description: (schema) => schema.optional(),
+});
+
+export type SkillCategory = typeof skillCategories.$inferSelect;
+export type InsertSkillCategory = z.infer<typeof skillCategorySchema>;
+
+export type Skill = typeof skills.$inferSelect;
+export type InsertSkill = z.infer<typeof skillSchema>;
