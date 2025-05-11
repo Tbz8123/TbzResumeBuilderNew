@@ -260,12 +260,37 @@ const EducationPage = () => {
     }
   };
   
-  // Save on unmount
+  // Save on unmount with updated education data
   useEffect(() => {
-    return () => {
-      saveEducation();
+    // Define the cleanup function inside to capture the latest state
+    const saveOnUnmount = () => {
+      if (currentEducation.institution.trim()) {
+        const updatedEducation = [...(resumeData.education || [])];
+        
+        // Combine achievements with education description
+        const achievementsText = achievements.map(a => `• ${a.title}`).join('\n');
+        const fullDescription = currentEducation.description 
+          ? (achievementsText ? `${currentEducation.description}\n\n${achievementsText}` : currentEducation.description)
+          : achievementsText;
+          
+        const updatedEntry = {
+          ...currentEducation,
+          description: fullDescription
+        };
+        
+        // Update or add the education entry based on editIndex
+        if (editIndex >= 0 && editIndex < updatedEducation.length) {
+          updatedEducation[editIndex] = updatedEntry;
+        } else {
+          updatedEducation.push(updatedEntry);
+        }
+        
+        updateResumeData({ education: updatedEducation });
+      }
     };
-  }, []);
+    
+    return saveOnUnmount;
+  }, [currentEducation, achievements, editIndex, resumeData.education, updateResumeData]);
   
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-blue-50">

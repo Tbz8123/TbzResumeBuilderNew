@@ -76,8 +76,9 @@ const EducationSummaryPage = () => {
     // Save to context and navigate to education page
     updateResumeData({ education: updatedEducation });
     
-    // Navigate to the education page - when it loads, it will show the first education entry
-    setLocation('/education');
+    // Navigate to the education page with the index of the newly added education entry
+    const newIndex = updatedEducation.length - 1;
+    setLocation(`/education?index=${newIndex}`);
   };
   
   const handleAiAssistance = () => {
