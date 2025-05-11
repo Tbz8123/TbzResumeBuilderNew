@@ -538,7 +538,7 @@ const SkillsPage = () => {
                         </h2>
                         <div className="space-y-6">
                           {currentSkill ? (
-                            <div className="p-6 mb-6">
+                            <div className="mb-6">
                               <h3 className="font-medium text-lg mb-4">
                                 Rate your proficiency: <span className="text-purple-600">{currentSkill.name}</span>
                               </h3>
