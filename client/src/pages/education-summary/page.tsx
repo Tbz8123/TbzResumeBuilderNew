@@ -48,8 +48,8 @@ const EducationSummaryPage = () => {
   };
   
   const handleEditEducation = (index: number) => {
-    // Navigate to education page (we can't pass id since we don't have one in ResumeContext)
-    setLocation('/education');
+    // Navigate to education page with the specified index
+    setLocation(`/education?index=${index}`);
   };
   
   const handleDeleteEducation = (index: number) => {

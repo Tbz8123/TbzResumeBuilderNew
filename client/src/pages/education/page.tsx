@@ -96,12 +96,32 @@ const EducationPage = () => {
   // For tracking achievements separately (not in the original Education interface)
   const [achievements, setAchievements] = useState<EducationAchievement[]>([]);
   
-  // Initialize education state from resumeData or with a default
-  const [currentEducation, setCurrentEducation] = useState<Education>(
-    resumeData.education && resumeData.education.length > 0
-      ? resumeData.education[0]
-      : defaultEducation
-  );
+  // Get the education index from URL if present
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const urlIndex = searchParams.get('index');
+  
+  // Current education data - Use the specified index or default to the last entry if adding new
+  const [editIndex, setEditIndex] = useState(() => {
+    if (urlIndex) {
+      const index = parseInt(urlIndex);
+      return isNaN(index) ? 0 : index;
+    }
+    return resumeData.education.length > 0 ? resumeData.education.length - 1 : 0;
+  });
+  
+  // Initialize education state from resumeData at the specified index or with a default
+  const [currentEducation, setCurrentEducation] = useState<Education>(() => {
+    if (resumeData.education && resumeData.education.length > 0) {
+      if (urlIndex) {
+        const index = parseInt(urlIndex);
+        if (!isNaN(index) && index >= 0 && index < resumeData.education.length) {
+          return resumeData.education[index];
+        }
+      }
+      return resumeData.education[resumeData.education.length - 1]; // Default to most recent entry
+    }
+    return defaultEducation;
+  });
   
   // State for expanded sections
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -202,13 +222,15 @@ const EducationPage = () => {
         description: fullDescription
       };
       
-      // Find if we already have an education entry
-      if (updatedEducation.length > 0) {
-        // Update the first education entry
-        updatedEducation[0] = updatedEntry;
+      // Check if we're editing an existing education or adding a new one
+      if (editIndex >= 0 && editIndex < updatedEducation.length) {
+        // Update existing education entry at the specified index
+        updatedEducation[editIndex] = updatedEntry;
       } else {
         // Add new education
         updatedEducation.push(updatedEntry);
+        // Update edit index to point to the newly added education
+        setEditIndex(updatedEducation.length - 1);
       }
       
       updateResumeData({ education: updatedEducation });
