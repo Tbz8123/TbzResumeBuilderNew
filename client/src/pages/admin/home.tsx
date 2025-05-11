@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { AnimatedSection, AnimatedItem } from '@/components/AnimatedSection';
-import { FileText, Users, Settings, Code, Layers, LayoutGrid, FileEdit, Plus, Database, Palette, Server, Shield, Briefcase, BookText, Star } from 'lucide-react';
+import { FileText, Users, Settings, Code, Layers, LayoutGrid, FileEdit, Plus, Database, Palette, Server, Shield, Briefcase, BookText } from 'lucide-react';
 
 const AdminHomePage = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -93,13 +93,6 @@ const AdminHomePage = () => {
           icon: <BookText className="h-5 w-5" />,
           path: '/admin/education',
           color: 'bg-blue-500'
-        },
-        {
-          title: 'Skills Management',
-          description: 'Manage skill categories and skills',
-          icon: <Star className="h-5 w-5" />,
-          path: '/admin/skills',
-          color: 'bg-cyan-500'
         },
         {
           title: 'Job API Test',
