@@ -637,7 +637,7 @@ const JobDescriptionPage = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 py-2">
+                  <div className="space-y-3 py-2">
                     <motion.div 
                       variants={containerVariants}
                       initial="hidden"
@@ -680,7 +680,7 @@ const JobDescriptionPage = () => {
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
+              className="p-6"
             >
               <div className="mb-4">
                 <div className="flex justify-between items-center">

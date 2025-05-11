@@ -431,7 +431,7 @@ const SkillsPage = () => {
                     </div>
                   </div>
                   
-                  <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 py-2">
+                  <div className="space-y-3 py-2">
                     <motion.div 
                       variants={containerVariants}
                       initial="hidden"
