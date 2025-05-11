@@ -99,7 +99,7 @@ const PersonalInformationPage = () => {
   };
   
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-blue-50">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-blue-50 relative overflow-auto">
       {/* Success notification */}
       <AnimatePresence>
         {showSuccessMessage && (
@@ -116,14 +116,14 @@ const PersonalInformationPage = () => {
       </AnimatePresence>
       
       {/* Header with logo */}
-      <header className="py-4 border-b border-gray-100 bg-white shadow-sm">
+      <header className="py-4 border-b border-gray-100 bg-white shadow-sm sticky top-0 z-10">
         <div className="container mx-auto px-4">
           <Logo size="medium" />
         </div>
       </header>
       
       {/* Main content */}
-      <div className="flex-1 max-w-[1200px] mx-auto px-4 py-8">
+      <div className="flex-1 max-w-[1200px] mx-auto px-4 py-8 overflow-visible">
         {/* Back button */}
         <div className="mb-6">
           <button 
@@ -334,7 +334,7 @@ const PersonalInformationPage = () => {
               </div>
               
               {/* Additional Information Section */}
-              <div>
+              <div className="mb-14">
                 <div className="flex items-center mb-4">
                   <span className="text-sm text-gray-700">Add additional information to your resume</span>
                   <span className="text-xs text-gray-500 ml-1">(optional)</span>
@@ -346,25 +346,25 @@ const PersonalInformationPage = () => {
                 <div className="flex flex-wrap gap-3">
                   {/* LinkedIn Button */}
                   {activeAdditionalInfo.includes('linkedin') ? (
-                    <div className="flex gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg">
-                      <label className="text-sm text-gray-700">LinkedIn:</label>
+                    <div className="flex flex-wrap gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2">
+                      <label className="text-sm text-gray-700 whitespace-nowrap">LinkedIn:</label>
                       <input
                         type="text"
                         value={additionalInfoInputs.linkedin || ''}
                         onChange={(e) => handleAdditionalInfoChange('linkedin', e.target.value)}
                         placeholder="Your LinkedIn URL"
-                        className="border border-gray-200 p-1 text-sm rounded"
+                        className="border border-gray-200 p-1 text-sm rounded flex-1 min-w-[150px]"
                       />
                       <button
                         onClick={() => handleRemoveAdditionalInfo('linkedin')}
-                        className="p-1 text-red-500 hover:text-red-700 rounded-full"
+                        className="p-1 text-red-500 hover:text-red-700 rounded-full ml-1"
                       >
                         <X size={16} />
                       </button>
                     </div>
                   ) : (
                     <button
-                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm"
+                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm mb-2"
                       onClick={() => handleAddAdditionalInfo('linkedin')}
                     >
                       LinkedIn
@@ -374,25 +374,25 @@ const PersonalInformationPage = () => {
                   
                   {/* Website Button */}
                   {activeAdditionalInfo.includes('website') ? (
-                    <div className="flex gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg">
-                      <label className="text-sm text-gray-700">Website:</label>
+                    <div className="flex flex-wrap gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2">
+                      <label className="text-sm text-gray-700 whitespace-nowrap">Website:</label>
                       <input
                         type="text"
                         value={additionalInfoInputs.website || ''}
                         onChange={(e) => handleAdditionalInfoChange('website', e.target.value)}
                         placeholder="Your website URL"
-                        className="border border-gray-200 p-1 text-sm rounded"
+                        className="border border-gray-200 p-1 text-sm rounded flex-1 min-w-[150px]"
                       />
                       <button
                         onClick={() => handleRemoveAdditionalInfo('website')}
-                        className="p-1 text-red-500 hover:text-red-700 rounded-full"
+                        className="p-1 text-red-500 hover:text-red-700 rounded-full ml-1"
                       >
                         <X size={16} />
                       </button>
                     </div>
                   ) : (
                     <button
-                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm"
+                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm mb-2"
                       onClick={() => handleAddAdditionalInfo('website')}
                     >
                       Website
@@ -402,25 +402,25 @@ const PersonalInformationPage = () => {
                   
                   {/* Driving License Button */}
                   {activeAdditionalInfo.includes('drivingLicense') ? (
-                    <div className="flex gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg">
-                      <label className="text-sm text-gray-700">Driving License:</label>
+                    <div className="flex flex-wrap gap-2 items-center border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2">
+                      <label className="text-sm text-gray-700 whitespace-nowrap">Driving License:</label>
                       <input
                         type="text"
                         value={additionalInfoInputs.drivingLicense || ''}
                         onChange={(e) => handleAdditionalInfoChange('drivingLicense', e.target.value)}
                         placeholder="Your license details"
-                        className="border border-gray-200 p-1 text-sm rounded"
+                        className="border border-gray-200 p-1 text-sm rounded flex-1 min-w-[150px]"
                       />
                       <button
                         onClick={() => handleRemoveAdditionalInfo('drivingLicense')}
-                        className="p-1 text-red-500 hover:text-red-700 rounded-full"
+                        className="p-1 text-red-500 hover:text-red-700 rounded-full ml-1"
                       >
                         <X size={16} />
                       </button>
                     </div>
                   ) : (
                     <button
-                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm"
+                      className="border border-[#450da5] text-[#450da5] bg-white hover:bg-purple-50 px-4 py-1.5 rounded-full text-sm font-normal flex items-center shadow-sm mb-2"
                       onClick={() => handleAddAdditionalInfo('drivingLicense')}
                     >
                       Driving licence
@@ -432,20 +432,20 @@ const PersonalInformationPage = () => {
             </div>
             
             {/* Navigation Buttons */}
-            <div className="mt-20 flex justify-between">
+            <div className="pt-10 pb-4 flex flex-col sm:flex-row justify-between gap-4 sticky bottom-0 bg-gradient-to-t from-blue-50 to-transparent z-10">
               <Button
                 variant="default"
                 onClick={() => {}}
-                className="bg-[#400b92] hover:bg-[#33076c] text-white rounded-full px-8 py-2 font-normal"
+                className="bg-[#400b92] hover:bg-[#33076c] text-white rounded-full px-8 py-2 font-normal shadow-lg hover:shadow-xl transition-all"
               >
                 Optional: Personal details
               </Button>
               
-              <div className="flex gap-4">
+              <div className="flex gap-4 flex-wrap justify-end">
                 <Button
                   variant="outline"
                   onClick={handlePreview}
-                  className="border border-gray-400 bg-white hover:bg-gray-50 text-gray-800 rounded-full px-8 py-2 font-normal"
+                  className="border border-gray-400 bg-white hover:bg-gray-50 text-gray-800 rounded-full px-8 py-2 font-normal shadow-lg hover:shadow-xl transition-all"
                 >
                   Preview
                 </Button>
@@ -453,7 +453,7 @@ const PersonalInformationPage = () => {
                 <Button
                   variant="default"
                   onClick={handleNext}
-                  className="bg-[#ffc431] hover:bg-[#ffbb1c] text-black font-normal rounded-full px-8 py-2"
+                  className="bg-[#ffc431] hover:bg-[#ffbb1c] text-black font-normal rounded-full px-8 py-2 shadow-lg hover:shadow-xl transition-all"
                 >
                   Next: Work history
                 </Button>
