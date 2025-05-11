@@ -373,7 +373,7 @@ const SkillsPage = () => {
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.4, delay: 0.2 }}
-                  className="mb-6 bg-white p-5 rounded-xl shadow-sm border border-gray-100"
+                  className="mb-6"
                 >
                   <div className="flex justify-between items-center mb-3">
                     <h2 className="text-base font-semibold text-gray-800">Related Skill Categories</h2>
@@ -406,7 +406,7 @@ const SkillsPage = () => {
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.4, delay: 0.3 }}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-5"
+                  className="mb-6"
                 >
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="font-semibold">{filteredSkills.length} results</h2>
@@ -442,9 +442,14 @@ const SkillsPage = () => {
                         <motion.div
                           key={`${skill}-card-${index}`}
                           variants={itemVariants}
-                          className={`p-3 border border-gray-200 bg-gray-50 rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
+                          className={`p-3 border border-gray-200 ${index < 3 ? 'bg-purple-50' : 'bg-gray-50'} rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
                           onClick={() => handleSkillClick(skill)}
                         >
+                          {index < 3 && (
+                            <div className="text-xs text-purple-700 font-medium mb-1">
+                              Expert Recommended
+                            </div>
+                          )}
                           <p className="text-gray-800 text-sm">
                             {skill}
                           </p>
@@ -533,7 +538,7 @@ const SkillsPage = () => {
                         </h2>
                         <div className="space-y-6">
                           {currentSkill ? (
-                            <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
+                            <div className="p-6 mb-6">
                               <h3 className="font-medium text-lg mb-4">
                                 Rate your proficiency: <span className="text-purple-600">{currentSkill.name}</span>
                               </h3>
@@ -546,15 +551,21 @@ const SkillsPage = () => {
                               <div className="flex justify-between items-center mb-4">
                                 {[1, 2, 3, 4, 5].map((level) => (
                                   <button
+                                    type="button"
                                     key={level}
-                                    onClick={() => handleSkillRating(currentSkill, level)}
-                                    className={`flex flex-col items-center ${
+                                    onClick={() => {
+                                      // Update in state
+                                      handleSkillRating(currentSkill, level);
+                                      // Force rerender by creating a new object
+                                      setCurrentSkill({...currentSkill, level});
+                                    }}
+                                    className={`flex flex-col items-center cursor-pointer ${
                                       level <= (currentSkill.level || 0) ? "text-yellow-500" : "text-gray-300"
                                     }`}
                                   >
                                     <Star
                                       className={`h-10 w-10 ${
-                                        level <= (currentSkill.level || 0) ? "fill-yellow-500" : ""
+                                        level <= (currentSkill.level || 0) ? "fill-yellow-500 text-yellow-500" : ""
                                       }`}
                                     />
                                     <span className="text-xs mt-1">{level}</span>
