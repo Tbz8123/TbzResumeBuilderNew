@@ -144,10 +144,11 @@ skillsRouter.delete("/categories/:id", isAuthenticated, isAdmin, async (req, res
   }
 });
 
-// Get all skills (optionally filtered by category)
+// Get all skills (optionally filtered by category or job title)
 skillsRouter.get("/", async (req, res) => {
   try {
     const categoryId = req.query.categoryId ? parseInt(req.query.categoryId as string) : undefined;
+    const jobTitleId = req.query.jobTitleId ? parseInt(req.query.jobTitleId as string) : undefined;
     const search = req.query.search as string | undefined;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
     const page = req.query.page ? parseInt(req.query.page as string) : 1;
@@ -160,6 +161,11 @@ skillsRouter.get("/", async (req, res) => {
       query = query.where(eq(skills.categoryId, categoryId));
     }
     
+    // Apply job title filter if provided
+    if (jobTitleId) {
+      query = query.where(eq(skills.jobTitleId, jobTitleId));
+    }
+    
     // Apply search filter if provided
     if (search) {
       query = query.where(sql`LOWER(${skills.name}) LIKE LOWER(${'%' + search + '%'})`);
@@ -169,6 +175,9 @@ skillsRouter.get("/", async (req, res) => {
     const countQuery = db.select({ count: sql`COUNT(*)` }).from(skills);
     if (categoryId) {
       countQuery.where(eq(skills.categoryId, categoryId));
+    }
+    if (jobTitleId) {
+      countQuery.where(eq(skills.jobTitleId, jobTitleId));
     }
     if (search) {
       countQuery.where(sql`LOWER(${skills.name}) LIKE LOWER(${'%' + search + '%'})`);
