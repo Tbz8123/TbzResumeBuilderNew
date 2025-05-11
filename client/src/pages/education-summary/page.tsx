@@ -47,19 +47,16 @@ const EducationSummaryPage = () => {
     setLocation('/preview');
   };
   
-  const handleEditEducation = (id: string | undefined) => {
-    if (id) {
-      // Navigate to education page with this education entry selected
-      setLocation(`/education?id=${id}`);
-    }
+  const handleEditEducation = (index: number) => {
+    // Navigate to education page (we can't pass id since we don't have one in ResumeContext)
+    setLocation('/education');
   };
   
-  const handleDeleteEducation = (id: string | undefined) => {
-    if (id) {
-      // Filter out the education with the given id
-      const updatedEducation = resumeData.education.filter(edu => edu.id !== id);
-      updateResumeData({ ...resumeData, education: updatedEducation });
-    }
+  const handleDeleteEducation = (index: number) => {
+    // Remove education at the specified index
+    const updatedEducation = [...resumeData.education];
+    updatedEducation.splice(index, 1);
+    updateResumeData({ ...resumeData, education: updatedEducation });
   };
   
   const handleAddNewEducation = () => {
@@ -217,7 +214,7 @@ const EducationSummaryPage = () => {
             {validEducations.length > 0 ? (
               validEducations.map((edu, index) => (
                 <motion.div 
-                  key={edu.id || index} 
+                  key={index} 
                   className="border border-gray-200 bg-white rounded-xl p-6 relative shadow-sm hover:shadow-md transition-all duration-300"
                   variants={item}
                   whileHover={{ 
@@ -236,9 +233,9 @@ const EducationSummaryPage = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="font-semibold text-xl text-gray-800">{edu.degree}</h3>
-                        <p className="font-medium text-indigo-600">{edu.fieldOfStudy}</p>
+                        <p className="font-medium text-indigo-600">{edu.institution}</p>
                         <p className="text-gray-600">
-                          {edu.schoolName}{edu.schoolLocation ? `, ${edu.schoolLocation}` : ''} | {edu.graduationMonth} {edu.graduationYear}
+                          {edu.location ? `${edu.location} | ` : ''}{edu.startDate} - {edu.endDate}
                         </p>
                       </div>
                       <div className="flex space-x-3">
@@ -269,27 +266,7 @@ const EducationSummaryPage = () => {
                       </div>
                     )}
                     
-                    {edu.achievements && edu.achievements.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="font-medium text-gray-800 mb-2">Achievements & Activities</h4>
-                        <ul className="list-disc pl-5 space-y-2">
-                          {edu.achievements.map((achievement, i) => (
-                            <motion.li 
-                              key={achievement.id || i} 
-                              className="text-gray-700"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 0.1 * i }}
-                            >
-                              <span className="font-medium">{achievement.title}</span>
-                              {achievement.description && (
-                                <span> - {achievement.description}</span>
-                              )}
-                            </motion.li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    {/* Education entry has no achievements field in ResumeContext */}
                     
                     <motion.button 
                       onClick={() => handleEditEducation(edu.id)}
