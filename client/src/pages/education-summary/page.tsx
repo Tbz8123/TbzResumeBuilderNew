@@ -240,7 +240,7 @@ const EducationSummaryPage = () => {
                       </div>
                       <div className="flex space-x-3">
                         <motion.button 
-                          onClick={() => handleEditEducation(edu.id)}
+                          onClick={() => handleEditEducation(index)}
                           className="text-blue-600 hover:text-blue-800 bg-blue-50 p-2 rounded-full hover:bg-blue-100 transition-colors duration-200"
                           aria-label="Edit education"
                           whileHover={{ scale: 1.1 }}
@@ -249,7 +249,7 @@ const EducationSummaryPage = () => {
                           <Edit className="h-4 w-4" />
                         </motion.button>
                         <motion.button 
-                          onClick={() => handleDeleteEducation(edu.id)}
+                          onClick={() => handleDeleteEducation(index)}
                           className="text-red-600 hover:text-red-800 bg-red-50 p-2 rounded-full hover:bg-red-100 transition-colors duration-200"
                           aria-label="Delete education"
                           whileHover={{ scale: 1.1 }}
@@ -269,7 +269,7 @@ const EducationSummaryPage = () => {
                     {/* Education entry has no achievements field in ResumeContext */}
                     
                     <motion.button 
-                      onClick={() => handleEditEducation(edu.id)}
+                      onClick={() => handleEditEducation(index)}
                       className="text-blue-600 hover:text-blue-800 text-sm mt-4 flex items-center hover:underline transition-all duration-200"
                       whileHover={{ x: 5 }}
                     >
