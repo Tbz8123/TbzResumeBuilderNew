@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useResume, Skill } from '@/contexts/ResumeContext';
 import Logo from '@/components/Logo';
-import { ArrowLeft, HelpCircle, ChevronDown, Plus, Search, Star, X, Minus, ArrowRight, RotateCw, Undo2 } from 'lucide-react';
+import { ArrowLeft, HelpCircle, ChevronDown, Plus, Search, Star, X, Minus, ArrowRight, RotateCw, Undo2, Bold, Italic, Underline, List, TerminalSquare } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 
 // Sample skills by category
@@ -86,10 +87,12 @@ const SkillsPage = () => {
   const [currentSkill, setCurrentSkill] = useState<Skill | null>(null);
   const [skillDescription, setSkillDescription] = useState('');
   const [showingResults, setShowingResults] = useState('0');
+  const [activeTab, setActiveTab] = useState('text-editor');
   
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   
   // Animation variants
   const containerVariants = {
@@ -235,6 +238,14 @@ const SkillsPage = () => {
   const editSkill = (skill: Skill) => {
     setCurrentSkill(skill);
     setShowRatingUI(true);
+    setActiveTab('skills-rating');
+  };
+  
+  // Add one more skill (used in rating view)
+  const addOneMore = () => {
+    setActiveTab('text-editor');
+    setShowRatingUI(false);
+    setCurrentSkill(null);
   };
   
   // Save skills to resume context
@@ -327,17 +338,17 @@ const SkillsPage = () => {
                 transition={{ duration: 0.4, delay: 0.1 }}
                 className="mb-6 transform transition-all hover:scale-[1.01] duration-300"
               >
-                <h2 className="text-xs uppercase font-bold text-gray-600 mb-2">SEARCH FOR SKILLS</h2>
+                <h2 className="text-xs uppercase font-bold text-purple-800 mb-2">SEARCH BY SKILL FOR PRE-WRITTEN EXAMPLES</h2>
                 <div className="relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg opacity-50 group-hover:opacity-70 blur group-hover:blur-md transition duration-300"></div>
-                  <div className="relative bg-white rounded-lg">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-lg opacity-60 group-hover:opacity-100 blur-md group-hover:blur-lg transition duration-300"></div>
+                  <div className="relative bg-white rounded-lg shadow-lg">
                     <Input 
                       type="text"
                       ref={searchInputRef}
                       placeholder="Search skills (e.g. JavaScript, Leadership)"
                       value={searchTerm}
                       onChange={handleSearchChange}
-                      className="rounded-lg border-gray-300 pr-10 py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
+                      className="rounded-lg border-purple-200 pr-10 py-7 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white shadow-inner text-lg"
                       onFocus={() => {
                         if (filteredSkills.length > 0) {
                           setShowSkillSuggestions(true);
@@ -346,7 +357,7 @@ const SkillsPage = () => {
                     />
                     {searchTerm ? (
                       <button 
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-500 hover:text-purple-700 transition-colors duration-300"
                         onClick={() => setSearchTerm('')}
                       >
                         <X className="h-5 w-5" />
@@ -511,95 +522,189 @@ const SkillsPage = () => {
               </motion.div>
             </div>
             
-            {/* Right column - Skill Rating and Custom Addition */}
+            {/* Right column - Tabbed interface for Text Editor and Skills Rating */}
             <motion.div 
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="space-y-6"
+              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
             >
-              {/* Custom Skill Input */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                  Add Custom Skill
-                </h2>
-                
-                <div className="relative mb-4">
-                  <div className="absolute -inset-0.5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg opacity-30 blur"></div>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Enter a custom skill (e.g. Public Speaking)"
-                      value={skillDescription}
-                      onChange={(e) => setSkillDescription(e.target.value)}
-                      className="border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent py-6 bg-white"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex justify-end">
-                  <Button
-                    onClick={addCustomSkill}
-                    disabled={!skillDescription.trim()}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
-                  >
-                    <Plus className="mr-1 h-4 w-4" /> Add Skill
-                  </Button>
-                </div>
+              {/* Tabs */}
+              <div className="flex border-b">
+                <button
+                  onClick={() => setActiveTab("text-editor")}
+                  className={cn(
+                    "flex-1 px-6 py-3 text-center font-medium transition-colors",
+                    activeTab === "text-editor" 
+                      ? "text-indigo-600 border-b-2 border-indigo-600" 
+                      : "text-gray-600 hover:text-indigo-500"
+                  )}
+                >
+                  Text Editor
+                </button>
+                <button
+                  onClick={() => setActiveTab("skills-rating")}
+                  className={cn(
+                    "flex-1 px-6 py-3 text-center font-medium transition-colors",
+                    activeTab === "skills-rating" 
+                      ? "text-indigo-600 border-b-2 border-indigo-600" 
+                      : "text-gray-600 hover:text-indigo-500"
+                  )}
+                >
+                  Skills Rating
+                </button>
               </div>
               
-              {/* Skill Rating UI */}
-              {showRatingUI && currentSkill && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
-                >
-                  <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                    Rate Your Proficiency
-                  </h2>
-                  
-                  <div className="text-center mb-6">
-                    <div className="font-medium text-xl mb-2">{currentSkill.name}</div>
-                    <p className="text-gray-500">How would you rate your skill level?</p>
-                  </div>
-                  
-                  <div className="flex justify-center items-center space-x-2 mb-6">
-                    <Minus className="h-4 w-4 text-gray-400" />
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          onClick={() => setSkillRating(currentSkill, rating)}
-                          className={`h-10 w-10 ${
-                            rating <= currentSkill.level
-                              ? 'text-yellow-400'
-                              : 'text-gray-300'
-                          } transition-colors duration-200`}
-                        >
-                          <Star className="h-full w-full fill-current" />
-                        </button>
-                      ))}
+              {/* Tab Content */}
+              {activeTab === "text-editor" ? (
+                <div className="p-6">
+                  <div className="mb-4">
+                    <h3 className="font-medium text-gray-700 mb-2">Skills:</h3>
+                    <div className="relative">
+                      <div className="absolute -inset-0.5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg opacity-30 blur"></div>
+                      <div className="relative">
+                        <div
+                          ref={editorRef}
+                          contentEditable
+                          className="min-h-[300px] focus:outline-none border border-gray-200 rounded-md p-4 bg-white empty:before:content-['Add_your_skills_here...'] empty:before:text-gray-400 empty:before:italic"
+                        ></div>
+                      </div>
                     </div>
-                    <Plus className="h-4 w-4 text-gray-400" />
                   </div>
+
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center space-x-2">
+                      <button className="p-2 border border-gray-200 rounded hover:bg-gray-50">
+                        <Bold className="h-4 w-4" />
+                      </button>
+                      <button className="p-2 border border-gray-200 rounded hover:bg-gray-50">
+                        <Italic className="h-4 w-4" />
+                      </button>
+                      <button className="p-2 border border-gray-200 rounded hover:bg-gray-50">
+                        <Underline className="h-4 w-4" />
+                      </button>
+                      <button className="p-2 border border-gray-200 rounded hover:bg-gray-50">
+                        <List className="h-4 w-4" />
+                      </button>
+                      <button className="p-2 border border-gray-200 rounded hover:bg-gray-50 bg-indigo-50 text-indigo-600">
+                        <span className="font-bold text-xs">AB</span>
+                      </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button className="p-2 border border-gray-200 rounded hover:bg-gray-50">
+                        <svg className="h-4 w-4 rotate-180" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M5 12H19M5 12L11 6M5 12L11 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                      <button className="p-2 border border-gray-200 rounded hover:bg-gray-50">
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col mt-5">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-700 font-medium">Skills: {selectedSkills.length}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          addCustomSkill();
+                        }}
+                        className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-md hover:from-purple-600 hover:to-indigo-700 transition-colors shadow-sm"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Enhance with AI</span>
+                        </div>
+                      </button>
+                    </div>
+                    
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+                      <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: `${Math.min(100, selectedSkills.length * 10)}%` }}></div>
+                    </div>
+                    
+                    <div className="flex justify-end mt-1">
+                      <button className="flex items-center text-indigo-600 text-sm">
+                        <span className="h-5 w-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-800 mr-1">?</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6">
+                  {/* Skills Rating View */}
+                  {showRatingUI && currentSkill ? (
+                    <div>
+                      <div className="flex items-start mb-8">
+                        <button className="p-1 rounded-full bg-indigo-600 text-white">
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <div className="flex ml-3">
+                          {[1, 2, 3, 4, 5].map((rating) => (
+                            <Star
+                              key={rating}
+                              onClick={() => setSkillRating(currentSkill, rating)}
+                              className={`h-8 w-8 ${
+                                rating <= currentSkill.level
+                                  ? 'text-indigo-600 fill-current'
+                                  : 'text-gray-300'
+                              } cursor-pointer`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="border border-indigo-600 rounded-md p-4 mb-4">
+                        <div className="font-medium text-xl">{currentSkill.name}</div>
+                      </div>
+                      
+                      <div className="flex justify-end mt-8">
+                        <Button
+                          onClick={addOneMore}
+                          variant="outline"
+                          className="border-indigo-600 text-indigo-600 hover:bg-indigo-50"
+                        >
+                          <Plus className="mr-1 h-4 w-4" /> Add one more
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 text-gray-500">
+                      Select a skill to rate or add a new skill from the left panel.
+                    </div>
+                  )}
                   
-                  <div className="grid grid-cols-5 w-full text-xs text-gray-500 px-4 mb-6">
-                    <div className="text-center">Beginner</div>
-                    <div className="text-center">Basic</div>
-                    <div className="text-center">Intermediate</div>
-                    <div className="text-center">Advanced</div>
-                    <div className="text-center">Expert</div>
+                  {/* Skills Progress Bar */}
+                  <div className="flex flex-col mt-16">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-700 font-medium">Skills: {selectedSkills.length}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+                      <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: `${Math.min(100, selectedSkills.length * 10)}%` }}></div>
+                    </div>
+                    
+                    <div className="flex justify-end mt-1">
+                      <button className="flex items-center text-indigo-600 text-sm">
+                        <span className="h-5 w-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-800 mr-1">?</span>
+                      </button>
+                    </div>
                   </div>
-                </motion.div>
+                </div>
               )}
-              
-              {/* Selected Skills Display */}
+            </motion.div>
+            
+            {/* Selected Skills Display (Below Tabs) */}
+            {selectedSkills.length > 0 && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
+                className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-6"
               >
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-gray-800">
@@ -610,59 +715,28 @@ const SkillsPage = () => {
                   </Badge>
                 </div>
                 
-                {selectedSkills.length > 0 ? (
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                    {selectedSkills.map((skill) => (
-                      <motion.div
-                        key={skill.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex justify-between items-center p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
+                <div className="flex flex-wrap gap-2">
+                  {selectedSkills.map((skill) => (
+                    <Badge 
+                      key={skill.id} 
+                      className="bg-purple-100 text-purple-800 hover:bg-purple-200 px-3 py-1.5 flex items-center gap-1"
+                      onClick={() => editSkill(skill)}
+                    >
+                      {skill.name} ({skill.level}/5)
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeSkill(skill.id);
+                        }}
+                        className="ml-1 text-purple-600 hover:text-purple-800 cursor-pointer"
                       >
-                        <div className="flex items-center">
-                          <div className="font-medium">{skill.name}</div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <div className="flex">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`h-4 w-4 ${
-                                  star <= skill.level 
-                                    ? 'text-yellow-400 fill-current' 
-                                    : 'text-gray-300'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          
-                          <div className="flex gap-1">
-                            <div
-                              onClick={() => editSkill(skill)}
-                              className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-50 cursor-pointer"
-                            >
-                              <Star className="h-4 w-4" />
-                            </div>
-                            <div
-                              onClick={() => removeSkill(skill.id)}
-                              className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 cursor-pointer"
-                            >
-                              <X className="h-4 w-4" />
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    No skills added yet. Search or type a custom skill to add it to your resume.
-                  </div>
-                )}
+                        <X className="h-3 w-3" />
+                      </div>
+                    </Badge>
+                  ))}
+                </div>
               </motion.div>
-            </motion.div>
+            )}
           </div>
           
           {/* Navigation Buttons */}
