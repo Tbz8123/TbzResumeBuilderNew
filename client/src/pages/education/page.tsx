@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
-import { useResume } from '@/contexts/ResumeContext';
+import { useResume, Education } from '@/contexts/ResumeContext';
 import Logo from '@/components/Logo';
 import { ArrowLeft, HelpCircle, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import {
@@ -19,8 +19,15 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Education, EducationAchievement } from '@/types/resume';
 import { v4 as uuidv4 } from 'uuid';
+
+// Define achievement interface
+interface EducationAchievement {
+  id?: string;
+  type: 'achievement' | 'prize' | 'coursework' | 'activity' | 'study_abroad' | 'apprenticeship' | 'project';
+  title: string;
+  description?: string;
+}
 
 // List of degrees
 const degreeOptions = [
@@ -143,16 +150,16 @@ const EducationPage = () => {
   
   // Get current education or initialize if none exists
   const defaultEducation: Education = {
-    id: uuidv4(),
-    schoolName: '',
-    schoolLocation: '',
+    institution: '',
+    location: '',
     degree: '',
-    fieldOfStudy: '',
-    graduationMonth: '',
-    graduationYear: '',
-    description: '',
-    achievements: []
+    startDate: '',
+    endDate: '',
+    description: ''
   };
+  
+  // For tracking achievements separately (not in the original Education interface)
+  const [achievements, setAchievements] = useState<EducationAchievement[]>([]);
   
   // Initialize education state from resumeData or with a default
   const [currentEducation, setCurrentEducation] = useState<Education>(

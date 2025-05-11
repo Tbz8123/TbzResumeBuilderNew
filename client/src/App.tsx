@@ -93,7 +93,8 @@ function App() {
                        location.startsWith("/work-history") ||
                        location.startsWith("/work-experience-details") ||
                        location.startsWith("/job-description") ||
-                       location.startsWith("/work-history-summary");
+                       location.startsWith("/work-history-summary") ||
+                       location.startsWith("/education");
   
   const isAdminPage = location.startsWith("/admin");
   
