@@ -121,6 +121,7 @@ export default function SkillsAdminPage() {
   const [jobTitleTotalPages, setJobTitleTotalPages] = useState(1);
   const [skillJobTitleTotalPages, setSkillJobTitleTotalPages] = useState(1);
   const [useSkillJobTitles, setUseSkillJobTitles] = useState(false); // Toggle between job titles and skill job titles
+  const [isCopyingJobTitles, setIsCopyingJobTitles] = useState(false);
   
   // Dialog state
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
@@ -631,6 +632,31 @@ export default function SkillsAdminPage() {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+  
+  // Mutation to copy job titles from jobs page to skills page
+  const copyJobTitlesMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/skills/copy-job-titles', {});
+      return await res.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/skills/job-titles'] });
+      
+      toast({
+        title: "Success",
+        description: `Successfully copied ${result.stats.created} job titles (${result.stats.skipped} already existed)`,
+      });
+      setIsCopyingJobTitles(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsCopyingJobTitles(false);
     },
   });
 
