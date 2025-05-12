@@ -551,6 +551,88 @@ export default function SkillsAdminPage() {
       });
     },
   });
+  
+  // Skill Job Title Mutations
+  const createSkillJobTitleMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof skillJobTitleSchema>) => {
+      const res = await apiRequest('POST', '/api/skills/job-titles', data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/skills/job-titles'] });
+      toast({
+        title: "Success",
+        description: "Skill job title created successfully",
+      });
+      setSkillJobTitleDialogOpen(false);
+      skillJobTitleForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const updateSkillJobTitleMutation = useMutation({
+    mutationFn: async (data: SkillJobTitle) => {
+      const res = await apiRequest('PUT', `/api/skills/job-titles/${data.id}`, data);
+      return await res.json();
+    },
+    onSuccess: (updatedJobTitle) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/skills/job-titles'] });
+      
+      // If this is the selected job title, update it
+      if (selectedSkillJobTitle?.id === updatedJobTitle.id) {
+        setSelectedSkillJobTitle(updatedJobTitle);
+      }
+      
+      toast({
+        title: "Success",
+        description: "Skill job title updated successfully",
+      });
+      setSkillJobTitleDialogOpen(false);
+      setEditingSkillJobTitle(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const deleteSkillJobTitleMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest('DELETE', `/api/skills/job-titles/${id}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/skills/job-titles'] });
+      
+      // Clear selection if the deleted job title was selected
+      if (selectedSkillJobTitle?.id === deletingSkillJobTitle?.id) {
+        setSelectedSkillJobTitle(null);
+      }
+      
+      toast({
+        title: "Success",
+        description: "Skill job title deleted successfully",
+      });
+      setDeleteSkillJobTitleDialogOpen(false);
+      setDeletingSkillJobTitle(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Handle data export in different formats
   const handleExportData = async (format: 'csv' | 'excel' | 'json') => {
