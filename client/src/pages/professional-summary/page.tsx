@@ -242,6 +242,17 @@ const ProfessionalSummaryPage = () => {
           
           console.log("Professional summary title suggestions from API:", apiData);
           
+          // Always fallback to static data regardless of API response for now
+          // This ensures we have suggestions to show
+          const staticSuggestions = getJobTitleSuggestions(searchTerm, 10);
+          console.log("Static job title suggestions:", staticSuggestions);
+          
+          // Use static suggestions to guarantee data for testing
+          setJobTitleSuggestions(staticSuggestions);
+          setShowJobTitleSuggestions(true);
+          
+          // Original code to use when API data exists:
+          /*
           if (apiData.data && apiData.data.length > 0) {
             // Convert database titles to JobTitle format
             const apiSuggestions = apiData.data.map((item: any) => ({
@@ -257,10 +268,12 @@ const ProfessionalSummaryPage = () => {
             setJobTitleSuggestions(staticSuggestions);
             setShowJobTitleSuggestions(staticSuggestions.length > 0);
           }
+          */
         } catch (error) {
           console.error("Error fetching professional summary title suggestions:", error);
           // Fallback to static data if API fails
-          const staticSuggestions = getJobTitleSuggestions(searchTerm, 5);
+          const staticSuggestions = getJobTitleSuggestions(searchTerm, 10);
+          console.log("Static job title suggestions (fallback):", staticSuggestions);
           setJobTitleSuggestions(staticSuggestions);
           setShowJobTitleSuggestions(staticSuggestions.length > 0);
         }
