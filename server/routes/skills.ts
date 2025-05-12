@@ -1365,3 +1365,28 @@ skillsRouter.delete("/job-titles/:skillJobTitleId/skills/:skillId", isAuthentica
     return res.status(500).json({ error: "Failed to remove skill from skill job title" });
   }
 });
+// Search for skills by exact name (used for checking existing skills)
+skillsRouter.get("/search", async (req, res) => {
+  try {
+    const nameQuery = req.query.name as string;
+    
+    if (!nameQuery) {
+      return res.status(400).json({ error: "Name query parameter is required" });
+    }
+    
+    console.log(`Searching for skills with exact name: "${nameQuery}"`);
+    
+    // Find skills with exact name match (case insensitive)
+    const matchingSkills = await db.select()
+      .from(skills)
+      .where(sql`LOWER(${skills.name}) = LOWER(${nameQuery})`)
+      .limit(5);
+    
+    console.log(`Found ${matchingSkills.length} skills matching name "${nameQuery}"`);
+    
+    return res.json(matchingSkills);
+  } catch (error) {
+    console.error(`Error searching for skills by name "${req.query.name}":`, error);
+    return res.status(500).json({ error: "Failed to search for skills" });
+  }
+});

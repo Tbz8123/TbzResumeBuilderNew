@@ -505,24 +505,87 @@ export default function SkillsAdminPage() {
       // If we're associating with a skill job title, use a different endpoint
       if (useSkillJobTitles && selectedSkillJobTitle) {
         console.log(`Creating skill for skill job title: ${selectedSkillJobTitle.id} - ${selectedSkillJobTitle.title}`);
-        // We'll use the skill job title specific endpoint
-        const res = await apiRequest('POST', '/api/skills', skillData);
-        const newSkill = await res.json();
         
-        // After creating the skill, create the association with the skill job title
-        if (newSkill && newSkill.id) {
-          console.log(`Creating association between skill ${newSkill.id} and skill job title ${selectedSkillJobTitle.id}`);
-          const associationRes = await apiRequest(
-            'POST', 
-            `/api/skills/job-titles/${selectedSkillJobTitle.id}/skills`,
-            { 
-              skillId: newSkill.id,
-              isRecommended: data.isRecommended || false 
+        // First, check if a skill with this name already exists
+        console.log(`Checking if skill with name "${skillData.name}" already exists`);
+        try {
+          // Check for existing skills with this name
+          const checkRes = await apiRequest('GET', `/api/skills/search?name=${encodeURIComponent(skillData.name)}`);
+          const existingSkills = await checkRes.json();
+          
+          let skillId;
+          
+          if (existingSkills && existingSkills.length > 0) {
+            // Use the existing skill
+            console.log(`Found existing skill with name "${skillData.name}", ID: ${existingSkills[0].id}`);
+            skillId = existingSkills[0].id;
+          } else {
+            // Create a new skill
+            const createRes = await apiRequest('POST', '/api/skills', skillData);
+            const newSkill = await createRes.json();
+            skillId = newSkill.id;
+            console.log(`Created new skill with name "${skillData.name}", ID: ${skillId}`);
+          }
+          
+          if (skillId) {
+            // Create the association with the skill job title
+            console.log(`Creating association between skill ${skillId} and skill job title ${selectedSkillJobTitle.id}`);
+            try {
+              const associationRes = await apiRequest(
+                'POST', 
+                `/api/skills/job-titles/${selectedSkillJobTitle.id}/skills`,
+                { 
+                  skillId: skillId,
+                  isRecommended: data.isRecommended || false 
+                }
+              );
+              
+              // Return a successful result with the skill data
+              return {
+                id: skillId,
+                name: skillData.name,
+                categoryId: skillData.categoryId,
+                description: skillData.description,
+                isRecommended: data.isRecommended || false
+              };
+            } catch (associationError) {
+              // Handle the case where the association already exists
+              if (associationError.message && associationError.message.includes('already exists')) {
+                console.log(`Association already exists between skill ${skillId} and job title ${selectedSkillJobTitle.id}`);
+                
+                // Update the existing association instead
+                try {
+                  const updateRes = await apiRequest(
+                    'PUT', 
+                    `/api/skills/job-titles/${selectedSkillJobTitle.id}/skills/${skillId}`,
+                    { isRecommended: data.isRecommended || false }
+                  );
+                  console.log(`Updated existing association for skill ${skillId}`);
+                  
+                  // Return a successful result
+                  return {
+                    id: skillId,
+                    name: skillData.name,
+                    categoryId: skillData.categoryId,
+                    description: skillData.description,
+                    isRecommended: data.isRecommended || false
+                  };
+                } catch (updateError) {
+                  console.error("Error updating association:", updateError);
+                  throw new Error("Failed to update skill association");
+                }
+              }
+              
+              console.error("Error creating association:", associationError);
+              throw new Error("Failed to associate skill with job title");
             }
-          );
-          return newSkill;
+          }
+          
+          throw new Error("Failed to create or find skill");
+        } catch (error) {
+          console.error("Error in skill creation process:", error);
+          throw error;
         }
-        return newSkill;
       } else if (selectedJobTitle) {
         // For regular job titles, we'll pass the jobTitleId as a query parameter
         console.log(`Creating skill for job title: ${selectedJobTitle.id} - ${selectedJobTitle.title}`);
