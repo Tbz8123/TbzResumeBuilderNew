@@ -555,7 +555,7 @@ const ProfessionalSummaryPage = () => {
                           >
                             <div className="flex mb-1">
                               {item.isRecommended && (
-                                <span className="text-xs text-purple-600 font-medium px-2 py-0.5 mr-1">
+                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full mr-1">
                                   Expert Recommended
                                 </span>
                               )}
@@ -581,7 +581,7 @@ const ProfessionalSummaryPage = () => {
                           >
                             <div className="flex mb-1">
                               {id <= 2 && (
-                                <span className="text-xs text-purple-600 font-medium px-2 py-0.5 mr-1">
+                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full mr-1">
                                   Expert Recommended
                                 </span>
                               )}
@@ -604,11 +604,11 @@ const ProfessionalSummaryPage = () => {
                 {/* Right Column - Text Editor */}
                 <div>
                   <h3 className="text-gray-700 mb-2">Professional summary:</h3>
-                  <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-400 rounded-lg opacity-70 group-hover:opacity-90 blur-md group-hover:blur-lg transition duration-300"></div>
-                    <div className="relative bg-white rounded-lg">
+                  <div className="relative">
+                    <div className="absolute -inset-0.5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg opacity-30 blur"></div>
+                    <div className="relative">
                       <textarea 
-                        className="w-full min-h-[300px] p-4 text-gray-800 border-0 rounded-lg shadow-inner focus:outline-none resize-none"
+                        className="w-full min-h-[300px] p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                         placeholder="Click on any example from the left to add it to your professional summary, or write your own."
                         value={professionalSummary}
                         onChange={(e) => setProfessionalSummary(e.target.value)}
