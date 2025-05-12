@@ -481,38 +481,58 @@ export default function SkillsAdminPage() {
   const createSkillMutation = useMutation({
     mutationFn: async (data: z.infer<typeof skillSchema>) => {
       // Create enhanced data object with job title ID if we're in job title mode
-      const enhancedData = selectedJobTitle 
-        ? { 
-            ...data, 
-            jobTitleId: selectedJobTitle.id,  // Include job title ID for backend association
-          } 
-        : data;
+      let enhancedData = data;
+      
+      // Handle regular job title association
+      if (selectedJobTitle) {
+        enhancedData = { 
+          ...data, 
+          jobTitleId: selectedJobTitle.id,  // Include job title ID for backend association
+        };
+      }
+      
+      // Handle skill job title association
+      if (useSkillJobTitles && selectedSkillJobTitle) {
+        enhancedData = { 
+          ...data, 
+          skillJobTitleId: selectedSkillJobTitle.id,  // Include skill job title ID for backend association
+        };
+      }
         
       const res = await apiRequest('POST', '/api/skills', enhancedData);
       return await res.json();
     },
     onSuccess: () => {
-      // Invalidate both queries to refresh the data
-      if (selectedJobTitle) {
+      // Invalidate the appropriate queries to refresh the data
+      if (useSkillJobTitles && selectedSkillJobTitle) {
+        // Invalidate the skill job title skills query
+        queryClient.invalidateQueries({ queryKey: ['/api/skills/by-skill-job-title', selectedSkillJobTitle.id] });
+      } else if (selectedJobTitle) {
+        // Invalidate the job title skills query
         queryClient.invalidateQueries({ queryKey: ['/api/skills/by-job-title', selectedJobTitle.id] });
       }
       if (selectedCategory) {
+        // Invalidate the category skills query
         queryClient.invalidateQueries({ queryKey: ['/api/skills', selectedCategory?.id] });
       }
       
       toast({
         title: "Success",
-        description: selectedJobTitle 
-          ? `Skill added to ${selectedJobTitle.title} successfully`
-          : "Skill created successfully",
+        description: useSkillJobTitles && selectedSkillJobTitle
+          ? `Skill added to ${selectedSkillJobTitle.title} successfully`
+          : selectedJobTitle 
+            ? `Skill added to ${selectedJobTitle.title} successfully`
+            : "Skill created successfully",
       });
       
       setSkillDialogOpen(false);
       skillForm.reset({
         name: "",
-        categoryId: selectedJobTitle 
-          ? getCategoryIdForJobTitle(selectedJobTitle)
-          : selectedCategory?.id || 0,
+        categoryId: useSkillJobTitles && selectedSkillJobTitle
+          ? getCategoryIdForJobTitle(selectedSkillJobTitle)
+          : selectedJobTitle 
+            ? getCategoryIdForJobTitle(selectedJobTitle)
+            : selectedCategory?.id || 0,
         description: "",
         isRecommended: false,
       });
@@ -1362,7 +1382,9 @@ export default function SkillsAdminPage() {
               <div className="p-4 border-b">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                   <h3 className="text-lg font-semibold">
-                    {selectedJobTitle ? (
+                    {useSkillJobTitles && selectedSkillJobTitle ? (
+                      <>🛠️ Skills for "{selectedSkillJobTitle.title}"</>
+                    ) : selectedJobTitle ? (
                       <>🛠️ Skills for "{selectedJobTitle.title}"</>
                     ) : (
                       <>🛠️ Skills</>
@@ -1400,7 +1422,7 @@ export default function SkillsAdminPage() {
                       onClick={() => {
                         setSearchQuery('');
                       }}
-                      disabled={!selectedJobTitle || !searchQuery}
+                      disabled={!(selectedJobTitle || (useSkillJobTitles && selectedSkillJobTitle)) || !searchQuery}
                     >
                       <RefreshCw className="h-4 w-4 mr-1" />
                       Clear Search
@@ -1413,7 +1435,7 @@ export default function SkillsAdminPage() {
                         setEditingSkill(null);
                         setSkillDialogOpen(true);
                       }}
-                      disabled={!selectedJobTitle}
+                      disabled={!(selectedJobTitle || (useSkillJobTitles && selectedSkillJobTitle))}
                       className="bg-purple-600 hover:bg-purple-700"
                     >
                       <Plus className="h-4 w-4 mr-1" />
