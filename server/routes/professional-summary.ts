@@ -510,13 +510,35 @@ professionalSummaryRouter.get("/export/excel", isAuthenticated, isAdmin, async (
 });
 
 // Import professional summary titles and descriptions from CSV (admin only)
-professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, async (req, res) => {
+professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.single('file'), async (req, res) => {
   try {
-    if (!req.body.csvData) {
-      return res.status(400).json({ error: "No CSV data provided" });
+    // Reset import status
+    importStatus = {
+      inProgress: true,
+      total: 0,
+      processed: 0,
+      successful: 0,
+      failed: 0,
+      errors: [],
+      isComplete: false
+    };
+    importStatusEmitter.emit('update', importStatus);
+    
+    if (!req.file) {
+      importStatus.isComplete = true;
+      importStatus.inProgress = false;
+      importStatus.errors.push("No file uploaded");
+      importStatusEmitter.emit('update', importStatus);
+      return res.status(400).json({ error: "No file uploaded" });
     }
     
-    const csvData = req.body.csvData;
+    const filePath = req.file.path;
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    
+    // Clean up the file after reading
+    fs.unlinkSync(filePath);
+    
+    const csvData = fileContent;
     
     // Parse CSV data
     const records = parse(csvData, {
