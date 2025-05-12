@@ -293,6 +293,24 @@ skillsRouter.get("/by-skill-job-title/:skillJobTitleId", async (req, res) => {
     if (linkedSkills.length < 10) {
       console.log(`Not enough skills for ${skillJobTitle.title}, adding generic skills`);
       
+      try {
+        // Find the original job title from the jobs table to get its category
+        const originalJobTitle = await db.query.jobTitles.findFirst({
+          where: sql`LOWER(${jobTitles.title}) LIKE LOWER(${'%' + skillJobTitle.title + '%'})`,
+        });
+
+        if (originalJobTitle) {
+          console.log(`Found job title: ${originalJobTitle.title}, category: ${originalJobTitle.category}`);
+          // Get skill categories that might be relevant for this job title
+          const relevantCategoryIds = await getRelevantCategoriesForJobTitle(originalJobTitle);
+          console.log(`Filtering skills by categories: ${relevantCategoryIds.join(', ')}`);
+        } else {
+          console.log(`Could not find matching job title for ${skillJobTitle.title}`);
+        }
+      } catch (err) {
+        console.error("Error looking up original job title:", err);
+      }
+      
       // Get skill categories that might be relevant for this job
       const relevantCategoryIds = await getRelevantCategoriesForJobTitle(skillJobTitle);
       
@@ -499,6 +517,8 @@ async function getRelevantCategoriesForJobTitle(jobTitle: any): Promise<number[]
   const defaultCategoryIds = [1, 2]; // Assuming categories 1, 2 are common (technical, soft skills)
   
   try {
+    console.log(`Finding relevant categories for job title: "${jobTitle.title}", category: "${jobTitle.category}"`);
+    
     // Map job categories to potential skill categories
     const jobCategory = (jobTitle.category || '').toLowerCase();
     const categoryMappings: Record<string, string[]> = {
@@ -535,9 +555,20 @@ async function getRelevantCategoriesForJobTitle(jobTitle: any): Promise<number[]
     relevantCategoryNames = [...new Set(relevantCategoryNames)];
     
     // Get the actual category IDs from the database that match these names
-    const categories = await db.query.skillCategories.findMany({
-      where: sql`LOWER(${skillCategories.name}) IN (${relevantCategoryNames.join(',')})`,
-    });
+    // We need to use LIKE clauses for each category name instead of IN to avoid SQL injection
+    let categoryQuery = db.select().from(skillCategories);
+    
+    if (relevantCategoryNames.length > 0) {
+      // Create a condition for each category name using OR
+      const conditions = relevantCategoryNames.map(name => 
+        sql`LOWER(${skillCategories.name}) LIKE LOWER(${'%' + name + '%'})`
+      );
+      
+      // Combine with OR for our final WHERE clause
+      categoryQuery = categoryQuery.where(sql`(${sql.join(conditions, sql` OR `)})`);
+    }
+    
+    const categories = await categoryQuery;
     
     // Extract the category IDs
     const categoryIds = categories.map(c => c.id);
