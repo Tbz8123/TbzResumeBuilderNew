@@ -207,6 +207,8 @@ const SkillsPage = () => {
     try {
       let endpoint = `/api/skills`;
       let skillData: ApiSkill[] = [];
+      let recommendedSkills: ApiSkill[] = [];
+      let standardSkills: ApiSkill[] = [];
       
       // If we have a job title ID, use the dedicated endpoint to get associated skills
       if (jobTitleId) {
@@ -215,6 +217,12 @@ const SkillsPage = () => {
         
         if (response.ok) {
           skillData = await response.json();
+          
+          // Separate skills into recommended and standard
+          recommendedSkills = skillData.filter(skill => skill.isRecommended);
+          standardSkills = skillData.filter(skill => !skill.isRecommended);
+          
+          console.log(`Found ${recommendedSkills.length} recommended and ${standardSkills.length} standard skills`);
         }
       }
       
@@ -233,26 +241,34 @@ const SkillsPage = () => {
         }
         
         skillData = await response.json();
+        
+        // For general skills, mark the first 5 as recommended for better UX
+        recommendedSkills = skillData.slice(0, 5);
+        standardSkills = skillData.slice(5);
       }
       
       // Update state with the skills data
       setApiSkills(skillData);
       
-      // Extract skill names for suggestions
-      const skillNames = skillData.map((skill: ApiSkill) => skill.name);
+      // Extract skill names, prioritizing recommended skills first
+      const skillNames = [
+        ...recommendedSkills.map(skill => skill.name),
+        ...standardSkills.map(skill => skill.name)
+      ];
+      
       setSkillSuggestions(skillNames);
       
       console.log(`Loaded ${skillNames.length} skills for job title ID: ${jobTitleId || 'general'}`);
       
-      // If we don't have enough skills, still show some skills
-      if (skillNames.length < 5) {
-        console.log("Not enough skills found, using fallback skills");
-        setSkillSuggestions([...skillNames, ...fallbackSkills.slice(0, 20 - skillNames.length)]);
+      // Only use fallback skills if absolutely necessary
+      if (skillNames.length === 0) {
+        console.log("No skills found at all, using minimal fallback skills");
+        setSkillSuggestions(fallbackSkills.slice(0, 5));
       }
     } catch (error) {
       console.error("Error fetching skills:", error);
-      // Use fallback skills on error
-      setSkillSuggestions(fallbackSkills);
+      // Use minimal fallback skills on error
+      setSkillSuggestions(fallbackSkills.slice(0, 5));
     } finally {
       setIsLoadingSkills(false);
     }
@@ -638,19 +654,72 @@ const SkillsPage = () => {
                                   Skills {selectedJobTitle && `for ${selectedJobTitle.title}`}
                                 </div>
                                 
-                                {filteredSkills.slice(0, 10).map((skill, index) => (
-                                  <div
-                                    key={`skill-${index}`}
-                                    className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors"
-                                    onClick={() => {
-                                      setSearchTerm(skill);
-                                      handleSkillClick(skill);
-                                      setShowSkillSuggestions(false);
-                                    }}
-                                  >
-                                    <div className="font-medium text-gray-900">{skill}</div>
-                                  </div>
-                                ))}
+                                {/* Recommended Skills First */}
+                                {apiSkills
+                                  .filter(skill => skill.isRecommended && (
+                                    !searchTerm.trim() || 
+                                    skill.name.toLowerCase().includes(searchTerm.toLowerCase())
+                                  ))
+                                  .slice(0, 5)
+                                  .map((skill, index) => (
+                                    <div
+                                      key={`recommended-skill-${index}`}
+                                      className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-l-2 border-green-500"
+                                      onClick={() => {
+                                        setSearchTerm(skill.name);
+                                        handleSkillClick(skill.name);
+                                        setShowSkillSuggestions(false);
+                                      }}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="font-medium text-gray-900">{skill.name}</div>
+                                        <div className="text-xs text-green-600 font-semibold flex items-center">
+                                          <Star className="h-3 w-3 mr-1 fill-green-500" />
+                                          Recommended
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                
+                                {/* Standard Skills Next */}
+                                {apiSkills
+                                  .filter(skill => !skill.isRecommended && (
+                                    !searchTerm.trim() || 
+                                    skill.name.toLowerCase().includes(searchTerm.toLowerCase())
+                                  ))
+                                  .slice(0, 5)
+                                  .map((skill, index) => (
+                                    <div
+                                      key={`standard-skill-${index}`}
+                                      className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors"
+                                      onClick={() => {
+                                        setSearchTerm(skill.name);
+                                        handleSkillClick(skill.name);
+                                        setShowSkillSuggestions(false);
+                                      }}
+                                    >
+                                      <div className="font-medium text-gray-900">{skill.name}</div>
+                                    </div>
+                                  ))}
+                                  
+                                {/* If no skills from API match, show filtered skills from suggestions */}
+                                {apiSkills.filter(skill => 
+                                  !searchTerm.trim() || 
+                                  skill.name.toLowerCase().includes(searchTerm.toLowerCase())
+                                ).length === 0 && 
+                                  filteredSkills.slice(0, 5).map((skill, index) => (
+                                    <div
+                                      key={`fallback-skill-${index}`}
+                                      className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors"
+                                      onClick={() => {
+                                        setSearchTerm(skill);
+                                        handleSkillClick(skill);
+                                        setShowSkillSuggestions(false);
+                                      }}
+                                    >
+                                      <div className="font-medium text-gray-900">{skill}</div>
+                                    </div>
+                                  ))}
                               </>
                             ) : (
                               searchTerm.trim().length > 0 && (

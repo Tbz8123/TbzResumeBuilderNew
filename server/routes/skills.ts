@@ -63,15 +63,58 @@ skillsRouter.get("/by-job-title/:jobTitleId", async (req, res) => {
     }
 
     // Find all skills linked to this job title through the junction table
+    // including their recommendation status
     const skillMappings = await db.query.jobTitleSkills.findMany({
       where: eq(jobTitleSkills.jobTitleId, jobTitleId),
       with: {
         skill: true
-      }
+      },
+      orderBy: [desc(jobTitleSkills.isRecommended), asc(skills.name)]
     });
 
-    // Extract just the skills from the mappings
-    const linkedSkills = skillMappings.map(mapping => mapping.skill);
+    // Extract the skills with their recommendation status from the mapping
+    // Importantly, we use the isRecommended flag from the junction table
+    const linkedSkills = skillMappings.map(mapping => ({
+      ...mapping.skill,
+      isRecommended: mapping.isRecommended
+    }));
+
+    console.log(`Found ${linkedSkills.length} skills for job title ID ${jobTitleId} (${jobTitle.title})`);
+    
+    // If we don't have enough skills specific to this job title, 
+    // supplement with some general skills
+    if (linkedSkills.length < 10) {
+      console.log(`Not enough skills for ${jobTitle.title}, adding generic skills`);
+      
+      // Get skill categories that might be relevant for this job
+      const relevantCategoryIds = await getRelevantCategoriesForJobTitle(jobTitle);
+      
+      // Get some general skills from these categories that aren't already in the linked skills
+      const linkedSkillIds = linkedSkills.map(s => s.id);
+      
+      // Query for additional skills, excluding the ones we already have
+      const additionalSkills = await db.query.skills.findMany({
+        where: 
+          linkedSkillIds.length > 0 
+            ? and(
+                sql`${skills.categoryId} IN (${relevantCategoryIds.join(',')})`,
+                sql`${skills.id} NOT IN (${linkedSkillIds.join(',')})`
+              )
+            : sql`${skills.categoryId} IN (${relevantCategoryIds.join(',')})`,
+        orderBy: [desc(skills.isRecommended), asc(skills.name)],
+        limit: 10 - linkedSkills.length
+      });
+      
+      console.log(`Adding ${additionalSkills.length} additional generic skills`);
+      
+      // Add these skills to our result, marking them as not recommended
+      linkedSkills.push(
+        ...additionalSkills.map(skill => ({
+          ...skill,
+          isRecommended: false // Explicit general skills are not marked as recommended
+        }))
+      );
+    }
 
     // Add cache control headers to prevent browser caching
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -84,6 +127,63 @@ skillsRouter.get("/by-job-title/:jobTitleId", async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch skills for this job title" });
   }
 });
+
+// Helper function to get relevant skill categories for a job title
+async function getRelevantCategoriesForJobTitle(jobTitle: any): Promise<number[]> {
+  // Default to these categories which should exist in most systems
+  const defaultCategoryIds = [1, 2]; // Assuming categories 1, 2 are common (technical, soft skills)
+  
+  try {
+    // Map job categories to potential skill categories
+    const jobCategory = (jobTitle.category || '').toLowerCase();
+    const categoryMappings: Record<string, string[]> = {
+      'technology': ['technical', 'programming', 'development', 'software'],
+      'engineering': ['technical', 'engineering', 'scientific'],
+      'management': ['management', 'leadership', 'business'],
+      'design': ['design', 'creative', 'visual'],
+      'marketing': ['marketing', 'communications', 'creative'],
+      'sales': ['sales', 'customer service', 'communication'],
+      'healthcare': ['healthcare', 'medical', 'scientific'],
+      'education': ['education', 'teaching', 'academic'],
+      'finance': ['finance', 'business', 'analytical']
+    };
+    
+    // Find all relevant category names based on job category
+    let relevantCategoryNames: string[] = [];
+    
+    // Add general soft skills for all jobs
+    relevantCategoryNames.push('soft');
+    
+    // Add job-specific skills based on job category
+    for (const [key, values] of Object.entries(categoryMappings)) {
+      if (jobCategory.includes(key)) {
+        relevantCategoryNames.push(...values);
+      }
+    }
+    
+    // If we couldn't determine categories, add default ones
+    if (relevantCategoryNames.length === 0) {
+      relevantCategoryNames = ['technical', 'soft', 'general'];
+    }
+    
+    // Remove duplicates
+    relevantCategoryNames = [...new Set(relevantCategoryNames)];
+    
+    // Get the actual category IDs from the database that match these names
+    const categories = await db.query.skillCategories.findMany({
+      where: sql`LOWER(${skillCategories.name}) IN (${relevantCategoryNames.join(',')})`,
+    });
+    
+    // Extract the category IDs
+    const categoryIds = categories.map(c => c.id);
+    
+    // If no categories were found, return defaults
+    return categoryIds.length > 0 ? categoryIds : defaultCategoryIds;
+  } catch (error) {
+    console.error("Error determining relevant categories:", error);
+    return defaultCategoryIds;
+  }
+}
 
 // Get a specific skill category by ID
 skillsRouter.get("/categories/:id", async (req, res) => {
