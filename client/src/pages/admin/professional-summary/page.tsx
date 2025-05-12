@@ -1,39 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Link } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { ProfessionalSummaryTitle, ProfessionalSummaryDescription, professionalSummaryTitleSchema, professionalSummaryDescriptionSchema } from "@shared/schema";
+import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { Link, useLocation } from "wouter";
 import { z } from "zod";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+// UI Components
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -44,6 +20,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -51,16 +36,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Pagination,
   PaginationContent,
@@ -70,12 +61,10 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -93,6 +82,7 @@ import {
   CheckCircle,
   XCircle,
   ChevronRight,
+  ChevronLeft,
   FileText,
   RefreshCw,
   FolderHeart
@@ -101,7 +91,40 @@ import {
 // Load environment variables
 const API_BASE_URL = "/api/professional-summary";
 
-// Types for API responses
+// Define the schema for professional summary titles
+const professionalSummaryTitleSchema = z.object({
+  title: z.string().min(2, "Title must be at least 2 characters"),
+  category: z.string().min(1, "Category is required"),
+  description: z.string().optional(),
+});
+
+// Define the schema for professional summary descriptions
+const professionalSummaryDescriptionSchema = z.object({
+  content: z.string().min(10, "Content must be at least 10 characters"),
+  isRecommended: z.boolean().default(false),
+  professionalSummaryTitleId: z.number().int().positive(),
+});
+
+// Define types for our data
+type ProfessionalSummaryTitle = {
+  id: number;
+  title: string;
+  category: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type ProfessionalSummaryDescription = {
+  id: number;
+  content: string;
+  isRecommended: boolean;
+  professionalSummaryTitleId: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// Define pagination type
 interface PaginatedTitlesResponse {
   data: ProfessionalSummaryTitle[];
   pagination: {
@@ -113,438 +136,368 @@ interface PaginatedTitlesResponse {
 }
 
 export default function ProfessionalSummaryAdminPage() {
-  // Auth query to check if user is admin
-  const { data: user } = useQuery({
-    queryKey: ["/api/user"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/user");
-      return await res.json();
-    },
-  });
-
-  if (!user?.isAdmin) {
-    return (
-      <div className="container mx-auto py-10">
-        <h1 className="text-xl font-bold mb-4">Access Denied</h1>
-        <p>You do not have permission to view this page.</p>
-        <Button asChild className="mt-4">
-          <Link href="/">Go Home</Link>
-        </Button>
+  return (
+    <div className="container mx-auto py-6">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <div className="flex items-center gap-2">
+            <Link href="/admin/home">
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold">Professional Summary Management</h1>
+          </div>
+          <p className="text-muted-foreground mt-1">
+            Manage professional summary titles and their descriptions
+          </p>
+        </div>
       </div>
-    );
-  }
 
-  return <ProfessionalSummaryAdmin />;
+      <ProfessionalSummaryAdmin />
+    </div>
+  );
 }
 
 function ProfessionalSummaryAdmin() {
+  const queryClient = useQueryClient();
+  
+  // Local state for search filtering and pagination
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [page, setPage] = useState(1);
-  const [selectedTitleId, setSelectedTitleId] = useState<number | null>(null);
   const [isAddTitleOpen, setIsAddTitleOpen] = useState(false);
-  const [isEditTitleOpen, setIsEditTitleOpen] = useState(false);
-  const [titleToEdit, setTitleToEdit] = useState<ProfessionalSummaryTitle | null>(null);
+  const [selectedTitle, setSelectedTitle] = useState<ProfessionalSummaryTitle | null>(null);
   const [isAddDescriptionOpen, setIsAddDescriptionOpen] = useState(false);
+  const [isEditTitleOpen, setIsEditTitleOpen] = useState(false);
   const [isEditDescriptionOpen, setIsEditDescriptionOpen] = useState(false);
-  const [descriptionToEdit, setDescriptionToEdit] = useState<ProfessionalSummaryDescription | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadFormat, setUploadFormat] = useState<"json" | "csv">("csv");
-  const [uploadResults, setUploadResults] = useState<any>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
-
-  // Fetch categories
-  const { data: categories = [] } = useQuery({
-    queryKey: [`${API_BASE_URL}/categories`],
+  const [isDeleteTitleOpen, setIsDeleteTitleOpen] = useState(false);
+  const [isDeleteDescriptionOpen, setIsDeleteDescriptionOpen] = useState(false);
+  const [editingTitleData, setEditingTitleData] = useState<ProfessionalSummaryTitle | null>(null);
+  const [editingDescriptionData, setEditingDescriptionData] = useState<ProfessionalSummaryDescription | null>(null);
+  
+  // Fetch categories for dropdown menus
+  const { data: categories = [] } = useQuery<string[]>({
+    queryKey: ["/api/professional-summary/categories"],
     queryFn: async () => {
-      const res = await apiRequest("GET", `${API_BASE_URL}/categories`);
+      const res = await apiRequest("GET", "/api/professional-summary/categories");
       return await res.json();
     },
   });
-
+  
   // Fetch professional summary titles with pagination
-  const {
-    data: titlesData,
+  const { 
+    data: titlesData, 
     isLoading: isLoadingTitles,
-    error: titlesError,
-    refetch: refetchTitles,
+    isError: isErrorTitles,
   } = useQuery<PaginatedTitlesResponse>({
-    queryKey: [`${API_BASE_URL}/titles`, page, searchTerm, selectedCategory],
+    queryKey: ["/api/professional-summary/titles", page, searchTerm],
     queryFn: async () => {
-      const searchParams = new URLSearchParams({
-        page: page.toString(),
-        limit: "10",
-      });
-
-      if (searchTerm) {
-        searchParams.append("search", searchTerm);
-      }
-
-      if (selectedCategory !== "all") {
-        searchParams.append("category", selectedCategory);
-      }
-
       const res = await apiRequest(
-        "GET",
-        `${API_BASE_URL}/titles?${searchParams.toString()}`
+        "GET", 
+        `/api/professional-summary/titles?page=${page}&limit=10${searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : ""}`
       );
       return await res.json();
     },
   });
-
+  
+  // Titles from the API
+  const titles = titlesData?.data || [];
+  
+  // Total pages from pagination data
+  const totalPages = titlesData?.pagination?.totalPages || 1;
+  
   // Fetch descriptions for selected title
-  const {
+  const { 
     data: descriptions = [],
     isLoading: isLoadingDescriptions,
-    refetch: refetchDescriptions,
+    isError: isErrorDescriptions,
   } = useQuery<ProfessionalSummaryDescription[]>({
-    queryKey: [`${API_BASE_URL}/descriptions/by-title`, selectedTitleId],
+    queryKey: ["/api/professional-summary/descriptions", selectedTitle?.id],
     queryFn: async () => {
-      if (!selectedTitleId) return [];
-      const res = await apiRequest(
-        "GET",
-        `${API_BASE_URL}/descriptions/by-title/${selectedTitleId}`
-      );
+      if (!selectedTitle) return [];
+      const res = await apiRequest("GET", `/api/professional-summary/descriptions?titleId=${selectedTitle.id}`);
       return await res.json();
     },
-    enabled: !!selectedTitleId,
+    enabled: !!selectedTitle,
   });
-
-  // Mutation to create a new professional summary title
+  
+  // Mutation for creating a new professional summary title
   const createTitleMutation = useMutation({
     mutationFn: async (data: z.infer<typeof professionalSummaryTitleSchema>) => {
-      const res = await apiRequest("POST", `${API_BASE_URL}/titles`, data);
+      const res = await apiRequest("POST", "/api/professional-summary/titles", data);
       return await res.json();
     },
     onSuccess: () => {
+      setIsAddTitleOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/professional-summary/titles"] });
       toast({
         title: "Success",
         description: "Professional summary title created successfully",
       });
-      setIsAddTitleOpen(false);
-      refetchTitles();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to create professional summary title",
+        description: error.message || "Failed to create professional summary title",
         variant: "destructive",
       });
-      console.error("Error creating professional summary title:", error);
     },
   });
-
-  // Mutation to update a professional summary title
+  
+  // Mutation for updating a professional summary title
   const updateTitleMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: number;
-      data: z.infer<typeof professionalSummaryTitleSchema>;
-    }) => {
-      const res = await apiRequest("PUT", `${API_BASE_URL}/titles/${id}`, data);
+    mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof professionalSummaryTitleSchema> }) => {
+      const res = await apiRequest("PATCH", `/api/professional-summary/titles/${id}`, data);
       return await res.json();
     },
     onSuccess: () => {
+      setIsEditTitleOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/professional-summary/titles"] });
+      if (selectedTitle) {
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/professional-summary/descriptions", selectedTitle.id] 
+        });
+      }
       toast({
         title: "Success",
         description: "Professional summary title updated successfully",
       });
-      setIsEditTitleOpen(false);
-      setTitleToEdit(null);
-      refetchTitles();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to update professional summary title",
+        description: error.message || "Failed to update professional summary title",
         variant: "destructive",
       });
-      console.error("Error updating professional summary title:", error);
     },
   });
-
-  // Mutation to delete a professional summary title
+  
+  // Mutation for deleting a professional summary title
   const deleteTitleMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `${API_BASE_URL}/titles/${id}`);
+      await apiRequest("DELETE", `/api/professional-summary/titles/${id}`);
     },
     onSuccess: () => {
+      setIsDeleteTitleOpen(false);
+      if (selectedTitle && editingTitleData && selectedTitle.id === editingTitleData.id) {
+        setSelectedTitle(null);
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/professional-summary/titles"] });
       toast({
         title: "Success",
         description: "Professional summary title deleted successfully",
       });
-      if (selectedTitleId === deleteTitleMutation.variables) {
-        setSelectedTitleId(null);
-      }
-      refetchTitles();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to delete professional summary title",
+        description: error.message || "Failed to delete professional summary title",
         variant: "destructive",
       });
-      console.error("Error deleting professional summary title:", error);
     },
   });
-
-  // Mutation to create a new professional summary description
+  
+  // Mutation for creating a new professional summary description
   const createDescriptionMutation = useMutation({
     mutationFn: async (data: z.infer<typeof professionalSummaryDescriptionSchema>) => {
-      const res = await apiRequest("POST", `${API_BASE_URL}/descriptions`, data);
+      const res = await apiRequest("POST", "/api/professional-summary/descriptions", data);
       return await res.json();
     },
     onSuccess: () => {
+      setIsAddDescriptionOpen(false);
+      if (selectedTitle) {
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/professional-summary/descriptions", selectedTitle.id] 
+        });
+      }
       toast({
         title: "Success",
         description: "Professional summary description created successfully",
       });
-      setIsAddDescriptionOpen(false);
-      refetchDescriptions();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to create professional summary description",
+        description: error.message || "Failed to create professional summary description",
         variant: "destructive",
       });
-      console.error("Error creating professional summary description:", error);
     },
   });
-
-  // Mutation to update a professional summary description
+  
+  // Mutation for updating a professional summary description
   const updateDescriptionMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: number;
-      data: z.infer<typeof professionalSummaryDescriptionSchema>;
+    mutationFn: async ({ 
+      id, 
+      data 
+    }: { 
+      id: number; 
+      data: Omit<z.infer<typeof professionalSummaryDescriptionSchema>, "professionalSummaryTitleId"> 
     }) => {
-      const res = await apiRequest(
-        "PUT",
-        `${API_BASE_URL}/descriptions/${id}`,
-        data
-      );
+      const res = await apiRequest("PATCH", `/api/professional-summary/descriptions/${id}`, data);
       return await res.json();
     },
     onSuccess: () => {
+      setIsEditDescriptionOpen(false);
+      if (selectedTitle) {
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/professional-summary/descriptions", selectedTitle.id] 
+        });
+      }
       toast({
         title: "Success",
         description: "Professional summary description updated successfully",
       });
-      setIsEditDescriptionOpen(false);
-      setDescriptionToEdit(null);
-      refetchDescriptions();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to update professional summary description",
+        description: error.message || "Failed to update professional summary description",
         variant: "destructive",
       });
-      console.error("Error updating professional summary description:", error);
     },
   });
-
-  // Mutation to delete a professional summary description
+  
+  // Mutation for deleting a professional summary description
   const deleteDescriptionMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `${API_BASE_URL}/descriptions/${id}`);
+      await apiRequest("DELETE", `/api/professional-summary/descriptions/${id}`);
     },
     onSuccess: () => {
+      setIsDeleteDescriptionOpen(false);
+      if (selectedTitle) {
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/professional-summary/descriptions", selectedTitle.id] 
+        });
+      }
       toast({
         title: "Success",
         description: "Professional summary description deleted successfully",
       });
-      refetchDescriptions();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to delete professional summary description",
+        description: error.message || "Failed to delete professional summary description",
         variant: "destructive",
       });
-      console.error("Error deleting professional summary description:", error);
     },
   });
-
-  // Handle file upload
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setIsUploading(true);
-      const reader = new FileReader();
-
-      reader.onload = async (e) => {
-        const content = e.target?.result as string;
-        let data: any;
-
-        if (uploadFormat === "json") {
-          // For JSON files, parse the content
-          try {
-            data = { jsonData: JSON.parse(content) };
-          } catch (error) {
-            toast({
-              title: "Error",
-              description: "Invalid JSON file format",
-              variant: "destructive",
-            });
-            setIsUploading(false);
-            return;
-          }
-        } else {
-          // For CSV files, send the raw content
-          data = { csvData: content };
-        }
-
-        try {
-          const res = await apiRequest(
-            "POST",
-            `${API_BASE_URL}/import/${uploadFormat}`,
-            data
-          );
-          const result = await res.json();
-          setUploadResults(result);
-          toast({
-            title: "Upload Complete",
-            description: `Added ${result.titlesAdded} titles and ${result.descriptionsAdded} descriptions`,
-          });
-          refetchTitles();
-          if (selectedTitleId) {
-            refetchDescriptions();
-          }
-        } catch (error) {
-          console.error("Upload error:", error);
-          toast({
-            title: "Upload Failed",
-            description: "Failed to process the uploaded file",
-            variant: "destructive",
-          });
-        }
-      };
-
-      reader.onerror = () => {
-        toast({
-          title: "Error",
-          description: "Failed to read the file",
-          variant: "destructive",
-        });
-      };
-
-      if (uploadFormat === "json") {
-        reader.readAsText(file);
-      } else {
-        reader.readAsText(file);
-      }
-    } finally {
-      setIsUploading(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
+  
+  // Select a professional summary title
+  const handleSelectTitle = (title: ProfessionalSummaryTitle) => {
+    setSelectedTitle(title);
   };
-
+  
+  // Handle pagination navigation
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setPage(newPage);
+  };
+  
+  // Generate pagination UI
+  const renderPagination = () => {
+    const pages = [];
+    const maxButtons = 5;
+    
+    // Start page number
+    let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
+    
+    // End page number
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+    
+    // Adjust if we're near the end
+    if (endPage - startPage < maxButtons - 1) {
+      startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+    
+    // Create pagination items
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            onClick={(e) => {
+              e.preventDefault();
+              handlePageChange(i);
+            }}
+            isActive={page === i}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    return (
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={(e) => {
+                e.preventDefault();
+                handlePageChange(page - 1);
+              }}
+              className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+          
+          {startPage > 1 && (
+            <>
+              <PaginationItem>
+                <PaginationLink
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handlePageChange(1);
+                  }}
+                >
+                  1
+                </PaginationLink>
+              </PaginationItem>
+              {startPage > 2 && <PaginationEllipsis />}
+            </>
+          )}
+          
+          {pages}
+          
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <PaginationEllipsis />}
+              <PaginationItem>
+                <PaginationLink
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handlePageChange(totalPages);
+                  }}
+                >
+                  {totalPages}
+                </PaginationLink>
+              </PaginationItem>
+            </>
+          )}
+          
+          <PaginationItem>
+            <PaginationNext
+              onClick={(e) => {
+                e.preventDefault();
+                handlePageChange(page + 1);
+              }}
+              className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    );
+  };
+  
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Professional Summary Management</h1>
-          <p className="text-gray-500">
-            Manage professional summary titles and descriptions
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Choose Format</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <a
-                  href={`${API_BASE_URL}/export/csv`}
-                  download="professional-summaries-export.csv"
-                >
-                  CSV
-                </a>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <a
-                  href={`${API_BASE_URL}/export/json`}
-                  download="professional-summaries-export.json"
-                >
-                  JSON
-                </a>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <a
-                  href={`${API_BASE_URL}/export/excel`}
-                  download="professional-summaries-export.xlsx"
-                >
-                  Excel
-                </a>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button>
-                <Upload className="h-4 w-4 mr-2" />
-                Import
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Choose Format</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  setUploadFormat("csv");
-                  fileInputRef.current?.click();
-                }}
-              >
-                CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  setUploadFormat("json");
-                  fileInputRef.current?.click();
-                }}
-              >
-                JSON
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept={
-              uploadFormat === "json" ? ".json" : ".csv"
-            }
-            className="hidden"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-6">
+    <div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Column - Professional Summary Titles */}
-        <div className="col-span-1 border rounded-lg p-4">
+        <div className="col-span-1 border rounded-lg p-4 bg-white shadow-sm">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Professional Summary Titles</h2>
+            <h2 className="text-xl font-semibold">Professional Summary Titles</h2>
             <Dialog open={isAddTitleOpen} onOpenChange={setIsAddTitleOpen}>
               <DialogTrigger asChild>
-                <Button size="sm">
+                <Button size="sm" className="h-9">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Title
                 </Button>
@@ -565,103 +518,242 @@ function ProfessionalSummaryAdmin() {
             </Dialog>
           </div>
 
-          <div className="mb-4 flex gap-2">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search titles..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setPage(1); // Reset to first page on search
-                  }}
-                />
-                {searchTerm && (
-                  <X
-                    className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 cursor-pointer"
-                    onClick={() => {
-                      setSearchTerm("");
-                      setPage(1);
+          <div className="mb-4">
+            <h3 className="text-xs uppercase font-semibold text-gray-500 mb-2">Search Professional Summary Titles</h3>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search professional summary titles..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setPage(1); // Reset to first page on search
                     }}
                   />
-                )}
+                  {searchTerm && (
+                    <X
+                      className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 cursor-pointer"
+                      onClick={() => {
+                        setSearchTerm("");
+                        setPage(1);
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             </div>
-            <Select
-              value={selectedCategory}
-              onValueChange={(value) => {
-                setSelectedCategory(value);
-                setPage(1); // Reset to first page on category change
-              }}
-            >
-              <SelectTrigger className="w-[160px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category: string) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
-
-          {isLoadingTitles ? (
-            <div className="flex justify-center items-center h-60">
-              <div className="animate-spin h-6 w-6 border-2 border-purple-500 rounded-full border-t-transparent"></div>
-            </div>
-          ) : titlesError ? (
-            <div className="text-center p-4 text-red-500">
-              Error loading professional summary titles
-            </div>
-          ) : (
-            <>
-              <div className="overflow-hidden rounded-md border mb-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[300px]">Title</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {titlesData?.data && titlesData.data.length > 0 ? (
-                      titlesData.data.map((title) => (
-                        <TableRow
-                          key={title.id}
-                          className={
-                            selectedTitleId === title.id
-                              ? "bg-purple-50"
-                              : undefined
-                          }
-                        >
-                          <TableCell
-                            className="font-medium cursor-pointer"
-                            onClick={() => setSelectedTitleId(title.id)}
+          
+          <ScrollArea className="h-[480px]">
+            {isLoadingTitles ? (
+              <div className="flex justify-center py-10">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : titles.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-gray-500">No professional summary titles found.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {titles.map((title) => (
+                  <div
+                    key={title.id}
+                    className={`p-3 rounded-md cursor-pointer hover:bg-gray-100 transition-colors ${
+                      selectedTitle?.id === title.id ? "bg-gray-100 border-l-4 border-primary" : ""
+                    }`}
+                    onClick={() => handleSelectTitle(title)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium">{title.title}</h3>
+                        <p className="text-xs text-muted-foreground">{title.category}</p>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingTitleData(title);
+                              setIsEditTitleOpen(true);
+                            }}
                           >
-                            {title.title}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{title.category}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingTitleData(title);
+                              setIsDeleteTitleOpen(true);
+                            }}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+          
+          {totalPages > 1 && (
+            <div className="mt-4 flex justify-center">
+              {renderPagination()}
+            </div>
+          )}
+          
+          {/* Edit Title Dialog */}
+          <Dialog open={isEditTitleOpen} onOpenChange={setIsEditTitleOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Professional Summary Title</DialogTitle>
+                <DialogDescription>
+                  Update the professional summary title details.
+                </DialogDescription>
+              </DialogHeader>
+              {editingTitleData && (
+                <EditProfessionalSummaryTitleForm
+                  title={editingTitleData}
+                  onSubmit={(data) => 
+                    updateTitleMutation.mutate({ id: editingTitleData.id, data })
+                  }
+                  isSubmitting={updateTitleMutation.isPending}
+                  categories={categories}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+          
+          {/* Delete Title Dialog */}
+          <Dialog open={isDeleteTitleOpen} onOpenChange={setIsDeleteTitleOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Professional Summary Title</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete this professional summary title?
+                  This will also delete all associated descriptions.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDeleteTitleOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (editingTitleData) {
+                      deleteTitleMutation.mutate(editingTitleData.id);
+                    }
+                  }}
+                  disabled={deleteTitleMutation.isPending}
+                >
+                  {deleteTitleMutation.isPending ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete"
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+        
+        {/* Right Column - Professional Summary Descriptions */}
+        <div className="col-span-2 border rounded-lg p-4 bg-white shadow-sm">
+          {selectedTitle ? (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold">{selectedTitle.title}</h2>
+                  <p className="text-sm text-muted-foreground">Category: {selectedTitle.category}</p>
+                </div>
+                <Dialog open={isAddDescriptionOpen} onOpenChange={setIsAddDescriptionOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="h-9">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Description
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add Professional Summary Description</DialogTitle>
+                      <DialogDescription>
+                        Create a new description for {selectedTitle.title}.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddProfessionalSummaryDescriptionForm
+                      onSubmit={(data) => 
+                        createDescriptionMutation.mutate({
+                          ...data,
+                          professionalSummaryTitleId: selectedTitle.id,
+                        })
+                      }
+                      isSubmitting={createDescriptionMutation.isPending}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-3">Descriptions</h3>
+                {isLoadingDescriptions ? (
+                  <div className="flex justify-center py-10">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : descriptions.length === 0 ? (
+                  <div className="text-center py-10 border rounded-md bg-gray-50">
+                    <p className="text-gray-500">No descriptions found for this professional summary title.</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Get started by adding a description using the "Add Description" button.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {descriptions.map((description) => (
+                      <Card key={description.id} className="overflow-hidden">
+                        <CardHeader className="py-3 px-4 bg-gray-50">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              {description.isRecommended && (
+                                <Badge variant="outline" className="bg-purple-100 text-purple-800 font-medium border-purple-200">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Expert Recommended
+                                </Badge>
+                              )}
+                            </div>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    setTitleToEdit(title);
-                                    setIsEditTitleOpen(true);
+                                    setEditingDescriptionData(description);
+                                    setIsEditDescriptionOpen(true);
                                   }}
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
@@ -669,339 +761,100 @@ function ProfessionalSummaryAdmin() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    setSelectedTitleId(title.id);
+                                    setEditingDescriptionData(description);
+                                    setIsDeleteDescriptionOpen(true);
                                   }}
-                                >
-                                  <FileText className="h-4 w-4 mr-2" />
-                                  View Descriptions
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-red-500"
-                                  onClick={() => {
-                                    if (
-                                      window.confirm(
-                                        `Are you sure you want to delete "${title.title}"? This will also delete all associated descriptions.`
-                                      )
-                                    ) {
-                                      deleteTitleMutation.mutate(title.id);
-                                    }
-                                  }}
+                                  className="text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell
-                          colSpan={3}
-                          className="text-center py-4 text-gray-500"
-                        >
-                          No professional summary titles found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination */}
-              {titlesData?.pagination && titlesData.pagination.totalPages > 1 && (
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (page > 1) setPage(page - 1);
-                        }}
-                        className={page === 1 ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: titlesData.pagination.totalPages }, (_, i) => i + 1).map(
-                      (pageNumber) => (
-                        <PaginationItem key={pageNumber}>
-                          <PaginationLink
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setPage(pageNumber);
-                            }}
-                            isActive={pageNumber === page}
-                          >
-                            {pageNumber}
-                          </PaginationLink>
-                        </PaginationItem>
-                      )
-                    )}
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (page < titlesData.pagination.totalPages)
-                            setPage(page + 1);
-                        }}
-                        className={
-                          page === titlesData.pagination.totalPages
-                            ? "pointer-events-none opacity-50"
-                            : ""
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Right Column - Descriptions */}
-        <div className="col-span-2 border rounded-lg p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">
-              {selectedTitleId ? (
-                <>
-                  Professional Summary Descriptions
-                  {titlesData?.data && (
-                    <span className="text-sm font-normal ml-2 text-gray-500">
-                      for{" "}
-                      {titlesData.data.find((t) => t.id === selectedTitleId)?.title}
-                    </span>
-                  )}
-                </>
-              ) : (
-                "Select a title to view descriptions"
-              )}
-            </h2>
-            {selectedTitleId && (
-              <Dialog
-                open={isAddDescriptionOpen}
-                onOpenChange={setIsAddDescriptionOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Description
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Professional Summary Description</DialogTitle>
-                    <DialogDescription>
-                      Create a new professional summary description for{" "}
-                      {
-                        titlesData?.data.find((t) => t.id === selectedTitleId)
-                          ?.title
-                      }
-                      .
-                    </DialogDescription>
-                  </DialogHeader>
-                  <AddProfessionalSummaryDescriptionForm
-                    onSubmit={(data) =>
-                      createDescriptionMutation.mutate({
-                        ...data,
-                        professionalSummaryTitleId: selectedTitleId as number,
-                      })
-                    }
-                    isSubmitting={createDescriptionMutation.isPending}
-                  />
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
-
-          {!selectedTitleId ? (
-            <div className="flex flex-col items-center justify-center h-60 text-gray-500">
-              <FolderHeart className="h-12 w-12 mb-2 text-gray-300" />
-              <p>Select a professional summary title to view descriptions</p>
-            </div>
-          ) : isLoadingDescriptions ? (
-            <div className="flex justify-center items-center h-60">
-              <div className="animate-spin h-6 w-6 border-2 border-purple-500 rounded-full border-t-transparent"></div>
-            </div>
-          ) : (
-            <ScrollArea className="h-[calc(100vh-300px)]">
-              <div className="space-y-4 pr-4">
-                {descriptions.length > 0 ? (
-                  descriptions.map((description) => (
-                    <div
-                      key={description.id}
-                      className={`border rounded-lg p-4 ${
-                        description.isRecommended
-                          ? "border-purple-300 bg-purple-50"
-                          : ""
-                      }`}
-                    >
-                      <div className="flex justify-between mb-2">
-                        <div>
-                          {description.isRecommended && (
-                            <Badge className="mb-2 bg-purple-500">
-                              Recommended
-                            </Badge>
-                          )}
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setDescriptionToEdit(description);
-                                setIsEditDescriptionOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-red-500"
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    "Are you sure you want to delete this description?"
-                                  )
-                                ) {
-                                  deleteDescriptionMutation.mutate(
-                                    description.id
-                                  );
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      <p className="text-gray-800 whitespace-pre-wrap">
-                        {description.content}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center p-8 text-gray-500">
-                    No descriptions found for this title. Add one using the
-                    button above.
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <p className="whitespace-pre-wrap">{description.content}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 )}
               </div>
-            </ScrollArea>
+              
+              {/* Edit Description Dialog */}
+              <Dialog open={isEditDescriptionOpen} onOpenChange={setIsEditDescriptionOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit Professional Summary Description</DialogTitle>
+                    <DialogDescription>
+                      Update the professional summary description.
+                    </DialogDescription>
+                  </DialogHeader>
+                  {editingDescriptionData && (
+                    <EditProfessionalSummaryDescriptionForm
+                      description={editingDescriptionData}
+                      onSubmit={(data) => 
+                        updateDescriptionMutation.mutate({ 
+                          id: editingDescriptionData.id, 
+                          data 
+                        })
+                      }
+                      isSubmitting={updateDescriptionMutation.isPending}
+                    />
+                  )}
+                </DialogContent>
+              </Dialog>
+              
+              {/* Delete Description Dialog */}
+              <Dialog open={isDeleteDescriptionOpen} onOpenChange={setIsDeleteDescriptionOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Delete Professional Summary Description</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to delete this description?
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsDeleteDescriptionOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        if (editingDescriptionData) {
+                          deleteDescriptionMutation.mutate(editingDescriptionData.id);
+                        }
+                      }}
+                      disabled={deleteDescriptionMutation.isPending}
+                    >
+                      {deleteDescriptionMutation.isPending ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        "Delete"
+                      )}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[480px] text-center">
+              <FileText className="h-12 w-12 text-gray-300 mb-4" />
+              <h3 className="text-lg font-medium">No Professional Summary Title Selected</h3>
+              <p className="text-muted-foreground mt-1 max-w-md">
+                Select a professional summary title from the left panel to view and manage its descriptions.
+              </p>
+            </div>
           )}
         </div>
       </div>
-
-      {/* Edit Professional Summary Title Dialog */}
-      <Dialog open={isEditTitleOpen} onOpenChange={setIsEditTitleOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Professional Summary Title</DialogTitle>
-            <DialogDescription>
-              Update the professional summary title details.
-            </DialogDescription>
-          </DialogHeader>
-          {titleToEdit && (
-            <EditProfessionalSummaryTitleForm
-              title={titleToEdit}
-              onSubmit={(data) =>
-                updateTitleMutation.mutate({
-                  id: titleToEdit.id,
-                  data,
-                })
-              }
-              isSubmitting={updateTitleMutation.isPending}
-              categories={categories}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Professional Summary Description Dialog */}
-      <Dialog open={isEditDescriptionOpen} onOpenChange={setIsEditDescriptionOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Professional Summary Description</DialogTitle>
-            <DialogDescription>
-              Update the professional summary description details.
-            </DialogDescription>
-          </DialogHeader>
-          {descriptionToEdit && (
-            <EditProfessionalSummaryDescriptionForm
-              description={descriptionToEdit}
-              onSubmit={(data) =>
-                updateDescriptionMutation.mutate({
-                  id: descriptionToEdit.id,
-                  data: {
-                    ...data,
-                    professionalSummaryTitleId: descriptionToEdit.professionalSummaryTitleId,
-                  },
-                })
-              }
-              isSubmitting={updateDescriptionMutation.isPending}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Upload Results Dialog */}
-      <Dialog
-        open={!!uploadResults}
-        onOpenChange={(open) => {
-          if (!open) setUploadResults(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Upload Complete</DialogTitle>
-            <DialogDescription>
-              Results of your file upload.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle className="h-5 w-5" />
-              <span>
-                Added {uploadResults?.titlesAdded} professional summary titles and{" "}
-                {uploadResults?.descriptionsAdded} descriptions
-              </span>
-            </div>
-            {uploadResults?.errors && uploadResults.errors.length > 0 && (
-              <div>
-                <h3 className="font-medium text-red-500 mb-2 flex items-center">
-                  <XCircle className="h-5 w-5 mr-1" />
-                  Errors
-                </h3>
-                <div className="bg-red-50 p-3 rounded-md max-h-40 overflow-y-auto text-sm">
-                  <ul className="list-disc pl-5 space-y-1">
-                    {uploadResults.errors.map((error: string, idx: number) => (
-                      <li key={idx}>{error}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() => {
-                setUploadResults(null);
-              }}
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -1035,15 +888,16 @@ function AddProfessionalSummaryTitleForm({
             <FormItem>
               <FormLabel>Title</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. Software Developer" {...field} />
+                <Input placeholder="e.g., Software Developer" {...field} />
               </FormControl>
               <FormDescription>
-                The job title or role for this professional summary.
+                Enter the professional summary title
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="category"
@@ -1065,16 +919,16 @@ function AddProfessionalSummaryTitleForm({
                       {category}
                     </SelectItem>
                   ))}
-                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>
-                The category this professional summary belongs to.
+                Select a category for the professional summary title
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="description"
@@ -1083,7 +937,8 @@ function AddProfessionalSummaryTitleForm({
               <FormLabel>Description (Optional)</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="A brief description of this job title or role"
+                  placeholder="Optional description for the professional summary title"
+                  className="min-h-[100px]"
                   {...field}
                 />
               </FormControl>
@@ -1091,15 +946,16 @@ function AddProfessionalSummaryTitleForm({
             </FormItem>
           )}
         />
+        
         <DialogFooter>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
+                Creating...
               </>
             ) : (
-              "Save"
+              "Create"
             )}
           </Button>
         </DialogFooter>
@@ -1139,12 +995,16 @@ function EditProfessionalSummaryTitleForm({
             <FormItem>
               <FormLabel>Title</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input placeholder="e.g., Software Developer" {...field} />
               </FormControl>
+              <FormDescription>
+                Enter the professional summary title
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="category"
@@ -1166,13 +1026,16 @@ function EditProfessionalSummaryTitleForm({
                       {category}
                     </SelectItem>
                   ))}
-                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
+              <FormDescription>
+                Select a category for the professional summary title
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="description"
@@ -1180,12 +1043,17 @@ function EditProfessionalSummaryTitleForm({
             <FormItem>
               <FormLabel>Description (Optional)</FormLabel>
               <FormControl>
-                <Textarea {...field} />
+                <Textarea
+                  placeholder="Optional description for the professional summary title"
+                  className="min-h-[100px]"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        
         <DialogFooter>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
@@ -1234,24 +1102,25 @@ function AddProfessionalSummaryDescriptionForm({
               <FormLabel>Content</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Enter the professional summary content here..."
-                  className="min-h-[150px]"
+                  placeholder="Enter the professional summary content..."
+                  className="min-h-[200px]"
                   {...field}
                 />
               </FormControl>
               <FormDescription>
-                Write a professional summary that could be used on a resume.
+                Write a description for this professional summary title.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="isRecommended"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-              <div className="space-y-0.5">
+            <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-4">
+              <div className="space-y-1 leading-none">
                 <FormLabel>Recommended</FormLabel>
                 <FormDescription>
                   Mark this as a recommended professional summary
@@ -1266,15 +1135,16 @@ function AddProfessionalSummaryDescriptionForm({
             </FormItem>
           )}
         />
+        
         <DialogFooter>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
+                Creating...
               </>
             ) : (
-              "Save"
+              "Create"
             )}
           </Button>
         </DialogFooter>
@@ -1316,7 +1186,8 @@ function EditProfessionalSummaryDescriptionForm({
               <FormLabel>Content</FormLabel>
               <FormControl>
                 <Textarea
-                  className="min-h-[150px]"
+                  placeholder="Enter the professional summary content..."
+                  className="min-h-[200px]"
                   {...field}
                 />
               </FormControl>
@@ -1324,12 +1195,13 @@ function EditProfessionalSummaryDescriptionForm({
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="isRecommended"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-              <div className="space-y-0.5">
+            <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-4">
+              <div className="space-y-1 leading-none">
                 <FormLabel>Recommended</FormLabel>
                 <FormDescription>
                   Mark this as a recommended professional summary
@@ -1344,6 +1216,7 @@ function EditProfessionalSummaryDescriptionForm({
             </FormItem>
           )}
         />
+        
         <DialogFooter>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
