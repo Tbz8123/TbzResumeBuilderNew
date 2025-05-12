@@ -603,10 +603,10 @@ const SkillsPage = () => {
                                     </div>
                                     
                                     {jobTitlesData.data
-                                      .filter((jobTitle: JobTitle) => 
+                                      .filter((jobTitle: ApiJobTitle) => 
                                         jobTitle.title.toLowerCase().includes(searchTerm.toLowerCase()))
                                       .slice(0, 5)
-                                      .map((jobTitle: JobTitle) => (
+                                      .map((jobTitle: ApiJobTitle) => (
                                         <div
                                           key={`job-${jobTitle.id}`}
                                           className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-b border-gray-100"
