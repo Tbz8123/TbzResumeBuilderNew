@@ -393,6 +393,7 @@ export default function SkillsAdminPage() {
       }
       const data = await res.json();
       console.log(`Fetched ${data.length} skills for skill job title ID: ${selectedSkillJobTitle.id}`);
+      console.log("Skills data:", data);
       return data;
     },
     enabled: !!selectedSkillJobTitle && useSkillJobTitles,
