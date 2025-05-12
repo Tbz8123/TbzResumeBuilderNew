@@ -405,45 +405,64 @@ const ProfessionalSummaryPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left Column - Search and Examples */}
                 <div>
-                  <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 mb-5">
-                    <h2 className="text-xs uppercase font-bold text-gray-600 mb-2">
-                      SEARCH BY JOB TITLE FOR PRE-WRITTEN EXAMPLES
-                    </h2>
-                    
-                    <div className="relative mb-3">
-                      <Input 
-                        type="text" 
-                        placeholder="Search by job title"
-                        value={searchTerm}
-                        onChange={handleSearchChange}
-                        className="pr-10 border-purple-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-200"
-                        ref={searchInputRef}
-                      />
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                        <Search className="h-4 w-4 text-purple-400" />
+                  <motion.div 
+                    initial={{ y: 30, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                    className="mb-6 transform transition-all hover:scale-[1.01] duration-300"
+                  >
+                    <h2 className="text-xs uppercase font-bold text-gray-600 mb-2">SEARCH BY JOB TITLE FOR PRE-WRITTEN EXAMPLES</h2>
+                    <div className="relative group">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg opacity-50 group-hover:opacity-70 blur group-hover:blur-md transition duration-300"></div>
+                      <div className="relative bg-white rounded-lg">
+                        <Input 
+                          type="text"
+                          ref={searchInputRef}
+                          placeholder="Search by job title"
+                          value={searchTerm}
+                          onChange={handleSearchChange}
+                          className="rounded-lg border-gray-300 pr-10 py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
+                          onFocus={() => {
+                            if (jobTitleSuggestions.length > 0) {
+                              setShowJobTitleSuggestions(true);
+                            }
+                          }}
+                        />
+                        {searchTerm ? (
+                          <button 
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
+                            onClick={() => setSearchTerm('')}
+                          >
+                            <X className="h-5 w-5" />
+                          </button>
+                        ) : (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-500">
+                            <Search className="h-5 w-5" />
+                          </div>
+                        )}
                       </div>
-                      
-                      {showJobTitleSuggestions && (
-                        <div 
-                          ref={suggestionsRef}
-                          className="absolute z-20 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 py-1"
-                        >
-                          {jobTitleSuggestions.map((title) => (
-                            <button
-                              key={title.id}
-                              className="w-full text-left px-3 py-2 hover:bg-purple-50 text-sm"
-                              onClick={() => {
-                                setSearchTerm(title.title);
-                                setShowJobTitleSuggestions(false);
-                              }}
-                            >
-                              {title.title}
-                            </button>
-                          ))}
-                        </div>
-                      )}
                     </div>
-                  </div>
+                  
+                    {showJobTitleSuggestions && (
+                      <div 
+                        ref={suggestionsRef}
+                        className="absolute z-20 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 py-1"
+                      >
+                        {jobTitleSuggestions.map((title) => (
+                          <button
+                            key={title.id}
+                            className="w-full text-left px-3 py-2 hover:bg-purple-50 text-sm"
+                            onClick={() => {
+                              setSearchTerm(title.title);
+                              setShowJobTitleSuggestions(false);
+                            }}
+                          >
+                            {title.title}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
                   
                   {/* Related Job Titles */}
                   <div className="mb-4">
