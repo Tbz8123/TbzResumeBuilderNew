@@ -384,25 +384,16 @@ const SkillsPage = () => {
             
             // Update jobTitleSearchResults with the search results
             if (data && data.data) {
-              console.log(`Found ${data.data.length} job titles matching "${value}":`, data.data);
+              console.log(`Found ${data.data.length} job titles matching "${value}"`);
               // Use our dedicated state for search results
               setJobTitleSearchResults(data.data);
-            } else {
-              console.log("No job titles found or invalid response format:", data);
-              setJobTitleSearchResults([]);
             }
-          } else {
-            console.log("Job titles search response not OK:", response.status);
-            setJobTitleSearchResults([]);
           }
         } catch (error) {
           console.error("Error searching for job titles:", error);
           // Clear search results on error
           setJobTitleSearchResults([]);
         }
-      } else {
-        // Clear job title results if search term is too short
-        setJobTitleSearchResults([]);
       }
     } else {
       setShowSkillSuggestions(false);
@@ -604,7 +595,7 @@ const SkillsPage = () => {
                           </div>
                         ) : (
                           <div className="py-1">
-                            {/* Job title search results section - always show when we have results */}
+                            {/* Job titles section */}
                             {jobTitleSearchResults.length > 0 && (
                               <>
                                 <div className="px-4 py-2 text-xs font-semibold text-purple-600 bg-purple-50">
@@ -634,7 +625,7 @@ const SkillsPage = () => {
                               </>
                             )}
                             
-                            {/* Skills section */}
+                            {/* Skills section, show if we have skills or no skills but with a message */}
                             {filteredSkills.length > 0 ? (
                               <>
                                 <div className="px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50">
