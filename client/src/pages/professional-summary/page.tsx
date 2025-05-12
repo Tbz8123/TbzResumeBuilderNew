@@ -454,9 +454,9 @@ const ProfessionalSummaryPage = () => {
                       <div 
                         ref={suggestionsRef}
                         className="absolute z-50 mt-1 w-full"
-                        style={{ top: '100%', left: 0 }}
+                        style={{ maxWidth: searchInputRef.current?.offsetWidth }}
                       >
-                        <div className="bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto backdrop-blur-sm bg-white/80">
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto backdrop-blur-sm bg-white/95">
                           <div className="py-1">
                             {jobTitleSuggestions.length > 0 ? (
                               jobTitleSuggestions.map((title, index) => (
@@ -464,15 +464,19 @@ const ProfessionalSummaryPage = () => {
                                   key={title.id}
                                   initial={{ opacity: 0, y: 5 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: index * 0.05 }}
-                                  className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
+                                  transition={{ delay: index * 0.03, duration: 0.2 }}
+                                  className="px-4 py-2.5 hover:bg-purple-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
                                   onClick={() => {
                                     setSearchTerm(title.title);
                                     setShowJobTitleSuggestions(false);
                                   }}
                                 >
-                                  <div className="font-medium text-gray-900">{title.title}</div>
-                                  <div className="text-xs text-gray-500">{title.category}</div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium text-gray-800">{title.title}</span>
+                                    <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                      {title.category}
+                                    </span>
+                                  </div>
                                 </motion.div>
                               ))
                             ) : (
