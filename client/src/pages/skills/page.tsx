@@ -15,7 +15,9 @@ import {
   ArrowRight,
   RotateCw,
   Undo2,
-  Loader
+  Loader,
+  Check,
+  ChevronsUpDown
 } from 'lucide-react';
 import {
   Tooltip,
@@ -30,6 +32,19 @@ import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/queryClient';
 import { JobTitle } from '@/utils/jobTitlesData';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // Sample skill categories
 const SKILL_CATEGORIES = [
@@ -130,6 +145,8 @@ const SkillsPage = () => {
   const [skillSuggestions, setSkillSuggestions] = useState<string[]>([]);
   const [jobTitleId, setJobTitleId] = useState<number | null>(null);
   const [apiSkills, setApiSkills] = useState<ApiSkill[]>([]);
+  const [jobTitleOpen, setJobTitleOpen] = useState(false);
+  const [selectedJobTitle, setSelectedJobTitle] = useState<JobTitle | null>(null);
   
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -158,25 +175,73 @@ const SkillsPage = () => {
     }
   };
   
+  // Fetch job titles for the dropdown
+  const { 
+    data: jobTitlesData = { data: [] }, 
+    isLoading: isLoadingJobTitles 
+  } = useQuery({
+    queryKey: ['/api/jobs/titles'],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('page', '1');
+      params.append('limit', '50'); // Load more job titles for a better selection
+      
+      const response = await fetch(`/api/jobs/titles?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch job titles');
+      }
+      return await response.json();
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds to catch backend updates
+  });
+
   // Function to fetch skills based on job title
   const fetchSkillsForJobTitle = async (jobTitleId: number | null) => {
     setIsLoadingSkills(true);
     try {
-      // Get the skills from our API
-      const response = await apiRequest('GET', `/api/skills?jobTitleId=${jobTitleId || MANAGER_ID}`);
+      let endpoint = `/api/skills`;
+      let skillData: ApiSkill[] = [];
       
-      if (response && Array.isArray(response)) {
-        setApiSkills(response);
+      // If we have a job title ID, use the dedicated endpoint to get associated skills
+      if (jobTitleId) {
+        console.log(`Fetching skills for job title ID: ${jobTitleId}`);
+        const response = await fetch(`/api/skills/by-job-title/${jobTitleId}`);
         
-        // Extract skill names for suggestions
-        const skillNames = response.map((skill: ApiSkill) => skill.name);
-        setSkillSuggestions(skillNames);
+        if (response.ok) {
+          skillData = await response.json();
+        }
+      }
+      
+      // If no job title-specific skills were found or no job title selected,
+      // fall back to general skills query
+      if (skillData.length === 0) {
+        console.log("No job title-specific skills found, fetching general skills");
+        const params = new URLSearchParams();
+        if (jobTitleId) {
+          params.append('jobTitleId', jobTitleId.toString());
+        }
         
-        console.log(`Loaded ${skillNames.length} skills for job title ID: ${jobTitleId || MANAGER_ID}`);
-      } else {
-        console.error("Invalid API response format for skills:", response);
-        // Use fallback skills
-        setSkillSuggestions(fallbackSkills);
+        const response = await fetch(`${endpoint}?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch skills');
+        }
+        
+        skillData = await response.json();
+      }
+      
+      // Update state with the skills data
+      setApiSkills(skillData);
+      
+      // Extract skill names for suggestions
+      const skillNames = skillData.map((skill: ApiSkill) => skill.name);
+      setSkillSuggestions(skillNames);
+      
+      console.log(`Loaded ${skillNames.length} skills for job title ID: ${jobTitleId || 'general'}`);
+      
+      // If we don't have enough skills, still show some skills
+      if (skillNames.length < 5) {
+        console.log("Not enough skills found, using fallback skills");
+        setSkillSuggestions([...skillNames, ...fallbackSkills.slice(0, 20 - skillNames.length)]);
       }
     } catch (error) {
       console.error("Error fetching skills:", error);
@@ -240,11 +305,34 @@ const SkillsPage = () => {
     const initializeSkills = async () => {
       const titleId = await findJobTitleIdFromWorkExperience();
       setJobTitleId(titleId);
+      
+      // Also set the selected job title for the dropdown if we have job titles loaded
+      if (jobTitlesData?.data && jobTitlesData.data.length > 0 && titleId) {
+        const foundJobTitle = jobTitlesData.data.find((jt: JobTitle) => jt.id === titleId);
+        if (foundJobTitle) {
+          setSelectedJobTitle(foundJobTitle);
+        }
+      }
+      
       fetchSkillsForJobTitle(titleId);
     };
     
     initializeSkills();
-  }, [resumeData.workExperience]);
+  }, [resumeData.workExperience, jobTitlesData?.data]);
+  
+  // Set up a polling interval to refresh skills 
+  useEffect(() => {
+    // Set up polling for skill updates (every 20 seconds)
+    const intervalId = setInterval(() => {
+      if (jobTitleId) {
+        console.log("Refreshing skills for job title ID:", jobTitleId);
+        fetchSkillsForJobTitle(jobTitleId);
+      }
+    }, 20000);
+    
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [jobTitleId]);
   
   // Filter skills based on search term
   const filteredSkills = searchTerm.trim() !== ''
@@ -425,9 +513,66 @@ const SkillsPage = () => {
               {/* Left Column - Examples */}
               <div>
                 {/* Search by skill */}
-                <h2 className="text-xs uppercase font-bold text-gray-600 mb-2">
-                  SEARCH BY SKILL FOR PRE-WRITTEN EXAMPLES
-                </h2>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-xs uppercase font-bold text-gray-600">
+                    SEARCH BY SKILL FOR PRE-WRITTEN EXAMPLES
+                  </h2>
+                  {isLoadingJobTitles && (
+                    <div className="flex items-center gap-1 text-xs text-purple-500">
+                      <Loader className="h-3 w-3 animate-spin" />
+                      <span>Loading job titles...</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Job Title Selector */}
+                <div className="flex gap-2 mb-3">
+                  <Popover open={jobTitleOpen} onOpenChange={setJobTitleOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={jobTitleOpen}
+                        className="w-full justify-between"
+                      >
+                        {selectedJobTitle
+                          ? selectedJobTitle.title
+                          : "Select job title for relevant skills..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search job titles..." />
+                        <CommandEmpty>No job title found.</CommandEmpty>
+                        <CommandGroup className="max-h-60 overflow-auto">
+                          {jobTitlesData?.data?.map((jobTitle: JobTitle) => (
+                            <CommandItem
+                              key={jobTitle.id}
+                              value={jobTitle.title}
+                              onSelect={() => {
+                                setSelectedJobTitle(jobTitle);
+                                setJobTitleId(jobTitle.id);
+                                setJobTitleOpen(false);
+                                fetchSkillsForJobTitle(jobTitle.id);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedJobTitle?.id === jobTitle.id
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {jobTitle.title}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 
                 {/* Search input */}
                 <div className="relative group mb-6">
@@ -457,21 +602,44 @@ const SkillsPage = () => {
                         className="absolute z-50 mt-1 w-full bg-white rounded-lg shadow-xl max-h-60 overflow-auto"
                         style={{ top: '100%', left: 0 }}
                       >
-                        <div className="py-1">
-                          {filteredSkills.slice(0, 5).map((skill, index) => (
-                            <div
-                              key={`${skill}-${index}`}
-                              className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors"
-                              onClick={() => {
-                                setSearchTerm(skill);
-                                handleSkillClick(skill);
-                                setShowSkillSuggestions(false);
-                              }}
-                            >
-                              <div className="font-medium text-gray-900">{skill}</div>
+                        {isLoadingSkills ? (
+                          <div className="py-6 flex justify-center items-center">
+                            <div className="flex flex-col items-center">
+                              <Loader className="h-6 w-6 animate-spin text-purple-600" />
+                              <p className="mt-2 text-sm text-gray-500">Loading skills...</p>
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        ) : (
+                          <div className="py-1">
+                            {filteredSkills.length === 0 ? (
+                              <div className="px-4 py-3 text-center text-gray-500">
+                                No matching skills found. Try a different search.
+                              </div>
+                            ) : (
+                              <>
+                                {selectedJobTitle && (
+                                  <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100">
+                                    Skills for: <span className="font-semibold">{selectedJobTitle.title}</span>
+                                  </div>
+                                )}
+                                
+                                {filteredSkills.slice(0, 10).map((skill, index) => (
+                                  <div
+                                    key={`${skill}-${index}`}
+                                    className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors"
+                                    onClick={() => {
+                                      setSearchTerm(skill);
+                                      handleSkillClick(skill);
+                                      setShowSkillSuggestions(false);
+                                    }}
+                                  >
+                                    <div className="font-medium text-gray-900">{skill}</div>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
