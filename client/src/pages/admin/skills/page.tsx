@@ -1031,8 +1031,35 @@ export default function SkillsAdminPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xl font-semibold flex items-center">
                     <Briefcase className="h-5 w-5 mr-2 text-gray-500" />
-                    Job Titles
+                    {useSkillJobTitles ? 'Skill Job Titles' : 'Job Titles'}
                   </h2>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={useSkillJobTitles ? "outline" : "default"}
+                      onClick={() => {
+                        setUseSkillJobTitles(false);
+                        setSelectedSkillJobTitle(null);
+                      }}
+                    >
+                      <FileText className="h-4 w-4 mr-1" />
+                      Standard
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={useSkillJobTitles ? "default" : "outline"}
+                      onClick={() => {
+                        setUseSkillJobTitles(true);
+                        setSelectedJobTitle(null);
+                      }}
+                    >
+                      <Code className="h-4 w-4 mr-1" />
+                      Custom
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mb-3">
+                  <div></div> {/* Empty div for spacing */}
                   <Link href="/admin/jobs">
                     <Button 
                       size="sm" 
