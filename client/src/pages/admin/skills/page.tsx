@@ -1334,57 +1334,78 @@ export default function SkillsAdminPage() {
           <Card className="shadow-md h-full">
             <CardContent className="p-0">
               <div className="p-4 border-b">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-xl font-semibold flex items-center">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                  <h3 className="text-lg font-semibold">
                     {selectedJobTitle ? (
-                      <>
-                        Skills for <span className="text-primary ml-1">{selectedJobTitle.title}</span>
-                        <Badge variant="outline" className="ml-2 bg-muted/50">
-                          {selectedJobTitle.category}
-                        </Badge>
-                      </>
+                      <>🛠️ Skills for "{selectedJobTitle.title}"</>
                     ) : (
-                      <>Select a Job Title</>
+                      <>🛠️ Skills</>
                     )}
-                  </h2>
-                  {selectedJobTitle && (
-                    <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => {
-                          setSearchQuery('');
-                        }}
-                      >
-                        <RefreshCw className="h-4 w-4 mr-1" />
-                        Clear
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="default"
-                        onClick={() => {
-                          setEditingSkill(null);
-                          setSkillDialogOpen(true);
-                        }}
-                        disabled={!selectedJobTitle}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Skill
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                {selectedJobTitle && (
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      className="pl-9"
-                      placeholder="Search skills..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                  </h3>
+                  
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          disabled={!selectedJobTitle}
+                        >
+                          <FileText className="h-4 w-4 mr-1" />
+                          Export
+                          <ChevronDown className="h-4 w-4 ml-1" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleExportData('csv')}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Export as CSV
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportData('json')}>
+                          <FileJson className="h-4 w-4 mr-2" />
+                          Export as JSON
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        setSearchQuery('');
+                      }}
+                      disabled={!selectedJobTitle || !searchQuery}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                      Clear Search
+                    </Button>
+                    
+                    <Button 
+                      size="sm" 
+                      variant="default"
+                      onClick={() => {
+                        setEditingSkill(null);
+                        setSkillDialogOpen(true);
+                      }}
+                      disabled={!selectedJobTitle}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Skill
+                    </Button>
                   </div>
-                )}
+                
+                </div>
+                <div className="relative mt-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    className="pl-9"
+                    placeholder={selectedJobTitle ? "Search skills..." : "Select a job title first..."}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    disabled={!selectedJobTitle}
+                  />
+                </div>
               </div>
 
               {!selectedJobTitle ? (
@@ -1454,7 +1475,7 @@ export default function SkillsAdminPage() {
                     </TableHeader>
                     <TableBody>
                       {jobTitleSkillsData
-                        .filter(skill => !searchQuery.trim() || 
+                        .filter((skill: Skill) => !searchQuery.trim() || 
                           skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           (skill.description && skill.description.toLowerCase().includes(searchQuery.toLowerCase()))
                         )
@@ -1690,7 +1711,8 @@ export default function SkillsAdminPage() {
                         <Textarea 
                           placeholder="A high-level programming language used primarily for web development."
                           className="min-h-[80px]" 
-                          {...field} 
+                          {...field}
+                          value={field.value || ''}
                         />
                       </FormControl>
                       <FormMessage />
