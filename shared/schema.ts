@@ -246,10 +246,39 @@ export type InsertSkillCategory = z.infer<typeof skillCategorySchema>;
 export type Skill = typeof skills.$inferSelect;
 export type InsertSkill = z.infer<typeof skillSchema>;
 
+// Skill-specific job titles (separate from job descriptions titles)
+export const skillJobTitles = pgTable("skill_job_titles", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const skillJobTitleSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  category: z.string().min(1, "Category is required"),
+  description: z.string().nullable(),
+});
+
+export type SkillJobTitle = typeof skillJobTitles.$inferSelect;
+export type InsertSkillJobTitle = z.infer<typeof skillJobTitleSchema>;
+
 // Job Title - Skills mapping (many-to-many relationship)
 export const jobTitleSkills = pgTable("job_title_skills", {
   id: serial("id").primaryKey(),
   jobTitleId: integer("job_title_id").notNull().references(() => jobTitles.id),
+  skillId: integer("skill_id").notNull().references(() => skills.id),
+  isRecommended: boolean("is_recommended").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Skill Job Title - Skills mapping (many-to-many relationship)
+export const skillJobTitleSkills = pgTable("skill_job_title_skills", {
+  id: serial("id").primaryKey(),
+  skillJobTitleId: integer("skill_job_title_id").notNull().references(() => skillJobTitles.id),
   skillId: integer("skill_id").notNull().references(() => skills.id),
   isRecommended: boolean("is_recommended").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -263,6 +292,11 @@ export const jobTitlesSkillsRelations = relations(jobTitles, ({ many }) => ({
 
 export const skillsJobTitlesRelations = relations(skills, ({ many }) => ({
   jobTitleSkills: many(jobTitleSkills),
+  skillJobTitleSkills: many(skillJobTitleSkills),
+}));
+
+export const skillJobTitlesRelations = relations(skillJobTitles, ({ many }) => ({
+  skillJobTitleSkills: many(skillJobTitleSkills),
 }));
 
 export const jobTitleSkillsRelations = relations(jobTitleSkills, ({ one }) => ({
@@ -272,6 +306,17 @@ export const jobTitleSkillsRelations = relations(jobTitleSkills, ({ one }) => ({
   }),
   skill: one(skills, {
     fields: [jobTitleSkills.skillId],
+    references: [skills.id],
+  }),
+}));
+
+export const skillJobTitleSkillsRelations = relations(skillJobTitleSkills, ({ one }) => ({
+  skillJobTitle: one(skillJobTitles, {
+    fields: [skillJobTitleSkills.skillJobTitleId],
+    references: [skillJobTitles.id],
+  }),
+  skill: one(skills, {
+    fields: [skillJobTitleSkills.skillId],
     references: [skills.id],
   }),
 }));

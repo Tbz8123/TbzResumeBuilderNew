@@ -45,7 +45,7 @@ skillsRouter.get("/categories", async (req, res) => {
   }
 });
 
-// Get skills by job title ID
+// Get skills by job title ID (using the original job title from jobs)
 skillsRouter.get("/by-job-title/:jobTitleId", async (req, res) => {
   try {
     const jobTitleId = parseInt(req.params.jobTitleId);
@@ -69,7 +69,7 @@ skillsRouter.get("/by-job-title/:jobTitleId", async (req, res) => {
       with: {
         skill: true
       },
-      orderBy: [desc(jobTitleSkills.isRecommended), asc(skills.name)]
+      orderBy: [desc(jobTitleSkills.isRecommended)]
     });
 
     // Extract the skills with their recommendation status from the mapping
@@ -125,6 +125,311 @@ skillsRouter.get("/by-job-title/:jobTitleId", async (req, res) => {
   } catch (error) {
     console.error(`Error fetching skills for job title ID ${req.params.jobTitleId}:`, error);
     return res.status(500).json({ error: "Failed to fetch skills for this job title" });
+  }
+});
+
+// SKILL JOB TITLES (specific to skills management, separate from job descriptions)
+
+// Get all skill job titles with optional pagination and search
+skillsRouter.get("/job-titles", async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const searchQuery = req.query.search as string;
+    const category = req.query.category as string;
+    
+    console.log(`Fetching skill job titles (page: ${page}, limit: ${limit}, category: ${category || 'all'}, search: ${searchQuery || 'none'})`);
+    
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+    
+    // Build the query
+    let queryBuilder = db.select().from(skillJobTitles);
+    
+    // Add search filter if provided
+    if (searchQuery) {
+      console.log(`Searching for skill job titles matching: "${searchQuery}"`);
+      queryBuilder = queryBuilder.where(sql`LOWER(${skillJobTitles.title}) LIKE LOWER(${'%' + searchQuery + '%'})`);
+    }
+    
+    // Add category filter if provided and not 'all'
+    if (category && category !== 'all') {
+      queryBuilder = queryBuilder.where(eq(skillJobTitles.category, category));
+    }
+    
+    // Get total count for pagination
+    const totalCountQuery = db.select({ count: sql<number>`count(*)` }).from(skillJobTitles);
+    if (searchQuery) {
+      totalCountQuery.where(sql`LOWER(${skillJobTitles.title}) LIKE LOWER(${'%' + searchQuery + '%'})`);
+    }
+    if (category && category !== 'all') {
+      totalCountQuery.where(eq(skillJobTitles.category, category));
+    }
+    
+    const [{ count }] = await totalCountQuery;
+    const total = Number(count);
+    
+    // Execute the query with pagination and ordering
+    const data = await queryBuilder
+      .orderBy(asc(skillJobTitles.title))
+      .limit(limit)
+      .offset(offset);
+    
+    console.log(`Retrieved ${data.length} skill job titles (total: ${total})`);
+    
+    // Return the result with pagination info
+    return res.json({
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching skill job titles:", error);
+    return res.status(500).json({ error: "Failed to fetch skill job titles" });
+  }
+});
+
+// Get skills by skill job title ID (using our skill-specific job titles)
+skillsRouter.get("/by-skill-job-title/:skillJobTitleId", async (req, res) => {
+  try {
+    const skillJobTitleId = parseInt(req.params.skillJobTitleId);
+    if (isNaN(skillJobTitleId)) {
+      return res.status(400).json({ error: "Invalid skill job title ID" });
+    }
+
+    // Get skill job title to verify it exists
+    const skillJobTitle = await db.query.skillJobTitles.findFirst({
+      where: eq(skillJobTitles.id, skillJobTitleId),
+    });
+
+    if (!skillJobTitle) {
+      return res.status(404).json({ error: "Skill job title not found" });
+    }
+
+    // Find all skills linked to this skill job title through the junction table
+    // including their recommendation status
+    const skillMappings = await db.query.skillJobTitleSkills.findMany({
+      where: eq(skillJobTitleSkills.skillJobTitleId, skillJobTitleId),
+      with: {
+        skill: true
+      },
+      orderBy: [desc(skillJobTitleSkills.isRecommended)]
+    });
+
+    // Extract the skills with their recommendation status from the mapping
+    const linkedSkills = skillMappings.map(mapping => ({
+      ...mapping.skill,
+      isRecommended: mapping.isRecommended
+    }));
+
+    console.log(`Found ${linkedSkills.length} skills for skill job title ID ${skillJobTitleId} (${skillJobTitle.title})`);
+    
+    // If we don't have enough skills specific to this job title, 
+    // supplement with some general skills
+    if (linkedSkills.length < 10) {
+      console.log(`Not enough skills for ${skillJobTitle.title}, adding generic skills`);
+      
+      // Get skill categories that might be relevant for this job
+      const relevantCategoryIds = await getRelevantCategoriesForJobTitle(skillJobTitle);
+      
+      // Get some general skills from these categories that aren't already in the linked skills
+      const linkedSkillIds = linkedSkills.map(s => s.id);
+      
+      // Query for additional skills, excluding the ones we already have
+      const additionalSkills = await db.query.skills.findMany({
+        where: 
+          linkedSkillIds.length > 0 
+            ? and(
+                sql`${skills.categoryId} IN (${relevantCategoryIds.join(',')})`,
+                sql`${skills.id} NOT IN (${linkedSkillIds.join(',')})`
+              )
+            : sql`${skills.categoryId} IN (${relevantCategoryIds.join(',')})`,
+        orderBy: [desc(skills.isRecommended), asc(skills.name)],
+        limit: 10 - linkedSkills.length
+      });
+      
+      console.log(`Adding ${additionalSkills.length} additional generic skills`);
+      
+      // Add these skills to our result, marking them as not recommended
+      linkedSkills.push(
+        ...additionalSkills.map(skill => ({
+          ...skill,
+          isRecommended: false // Explicit general skills are not marked as recommended
+        }))
+      );
+    }
+
+    // Add cache control headers to prevent browser caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    return res.json(linkedSkills);
+  } catch (error) {
+    console.error(`Error fetching skills for skill job title ID ${req.params.skillJobTitleId}:`, error);
+    return res.status(500).json({ error: "Failed to fetch skills for this skill job title" });
+  }
+});
+
+// Create a new skill job title
+skillsRouter.post("/job-titles", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const validatedData = skillJobTitleSchema.parse(req.body);
+    const [newSkillJobTitle] = await db.insert(skillJobTitles).values(validatedData).returning();
+    return res.status(201).json(newSkillJobTitle);
+  } catch (error) {
+    console.error("Error creating skill job title:", error);
+    return res.status(500).json({ error: "Failed to create skill job title" });
+  }
+});
+
+// Update a skill job title
+skillsRouter.put("/job-titles/:id", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid skill job title ID" });
+    }
+    
+    const validatedData = skillJobTitleSchema.parse(req.body);
+    const [updatedSkillJobTitle] = await db.update(skillJobTitles)
+      .set(validatedData)
+      .where(eq(skillJobTitles.id, id))
+      .returning();
+      
+    if (!updatedSkillJobTitle) {
+      return res.status(404).json({ error: "Skill job title not found" });
+    }
+    
+    return res.json(updatedSkillJobTitle);
+  } catch (error) {
+    console.error("Error updating skill job title:", error);
+    return res.status(500).json({ error: "Failed to update skill job title" });
+  }
+});
+
+// Delete a skill job title
+skillsRouter.delete("/job-titles/:id", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid skill job title ID" });
+    }
+    
+    // First check if there are any skills linked to this job title
+    const skillLinks = await db.query.skillJobTitleSkills.findMany({
+      where: eq(skillJobTitleSkills.skillJobTitleId, id),
+      limit: 1
+    });
+    
+    if (skillLinks.length > 0) {
+      // Delete all skill links first
+      await db.delete(skillJobTitleSkills)
+        .where(eq(skillJobTitleSkills.skillJobTitleId, id));
+    }
+    
+    // Then delete the job title
+    await db.delete(skillJobTitles).where(eq(skillJobTitles.id, id));
+    return res.status(204).send();
+  } catch (error) {
+    console.error("Error deleting skill job title:", error);
+    return res.status(500).json({ error: "Failed to delete skill job title" });
+  }
+});
+
+// Associate a skill with a skill job title
+skillsRouter.post("/job-titles/:skillJobTitleId/skills/:skillId", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const skillJobTitleId = parseInt(req.params.skillJobTitleId);
+    const skillId = parseInt(req.params.skillId);
+    
+    if (isNaN(skillJobTitleId) || isNaN(skillId)) {
+      return res.status(400).json({ error: "Invalid skill job title ID or skill ID" });
+    }
+    
+    // Check if both exist
+    const skillJobTitle = await db.query.skillJobTitles.findFirst({
+      where: eq(skillJobTitles.id, skillJobTitleId)
+    });
+    
+    if (!skillJobTitle) {
+      return res.status(404).json({ error: "Skill job title not found" });
+    }
+    
+    const skillItem = await db.query.skills.findFirst({
+      where: eq(skills.id, skillId)
+    });
+    
+    if (!skillItem) {
+      return res.status(404).json({ error: "Skill not found" });
+    }
+    
+    // Check if the association already exists
+    const existingAssociation = await db.query.skillJobTitleSkills.findFirst({
+      where: and(
+        eq(skillJobTitleSkills.skillJobTitleId, skillJobTitleId),
+        eq(skillJobTitleSkills.skillId, skillId)
+      )
+    });
+    
+    if (existingAssociation) {
+      // If it exists, update the isRecommended status if needed
+      const isRecommended = req.body.isRecommended === undefined ? 
+        existingAssociation.isRecommended : !!req.body.isRecommended;
+        
+      if (isRecommended !== existingAssociation.isRecommended) {
+        const [updated] = await db.update(skillJobTitleSkills)
+          .set({ isRecommended })
+          .where(eq(skillJobTitleSkills.id, existingAssociation.id))
+          .returning();
+          
+        return res.json(updated);
+      }
+      
+      return res.json(existingAssociation);
+    }
+    
+    // Create the association
+    const isRecommended = req.body.isRecommended === undefined ? false : !!req.body.isRecommended;
+    const [association] = await db.insert(skillJobTitleSkills)
+      .values({
+        skillJobTitleId,
+        skillId,
+        isRecommended
+      })
+      .returning();
+      
+    return res.status(201).json(association);
+  } catch (error) {
+    console.error("Error associating skill with skill job title:", error);
+    return res.status(500).json({ error: "Failed to associate skill with skill job title" });
+  }
+});
+
+// Remove a skill from a skill job title
+skillsRouter.delete("/job-titles/:skillJobTitleId/skills/:skillId", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const skillJobTitleId = parseInt(req.params.skillJobTitleId);
+    const skillId = parseInt(req.params.skillId);
+    
+    if (isNaN(skillJobTitleId) || isNaN(skillId)) {
+      return res.status(400).json({ error: "Invalid skill job title ID or skill ID" });
+    }
+    
+    await db.delete(skillJobTitleSkills)
+      .where(and(
+        eq(skillJobTitleSkills.skillJobTitleId, skillJobTitleId),
+        eq(skillJobTitleSkills.skillId, skillId)
+      ));
+      
+    return res.status(204).send();
+  } catch (error) {
+    console.error("Error removing skill from skill job title:", error);
+    return res.status(500).json({ error: "Failed to remove skill from skill job title" });
   }
 });
 
