@@ -303,17 +303,31 @@ const ProfessionalSummaryPage = () => {
     fetchProfessionalSummaryTitles();
   }, []);
   
-  // Hardcoded suggestions for backwards compatibility
+  // Hardcoded suggestions for backwards compatibility and to ensure we always have data
   const hardcodedSuggestions = [
     { id: 28, title: 'Manager', category: 'Management', createdAt: new Date(), updatedAt: new Date() },
     { id: 29, title: 'Marketing Manager', category: 'Marketing', createdAt: new Date(), updatedAt: new Date() },
     { id: 30, title: 'Marketing Coordinator', category: 'Marketing', createdAt: new Date(), updatedAt: new Date() },
     { id: 31, title: 'Marketing Specialist', category: 'Marketing', createdAt: new Date(), updatedAt: new Date() },
-    { id: 32, title: 'Machine Learning Engineer', category: 'Technology', createdAt: new Date(), updatedAt: new Date() }
+    { id: 32, title: 'Machine Learning Engineer', category: 'Technology', createdAt: new Date(), updatedAt: new Date() },
+    { id: 33, title: 'Software Engineer', category: 'Technology', createdAt: new Date(), updatedAt: new Date() },
+    { id: 34, title: 'Product Manager', category: 'Product', createdAt: new Date(), updatedAt: new Date() },
+    { id: 35, title: 'Data Scientist', category: 'Data', createdAt: new Date(), updatedAt: new Date() },
+    { id: 36, title: 'UI/UX Designer', category: 'Design', createdAt: new Date(), updatedAt: new Date() },
+    { id: 37, title: 'Project Manager', category: 'Management', createdAt: new Date(), updatedAt: new Date() },
+    { id: 38, title: 'Business Analyst', category: 'Business', createdAt: new Date(), updatedAt: new Date() },
+    { id: 39, title: 'DevOps Engineer', category: 'Technology', createdAt: new Date(), updatedAt: new Date() },
+    { id: 40, title: 'Content Writer', category: 'Marketing', createdAt: new Date(), updatedAt: new Date() }
   ];
 
   // Combined suggestions from hardcoded and database
   const allSuggestions = [...professionalSummaryTitles, ...hardcodedSuggestions];
+  
+  // Log the combined suggestions to help with debugging
+  useEffect(() => {
+    console.log("All job title suggestions available:", allSuggestions.length);
+    console.log("Sample of suggestions:", allSuggestions.slice(0, 3));
+  }, [allSuggestions]);
 
   // Effect to update job title suggestions when search term changes
   useEffect(() => {
@@ -534,16 +548,35 @@ const ProfessionalSummaryPage = () => {
                                 console.log(`Found ${filtered.length} matching job title suggestions`);
                                 setJobTitleSuggestions(filtered);
                                 setShowJobTitleSuggestions(true);
+                                console.log("Setting showJobTitleSuggestions to TRUE");
                               } else {
-                                setShowJobTitleSuggestions(false);
+                                console.log("No matching job title suggestions found");
+                                // Set empty suggestions but still show the dropdown with "no results" message
+                                setJobTitleSuggestions([]);
+                                setShowJobTitleSuggestions(true);
                               }
                             }
                           }}
                           onFocus={() => {
-                            // Always show suggestions on focus if we have any search term
+                            console.log("Input field focused");
+                            // Show suggestions on focus regardless of search term
+                            // This ensures dropdown works consistently
+                            
+                            // If there's a search term, filter suggestions based on that
                             if (searchTerm.trim()) {
-                              setShowJobTitleSuggestions(true);
+                              const filtered = allSuggestions.filter(job => 
+                                job.title.toLowerCase().includes(searchTerm.toLowerCase())
+                              );
+                              setJobTitleSuggestions(filtered.length > 0 ? filtered : []);
+                            } else {
+                              // If no search term, show some default suggestions
+                              const defaultSuggestions = allSuggestions.slice(0, 5);
+                              setJobTitleSuggestions(defaultSuggestions);
                             }
+                            
+                            // Always show the dropdown
+                            setShowJobTitleSuggestions(true);
+                            console.log("Setting showJobTitleSuggestions to TRUE on focus");
                           }}
                           autoComplete="off"
                           data-lpignore="true"
