@@ -85,7 +85,9 @@ import {
   ChevronLeft,
   FileText,
   RefreshCw,
-  FolderHeart
+  FolderHeart,
+  FileSpreadsheet,
+  Code
 } from "lucide-react";
 
 // Load environment variables
@@ -136,6 +138,198 @@ interface PaginatedTitlesResponse {
 }
 
 export default function ProfessionalSummaryAdminPage() {
+  // State for export/import in the parent component
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [syncMode, setSyncMode] = useState<'update-only' | 'full-sync'>('update-only');
+  const [uploadStatus, setUploadStatus] = useState<{
+    processed: number;
+    created: number;
+    updated: number;
+    deleted: number;
+    errors: Array<{ row: number; message: string }>;
+    isComplete: boolean;
+    syncMode?: string;
+  } | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+  
+  // Handle exporting data
+  const handleExportData = async (format: 'csv' | 'excel' | 'json') => {
+    setIsExporting(true);
+    let endpoint = '';
+    let filename = '';
+    let description = '';
+    
+    // Set the appropriate endpoint and filename based on format
+    switch (format) {
+      case 'csv':
+        endpoint = '/api/professional-summary/export-csv';
+        filename = 'professional_summary_export.csv';
+        description = "Professional summary data has been exported to CSV";
+        break;
+      case 'excel':
+        endpoint = '/api/professional-summary/export-excel';
+        filename = 'professional_summary_export.xlsx';
+        description = "Professional summary data has been exported to Excel";
+        break;
+      case 'json':
+        endpoint = '/api/professional-summary/export-json';
+        filename = 'professional_summary_export.json';
+        description = "Professional summary data has been exported to JSON";
+        break;
+      default:
+        endpoint = '/api/professional-summary/export-csv';
+        filename = 'professional_summary_export.csv';
+        description = "Professional summary data has been exported to CSV";
+    }
+    
+    try {
+      const res = await apiRequest('GET', endpoint);
+      
+      if (!res.ok) {
+        throw new Error(`Failed to export ${format.toUpperCase()}`);
+      }
+      
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      
+      // Create a temporary link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Export successful',
+        description: description,
+      });
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: error instanceof Error ? error.message : "Failed to export data",
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
+  // Handle file import
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    const file = event.target.files[0];
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
+    
+    // Validate file format
+    if (!['csv', 'xlsx', 'xls', 'json'].includes(fileExt)) {
+      toast({
+        title: "Invalid File Format",
+        description: "Please upload a CSV, Excel, or JSON file",
+        variant: "destructive",
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+    
+    setIsImporting(true);
+    setUploadStatus({
+      processed: 0,
+      created: 0,
+      updated: 0,
+      deleted: 0,
+      errors: [],
+      isComplete: false,
+      syncMode
+    });
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('syncMode', syncMode);
+      
+      // Set up server-sent events to receive import progress updates
+      const eventSource = new EventSource(`/api/professional-summary/import-status?syncMode=${syncMode}`);
+      
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        // Update status with the latest information
+        setUploadStatus({
+          processed: data.processed || 0,
+          created: data.created || 0,
+          updated: data.updated || 0,
+          deleted: data.deleted || 0,
+          errors: data.errors || [],
+          isComplete: data.isComplete || false,
+          syncMode: data.syncMode
+        });
+        
+        // Close the connection when complete
+        if (data.isComplete) {
+          eventSource.close();
+          setIsImporting(false);
+          
+          toast({
+            title: "Import Successful",
+            description: syncMode === 'full-sync'
+              ? `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Deleted: ${data.deleted}`
+              : `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}`,
+          });
+          
+          // Refresh data
+          queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/titles'] });
+          
+          setIsImporting(false);
+          setUploadStatus(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }
+      };
+      
+      eventSource.onerror = () => {
+        eventSource.close();
+        setIsImporting(false);
+        toast({
+          title: "Import Failed",
+          description: "Lost connection to server during import",
+          variant: "destructive",
+        });
+      };
+      
+      // Submit the file
+      const res = await fetch('/api/professional-summary/import-csv', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to upload file');
+      }
+    } catch (error) {
+      setIsImporting(false);
+      setUploadStatus(null);
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "An error occurred during import",
+        variant: "destructive",
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+  
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-8">
@@ -152,7 +346,149 @@ export default function ProfessionalSummaryAdminPage() {
             Manage professional summary titles and their descriptions
           </p>
         </div>
+        
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2" disabled={isExporting}>
+                <Download className="h-4 w-4" />
+                {isExporting ? "Exporting..." : "Export Data"}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExportData('csv')}>
+                <FileText className="h-4 w-4 mr-2" />
+                CSV Format
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportData('excel')}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Excel Format
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportData('json')}>
+                <Code className="h-4 w-4 mr-2" />
+                JSON Format
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2" disabled={isImporting}>
+                <Upload className="h-4 w-4" />
+                {isImporting ? "Importing..." : "Import Data"}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[280px]">
+              <DropdownMenuLabel>Import Settings</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="px-2 py-1.5">
+                <Label htmlFor="sync-mode" className="text-xs mb-1 block">Import Mode</Label>
+                <Select value={syncMode} onValueChange={(value) => setSyncMode(value as 'update-only' | 'full-sync')}>
+                  <SelectTrigger id="sync-mode" className="w-full">
+                    <SelectValue placeholder="Select import mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="update-only">
+                      Update Only
+                      <span className="block text-xs text-muted-foreground">Add new or update existing records</span>
+                    </SelectItem>
+                    <SelectItem value="full-sync">
+                      Full Sync
+                      <span className="block text-xs text-muted-foreground">Add, update, and delete records</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                <FileText className="h-4 w-4 mr-2" />
+                CSV, Excel, or JSON File
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                Supports .csv, .xlsx, .xls, and .json files
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.xlsx,.xls,.json"
+            className="hidden"
+            onChange={handleFileImport}
+            disabled={isImporting}
+          />
+        </div>
       </div>
+      
+      {/* File Import Status */}
+      {uploadStatus && (
+        <div className="mb-6 p-4 border rounded-lg bg-background shadow-sm">
+          <div className="mb-3 flex justify-between items-center">
+            <h3 className="font-medium">Import Progress</h3>
+            {uploadStatus.isComplete && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-7 px-2"
+                onClick={() => setUploadStatus(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Mode: {uploadStatus.syncMode === 'full-sync' ? 'Full Sync' : 'Update Only'}</span>
+              <span>{uploadStatus.isComplete ? 'Complete' : 'Processing...'}</span>
+            </div>
+            
+            <Progress value={(uploadStatus.processed / Math.max(uploadStatus.processed, 1)) * 100} />
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+              <div className="p-2 border rounded-md bg-gray-50">
+                <span className="text-xs text-gray-500">Processed</span>
+                <p className="text-lg font-medium">{uploadStatus.processed}</p>
+              </div>
+              <div className="p-2 border rounded-md bg-gray-50">
+                <span className="text-xs text-gray-500">Created</span>
+                <p className="text-lg font-medium">{uploadStatus.created}</p>
+              </div>
+              <div className="p-2 border rounded-md bg-gray-50">
+                <span className="text-xs text-gray-500">Updated</span>
+                <p className="text-lg font-medium">{uploadStatus.updated}</p>
+              </div>
+              {uploadStatus.syncMode === 'full-sync' && (
+                <div className="p-2 border rounded-md bg-gray-50">
+                  <span className="text-xs text-gray-500">Deleted</span>
+                  <p className="text-lg font-medium">{uploadStatus.deleted}</p>
+                </div>
+              )}
+            </div>
+            
+            {uploadStatus.errors.length > 0 && (
+              <div className="mt-4">
+                <h4 className="font-medium text-destructive mb-2">Errors ({uploadStatus.errors.length})</h4>
+                <div className="max-h-40 overflow-y-auto border rounded-md">
+                  <div className="p-2 bg-destructive/10">
+                    {uploadStatus.errors.map((error, index) => (
+                      <div key={index} className="text-sm mb-1 last:mb-0">
+                        <span className="font-medium">Row {error.row}:</span> {error.message}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <ProfessionalSummaryAdmin />
     </div>
@@ -174,6 +510,21 @@ function ProfessionalSummaryAdmin() {
   const [isDeleteDescriptionOpen, setIsDeleteDescriptionOpen] = useState(false);
   const [editingTitleData, setEditingTitleData] = useState<ProfessionalSummaryTitle | null>(null);
   const [editingDescriptionData, setEditingDescriptionData] = useState<ProfessionalSummaryDescription | null>(null);
+  
+  // Export/Import state
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [syncMode, setSyncMode] = useState<'update-only' | 'full-sync'>('update-only');
+  const [uploadStatus, setUploadStatus] = useState<{
+    processed: number;
+    created: number;
+    updated: number;
+    deleted: number;
+    errors: Array<{ row: number; message: string }>;
+    isComplete: boolean;
+    syncMode?: string;
+  } | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Fetch categories for dropdown menus
   const { data: categories = [] } = useQuery<string[]>({
@@ -382,6 +733,185 @@ function ProfessionalSummaryAdmin() {
       });
     },
   });
+  
+  // Handle exporting data
+  const handleExportData = async (format: 'csv' | 'excel' | 'json') => {
+    setIsExporting(true);
+    let endpoint = '';
+    let filename = '';
+    let description = '';
+    
+    // Set the appropriate endpoint and filename based on format
+    switch (format) {
+      case 'csv':
+        endpoint = '/api/professional-summary/export-csv';
+        filename = 'professional_summary_export.csv';
+        description = "Professional summary data has been exported to CSV";
+        break;
+      case 'excel':
+        endpoint = '/api/professional-summary/export-excel';
+        filename = 'professional_summary_export.xlsx';
+        description = "Professional summary data has been exported to Excel";
+        break;
+      case 'json':
+        endpoint = '/api/professional-summary/export-json';
+        filename = 'professional_summary_export.json';
+        description = "Professional summary data has been exported to JSON";
+        break;
+      default:
+        endpoint = '/api/professional-summary/export-csv';
+        filename = 'professional_summary_export.csv';
+        description = "Professional summary data has been exported to CSV";
+    }
+    
+    try {
+      const res = await apiRequest('GET', endpoint);
+      
+      if (!res.ok) {
+        throw new Error(`Failed to export ${format.toUpperCase()}`);
+      }
+      
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      
+      // Create a temporary link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Export successful',
+        description: description,
+      });
+    } catch (error) {
+      toast({
+        title: 'Export failed',
+        description: error instanceof Error ? error.message : "Failed to export data",
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
+  // Handle file import
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    const file = event.target.files[0];
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
+    
+    // Validate file format
+    if (!['csv', 'xlsx', 'xls', 'json'].includes(fileExt)) {
+      toast({
+        title: "Invalid File Format",
+        description: "Please upload a CSV, Excel, or JSON file",
+        variant: "destructive",
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+    
+    setIsImporting(true);
+    setUploadStatus({
+      processed: 0,
+      created: 0,
+      updated: 0,
+      deleted: 0,
+      errors: [],
+      isComplete: false,
+      syncMode
+    });
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('syncMode', syncMode);
+      
+      // Set up server-sent events to receive import progress updates
+      const eventSource = new EventSource(`/api/professional-summary/import-status?syncMode=${syncMode}`);
+      
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        // Update status with the latest information
+        setUploadStatus({
+          processed: data.processed || 0,
+          created: data.created || 0,
+          updated: data.updated || 0,
+          deleted: data.deleted || 0,
+          errors: data.errors || [],
+          isComplete: data.isComplete || false,
+          syncMode: data.syncMode
+        });
+        
+        // Close the connection when complete
+        if (data.isComplete) {
+          eventSource.close();
+          setIsImporting(false);
+          
+          toast({
+            title: "Import Successful",
+            description: syncMode === 'full-sync'
+              ? `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Deleted: ${data.deleted}`
+              : `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}`,
+          });
+          
+          // Refresh data
+          queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/titles'] });
+          if (selectedTitle) {
+            queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/descriptions', selectedTitle.id] });
+          }
+          
+          setIsImporting(false);
+          setUploadStatus(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }
+      };
+      
+      eventSource.onerror = () => {
+        eventSource.close();
+        setIsImporting(false);
+        toast({
+          title: "Import Failed",
+          description: "Lost connection to server during import",
+          variant: "destructive",
+        });
+      };
+      
+      // Submit the file
+      const res = await fetch('/api/professional-summary/import-csv', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to upload file');
+      }
+    } catch (error) {
+      setIsImporting(false);
+      setUploadStatus(null);
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "An error occurred during import",
+        variant: "destructive",
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
   
   // Select a professional summary title
   const handleSelectTitle = (title: ProfessionalSummaryTitle) => {
