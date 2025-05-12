@@ -231,7 +231,34 @@ const ProfessionalSummaryPage = () => {
     fetchProfessionalSummaries();
   }, [currentJobTitle, resumeData.professionalSummaryTitleId, searchTerm]);
   
-  // Hardcoded suggestions for testing that match JobTitle type
+  // State for professional summary titles from database
+  const [professionalSummaryTitles, setProfessionalSummaryTitles] = useState<Array<{id: number, title: string, category: string}>>([]);
+  
+  // Fetch professional summary titles from database
+  useEffect(() => {
+    const fetchProfessionalSummaryTitles = async () => {
+      try {
+        const response = await fetch('/api/professional-summary/titles?limit=100');
+        const data = await response.json();
+        if (data.data && Array.isArray(data.data)) {
+          // Transform to expected format (id, title, category)
+          const titles = data.data.map((title: any) => ({
+            id: title.id,
+            title: title.title,
+            category: title.category || 'Other'
+          }));
+          setProfessionalSummaryTitles(titles);
+          console.log("Fetched professional summary titles:", titles);
+        }
+      } catch (error) {
+        console.error("Error fetching professional summary titles:", error);
+      }
+    };
+    
+    fetchProfessionalSummaryTitles();
+  }, []);
+  
+  // Hardcoded suggestions for backwards compatibility
   const hardcodedSuggestions = [
     { id: 28, title: 'Manager', category: 'Management', createdAt: new Date(), updatedAt: new Date() },
     { id: 29, title: 'Marketing Manager', category: 'Marketing', createdAt: new Date(), updatedAt: new Date() },
@@ -240,10 +267,13 @@ const ProfessionalSummaryPage = () => {
     { id: 32, title: 'Machine Learning Engineer', category: 'Technology', createdAt: new Date(), updatedAt: new Date() }
   ];
 
+  // Combined suggestions from hardcoded and database
+  const allSuggestions = [...professionalSummaryTitles, ...hardcodedSuggestions];
+
   // Effect to update job title suggestions when search term changes
   useEffect(() => {
     // Always filter suggestions regardless of whether search term is empty
-    const filteredSuggestions = hardcodedSuggestions.filter(job => 
+    const filteredSuggestions = allSuggestions.filter(job => 
       job.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
     console.log("Filtered suggestions:", filteredSuggestions);
@@ -308,7 +338,7 @@ const ProfessionalSummaryPage = () => {
     // This will trigger the useEffect that filters the suggestions
     if (value.trim().length > 0) {
       // Make sure we have suggestions to show
-      const filtered = hardcodedSuggestions.filter(job => 
+      const filtered = allSuggestions.filter(job => 
         job.title.toLowerCase().includes(value.toLowerCase())
       );
       
