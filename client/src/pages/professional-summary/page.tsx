@@ -92,6 +92,15 @@ const ProfessionalSummaryPage = () => {
   const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
   const [showingResults, setShowingResults] = useState<string>('');
   
+  // For debugging
+  useEffect(() => {
+    console.log("Current job title changed:", currentJobTitle);
+  }, [currentJobTitle]);
+  
+  useEffect(() => {
+    console.log("Summary descriptions updated:", summaryDescriptions.length, summaryDescriptions);
+  }, [summaryDescriptions]);
+  
   // Fetch professional summaries from API when currentJobTitle changes
   useEffect(() => {
     const fetchProfessionalSummaries = async () => {
