@@ -554,7 +554,7 @@ const ProfessionalSummaryPage = () => {
                           <motion.div 
                             key={item.id}
                             variants={itemVariants}
-                            className={`p-3 ${item.isRecommended ? 'bg-pink-50' : 'bg-white'} rounded-lg cursor-pointer transition-all duration-300 hover:shadow-sm`}
+                            className={`p-3 border ${item.isRecommended ? 'border-purple-200 bg-purple-50' : 'border-gray-200 bg-gray-50'} rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
                             onClick={() => handleSummaryClick(item.content)}
                           >
                             <div className="flex mb-1">
