@@ -383,13 +383,31 @@ const ProfessionalSummaryPage = () => {
   // Effect to handle clicks outside the suggestions dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        suggestionsRef.current && 
-        !suggestionsRef.current.contains(event.target as Node) &&
-        searchInputRef.current && 
-        !searchInputRef.current.contains(event.target as Node)
-      ) {
+      console.log("Click detected outside - deciding whether to close dropdown");
+      
+      // Check if we have valid refs
+      if (!suggestionsRef.current) {
+        console.log("Suggestions ref is null - can't check if clicked outside");
+        return;
+      }
+      
+      if (!searchInputRef.current) {
+        console.log("Search input ref is null - can't check if clicked outside");
+        return;
+      }
+      
+      // Check if click was outside both the input and dropdown
+      const clickedOutsideSuggestions = !suggestionsRef.current.contains(event.target as Node);
+      const clickedOutsideInput = !searchInputRef.current.contains(event.target as Node);
+      
+      console.log("Clicked outside suggestions:", clickedOutsideSuggestions);
+      console.log("Clicked outside input:", clickedOutsideInput);
+      
+      if (clickedOutsideSuggestions && clickedOutsideInput) {
+        console.log("Closing dropdown due to outside click");
         setShowJobTitleSuggestions(false);
+      } else {
+        console.log("Not closing dropdown - click was inside component");
       }
     };
     
@@ -548,6 +566,19 @@ const ProfessionalSummaryPage = () => {
                           placeholder="Search by job title for pre-written examples"
                           className="w-full rounded-lg border border-gray-300 px-3 pr-10 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
                           defaultValue={searchTerm}
+                          onClick={() => {
+                            // Show dropdown when clicking on the input field
+                            console.log("Input clicked - showing dropdown");
+                            
+                            // Use default suggestions if no search term
+                            if (!searchTerm.trim()) {
+                              const defaultSuggestions = allSuggestions.slice(0, 5);
+                              setJobTitleSuggestions(defaultSuggestions);
+                            }
+                            
+                            // Force show the dropdown
+                            setShowJobTitleSuggestions(true);
+                          }}
                           onInput={(e) => {
                             const target = e.target as HTMLInputElement;
                             const newValue = target.value;
@@ -558,7 +589,11 @@ const ProfessionalSummaryPage = () => {
                             if (newValue === '') {
                               setCurrentJobTitle(null);
                               setSummaryDescriptions([]);
-                              setShowJobTitleSuggestions(false);
+                              
+                              // Show default suggestions
+                              const defaultSuggestions = allSuggestions.slice(0, 5);
+                              setJobTitleSuggestions(defaultSuggestions);
+                              setShowJobTitleSuggestions(true);
                             } else {
                               // Show/hide dropdown based on input
                               const filtered = allSuggestions.filter(job => 
@@ -568,20 +603,18 @@ const ProfessionalSummaryPage = () => {
                               if (filtered.length > 0) {
                                 console.log(`Found ${filtered.length} matching job title suggestions`);
                                 setJobTitleSuggestions(filtered);
-                                setShowJobTitleSuggestions(true);
-                                console.log("Setting showJobTitleSuggestions to TRUE");
                               } else {
                                 console.log("No matching job title suggestions found");
                                 // Set empty suggestions but still show the dropdown with "no results" message
                                 setJobTitleSuggestions([]);
-                                setShowJobTitleSuggestions(true);
                               }
+                              
+                              // Always show dropdown while typing
+                              setShowJobTitleSuggestions(true);
                             }
                           }}
                           onFocus={() => {
                             console.log("Input field focused");
-                            // Show suggestions on focus regardless of search term
-                            // This ensures dropdown works consistently
                             
                             // If there's a search term, filter suggestions based on that
                             if (searchTerm.trim()) {
@@ -602,40 +635,58 @@ const ProfessionalSummaryPage = () => {
                           autoComplete="off"
                           data-lpignore="true"
                         />
-                        {searchTerm ? (
-                          <button 
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
+                        <div className="flex items-center absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <button
+                            type="button" 
+                            className="mr-1 p-1 rounded-md text-xs bg-purple-100 text-purple-600 hover:bg-purple-200"
                             onClick={() => {
-                              // Reset the search term state
-                              setSearchTerm('');
-                              
-                              // Reset the input field value directly (for uncontrolled input)
-                              if (searchInputRef.current) {
-                                searchInputRef.current.value = '';
-                              }
-                              
-                              // Clear related states
-                              setCurrentJobTitle(null);
-                              setSummaryDescriptions([]);
-                              setShowJobTitleSuggestions(false);
-                              
-                              console.log("Search field cleared completely");
-                              
-                              // Focus the input field after clearing
-                              searchInputRef.current?.focus();
+                              console.log("Debug: Forcing dropdown to show");
+                              // Force show a minimum set of suggestions
+                              const forcedSuggestions = allSuggestions.slice(0, 5);
+                              setJobTitleSuggestions(forcedSuggestions);
+                              setShowJobTitleSuggestions(true);
                             }}
                           >
-                            <X className="h-5 w-5" />
+                            Debug
                           </button>
-                        ) : (
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-500">
-                            <Search className="h-5 w-5" />
-                          </div>
-                        )}
+                          
+                          {searchTerm ? (
+                            <button 
+                              className="text-gray-500 hover:text-gray-700 transition-colors duration-300"
+                              onClick={() => {
+                                // Reset the search term state
+                                setSearchTerm('');
+                                
+                                // Reset the input field value directly (for uncontrolled input)
+                                if (searchInputRef.current) {
+                                  searchInputRef.current.value = '';
+                                }
+                                
+                                // Clear related states
+                                setCurrentJobTitle(null);
+                                setSummaryDescriptions([]);
+                                setShowJobTitleSuggestions(false);
+                                
+                                console.log("Search field cleared completely");
+                                
+                                // Focus the input field after clearing
+                                searchInputRef.current?.focus();
+                              }}
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
+                          ) : (
+                            <div className="text-purple-500">
+                              <Search className="h-5 w-5" />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   
                     {/* Job title suggestions dropdown - Copied exactly from job-description page */}
+                    {console.log("Dropdown visibility state:", showJobTitleSuggestions)}
+                    {console.log("Number of suggestions:", jobTitleSuggestions.length)}
                     {showJobTitleSuggestions && (
                       <div 
                         ref={suggestionsRef}
