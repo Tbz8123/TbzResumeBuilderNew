@@ -221,17 +221,32 @@ const SkillsPage = () => {
       // If we have a job title ID, use the dedicated endpoint to get associated skills
       if (jobTitleId) {
         console.log(`Fetching skills for job title ID: ${jobTitleId}`);
+        
+        // First try the skill-specific endpoint that matches with the admin panel
         const response = await fetch(`/api/skills/by-skill-job-title/${jobTitleId}`);
         
         if (response.ok) {
           skillData = await response.json();
-          console.log("Skills data received:", skillData);
           
-          // Separate skills into recommended and standard
-          recommendedSkills = skillData.filter(skill => skill.isRecommended === true);
-          standardSkills = skillData.filter(skill => skill.isRecommended !== true);
-          
-          console.log(`Found ${recommendedSkills.length} recommended and ${standardSkills.length} standard skills`);
+          if (skillData && Array.isArray(skillData)) {
+            console.log(`Successfully got ${skillData.length} skills for job title ID ${jobTitleId}`);
+            
+            // Log all skill names for debugging
+            if (skillData.length > 0) {
+              console.log("Skills received:", skillData.map(s => s.name).join(', '));
+            }
+            
+            // Separate skills into recommended and standard
+            recommendedSkills = skillData.filter(skill => skill.isRecommended === true);
+            standardSkills = skillData.filter(skill => skill.isRecommended !== true);
+            
+            console.log(`Found ${recommendedSkills.length} recommended and ${standardSkills.length} standard skills`);
+          } else {
+            console.error("Unexpected response format:", skillData);
+            skillData = []; // Reset if format is unexpected
+          }
+        } else {
+          console.log(`Error fetching skills: ${response.status} ${response.statusText}`);
         }
       }
       
@@ -245,15 +260,16 @@ const SkillsPage = () => {
         }
         
         const response = await fetch(`${endpoint}?${params.toString()}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch skills');
+        if (response.ok) {
+          skillData = await response.json();
+          console.log(`Fallback returned ${skillData.length} general skills`);
+          
+          // For general skills, mark the first 5 as recommended for better UX
+          recommendedSkills = skillData.slice(0, 5);
+          standardSkills = skillData.slice(5);
+        } else {
+          console.error(`Failed to fetch general skills: ${response.status} ${response.statusText}`);
         }
-        
-        skillData = await response.json();
-        
-        // For general skills, mark the first 5 as recommended for better UX
-        recommendedSkills = skillData.slice(0, 5);
-        standardSkills = skillData.slice(5);
       }
       
       // Update state with the skills data
@@ -265,15 +281,18 @@ const SkillsPage = () => {
         ...standardSkills.map(skill => skill.name)
       ];
       
-      setSkillSuggestions(skillNames);
-      
-      console.log(`Loaded ${skillNames.length} skills for job title ID: ${jobTitleId || 'general'}`);
-      
-      // Only use fallback skills if absolutely necessary
-      if (skillNames.length === 0) {
+      if (skillNames.length > 0) {
+        console.log(`Setting ${skillNames.length} skill suggestions`);
+        console.log("First 5 skills:", skillNames.slice(0, 5).join(', '));
+        setSkillSuggestions(skillNames);
+      } else {
+        console.warn("No skill names were extracted from the data");
+        // Use fallback skills if needed
         console.log("No skills found at all, using minimal fallback skills");
         setSkillSuggestions(fallbackSkills.slice(0, 5));
       }
+      
+      console.log(`Loaded ${skillNames.length} skills for job title ID: ${jobTitleId || 'general'}`);
     } catch (error) {
       console.error("Error fetching skills:", error);
       // Use minimal fallback skills on error
@@ -529,6 +548,44 @@ const SkillsPage = () => {
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
+      {/* Debug panel - only visible for admin users */}
+      {isAdminUser && (
+        <div className="bg-black text-white p-4 text-xs" style={{ opacity: 0.9 }}>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-bold">Debug Panel (Admin Only)</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-6 text-xs bg-purple-700 text-white hover:bg-purple-800"
+              onClick={() => {
+                if (selectedJobTitle?.id) {
+                  fetchSkillsForJobTitle(selectedJobTitle.id);
+                }
+              }}
+            >
+              Refresh Skills Data
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p>Selected Job Title: {selectedJobTitle ? `${selectedJobTitle.title} (ID: ${selectedJobTitle.id})` : 'None'}</p>
+              <p>Job Title ID: {jobTitleId || 'None'}</p>
+              <p>Skills Found: {apiSkills.length}</p>
+              <p>Recommended Skills: {apiSkills.filter(s => s.isRecommended).length}</p>
+            </div>
+            <div>
+              <p>API Skills (first 5):</p>
+              <ul className="pl-4 list-disc">
+                {apiSkills.slice(0, 5).map(skill => (
+                  <li key={skill.id} className={skill.isRecommended ? 'text-green-400' : ''}>
+                    {skill.name} {skill.isRecommended ? '(⭐)' : ''}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header with logo */}
       <header className="py-4 border-b border-gray-100 bg-white shadow-sm sticky top-0 z-30">
         <div className="container mx-auto px-4">
@@ -654,10 +711,27 @@ const SkillsPage = () => {
                                     key={`job-${jobTitle.id}`}
                                     className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-b border-gray-100"
                                     onClick={() => {
+                                      // Log the selection for debugging
+                                      console.log(`Selected job title: "${jobTitle.title}" (ID: ${jobTitle.id})`);
+                                      
+                                      // Update state
                                       setSearchTerm(jobTitle.title);
                                       setSelectedJobTitle(jobTitle);
                                       setJobTitleId(jobTitle.id);
-                                      fetchSkillsForJobTitle(jobTitle.id);
+                                      
+                                      // First check if there's a matching skill job title in skillJobTitlesData
+                                      const matchingSkillJobTitle = skillJobTitlesData?.data?.find(
+                                        (jt: ApiJobTitle) => jt.title === jobTitle.title
+                                      );
+                                      
+                                      if (matchingSkillJobTitle) {
+                                        console.log(`Found matching skill job title with ID: ${matchingSkillJobTitle.id}`);
+                                        fetchSkillsForJobTitle(matchingSkillJobTitle.id);
+                                      } else {
+                                        console.log(`No matching skill job title, using selected job title ID: ${jobTitle.id}`);
+                                        fetchSkillsForJobTitle(jobTitle.id);
+                                      }
+                                      
                                       setShowSkillSuggestions(false);
                                     }}
                                   >
