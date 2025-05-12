@@ -2,7 +2,7 @@
 
 // Interface for job title data
 export interface JobTitle {
-  id: string;
+  id: number;
   title: string;
   category: string;
 }

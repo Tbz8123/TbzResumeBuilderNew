@@ -31,7 +31,12 @@ import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/queryClient';
-import { JobTitle } from '@/utils/jobTitlesData';
+// Define API job title interface specifically for this component
+interface ApiJobTitle {
+  id: number;
+  title: string;
+  category: string;
+}
 import { useQuery } from '@tanstack/react-query';
 import {
   Command,
@@ -146,7 +151,7 @@ const SkillsPage = () => {
   const [jobTitleId, setJobTitleId] = useState<number | null>(null);
   const [apiSkills, setApiSkills] = useState<ApiSkill[]>([]);
   const [jobTitleOpen, setJobTitleOpen] = useState(false);
-  const [selectedJobTitle, setSelectedJobTitle] = useState<JobTitle | null>(null);
+  const [selectedJobTitle, setSelectedJobTitle] = useState<ApiJobTitle | null>(null);
   
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -279,7 +284,7 @@ const SkillsPage = () => {
           response.data.length > 0) {
         
         // Try to find an exact match
-        const exactMatch = response.data.find((job: JobTitle) => 
+        const exactMatch = response.data.find((job: ApiJobTitle) => 
           job.title.toLowerCase() === firstJob.jobTitle?.toLowerCase()
         );
         
@@ -308,7 +313,7 @@ const SkillsPage = () => {
       
       // Also set the selected job title for the dropdown if we have job titles loaded
       if (jobTitlesData?.data && jobTitlesData.data.length > 0 && titleId) {
-        const foundJobTitle = jobTitlesData.data.find((jt: JobTitle) => jt.id === titleId);
+        const foundJobTitle = jobTitlesData.data.find((jt: ApiJobTitle) => jt.id === titleId);
         if (foundJobTitle) {
           setSelectedJobTitle(foundJobTitle);
         }
@@ -608,8 +613,8 @@ const SkillsPage = () => {
                                           onClick={() => {
                                             setSearchTerm(jobTitle.title);
                                             setSelectedJobTitle(jobTitle);
-                                            setJobTitleId(Number(jobTitle.id));
-                                            fetchSkillsForJobTitle(Number(jobTitle.id));
+                                            setJobTitleId(jobTitle.id);
+                                            fetchSkillsForJobTitle(jobTitle.id);
                                             setShowSkillSuggestions(false);
                                           }}
                                         >
