@@ -18,7 +18,7 @@ const SkillsSummaryPage = () => {
   };
   
   const handleNext = () => {
-    setLocation('/summary');
+    setLocation('/professional-summary');
   };
   
   const handlePreview = () => {
@@ -210,7 +210,7 @@ const SkillsSummaryPage = () => {
                 onClick={handleNext}
                 className="bg-gradient-to-r from-purple-600 to-blue-500 text-white hover:from-purple-700 hover:to-blue-600"
               >
-                Next: Summary
+                Next: Professional Summary
               </Button>
             </div>
           </motion.div>
