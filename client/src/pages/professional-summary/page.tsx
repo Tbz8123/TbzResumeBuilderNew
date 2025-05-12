@@ -375,35 +375,29 @@ const ProfessionalSummaryPage = () => {
     }
   };
 
-  // This function is now handled directly in the input's onChange handler
-  // Kept as a reference but no longer used
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("Using legacy handleSearchChange function - this should not be called");
-    const value = e.target.value;
-    setSearchTerm(value);
+  // Handle input changes for the search field
+  const handleSearchChange = (newValue: string) => {
+    console.log("Search term changed to:", newValue);
+    setSearchTerm(newValue);
     
     // Clear the current job title if the search term is empty
-    if (value === '') {
+    if (newValue === '') {
       setCurrentJobTitle(null);
       setSummaryDescriptions([]);
-    }
-    
-    // Show/hide dropdown based on input
-    if (value.trim().length > 0) {
-      // Make sure we have suggestions to show
+      setShowJobTitleSuggestions(false);
+    } else {
+      // Show/hide dropdown based on input
       const filtered = allSuggestions.filter(job => 
-        job.title.toLowerCase().includes(value.toLowerCase())
+        job.title.toLowerCase().includes(newValue.toLowerCase())
       );
       
       if (filtered.length > 0) {
-        console.log(`Found ${filtered.length} matching job title suggestions for "${value}"`);
+        console.log(`Found ${filtered.length} matching job title suggestions for "${newValue}"`);
         setJobTitleSuggestions(filtered);
         setShowJobTitleSuggestions(true);
       } else {
         setShowJobTitleSuggestions(false);
       }
-    } else {
-      setShowJobTitleSuggestions(false);
     }
   };
 
@@ -505,40 +499,12 @@ const ProfessionalSummaryPage = () => {
                           type="text"
                           ref={searchInputRef}
                           placeholder="Search by job title for pre-written examples"
-                          value={searchTerm}
-                          onChange={(e) => {
-                            // Always update search term regardless of currentJobTitle state
-                            const newValue = e.target.value;
-                            console.log("Input changed to:", newValue);
-                            setSearchTerm(newValue);
-                            
-                            // If field is cleared, also clear currentJobTitle to prevent showing descriptions without a job title
-                            if (newValue === '') {
-                              setCurrentJobTitle(null);
-                              setSummaryDescriptions([]);
-                              setShowJobTitleSuggestions(false);
-                            } else {
-                              // Show/hide dropdown based on input
-                              const filtered = allSuggestions.filter(job => 
-                                job.title.toLowerCase().includes(newValue.toLowerCase())
-                              );
-                              
-                              if (filtered.length > 0) {
-                                console.log(`Found ${filtered.length} matching job title suggestions`);
-                                setJobTitleSuggestions(filtered);
-                                setShowJobTitleSuggestions(true);
-                              } else {
-                                setShowJobTitleSuggestions(false);
-                              }
-                            }
-                          }}
                           className="w-full rounded-lg border border-gray-300 px-3 pr-10 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
-                          onKeyDown={(e) => {
-                            console.log("Key pressed:", e.key);
-                            if (e.key === 'Backspace' && searchTerm.length > 0) {
-                              // No special handling needed anymore
-                              console.log("Backspace pressed, current value:", searchTerm);
-                            }
+                          defaultValue={searchTerm}
+                          onInput={(e) => {
+                            const target = e.target as HTMLInputElement;
+                            console.log("Input event triggered with value:", target.value);
+                            handleSearchChange(target.value);
                           }}
                           onFocus={() => {
                             // Always show suggestions on focus if we have any search term
@@ -546,6 +512,8 @@ const ProfessionalSummaryPage = () => {
                               setShowJobTitleSuggestions(true);
                             }
                           }}
+                          autoComplete="off"
+                          data-lpignore="true"
                         />
                         {searchTerm ? (
                           <button 
