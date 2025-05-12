@@ -364,7 +364,10 @@ const SkillsPage = () => {
   useEffect(() => {
     // Set up polling for skill updates (every 20 seconds)
     const intervalId = setInterval(() => {
-      if (jobTitleId) {
+      if (selectedJobTitle?.id) {
+        console.log("Refreshing skills for selected job title ID:", selectedJobTitle.id);
+        fetchSkillsForJobTitle(selectedJobTitle.id);
+      } else if (jobTitleId) {
         console.log("Refreshing skills for job title ID:", jobTitleId);
         fetchSkillsForJobTitle(jobTitleId);
       }
@@ -372,7 +375,7 @@ const SkillsPage = () => {
     
     // Cleanup interval on component unmount
     return () => clearInterval(intervalId);
-  }, [jobTitleId]);
+  }, [jobTitleId, selectedJobTitle?.id]);
   
   // Filter skills based on search term
   const filteredSkills = searchTerm.trim() !== ''
