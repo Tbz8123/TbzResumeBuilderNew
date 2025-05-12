@@ -54,7 +54,8 @@ function Router() {
                        location.startsWith("/education") ||
                        location.startsWith("/education-summary") ||
                        location.startsWith("/skills") ||
-                       location.startsWith("/skills-summary");
+                       location.startsWith("/skills-summary") ||
+                       location.startsWith("/professional-summary");
   
   const isAdminPage = location.startsWith("/admin");
   
@@ -114,7 +115,8 @@ function App() {
                        location.startsWith("/education") ||
                        location.startsWith("/education-summary") ||
                        location.startsWith("/skills") ||
-                       location.startsWith("/skills-summary");
+                       location.startsWith("/skills-summary") ||
+                       location.startsWith("/professional-summary");
   
   const isAdminPage = location.startsWith("/admin");
   

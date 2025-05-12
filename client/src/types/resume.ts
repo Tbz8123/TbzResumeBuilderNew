@@ -47,6 +47,8 @@ export interface ResumeData {
   email: string;
   photo: string | null;
   summary: string;
+  professionalSummary?: string; // Added for the Professional Summary feature
+  professionalSummaryTitleId?: number; // Added to store the selected professional summary title ID
   skills: string[];
   workExperience: WorkExperience[];
   education: Education[];

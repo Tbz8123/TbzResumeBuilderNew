@@ -37,6 +37,8 @@ export interface ResumeData {
   email: string;
   photo: string | null;
   summary: string;
+  professionalSummary?: string; // Added for Professional Summary feature
+  professionalSummaryTitleId?: number; // Added to store the selected professional summary title ID
   skills: Skill[];
   workExperience: WorkExperience[];
   education: Education[];
@@ -60,6 +62,8 @@ const initialResumeData: ResumeData = {
   email: '',
   photo: null,
   summary: '',
+  professionalSummary: '',
+  professionalSummaryTitleId: undefined,
   skills: [],
   workExperience: [],
   education: [],
