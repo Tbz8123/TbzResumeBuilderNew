@@ -127,7 +127,23 @@ professionalSummaryRouter.get("/categories", async (req, res) => {
       .orderBy(asc(professionalSummaryTitles.category));
     
     // Map results to strings
-    const categoryList = categories.map(c => c.category);
+    let categoryList = categories.map(c => c.category);
+    
+    // Add default categories if the list is empty
+    if (categoryList.length === 0) {
+      categoryList = [
+        "Information Technology",
+        "Marketing",
+        "Finance",
+        "Sales",
+        "Human Resources",
+        "Engineering",
+        "Customer Service",
+        "Healthcare",
+        "Education",
+        "Management"
+      ];
+    }
     
     return res.status(200).json(categoryList);
   } catch (error) {
