@@ -235,6 +235,16 @@ export default function SkillsAdminPage() {
         description: editingSkill.description || "",
         isRecommended: editingSkill.isRecommended,
       });
+    } else if (useSkillJobTitles && selectedSkillJobTitle) {
+      // For skill job title selected, use an appropriate category
+      const suggestedCategoryId = getCategoryIdForJobTitle(selectedSkillJobTitle);
+      console.log(`Initializing form for skill job title: ${selectedSkillJobTitle.title} with category ID: ${suggestedCategoryId}`);
+      skillForm.reset({
+        name: "",
+        categoryId: suggestedCategoryId,
+        description: "",
+        isRecommended: true, // Default to recommended for new skills added to job titles
+      });
     } else if (selectedJobTitle) {
       // For job title selected, use an appropriate category
       // This is needed until we fully transition to job-title based skills
@@ -480,27 +490,49 @@ export default function SkillsAdminPage() {
   
   const createSkillMutation = useMutation({
     mutationFn: async (data: z.infer<typeof skillSchema>) => {
-      // Create enhanced data object with job title ID if we're in job title mode
-      let enhancedData = data;
+      console.log("Creating skill with data:", data);
       
-      // Handle regular job title association
-      if (selectedJobTitle) {
-        enhancedData = { 
-          ...data, 
-          jobTitleId: selectedJobTitle.id,  // Include job title ID for backend association
-        };
-      }
+      // Prepare the standard skill data (name, categoryId, description, isRecommended)
+      const skillData = {
+        name: data.name,
+        categoryId: data.categoryId,
+        description: data.description || null,
+        isRecommended: data.isRecommended || false
+      };
       
-      // Handle skill job title association
+      let url = '/api/skills';
+      
+      // If we're associating with a skill job title, use a different endpoint
       if (useSkillJobTitles && selectedSkillJobTitle) {
-        enhancedData = { 
-          ...data, 
-          skillJobTitleId: selectedSkillJobTitle.id,  // Include skill job title ID for backend association
-        };
-      }
+        console.log(`Creating skill for skill job title: ${selectedSkillJobTitle.id} - ${selectedSkillJobTitle.title}`);
+        // We'll use the skill job title specific endpoint
+        const res = await apiRequest('POST', '/api/skills', skillData);
+        const newSkill = await res.json();
         
-      const res = await apiRequest('POST', '/api/skills', enhancedData);
-      return await res.json();
+        // After creating the skill, create the association with the skill job title
+        if (newSkill && newSkill.id) {
+          console.log(`Creating association between skill ${newSkill.id} and skill job title ${selectedSkillJobTitle.id}`);
+          const associationRes = await apiRequest(
+            'POST', 
+            `/api/skills/job-titles/${selectedSkillJobTitle.id}/skills/${newSkill.id}`,
+            { isRecommended: data.isRecommended || false }
+          );
+          return newSkill;
+        }
+        return newSkill;
+      } else if (selectedJobTitle) {
+        // For regular job titles, we'll pass the jobTitleId as a query parameter
+        console.log(`Creating skill for job title: ${selectedJobTitle.id} - ${selectedJobTitle.title}`);
+        const res = await apiRequest('POST', '/api/skills', {
+          ...skillData,
+          jobTitleId: selectedJobTitle.id
+        });
+        return await res.json();
+      } else {
+        // Regular skill creation without association
+        const res = await apiRequest('POST', '/api/skills', skillData);
+        return await res.json();
+      }
     },
     onSuccess: () => {
       // Invalidate the appropriate queries to refresh the data
@@ -548,11 +580,56 @@ export default function SkillsAdminPage() {
   
   const updateSkillMutation = useMutation({
     mutationFn: async (data: Skill) => {
-      const res = await apiRequest('PUT', `/api/skills/${data.id}`, data);
-      return await res.json();
+      console.log("Updating skill:", data);
+      
+      // Prepare the standard skill data for update
+      const skillData = {
+        id: data.id,
+        name: data.name,
+        categoryId: data.categoryId,
+        description: data.description || null,
+        isRecommended: data.isRecommended || false
+      };
+      
+      // Update the skill in the skills table
+      const res = await apiRequest('PUT', `/api/skills/${data.id}`, skillData);
+      const updatedSkill = await res.json();
+      
+      // If we're in skill job title mode, we also need to update the relationship's isRecommended flag
+      if (useSkillJobTitles && selectedSkillJobTitle) {
+        console.log(`Updating association between skill ${data.id} and skill job title ${selectedSkillJobTitle.id}`);
+        
+        try {
+          // Update the relationship's isRecommended status
+          const updateRelationRes = await apiRequest(
+            'PUT', 
+            `/api/skills/job-titles/${selectedSkillJobTitle.id}/skills/${data.id}`,
+            { isRecommended: data.isRecommended || false }
+          );
+          console.log("Relationship updated successfully");
+        } catch (error) {
+          console.error("Error updating skill relationship:", error);
+          // We don't throw here as the skill was successfully updated
+        }
+      }
+      
+      return updatedSkill;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/skills', selectedCategory?.id] });
+      // Invalidate the appropriate queries
+      if (useSkillJobTitles && selectedSkillJobTitle) {
+        // Invalidate the skill job title skills query
+        queryClient.invalidateQueries({ queryKey: ['/api/skills/by-skill-job-title', selectedSkillJobTitle.id] });
+      } else if (selectedJobTitle) {
+        // Invalidate the job title skills query
+        queryClient.invalidateQueries({ queryKey: ['/api/skills/by-job-title', selectedJobTitle.id] });
+      }
+      
+      // Always invalidate the category skills
+      if (selectedCategory) {
+        queryClient.invalidateQueries({ queryKey: ['/api/skills', selectedCategory?.id] });
+      }
+      
       toast({
         title: "Success",
         description: "Skill updated successfully",
@@ -571,14 +648,52 @@ export default function SkillsAdminPage() {
   
   const deleteSkillMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest('DELETE', `/api/skills/${id}`);
-      return await res.json();
+      console.log(`Deleting skill with ID: ${id}`);
+      
+      // If we're in the skill job title mode, we need to remove the association first
+      if (useSkillJobTitles && selectedSkillJobTitle && deletingSkill) {
+        console.log(`Removing skill ${id} from skill job title ${selectedSkillJobTitle.id}`);
+        
+        try {
+          // Remove the association between skill and skill job title
+          const removeRes = await apiRequest(
+            'DELETE', 
+            `/api/skills/job-titles/${selectedSkillJobTitle.id}/skills/${id}`
+          );
+          console.log("Association removed successfully");
+          
+          // We don't delete the actual skill, just remove the association
+          return { success: true };
+        } catch (error) {
+          console.error("Error removing skill association:", error);
+          throw new Error("Failed to remove skill association");
+        }
+      } else {
+        // Regular skill deletion
+        const res = await apiRequest('DELETE', `/api/skills/${id}`);
+        return await res.json();
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/skills', selectedCategory?.id] });
+      // Invalidate the appropriate queries
+      if (useSkillJobTitles && selectedSkillJobTitle) {
+        // Invalidate the skill job title skills query
+        queryClient.invalidateQueries({ queryKey: ['/api/skills/by-skill-job-title', selectedSkillJobTitle.id] });
+      } else if (selectedJobTitle) {
+        // Invalidate the job title skills query
+        queryClient.invalidateQueries({ queryKey: ['/api/skills/by-job-title', selectedJobTitle.id] });
+      }
+      
+      // Always invalidate the category skills
+      if (selectedCategory) {
+        queryClient.invalidateQueries({ queryKey: ['/api/skills', selectedCategory?.id] });
+      }
+      
       toast({
         title: "Success",
-        description: "Skill deleted successfully",
+        description: useSkillJobTitles && selectedSkillJobTitle 
+          ? "Skill removed from job title successfully"
+          : "Skill deleted successfully",
       });
       setDeleteSkillDialogOpen(false);
       setDeletingSkill(null);
@@ -1737,9 +1852,14 @@ export default function SkillsAdminPage() {
                     <FormItem>
                       <div className="flex items-center space-x-2">
                         <FormLabel>Category</FormLabel>
-                        {selectedJobTitle && (
+                        {selectedJobTitle && !useSkillJobTitles && (
                           <Badge variant="outline" className="bg-muted/50">
                             For {selectedJobTitle.title}
+                          </Badge>
+                        )}
+                        {useSkillJobTitles && selectedSkillJobTitle && (
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                            For {selectedSkillJobTitle.title}
                           </Badge>
                         )}
                       </div>
