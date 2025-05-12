@@ -1731,10 +1731,39 @@ export default function SkillsAdminPage() {
                           <div>Skills Count: {useSkillJobTitles && selectedSkillJobTitle 
                             ? skillJobTitleSkillsData?.length || 0 
                             : jobTitleSkillsData?.length || 0} skills</div>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              if (useSkillJobTitles && selectedSkillJobTitle) {
+                                console.log("Manually refetching skills for job title");
+                                refetchSkillJobTitleSkills();
+                              }
+                            }}
+                            className="mt-2"
+                          >
+                            Refresh Skills List
+                          </Button>
                         </TableCell>
                       </TableRow>
                       
-                      {/* Actual skills list */}
+                      {/* Display Empty State if No Skills */}
+                      {(!useSkillJobTitles || !selectedSkillJobTitle) ? null : 
+                        (skillJobTitleSkillsData?.length === 0) && (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center py-8">
+                              <div className="flex flex-col items-center justify-center">
+                                <div className="text-lg font-medium">No skills found</div>
+                                <div className="text-sm text-muted-foreground mt-1">
+                                  Add skills to this job title using the button above.
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      }
+                      
+                      {/* Actual skills list - with stringified debug info */}
                       {(useSkillJobTitles && selectedSkillJobTitle
                         ? skillJobTitleSkillsData || []
                         : jobTitleSkillsData || [])
