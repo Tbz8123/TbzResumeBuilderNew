@@ -1197,42 +1197,32 @@ export default function SkillsAdminPage() {
                   ) : jobTitles.length === 0 ? (
                     <div className="p-8 text-center">
                       <p className="text-muted-foreground">No job titles found</p>
-                      <Link href="/admin/jobs">
-                        <Button 
-                          variant="outline"
-                          className="mt-2"
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          Manage Job Titles
-                        </Button>
-                      </Link>
+                      <Button 
+                        variant="outline"
+                        className="mt-2"
+                        onClick={() => {
+                          setSkillJobTitleDialogOpen(true);
+                          setEditingSkillJobTitle(null);
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Job Title
+                      </Button>
                     </div>
                   ) : (
                     <ScrollArea className="h-[calc(100vh-320px)]">
-                      <div>
+                      <div className="divide-y">
                         {jobTitles.map((jobTitle: JobTitle) => (
                           <div
                             key={jobTitle.id}
-                            className={`p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors ${selectedJobTitle?.id === jobTitle.id ? 'bg-gray-50' : ''}`}
+                            className={`py-4 px-6 cursor-pointer hover:bg-gray-50 transition-colors ${selectedJobTitle?.id === jobTitle.id ? 'bg-gray-50' : ''}`}
                             onClick={() => setSelectedJobTitle(jobTitle)}
                           >
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h3 className="font-medium">{jobTitle.title}</h3>
-                                <p className="text-sm text-gray-500 mt-1">
-                                  {jobTitle.category}
-                                </p>
-                              </div>
-                              <div className="flex items-center">
-                                {selectedJobTitle?.id === jobTitle.id && jobTitleSkillsData && (
-                                  <Badge variant="outline" className="mr-2">
-                                    <span className="flex items-center justify-center bg-primary/10 text-primary rounded-full h-5 w-5 mr-1">
-                                      {jobTitleSkillsData.length}
-                                    </span>
-                                    skills
-                                  </Badge>
-                                )}
-                              </div>
+                            <div className="font-medium text-lg">{jobTitle.title}</div>
+                            <div className="mt-1">
+                              <Badge variant="secondary" className="bg-gray-100 text-gray-700 hover:bg-gray-200 font-normal">
+                                {jobTitle.category}
+                              </Badge>
                             </div>
                           </div>
                         ))}
@@ -1244,21 +1234,23 @@ export default function SkillsAdminPage() {
                     <div className="flex justify-between p-4 border-t">
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => setJobTitlePage(Math.max(1, jobTitlePage - 1))}
                         disabled={jobTitlePage === 1}
+                        className="text-gray-500"
                       >
                         <ChevronLeft className="h-4 w-4 mr-1" />
                         Prev
                       </Button>
-                      <span className="text-sm py-2">
+                      <span className="text-sm py-2 text-gray-500">
                         Page {jobTitlePage} of {jobTitleTotalPages}
                       </span>
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => setJobTitlePage(Math.min(jobTitleTotalPages, jobTitlePage + 1))}
                         disabled={jobTitlePage === jobTitleTotalPages}
+                        className="text-gray-500"
                       >
                         Next
                         <ChevronRight className="h-4 w-4 ml-1" />
