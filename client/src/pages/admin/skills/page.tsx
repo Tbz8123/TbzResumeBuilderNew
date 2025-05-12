@@ -381,13 +381,13 @@ export default function SkillsAdminPage() {
   });
   
   // Fetch skills for selected skill job title
-  const { data: skillJobTitleSkillsData = [], isLoading: isLoadingSkillJobTitleSkills } = useQuery({
+  const { data: skillJobTitleSkillsData = [], isLoading: isLoadingSkillJobTitleSkills, refetch: refetchSkillJobTitleSkills } = useQuery({
     queryKey: ['/api/skills/by-skill-job-title', selectedSkillJobTitle?.id],
     queryFn: async () => {
       if (!selectedSkillJobTitle) return [];
       
       console.log(`Fetching skills for skill job title ID: ${selectedSkillJobTitle.id}`);
-      const res = await fetch(`/api/skills/by-skill-job-title/${selectedSkillJobTitle.id}`);
+      const res = await fetch(`/api/skills/by-skill-job-title/${selectedSkillJobTitle.id}?t=${Date.now()}`); // Add timestamp to prevent caching
       if (!res.ok) {
         throw new Error('Failed to fetch skills for skill job title');
       }
@@ -397,6 +397,8 @@ export default function SkillsAdminPage() {
       return data;
     },
     enabled: !!selectedSkillJobTitle && useSkillJobTitles,
+    staleTime: 0, // Always revalidate when requested
+    refetchOnWindowFocus: true,
   });
   
   // Filter skills based on search query
@@ -602,10 +604,11 @@ export default function SkillsAdminPage() {
       }
     },
     onSuccess: () => {
-      // Invalidate the appropriate queries to refresh the data
+      // Explicitly refetch the data instead of just invalidating
       if (useSkillJobTitles && selectedSkillJobTitle) {
-        // Invalidate the skill job title skills query
-        queryClient.invalidateQueries({ queryKey: ['/api/skills/by-skill-job-title', selectedSkillJobTitle.id] });
+        // Directly refetch the skill job title skills
+        refetchSkillJobTitleSkills();
+        console.log("Refetching skills for skill job title");
       } else if (selectedJobTitle) {
         // Invalidate the job title skills query
         queryClient.invalidateQueries({ queryKey: ['/api/skills/by-job-title', selectedJobTitle.id] });
