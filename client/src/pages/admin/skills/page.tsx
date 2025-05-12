@@ -661,6 +661,20 @@ export default function SkillsAdminPage() {
     },
   });
 
+  // Form submit handler for skill job titles
+  const onSkillJobTitleFormSubmit = (data: z.infer<typeof skillJobTitleSchema>) => {
+    if (editingSkillJobTitle) {
+      // Update existing skill job title
+      updateSkillJobTitleMutation.mutate({
+        ...editingSkillJobTitle,
+        ...data
+      });
+    } else {
+      // Create new skill job title
+      createSkillJobTitleMutation.mutate(data);
+    }
+  };
+
   // Handle data export in different formats
   const handleExportData = async (format: 'csv' | 'excel' | 'json') => {
     setIsExporting(true);
