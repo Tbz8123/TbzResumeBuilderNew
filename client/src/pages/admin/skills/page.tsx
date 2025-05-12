@@ -1720,9 +1720,21 @@ export default function SkillsAdminPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
+                      {/* Debug output to check data */}
+                      <TableRow>
+                        <TableCell colSpan={3} className="bg-muted/20 text-xs">
+                          <div>Mode: {useSkillJobTitles ? 'Skill Job Titles' : 'Regular Job Titles'}</div>
+                          <div>Selected Job Title: {selectedSkillJobTitle?.title || selectedJobTitle?.title || 'None'}</div>
+                          <div>Skills Count: {useSkillJobTitles && selectedSkillJobTitle 
+                            ? skillJobTitleSkillsData?.length || 0 
+                            : jobTitleSkillsData?.length || 0} skills</div>
+                        </TableCell>
+                      </TableRow>
+                      
+                      {/* Actual skills list */}
                       {(useSkillJobTitles && selectedSkillJobTitle
-                        ? skillJobTitleSkillsData
-                        : jobTitleSkillsData)
+                        ? skillJobTitleSkillsData || []
+                        : jobTitleSkillsData || [])
                         .filter((skill: Skill) => !searchQuery.trim() || 
                           skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           (skill.description && skill.description.toLowerCase().includes(searchQuery.toLowerCase()))
