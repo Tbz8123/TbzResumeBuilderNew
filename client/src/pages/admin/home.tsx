@@ -102,6 +102,13 @@ const AdminHomePage = () => {
           color: 'bg-purple-500'
         },
         {
+          title: 'Professional Summaries',
+          description: 'Manage professional summary titles and descriptions',
+          icon: <FileText className="h-5 w-5" />,
+          path: '/admin/professional-summary',
+          color: 'bg-cyan-500'
+        },
+        {
           title: 'Job API Test',
           description: 'Test job descriptions API functionality',
           icon: <Server className="h-5 w-5" />,
