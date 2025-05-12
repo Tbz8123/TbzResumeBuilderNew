@@ -152,6 +152,7 @@ const SkillsPage = () => {
   const [apiSkills, setApiSkills] = useState<ApiSkill[]>([]);
   const [jobTitleOpen, setJobTitleOpen] = useState(false);
   const [selectedJobTitle, setSelectedJobTitle] = useState<ApiJobTitle | null>(null);
+  const [jobTitleSearchResults, setJobTitleSearchResults] = useState<ApiJobTitle[]>([]);
   
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -370,29 +371,34 @@ const SkillsPage = () => {
     setSearchTerm(value);
     
     if (value.trim()) {
+      // Always show suggestions when there's a search term
       setShowSkillSuggestions(true);
       
-      // If search term is longer than 2 characters, check if we need to search for a job title
-      if (value.length > 2) {
+      // If search term is longer than 1 character, fetch job titles that match
+      if (value.length > 1) {
         try {
           // First check if we need to search for job titles
           const response = await fetch(`/api/jobs/titles?search=${encodeURIComponent(value)}&limit=5`);
           if (response.ok) {
             const data = await response.json();
             
-            // If we found a job title, update job title ID and fetch skills for it
-            if (data && data.data && data.data.length > 0) {
-              // We're only checking for job titles here, we don't auto-select
-              // The user will need to click on a job title to select it
+            // Update jobTitleSearchResults with the search results
+            if (data && data.data) {
               console.log(`Found ${data.data.length} job titles matching "${value}"`);
+              // Use our dedicated state for search results
+              setJobTitleSearchResults(data.data);
             }
           }
         } catch (error) {
           console.error("Error searching for job titles:", error);
+          // Clear search results on error
+          setJobTitleSearchResults([]);
         }
       }
     } else {
       setShowSkillSuggestions(false);
+      // Clear search results when search is empty
+      setJobTitleSearchResults([]);
     }
   };
   
@@ -596,17 +602,13 @@ const SkillsPage = () => {
                             ) : (
                               <>
                                 {/* Job titles section */}
-                                {jobTitlesData?.data && jobTitlesData.data.length > 0 && (
+                                {jobTitleSearchResults.length > 0 && (
                                   <>
                                     <div className="px-4 py-2 text-xs font-semibold text-purple-600 bg-purple-50">
                                       Job Titles
                                     </div>
                                     
-                                    {jobTitlesData.data
-                                      .filter((jobTitle: ApiJobTitle) => 
-                                        jobTitle.title.toLowerCase().includes(searchTerm.toLowerCase()))
-                                      .slice(0, 5)
-                                      .map((jobTitle: ApiJobTitle) => (
+                                    {jobTitleSearchResults.map((jobTitle: ApiJobTitle) => (
                                         <div
                                           key={`job-${jobTitle.id}`}
                                           className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-b border-gray-100"
