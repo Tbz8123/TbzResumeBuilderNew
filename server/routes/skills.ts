@@ -416,7 +416,74 @@ skillsRouter.delete("/job-titles/:id", isAuthenticated, isAdmin, async (req, res
   }
 });
 
-// Associate a skill with a skill job title
+// Add skills to a skill job title
+skillsRouter.post("/job-titles/:skillJobTitleId/skills", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const skillJobTitleId = parseInt(req.params.skillJobTitleId);
+    if (isNaN(skillJobTitleId)) {
+      return res.status(400).json({ error: "Invalid skill job title ID" });
+    }
+    
+    const { skillId, isRecommended } = req.body;
+    if (!skillId || isNaN(parseInt(skillId))) {
+      return res.status(400).json({ error: "Invalid skill ID in request body" });
+    }
+    
+    const skillIdNum = parseInt(skillId);
+    
+    // Check if both skill job title and skill exist
+    const skillJobTitle = await db.query.skillJobTitles.findFirst({
+      where: eq(skillJobTitles.id, skillJobTitleId)
+    });
+    
+    if (!skillJobTitle) {
+      return res.status(404).json({ error: "Skill job title not found" });
+    }
+    
+    const skillItem = await db.query.skills.findFirst({
+      where: eq(skills.id, skillIdNum)
+    });
+    
+    if (!skillItem) {
+      return res.status(404).json({ error: "Skill not found" });
+    }
+    
+    // Check if the association already exists
+    const existingAssociation = await db.query.skillJobTitleSkills.findFirst({
+      where: and(
+        eq(skillJobTitleSkills.skillJobTitleId, skillJobTitleId),
+        eq(skillJobTitleSkills.skillId, skillIdNum)
+      )
+    });
+    
+    if (existingAssociation) {
+      console.log(`Association already exists between skill ${skillIdNum} and skill job title ${skillJobTitleId}`);
+      return res.status(409).json({ 
+        error: "Association already exists",
+        association: existingAssociation
+      });
+    }
+    
+    // Create the association
+    console.log(`Creating association between skill ${skillIdNum} and skill job title ${skillJobTitleId}`);
+    const isRecommendedValue = isRecommended === undefined ? false : !!isRecommended;
+    
+    const [association] = await db.insert(skillJobTitleSkills)
+      .values({
+        skillJobTitleId,
+        skillId: skillIdNum,
+        isRecommended: isRecommendedValue
+      })
+      .returning();
+    
+    return res.status(201).json(association);
+  } catch (error) {
+    console.error("Error adding skill to skill job title:", error);
+    return res.status(500).json({ error: "Failed to add skill to skill job title" });
+  }
+});
+
+// Associate a skill with a skill job title (using URL parameters)
 skillsRouter.post("/job-titles/:skillJobTitleId/skills/:skillId", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const skillJobTitleId = parseInt(req.params.skillJobTitleId);

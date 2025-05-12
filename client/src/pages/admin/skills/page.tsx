@@ -514,8 +514,11 @@ export default function SkillsAdminPage() {
           console.log(`Creating association between skill ${newSkill.id} and skill job title ${selectedSkillJobTitle.id}`);
           const associationRes = await apiRequest(
             'POST', 
-            `/api/skills/job-titles/${selectedSkillJobTitle.id}/skills/${newSkill.id}`,
-            { isRecommended: data.isRecommended || false }
+            `/api/skills/job-titles/${selectedSkillJobTitle.id}/skills`,
+            { 
+              skillId: newSkill.id,
+              isRecommended: data.isRecommended || false 
+            }
           );
           return newSkill;
         }
