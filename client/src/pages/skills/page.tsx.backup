@@ -447,15 +447,6 @@ const SkillsPage = () => {
     };
   }, [selectedSkills]);
   
-  // Handle refresh button click
-  const handleRefreshSkills = () => {
-    if (jobTitleId) {
-      fetchSkillsForJobTitle(jobTitleId);
-    } else {
-      fetchSkillsForJobTitle(null);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
       {/* Header with logo */}
@@ -551,51 +542,37 @@ const SkillsPage = () => {
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-full p-0" align="start">
-                        <Command>
-                          <CommandInput placeholder="Search job titles..." />
-                          <CommandEmpty>No job title found.</CommandEmpty>
-                          <CommandGroup className="max-h-60 overflow-auto">
-                            {jobTitlesData?.data?.map((jobTitle: JobTitle) => (
-                              <CommandItem
-                                key={jobTitle.id}
-                                value={jobTitle.title}
-                                onSelect={() => {
-                                  setSelectedJobTitle(jobTitle);
-                                  setJobTitleId(Number(jobTitle.id));
-                                  setJobTitleOpen(false);
-                                  fetchSkillsForJobTitle(Number(jobTitle.id));
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedJobTitle?.id === jobTitle.id
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                {jobTitle.title}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleRefreshSkills}
-                    className="shrink-0"
-                    disabled={isLoadingSkills}
-                  >
-                    {isLoadingSkills ? (
-                      <Loader className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                  </Button>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search job titles..." />
+                        <CommandEmpty>No job title found.</CommandEmpty>
+                        <CommandGroup className="max-h-60 overflow-auto">
+                          {jobTitlesData?.data?.map((jobTitle: JobTitle) => (
+                            <CommandItem
+                              key={jobTitle.id}
+                              value={jobTitle.title}
+                              onSelect={() => {
+                                setSelectedJobTitle(jobTitle);
+                                setJobTitleId(Number(jobTitle.id));
+                                setJobTitleOpen(false);
+                                fetchSkillsForJobTitle(Number(jobTitle.id));
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedJobTitle?.id === jobTitle.id
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {jobTitle.title}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 
                 {/* Search input */}
@@ -604,12 +581,16 @@ const SkillsPage = () => {
                   <div className="relative bg-white rounded-lg">
                     <Input 
                       type="text"
-                      placeholder="Enter a skill (e.g. JavaScript, Leadership)"
+                      ref={searchInputRef}
+                      placeholder="Search by skill"
                       value={searchTerm}
                       onChange={handleSearchChange}
-                      onFocus={() => setShowSkillSuggestions(true)}
-                      className="pr-10 z-10 relative"
-                      ref={searchInputRef}
+                      className="rounded-lg border-gray-300 pr-10 py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
+                      onFocus={() => {
+                        if (filteredSkills.length > 0) {
+                          setShowSkillSuggestions(true);
+                        }
+                      }}
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                       <Search className="h-5 w-5 text-purple-400" />
@@ -678,18 +659,19 @@ const SkillsPage = () => {
                       More <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform duration-300" />
                     </button>
                   </div>
+                  
                   <div className="flex flex-wrap gap-2">
                     {relatedSkills.map((skill, index) => (
                       <motion.button
-                        key={`related-${skill}-${index}`}
-                        className="px-3 py-1.5 rounded-full bg-purple-100 text-purple-700 text-sm font-medium hover:bg-purple-200 transition-colors duration-300"
+                        key={`${skill}-${index}`}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3 + (index * 0.1) }}
+                        className="flex items-center border border-gray-200 rounded-full px-3 py-2 text-sm bg-gray-50 hover:bg-purple-50 hover:border-purple-200 transition-all duration-300"
                         onClick={() => {
                           setSearchTerm(skill);
-                          setShowSkillSuggestions(true);
+                          handleSkillClick(skill);
                         }}
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.3, delay: 0.1 * index }}
                       >
                         {skill}
                       </motion.button>
@@ -710,16 +692,38 @@ const SkillsPage = () => {
                       {isLoadingSkills && (
                         <Loader className="h-4 w-4 animate-spin text-purple-500" />
                       )}
+                      {jobTitleId && (
+                        <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                          Job-specific skills
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <button className="flex items-center gap-1 hover:text-purple-600 transition-colors duration-300">
-                        <ArrowDownUp className="h-4 w-4" /> Sort
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSearchTerm('')}
+                        className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
+                        title="Clear search"
+                        disabled={isLoadingSkills}
+                      >
+                        <Undo2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Re-fetch skills for the current job title
+                          fetchSkillsForJobTitle(jobTitleId);
+                        }}
+                        className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
+                        title="Refresh results"
+                        disabled={isLoadingSkills}
+                      >
+                        <RotateCw className={`h-4 w-4 ${isLoadingSkills ? 'animate-spin' : ''}`} />
                       </button>
                     </div>
                   </div>
                   
                   {isLoadingSkills ? (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <div className="flex flex-col items-center justify-center py-12">
                       <Loader className="h-8 w-8 animate-spin text-purple-500 mb-4" />
                       <p className="text-gray-500">Loading skills for your job title...</p>
                     </div>
@@ -737,43 +741,31 @@ const SkillsPage = () => {
                               key={`${skill}-card-${index}`}
                               variants={itemVariants}
                               className={`p-3 border border-gray-200 ${
-                                selectedSkills.some(s => s.name === skill) 
-                                  ? 'border-purple-300 bg-purple-50'
-                                  : 'border-gray-200 bg-white'
-                              } rounded-lg hover:shadow-md transition-all duration-300 group`}
+                                apiSkills.find(s => s.name === skill && s.isRecommended) 
+                                  ? 'bg-purple-50 border-purple-200' 
+                                  : index < 3 ? 'bg-purple-50' : 'bg-gray-50'
+                              } rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
+                              onClick={() => handleSkillClick(skill)}
                             >
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h3 className="font-medium text-gray-900">{skill}</h3>
-                                  {/* Optional extra info */}
-                                  <div className="mt-1 text-xs text-gray-500">
-                                    Category: {SKILL_CATEGORIES[Math.floor(Math.random() * SKILL_CATEGORIES.length)].title}
-                                  </div>
+                              {index < 3 && (
+                                <div className="text-xs text-purple-700 font-medium mb-1">
+                                  Expert Recommended
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleSkillClick(skill)}
-                                  className={`${
-                                    selectedSkills.some(s => s.name === skill)
-                                      ? 'text-purple-600 bg-purple-100' 
-                                      : 'text-gray-400 hover:text-gray-700'
-                                  } p-1 h-auto rounded-full transition-colors`}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </div>
+                              )}
+                              <p className="text-gray-800 text-sm">
+                                {skill}
+                              </p>
                             </motion.div>
                           ))
                         ) : (
-                          <div className="text-center p-6 bg-gray-50 rounded-lg border border-gray-200">
-                            <div className="text-gray-400 mb-2">
-                              <Search className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                              <p className="font-medium">No skills found</p>
-                            </div>
-                            <p className="text-sm text-gray-500">
-                              Try a different search term or select another job title
-                            </p>
+                          <div className="text-center py-8">
+                            <p className="text-gray-500">No skills found matching your search.</p>
+                            <button 
+                              onClick={() => setSearchTerm('')}
+                              className="mt-2 text-purple-600 hover:text-purple-800 font-medium"
+                            >
+                              Clear search
+                            </button>
                           </div>
                         )}
                       </motion.div>
@@ -782,63 +774,65 @@ const SkillsPage = () => {
                 </motion.div>
               </div>
               
-              {/* Right Column - Skills Editor */}
+              {/* Right Column - Editor/Rating */}
               <div>
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-xs uppercase font-bold text-gray-600">Your selected skills</h2>
-                  </div>
-                </div>
-                
                 {/* Tabs */}
-                <div className="border-b border-gray-200 mb-6">
-                  <div className="flex space-x-4">
+                <div className="flex justify-end mb-4">
+                  <div className="inline-flex rounded-full bg-gray-100 p-1">
                     <button
-                      className={`pb-2 px-1 border-b-2 ${
-                        activeTab === 'text-editor' 
-                          ? 'border-purple-500 text-purple-800 font-medium' 
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
-                      } transition-colors duration-300`}
-                      onClick={() => setActiveTab('text-editor')}
-                    >
-                      Rating Editor
-                    </button>
-                    <button
-                      className={`pb-2 px-1 border-b-2 ${
-                        activeTab === 'visual' 
-                          ? 'border-purple-500 text-purple-800 font-medium' 
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
-                      } transition-colors duration-300`}
-                      onClick={() => setActiveTab('visual')}
+                      className={cn(
+                        "px-4 py-1.5 text-sm font-medium rounded-full transition-colors",
+                        activeTab === "text-editor"
+                          ? "bg-white shadow-sm text-purple-600"
+                          : "text-gray-600 hover:text-purple-600"
+                      )}
+                      onClick={() => setActiveTab("text-editor")}
                     >
                       Text Editor
                     </button>
+                    <button
+                      className={cn(
+                        "px-4 py-1.5 text-sm font-medium rounded-full transition-colors",
+                        activeTab === "skills-rating"
+                          ? "bg-white shadow-sm text-purple-600"
+                          : "text-gray-600 hover:text-purple-600"
+                      )}
+                      onClick={() => setActiveTab("skills-rating")}
+                    >
+                      Skills Rating
+                    </button>
                   </div>
                 </div>
                 
-                {/* Editor content */}
-                {activeTab === 'visual' ? (
+                {/* Content area based on active tab */}
+                {activeTab === "text-editor" ? (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <div className="relative group mb-6">
+                    <h2 className="text-lg font-semibold text-gray-800 mb-3">
+                      Your Professional Skills
+                    </h2>
+                    <p className="text-sm text-gray-600 mb-3">List your key skills below:</p>
+                    
+                    {/* Text editor with purple glow effect */}
+                    <div className="relative mb-4">
                       <div className="absolute -inset-0.5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg opacity-30 blur"></div>
-                      <textarea
-                        className="w-full h-64 p-3 bg-white rounded-lg border-0 focus:ring-2 focus:ring-purple-400 z-10 relative resize-none"
-                        placeholder="Add your skills here. Each skill should start with a bullet point (•)."
-                        value={skillText}
-                        onChange={(e) => setSkillText(e.target.value)}
-                      ></textarea>
+                      <div className="relative">
+                        <textarea
+                          className="w-full h-[300px] p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                          placeholder="Click on any skill from the left to add it to your skills list, or write your own."
+                          value={skillText}
+                          onChange={(e) => setSkillText(e.target.value)}
+                        />
+                      </div>
                     </div>
                     
-                    <div className="flex items-center text-sm text-gray-500 justify-between mb-4">
-                      <span className="flex items-center gap-1">
-                        <Undo2 className="h-4 w-4" />
-                        <span className="text-gray-400">
-                          Start skills with bullet points (•)
-                        </span>
+                    {/* Character count and tips */}
+                    <div className="flex justify-between items-center mt-3 text-sm">
+                      <span className="text-gray-500">
+                        Use a bullet (•) before each skill
                       </span>
                       <span className="text-purple-600">
                         Be specific and relevant
@@ -857,56 +851,97 @@ const SkillsPage = () => {
                           Rate your skills
                         </h2>
                         <div className="space-y-6">
-                          {selectedSkills.map((skill) => (
-                            <div 
-                              key={skill.id}
-                              className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm"
-                            >
+                          {currentSkill ? (
+                            <div className="mb-6">
+                              <h3 className="font-medium text-lg mb-4">
+                                Rate your proficiency: <span className="text-purple-600">{currentSkill.name}</span>
+                              </h3>
+                              
                               <div className="flex justify-between items-center mb-2">
-                                <h3 className="font-medium">{skill.name}</h3>
-                                <button 
-                                  onClick={() => {
-                                    setSelectedSkills(selectedSkills.filter(s => s.id !== skill.id));
-                                  }}
-                                  className="text-gray-400 hover:text-red-500 transition-colors"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
+                                <span className="text-xs text-gray-500">Beginner</span>
+                                <span className="text-xs text-gray-500">Expert</span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <div className="text-sm text-gray-500 w-24">Proficiency:</div>
-                                <div className="flex-1 flex items-center">
-                                  {[1, 2, 3, 4, 5].map((rating) => (
-                                    <button
-                                      key={`${skill.id}-star-${rating}`}
-                                      onClick={() => handleSkillRating(skill, rating)}
-                                      className={`text-2xl ${
-                                        rating <= skill.level 
-                                          ? 'text-yellow-400' 
-                                          : 'text-gray-300'
-                                      } focus:outline-none`}
-                                    >
-                                      <Star className={`h-5 w-5 ${rating <= skill.level ? 'fill-yellow-400' : ''}`} />
-                                    </button>
-                                  ))}
-                                </div>
+                              
+                              <div className="flex justify-between items-center mb-4">
+                                {[1, 2, 3, 4, 5].map((level) => (
+                                  <button
+                                    type="button"
+                                    key={level}
+                                    onClick={() => {
+                                      // Update in state
+                                      handleSkillRating(currentSkill, level);
+                                      // Force rerender by creating a new object
+                                      setCurrentSkill({...currentSkill, level});
+                                    }}
+                                    className={`flex flex-col items-center cursor-pointer ${
+                                      level <= (currentSkill.level || 0) ? "text-yellow-500" : "text-gray-300"
+                                    }`}
+                                  >
+                                    <Star
+                                      className={`h-10 w-10 ${
+                                        level <= (currentSkill.level || 0) ? "fill-yellow-500 text-yellow-500" : ""
+                                      }`}
+                                    />
+                                    <span className="text-xs mt-1">{level}</span>
+                                  </button>
+                                ))}
+                              </div>
+                              
+                              <div className="flex justify-between mt-4">
+                                <span className="text-sm font-medium">
+                                  {currentSkill.level === 1 && "Basic knowledge"}
+                                  {currentSkill.level === 2 && "Beginner"}
+                                  {currentSkill.level === 3 && "Intermediate"}
+                                  {currentSkill.level === 4 && "Advanced"}
+                                  {currentSkill.level === 5 && "Expert"}
+                                </span>
+                                <span className="text-sm text-purple-600">{currentSkill.level}/5</span>
                               </div>
                             </div>
-                          ))}
+                          ) : null}
+                          
+                          <div>
+                            <h3 className="font-medium mb-3">Select a skill to rate:</h3>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedSkills.map((skill) => (
+                                <button
+                                  key={skill.id}
+                                  onClick={() => setCurrentSkill(skill)}
+                                  className={`px-3 py-1.5 rounded-full text-sm ${
+                                    currentSkill?.id === skill.id
+                                      ? "bg-purple-100 text-purple-700 border border-purple-300"
+                                      : "bg-gray-50 text-gray-700 border border-gray-200 hover:border-purple-300"
+                                  }`}
+                                >
+                                  {skill.name}
+                                  {skill.level ? (
+                                    <span className="ml-1 inline-flex">
+                                      {Array.from({ length: 5 }).map((_, i) => (
+                                        <Star 
+                                          key={i} 
+                                          className={`h-3 w-3 ${i < skill.level ? "fill-yellow-500 text-yellow-500" : "text-gray-300"}`} 
+                                        />
+                                      ))}
+                                    </span>
+                                  ) : null}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-gray-400 mb-4">
-                          <Plus className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                          <h3 className="text-lg font-medium">No skills added yet</h3>
+                      <div className="text-center py-16">
+                        <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                          <Plus className="h-8 w-8 text-purple-600" />
                         </div>
-                        <p className="text-gray-500 mb-4">
-                          Use the search field to find and add relevant skills for your resume
+                        <h3 className="text-xl font-medium mb-2">No skills added yet</h3>
+                        <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                          Add skills from the suggestions on the left, then switch to this tab to rate your proficiency level for each skill.
                         </p>
                         <button
-                          onClick={() => setActiveTab('visual')}
-                          className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg shadow-sm hover:bg-purple-700 transition-colors"
+                          onClick={() => setActiveTab("text-editor")}
+                          className="px-6 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
                         >
                           Add Skills Now
                         </button>
@@ -925,12 +960,10 @@ const SkillsPage = () => {
                     Preview
                   </Button>
                   <Button 
-                    variant="default" 
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 rounded-full px-8"
+                    className="bg-amber-500 hover:bg-amber-600 text-black rounded-full px-8"
                     onClick={handleNext}
                   >
-                    <span>Next</span> 
-                    <ChevronRight className="ml-2 h-4 w-4" />
+                    Next
                   </Button>
                 </div>
               </div>
