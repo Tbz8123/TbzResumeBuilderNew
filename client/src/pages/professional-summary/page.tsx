@@ -325,8 +325,12 @@ const ProfessionalSummaryPage = () => {
   };
 
   const handleSummaryClick = (content: string) => {
-    // Set the selected summary as the professional summary
-    setProfessionalSummary(content);
+    // Add the selected summary to the text area (append with bullet points)
+    if (professionalSummary) {
+      setProfessionalSummary((prev: string) => prev + '\n• ' + content);
+    } else {
+      setProfessionalSummary('• ' + content);
+    }
   };
 
   // Set initial value for showing results text
@@ -571,7 +575,7 @@ const ProfessionalSummaryPage = () => {
                           <motion.div 
                             key={id}
                             variants={itemVariants}
-                            className={`p-3 ${id <= 2 ? 'bg-pink-50' : 'bg-white'} rounded-lg cursor-pointer transition-all duration-300 hover:shadow-sm`}
+                            className={`p-3 ${id <= 2 ? 'bg-purple-50 border border-purple-200' : 'bg-white border border-gray-200'} rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
                             onClick={() => handleSummaryClick(id === 1 ? 
                               "Motivated Warehouse Worker skilled at providing efficiency in shipping and receiving, inspection and storage operations. Handles diverse materials to achieve high-quality packaging standards and reduce risk. Brings related experience and dedication to meet production and quality goals." : 
                               id === 2 ? 
