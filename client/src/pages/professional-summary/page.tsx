@@ -446,7 +446,8 @@ const ProfessionalSummaryPage = () => {
                     {showJobTitleSuggestions && (
                       <div 
                         ref={suggestionsRef}
-                        className="absolute z-20 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 py-1"
+                        className="absolute z-20 mt-1 w-[calc(100%-1px)] bg-white shadow-lg rounded-md border border-gray-200 py-1 max-h-60 overflow-y-auto left-0"
+                        style={{ width: searchInputRef.current ? searchInputRef.current.offsetWidth : 'auto' }}
                       >
                         {jobTitleSuggestions.map((title) => (
                           <button
@@ -524,12 +525,12 @@ const ProfessionalSummaryPage = () => {
                           <motion.div 
                             key={item.id}
                             variants={itemVariants}
-                            className={`p-3 border ${item.isRecommended ? 'border-purple-200 bg-purple-50' : 'border-gray-200 bg-gray-50'} rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
+                            className={`p-3 ${item.isRecommended ? 'bg-pink-50' : 'bg-white'} rounded-lg cursor-pointer transition-all duration-300 hover:shadow-sm`}
                             onClick={() => handleSummaryClick(item.content)}
                           >
                             <div className="flex mb-1">
                               {item.isRecommended && (
-                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full mr-1">
+                                <span className="text-xs text-purple-600 font-medium px-2 py-0.5 mr-1">
                                   Expert Recommended
                                 </span>
                               )}
@@ -545,7 +546,7 @@ const ProfessionalSummaryPage = () => {
                           <motion.div 
                             key={id}
                             variants={itemVariants}
-                            className={`p-3 border ${id <= 2 ? 'border-purple-200 bg-purple-50' : 'border-gray-200 bg-gray-50'} rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
+                            className={`p-3 ${id <= 2 ? 'bg-pink-50' : 'bg-white'} rounded-lg cursor-pointer transition-all duration-300 hover:shadow-sm`}
                             onClick={() => handleSummaryClick(id === 1 ? 
                               "Motivated Warehouse Worker skilled at providing efficiency in shipping and receiving, inspection and storage operations. Handles diverse materials to achieve high-quality packaging standards and reduce risk. Brings related experience and dedication to meet production and quality goals." : 
                               id === 2 ? 
@@ -555,7 +556,7 @@ const ProfessionalSummaryPage = () => {
                           >
                             <div className="flex mb-1">
                               {id <= 2 && (
-                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full mr-1">
+                                <span className="text-xs text-purple-600 font-medium px-2 py-0.5 mr-1">
                                   Expert Recommended
                                 </span>
                               )}
@@ -579,10 +580,10 @@ const ProfessionalSummaryPage = () => {
                 <div>
                   <h3 className="text-gray-700 mb-2">Professional summary:</h3>
                   <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg opacity-50 group-hover:opacity-70 blur group-hover:blur-md transition duration-300"></div>
-                    <div className="relative p-0.5 bg-white rounded-lg">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-400 rounded-lg opacity-70 group-hover:opacity-90 blur-md group-hover:blur-lg transition duration-300"></div>
+                    <div className="relative bg-white rounded-lg">
                       <textarea 
-                        className="w-full min-h-[300px] p-4 text-gray-800 bg-white rounded-lg shadow-inner focus:outline-none resize-none"
+                        className="w-full min-h-[300px] p-4 text-gray-800 border-0 rounded-lg shadow-inner focus:outline-none resize-none"
                         placeholder="Click on any example from the left to add it to your professional summary, or write your own."
                         value={professionalSummary}
                         onChange={(e) => setProfessionalSummary(e.target.value)}
@@ -600,20 +601,19 @@ const ProfessionalSummaryPage = () => {
                   </div>
                   
                   <div className="flex justify-between">
-                    <Button
-                      variant="outline"
-                      className="rounded-full border-purple-500 text-purple-500 hover:bg-purple-50 px-8"
+                    <button
+                      className="h-10 px-8 rounded-full border border-purple-500 bg-white text-purple-500 font-medium hover:bg-purple-50 focus:outline-none transition-colors"
                       onClick={handlePreview}
                     >
                       Preview
-                    </Button>
+                    </button>
                     
-                    <Button
-                      className="rounded-full bg-yellow-500 hover:bg-yellow-600 text-white px-8"
+                    <button
+                      className="h-10 px-8 rounded-full border-0 bg-yellow-500 hover:bg-yellow-600 text-white font-medium focus:outline-none transition-colors"
                       onClick={handleNext}
                     >
                       Next
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
