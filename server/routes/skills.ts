@@ -245,6 +245,9 @@ skillsRouter.get("/job-titles", async (req, res) => {
   }
 });
 
+// Import our fixed helper functions
+import { getAdditionalSkills } from './fixed-skills-helper';
+
 // Get skills by skill job title ID (using our skill-specific job titles)
 skillsRouter.get("/by-skill-job-title/:skillJobTitleId", async (req, res) => {
   try {
@@ -317,18 +320,12 @@ skillsRouter.get("/by-skill-job-title/:skillJobTitleId", async (req, res) => {
       // Get some general skills from these categories that aren't already in the linked skills
       const linkedSkillIds = linkedSkills.map(s => s.id);
       
-      // Query for additional skills, excluding the ones we already have
-      const additionalSkills = await db.query.skills.findMany({
-        where: 
-          linkedSkillIds.length > 0 
-            ? and(
-                sql`${skills.categoryId} IN (${relevantCategoryIds.join(',')})`,
-                sql`${skills.id} NOT IN (${linkedSkillIds.join(',')})`
-              )
-            : sql`${skills.categoryId} IN (${relevantCategoryIds.join(',')})`,
-        orderBy: [desc(skills.isRecommended), asc(skills.name)],
-        limit: 10 - linkedSkills.length
-      });
+      // Use our fixed helper function to get additional skills
+      const additionalSkills = await getAdditionalSkills(
+        relevantCategoryIds,
+        linkedSkillIds,
+        10 - linkedSkills.length
+      );
       
       console.log(`Adding ${additionalSkills.length} additional generic skills`);
       
