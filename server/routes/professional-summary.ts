@@ -13,8 +13,49 @@ import { eq, like, desc, asc, and, or, SQL, sql } from "drizzle-orm";
 import { createObjectCsvStringifier } from "csv-writer";
 import { parse } from "csv-parse/sync";
 import * as XLSX from "xlsx";
+import { EventEmitter } from "events";
+import multer from "multer";
+import * as fs from 'fs';
+import path from "path";
 
 const professionalSummaryRouter = Router();
+
+// Create temp directory if it doesn't exist
+if (!fs.existsSync('temp')) {
+  fs.mkdirSync('temp', { recursive: true });
+  console.log("Created temp directory for file uploads");
+}
+
+// Setup file upload middleware with expanded file type support
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'temp/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// Configure file upload handling
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB max file size
+  }
+});
+
+// Create a central event emitter for tracking import status
+const importStatusEmitter = new EventEmitter();
+let importStatus = {
+  processed: 0,
+  created: 0,
+  updated: 0,
+  deleted: 0,
+  errors: [] as Array<{ row: number; message: string }>,
+  isComplete: false,
+  syncMode: 'update-only' as string
+};
 
 // Get all professional summary titles with pagination and search
 professionalSummaryRouter.get("/titles", async (req, res) => {
@@ -630,6 +671,35 @@ professionalSummaryRouter.post("/import/json", isAuthenticated, isAdmin, async (
     console.error("Error importing professional summaries from JSON:", error);
     return res.status(500).json({ error: "Failed to import professional summaries from JSON" });
   }
+});
+
+// Server-sent events endpoint for import status updates
+professionalSummaryRouter.get("/import-status", isAdmin, (req, res) => {
+  // Setup SSE connection
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  
+  // Send current status immediately
+  res.write(`data: ${JSON.stringify(importStatus)}\n\n`);
+  
+  // Listen for status updates
+  const sendStatus = (status: typeof importStatus) => {
+    res.write(`data: ${JSON.stringify(status)}\n\n`);
+    
+    // If complete, end the connection
+    if (status.isComplete) {
+      res.end();
+    }
+  };
+  
+  // Register event listener
+  importStatusEmitter.on('update', sendStatus);
+  
+  // Clean up event listener when client disconnects
+  req.on('close', () => {
+    importStatusEmitter.removeListener('update', sendStatus);
+  });
 });
 
 export { professionalSummaryRouter };
