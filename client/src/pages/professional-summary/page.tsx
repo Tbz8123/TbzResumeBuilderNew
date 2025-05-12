@@ -80,7 +80,18 @@ const ProfessionalSummaryPage = () => {
         title: resumeData.workExperience[0].jobTitle || 'Professional',
         category: 'General'
       };
+      
+      // Set the job title in state 
       setCurrentJobTitle(initialJobTitle as JobTitle);
+      
+      // Also update the search term state
+      setSearchTerm(initialJobTitle.title);
+      
+      // Update the input field value directly (for uncontrolled input)
+      if (searchInputRef.current) {
+        searchInputRef.current.value = initialJobTitle.title;
+        console.log("Set initial job title in input field:", initialJobTitle.title);
+      }
     }
   }, [resumeData, currentJobTitle]);
   
@@ -497,16 +508,36 @@ const ProfessionalSummaryPage = () => {
                       <div className="relative bg-white rounded-lg">
                         <input 
                           type="text"
+                          id="professional-summary-search"
                           ref={searchInputRef}
                           placeholder="Search by job title for pre-written examples"
                           className="w-full rounded-lg border border-gray-300 px-3 pr-10 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
-                          value={searchTerm}
-                          onChange={(e) => {
-                            console.log("Input changed to:", e.target.value);
-                            handleSearchChange(e.target.value);
-                          }}
-                          onKeyDown={(e) => {
-                            console.log("Key pressed:", e.key);
+                          defaultValue={searchTerm}
+                          onInput={(e) => {
+                            const target = e.target as HTMLInputElement;
+                            const newValue = target.value;
+                            console.log("Input event with value:", newValue);
+                            setSearchTerm(newValue);
+                            
+                            // Clear the current job title if the search term is empty
+                            if (newValue === '') {
+                              setCurrentJobTitle(null);
+                              setSummaryDescriptions([]);
+                              setShowJobTitleSuggestions(false);
+                            } else {
+                              // Show/hide dropdown based on input
+                              const filtered = allSuggestions.filter(job => 
+                                job.title.toLowerCase().includes(newValue.toLowerCase())
+                              );
+                              
+                              if (filtered.length > 0) {
+                                console.log(`Found ${filtered.length} matching job title suggestions`);
+                                setJobTitleSuggestions(filtered);
+                                setShowJobTitleSuggestions(true);
+                              } else {
+                                setShowJobTitleSuggestions(false);
+                              }
+                            }
                           }}
                           onFocus={() => {
                             // Always show suggestions on focus if we have any search term
@@ -521,9 +552,21 @@ const ProfessionalSummaryPage = () => {
                           <button 
                             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
                             onClick={() => {
-                              // Use the same function we use for input changes
-                              handleSearchChange('');
+                              // Reset the search term state
+                              setSearchTerm('');
+                              
+                              // Reset the input field value directly (for uncontrolled input)
+                              if (searchInputRef.current) {
+                                searchInputRef.current.value = '';
+                              }
+                              
+                              // Clear related states
+                              setCurrentJobTitle(null);
+                              setSummaryDescriptions([]);
+                              setShowJobTitleSuggestions(false);
+                              
                               console.log("Search field cleared completely");
+                              
                               // Focus the input field after clearing
                               searchInputRef.current?.focus();
                             }}
@@ -556,11 +599,20 @@ const ProfessionalSummaryPage = () => {
                                   transition={{ delay: index * 0.03, duration: 0.2 }}
                                   className="px-4 py-2.5 hover:bg-purple-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
                                   onClick={() => {
-                                    // Don't modify searchTerm directly, allow it to remain editable
+                                    // Set the search term in state
                                     setSearchTerm(title.title);
+                                    
+                                    // Update the input field value directly for uncontrolled input
+                                    if (searchInputRef.current) {
+                                      searchInputRef.current.value = title.title;
+                                    }
+                                    
+                                    // Hide dropdown
                                     setShowJobTitleSuggestions(false);
-                                    // Store selected job title for fetching descriptions, but keep input editable
+                                    
+                                    // Store selected job title for fetching descriptions
                                     setCurrentJobTitle(title);
+                                    
                                     // Focus input element to allow immediate editing if needed
                                     if (searchInputRef.current) {
                                       searchInputRef.current.focus();
