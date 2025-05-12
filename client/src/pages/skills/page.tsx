@@ -360,10 +360,32 @@ const SkillsPage = () => {
   };
   
   // Handle search input changes
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    if (e.target.value.trim()) {
+  const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    if (value.trim()) {
       setShowSkillSuggestions(true);
+      
+      // If search term is longer than 2 characters, check if we need to search for a job title
+      if (value.length > 2) {
+        try {
+          // First check if we need to search for job titles
+          const response = await fetch(`/api/jobs/titles?search=${encodeURIComponent(value)}&limit=5`);
+          if (response.ok) {
+            const data = await response.json();
+            
+            // If we found a job title, update job title ID and fetch skills for it
+            if (data && data.data && data.data.length > 0) {
+              // We're only checking for job titles here, we don't auto-select
+              // The user will need to click on a job title to select it
+              console.log(`Found ${data.data.length} job titles matching "${value}"`);
+            }
+          }
+        } catch (error) {
+          console.error("Error searching for job titles:", error);
+        }
+      }
     } else {
       setShowSkillSuggestions(false);
     }
@@ -512,66 +534,17 @@ const SkillsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Left Column - Examples */}
               <div>
-                {/* Search by skill */}
+                {/* Search by skill or job title */}
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-xs uppercase font-bold text-gray-600">
                     SEARCH BY SKILL FOR PRE-WRITTEN EXAMPLES
                   </h2>
-                  {isLoadingJobTitles && (
+                  {isLoadingSkills && (
                     <div className="flex items-center gap-1 text-xs text-purple-500">
                       <Loader className="h-3 w-3 animate-spin" />
-                      <span>Loading job titles...</span>
+                      <span>Loading skills...</span>
                     </div>
                   )}
-                </div>
-                
-                {/* Job Title Selector */}
-                <div className="flex gap-2 mb-3">
-                  <Popover open={jobTitleOpen} onOpenChange={setJobTitleOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={jobTitleOpen}
-                        className="w-full justify-between"
-                      >
-                        {selectedJobTitle
-                          ? selectedJobTitle.title
-                          : "Select job title for relevant skills..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search job titles..." />
-                        <CommandEmpty>No job title found.</CommandEmpty>
-                        <CommandGroup className="max-h-60 overflow-auto">
-                          {jobTitlesData?.data?.map((jobTitle: JobTitle) => (
-                            <CommandItem
-                              key={jobTitle.id}
-                              value={jobTitle.title}
-                              onSelect={() => {
-                                setSelectedJobTitle(jobTitle);
-                                setJobTitleId(jobTitle.id);
-                                setJobTitleOpen(false);
-                                fetchSkillsForJobTitle(jobTitle.id);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  selectedJobTitle?.id === jobTitle.id
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {jobTitle.title}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
                 </div>
                 
                 {/* Search input */}
@@ -581,7 +554,7 @@ const SkillsPage = () => {
                     <Input 
                       type="text"
                       ref={searchInputRef}
-                      placeholder="Search by skill"
+                      placeholder="Search by job title or skill..."
                       value={searchTerm}
                       onChange={handleSearchChange}
                       className="rounded-lg border-gray-300 pr-10 py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
@@ -617,15 +590,48 @@ const SkillsPage = () => {
                               </div>
                             ) : (
                               <>
-                                {selectedJobTitle && (
-                                  <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100">
-                                    Skills for: <span className="font-semibold">{selectedJobTitle.title}</span>
-                                  </div>
+                                {/* Job titles section */}
+                                {jobTitlesData?.data && jobTitlesData.data.length > 0 && (
+                                  <>
+                                    <div className="px-4 py-2 text-xs font-semibold text-purple-600 bg-purple-50">
+                                      Job Titles
+                                    </div>
+                                    
+                                    {jobTitlesData.data
+                                      .filter((jobTitle: JobTitle) => 
+                                        jobTitle.title.toLowerCase().includes(searchTerm.toLowerCase()))
+                                      .slice(0, 5)
+                                      .map((jobTitle: JobTitle) => (
+                                        <div
+                                          key={`job-${jobTitle.id}`}
+                                          className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-b border-gray-100"
+                                          onClick={() => {
+                                            setSearchTerm(jobTitle.title);
+                                            setSelectedJobTitle(jobTitle);
+                                            setJobTitleId(Number(jobTitle.id));
+                                            fetchSkillsForJobTitle(Number(jobTitle.id));
+                                            setShowSkillSuggestions(false);
+                                          }}
+                                        >
+                                          <div className="font-medium text-gray-900 flex items-center">
+                                            <span className="mr-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
+                                              Job Title
+                                            </span>
+                                            {jobTitle.title}
+                                          </div>
+                                        </div>
+                                      ))}
+                                  </>
                                 )}
+                                
+                                {/* Skills section */}
+                                <div className="px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50">
+                                  Skills {selectedJobTitle && `for ${selectedJobTitle.title}`}
+                                </div>
                                 
                                 {filteredSkills.slice(0, 10).map((skill, index) => (
                                   <div
-                                    key={`${skill}-${index}`}
+                                    key={`skill-${index}`}
                                     className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors"
                                     onClick={() => {
                                       setSearchTerm(skill);
