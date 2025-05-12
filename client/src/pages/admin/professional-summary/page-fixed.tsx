@@ -14,15 +14,13 @@ import {
   Edit, 
   ExternalLink, 
   FileText, 
-  Import,
-  Download as Export,
+  Import, 
   MoreHorizontal, 
   Search, 
   Trash,
   Database,
   Plus,
-  ClipboardCopy,
-  Loader2
+  ClipboardCopy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,7 +77,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Link } from "wouter";
+import AdminLayout from "../layout";
 
 // Define the schema for professional summary titles
 const professionalSummaryTitleSchema = z.object({
@@ -369,7 +367,8 @@ export default function ProfessionalSummaryAdminPage() {
   const { toast } = useToast();
   
   return (
-    <div className="container mx-auto py-8 px-4">
+    <AdminLayout>
+      <div className="w-full px-4 py-8 sm:px-6 md:px-8 lg:pl-72">
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -529,6 +528,7 @@ export default function ProfessionalSummaryAdminPage() {
         
         <ProfessionalSummaryAdmin />
       </div>
+    </AdminLayout>
   );
 }
 
