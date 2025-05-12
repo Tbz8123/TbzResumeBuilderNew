@@ -92,7 +92,7 @@ const ProfessionalSummaryPage = () => {
   const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
   const [showingResults, setShowingResults] = useState<string>('');
   
-  // Fetch professional summaries from API
+  // Fetch professional summaries from API when currentJobTitle changes
   useEffect(() => {
     const fetchProfessionalSummaries = async () => {
       setIsLoadingSummaries(true);
@@ -101,6 +101,11 @@ const ProfessionalSummaryPage = () => {
         
         if (!currentJobTitle) {
           console.log("No job title found, using default: Professional");
+        }
+        
+        // Set the search term in the UI when job title changes
+        if (currentJobTitle?.title && searchTerm !== currentJobTitle.title) {
+          setSearchTerm(currentJobTitle.title);
         }
         
         // Default Professional title ID fallback
@@ -301,13 +306,24 @@ const ProfessionalSummaryPage = () => {
     // Update suggestions
     setJobTitleSuggestions(filteredSuggestions);
     
+    // Auto-select the job title if we have an exact match
+    if (searchTerm.trim() && filteredSuggestions.length > 0) {
+      const exactMatch = filteredSuggestions.find(
+        job => job.title.toLowerCase() === searchTerm.toLowerCase()
+      );
+      
+      if (exactMatch) {
+        setCurrentJobTitle(exactMatch);
+      }
+    }
+    
     // Only show dropdown if user has typed something
     if (searchTerm.trim()) {
       setShowJobTitleSuggestions(true);
     } else {
       setShowJobTitleSuggestions(false);
     }
-  }, [searchTerm]);
+  }, [searchTerm, allSuggestions]);
   
   // Effect to handle clicks outside the suggestions dropdown
   useEffect(() => {
