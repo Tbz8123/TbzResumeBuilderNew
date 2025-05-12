@@ -958,47 +958,58 @@ skillsRouter.delete("/:id", isAuthenticated, isAdmin, async (req, res) => {
 // Export skills as JSON (admin only)
 skillsRouter.get("/export/json", isAuthenticated, isAdmin, async (req, res) => {
   try {
-    // Get all skill categories
-    const categories = await db.query.skillCategories.findMany({
-      orderBy: asc(skillCategories.name)
-    });
+    // Get all skill categories for lookup
+    const categories = await db.select().from(skillCategories);
+    const categoryMap = new Map(categories.map(c => [c.id, c.name]));
     
-    // Get all skills with their category info and job title associations
-    const skillsData = await db.query.skills.findMany({
-      with: {
-        category: true,
-        skillJobTitles: {
-          with: {
-            jobTitle: true
-          }
-        }
-      }
-    });
+    // Get all skills
+    const allSkills = await db.select().from(skills);
+    
+    // Get all skill-job title associations with job titles
+    const associations = await db
+      .select({
+        skillId: skillJobTitles.skillId,
+        jobTitleId: skillJobTitles.jobTitleId,
+        jobTitle: skillJobTitleRelations.jobTitle
+      })
+      .from(skillJobTitles)
+      .leftJoin(skillJobTitleRelations.jobTitle, eq(skillJobTitles.jobTitleId, skillJobTitleRelations.jobTitle.id));
+    
+    // Create a map of skills
+    const skillsMap = new Map(allSkills.map(s => [s.id, s]));
     
     // Format the data to include job titles
     const formattedSkills = [];
     
-    // Process each skill and create entries for each associated job title
-    for (const skill of skillsData) {
-      if (skill.skillJobTitles && skill.skillJobTitles.length > 0) {
-        // Create an entry for each job title associated with this skill
-        for (const association of skill.skillJobTitles) {
+    // Process each association and create an entry
+    if (associations.length > 0) {
+      for (const assoc of associations) {
+        const skill = skillsMap.get(assoc.skillId);
+        if (skill) {
           formattedSkills.push({
-            id: association.jobTitleId,
-            jobTitle: association.jobTitle?.title || 'Unknown',
+            id: assoc.jobTitleId,
+            jobTitle: assoc.jobTitle?.title || 'Unknown',
             categoryId: skill.categoryId,
-            categoryName: skill.category?.name || 'Unknown',
+            categoryName: categoryMap.get(skill.categoryId) || 'Unknown',
             skillName: skill.name,
             isRecommended: skill.isRecommended ? true : false
           });
         }
-      } else {
-        // If skill has no job titles, still include it with empty job title
+      }
+    }
+    
+    // Also include skills without job title associations
+    // First get a set of all skills that have been processed
+    const processedSkillIds = new Set(formattedSkills.map(r => r.skillName));
+    
+    // Then add any skills that weren't included yet
+    for (const skill of allSkills) {
+      if (!processedSkillIds.has(skill.name)) {
         formattedSkills.push({
           id: null,
           jobTitle: '',
           categoryId: skill.categoryId,
-          categoryName: skill.category?.name || 'Unknown',
+          categoryName: categoryMap.get(skill.categoryId) || 'Unknown',
           skillName: skill.name,
           isRecommended: skill.isRecommended ? true : false
         });
@@ -1020,47 +1031,58 @@ skillsRouter.get("/export/json", isAuthenticated, isAdmin, async (req, res) => {
 // Export skills as Excel (admin only)
 skillsRouter.get("/export/excel", isAuthenticated, isAdmin, async (req, res) => {
   try {
-    // Get all skill categories
-    const categories = await db.query.skillCategories.findMany({
-      orderBy: asc(skillCategories.name)
-    });
+    // Get all skill categories for lookup
+    const categories = await db.select().from(skillCategories);
+    const categoryMap = new Map(categories.map(c => [c.id, c.name]));
     
-    // Get all skills with their category info and job title associations
-    const allSkills = await db.query.skills.findMany({
-      with: {
-        category: true,
-        skillJobTitles: {
-          with: {
-            jobTitle: true
-          }
-        }
-      }
-    });
+    // Get all skills
+    const allSkills = await db.select().from(skills);
+    
+    // Get all skill-job title associations with job titles
+    const associations = await db
+      .select({
+        skillId: skillJobTitles.skillId,
+        jobTitleId: skillJobTitles.jobTitleId,
+        jobTitle: skillJobTitleRelations.jobTitle
+      })
+      .from(skillJobTitles)
+      .leftJoin(skillJobTitleRelations.jobTitle, eq(skillJobTitles.jobTitleId, skillJobTitleRelations.jobTitle.id));
+    
+    // Create a map of skills
+    const skillsMap = new Map(allSkills.map(s => [s.id, s]));
     
     // Format the data to include job titles
     const records = [];
     
-    // Process each skill and create entries for each associated job title
-    for (const skill of allSkills) {
-      if (skill.skillJobTitles && skill.skillJobTitles.length > 0) {
-        // Create an entry for each job title associated with this skill
-        for (const association of skill.skillJobTitles) {
+    // Process each association and create an entry
+    if (associations.length > 0) {
+      for (const assoc of associations) {
+        const skill = skillsMap.get(assoc.skillId);
+        if (skill) {
           records.push({
-            'ID': association.jobTitleId,
-            'Job Title': association.jobTitle?.title || 'Unknown',
+            'ID': assoc.jobTitleId,
+            'Job Title': assoc.jobTitle?.title || 'Unknown',
             'Category ID': skill.categoryId,
-            'Category Name': skill.category?.name || 'Unknown',
+            'Category Name': categoryMap.get(skill.categoryId) || 'Unknown',
             'Skill Name': skill.name,
             'Is Recommended': skill.isRecommended ? 'Yes' : 'No'
           });
         }
-      } else {
-        // If skill has no job titles, still include it with empty job title
+      }
+    }
+    
+    // Also include skills without job title associations
+    // First get a set of all skills that have been processed
+    const processedSkillIds = new Set(records.map(r => r['Skill Name']));
+    
+    // Then add any skills that weren't included yet
+    for (const skill of allSkills) {
+      if (!processedSkillIds.has(skill.name)) {
         records.push({
           'ID': '',
           'Job Title': '',
           'Category ID': skill.categoryId,
-          'Category Name': skill.category?.name || 'Unknown',
+          'Category Name': categoryMap.get(skill.categoryId) || 'Unknown',
           'Skill Name': skill.name,
           'Is Recommended': skill.isRecommended ? 'Yes' : 'No'
         });
@@ -1100,47 +1122,58 @@ skillsRouter.get("/export/excel", isAuthenticated, isAdmin, async (req, res) => 
 // Export skills as CSV (admin only)
 skillsRouter.get("/export/csv", isAuthenticated, isAdmin, async (req, res) => {
   try {
-    // Get all skill categories
-    const categories = await db.query.skillCategories.findMany({
-      orderBy: asc(skillCategories.name)
-    });
+    // Get all skill categories for lookup
+    const categories = await db.select().from(skillCategories);
+    const categoryMap = new Map(categories.map(c => [c.id, c.name]));
     
-    // Get all skills with their category info and job title associations
-    const allSkills = await db.query.skills.findMany({
-      with: {
-        category: true,
-        skillJobTitles: {
-          with: {
-            jobTitle: true
-          }
-        }
-      }
-    });
+    // Get all skills
+    const allSkills = await db.select().from(skills);
+    
+    // Get all skill-job title associations with job titles
+    const associations = await db
+      .select({
+        skillId: skillJobTitleSkills.skillId,
+        jobTitleId: skillJobTitleSkills.skillJobTitleId,
+        jobTitle: skillJobTitles
+      })
+      .from(skillJobTitleSkills)
+      .leftJoin(skillJobTitles, eq(skillJobTitleSkills.skillJobTitleId, skillJobTitles.id));
+    
+    // Create a map of skills
+    const skillsMap = new Map(allSkills.map(s => [s.id, s]));
     
     // Format the data to include job titles
     const records = [];
     
-    // Process each skill and create entries for each associated job title
-    for (const skill of allSkills) {
-      if (skill.skillJobTitles && skill.skillJobTitles.length > 0) {
-        // Create an entry for each job title associated with this skill
-        for (const association of skill.skillJobTitles) {
+    // Process each association and create an entry
+    if (associations.length > 0) {
+      for (const assoc of associations) {
+        const skill = skillsMap.get(assoc.skillId);
+        if (skill) {
           records.push({
-            id: association.jobTitleId,
-            jobTitle: association.jobTitle?.title || 'Unknown',
+            id: assoc.jobTitleId,
+            jobTitle: assoc.jobTitle?.title || 'Unknown',
             categoryId: skill.categoryId,
-            categoryName: skill.category?.name || 'Unknown',
+            categoryName: categoryMap.get(skill.categoryId) || 'Unknown',
             skillName: skill.name,
             isRecommended: skill.isRecommended ? 'Yes' : 'No'
           });
         }
-      } else {
-        // If skill has no job titles, still include it with empty job title
+      }
+    }
+    
+    // Also include skills without job title associations
+    // First get a set of all skills that have been processed
+    const processedSkillIds = new Set(records.map(r => r.skillName));
+    
+    // Then add any skills that weren't included yet
+    for (const skill of allSkills) {
+      if (!processedSkillIds.has(skill.name)) {
         records.push({
           id: '',
           jobTitle: '',
           categoryId: skill.categoryId,
-          categoryName: skill.category?.name || 'Unknown',
+          categoryName: categoryMap.get(skill.categoryId) || 'Unknown',
           skillName: skill.name,
           isRecommended: skill.isRecommended ? 'Yes' : 'No'
         });
