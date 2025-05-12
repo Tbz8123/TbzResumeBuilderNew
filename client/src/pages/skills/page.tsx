@@ -186,15 +186,21 @@ const SkillsPage = () => {
     data: jobTitlesData = { data: [] }, 
     isLoading: isLoadingJobTitles 
   } = useQuery({
-    queryKey: ['/api/jobs/titles'],
+    queryKey: ['/api/skills/job-titles'],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('page', '1');
       params.append('limit', '50'); // Load more job titles for a better selection
       
-      const response = await fetch(`/api/jobs/titles?${params.toString()}`);
+      const response = await fetch(`/api/skills/job-titles?${params.toString()}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch job titles');
+        // If no skill job titles exist yet, fall back to regular job titles
+        console.log("Couldn't fetch skill job titles, trying regular job titles");
+        const fallbackResponse = await fetch(`/api/jobs/titles?${params.toString()}`);
+        if (!fallbackResponse.ok) {
+          throw new Error('Failed to fetch job titles');
+        }
+        return await fallbackResponse.json();
       }
       return await response.json();
     },
@@ -213,14 +219,15 @@ const SkillsPage = () => {
       // If we have a job title ID, use the dedicated endpoint to get associated skills
       if (jobTitleId) {
         console.log(`Fetching skills for job title ID: ${jobTitleId}`);
-        const response = await fetch(`/api/skills/by-job-title/${jobTitleId}`);
+        const response = await fetch(`/api/skills/skill-job-title/${jobTitleId}/skills`);
         
         if (response.ok) {
           skillData = await response.json();
+          console.log("Skills data received:", skillData);
           
           // Separate skills into recommended and standard
-          recommendedSkills = skillData.filter(skill => skill.isRecommended);
-          standardSkills = skillData.filter(skill => !skill.isRecommended);
+          recommendedSkills = skillData.filter(skill => skill.isRecommended === true);
+          standardSkills = skillData.filter(skill => skill.isRecommended !== true);
           
           console.log(`Found ${recommendedSkills.length} recommended and ${standardSkills.length} standard skills`);
         }
