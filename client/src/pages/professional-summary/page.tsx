@@ -558,7 +558,7 @@ const ProfessionalSummaryPage = () => {
                     <h2 className="text-xs uppercase font-bold text-gray-600 mb-2">SEARCH BY JOB TITLE FOR PRE-WRITTEN EXAMPLES</h2>
                     <div className="relative group">
                       <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg opacity-50 group-hover:opacity-70 blur group-hover:blur-md transition duration-300"></div>
-                      <div className="relative bg-white rounded-lg">
+                      <div className="relative bg-white rounded-lg" style={{ position: 'relative' }}>
                         <input 
                           type="text"
                           id="professional-summary-search"
@@ -685,8 +685,6 @@ const ProfessionalSummaryPage = () => {
                     </div>
                   
                     {/* Job title suggestions dropdown - Copied exactly from job-description page */}
-                    {console.log("Dropdown visibility state:", showJobTitleSuggestions)}
-                    {console.log("Number of suggestions:", jobTitleSuggestions.length)}
                     {showJobTitleSuggestions && (
                       <div 
                         ref={suggestionsRef}
