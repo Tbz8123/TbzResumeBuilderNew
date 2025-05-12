@@ -329,34 +329,55 @@ const ProfessionalSummaryPage = () => {
     console.log("Sample of suggestions:", allSuggestions.slice(0, 3));
   }, [allSuggestions]);
 
-  // Effect to update job title suggestions when search term changes
+  // Effect to update job title suggestions when search term changes - based on job-description page
   useEffect(() => {
-    // Always filter suggestions regardless of whether search term is empty
-    const filteredSuggestions = allSuggestions.filter(job => 
-      job.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    console.log("Filtered suggestions:", filteredSuggestions);
-    
-    // Update suggestions
-    setJobTitleSuggestions(filteredSuggestions);
-    
-    // Auto-select the job title if we have an exact match
-    if (searchTerm.trim() && filteredSuggestions.length > 0) {
-      const exactMatch = filteredSuggestions.find(
-        job => job.title.toLowerCase() === searchTerm.toLowerCase()
-      );
-      
-      if (exactMatch) {
-        setCurrentJobTitle(exactMatch);
+    const fetchJobTitleSuggestions = async () => {
+      if (searchTerm.trim()) {
+        try {
+          // Filter suggestions based on search term
+          const filteredSuggestions = allSuggestions.filter(job => 
+            job.title.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+          
+          console.log("Filtered suggestions:", filteredSuggestions);
+          
+          if (filteredSuggestions.length > 0) {
+            setJobTitleSuggestions(filteredSuggestions);
+            setShowJobTitleSuggestions(true);
+            
+            // Auto-select the job title if we have an exact match
+            const exactMatch = filteredSuggestions.find(
+              job => job.title.toLowerCase() === searchTerm.toLowerCase()
+            );
+            
+            if (exactMatch) {
+              setCurrentJobTitle(exactMatch);
+            }
+          } else {
+            // No suggestions found - show empty dropdown with message
+            setJobTitleSuggestions([]);
+            setShowJobTitleSuggestions(true);
+          }
+        } catch (error) {
+          console.error("Error fetching job title suggestions:", error);
+          setJobTitleSuggestions([]);
+          setShowJobTitleSuggestions(true);
+        }
+      } else {
+        // If search term is empty, show default suggestions if input is focused
+        const defaultSuggestions = allSuggestions.slice(0, 5);
+        setJobTitleSuggestions(defaultSuggestions);
+        
+        // Only show dropdown if input is focused
+        if (document.activeElement === searchInputRef.current) {
+          setShowJobTitleSuggestions(true);
+        } else {
+          setShowJobTitleSuggestions(false);
+        }
       }
-    }
+    };
     
-    // Only show dropdown if user has typed something
-    if (searchTerm.trim()) {
-      setShowJobTitleSuggestions(true);
-    } else {
-      setShowJobTitleSuggestions(false);
-    }
+    fetchJobTitleSuggestions();
   }, [searchTerm, allSuggestions]);
   
   // Effect to handle clicks outside the suggestions dropdown
@@ -614,27 +635,22 @@ const ProfessionalSummaryPage = () => {
                       </div>
                     </div>
                   
-                    {/* Job title suggestions dropdown - Styled like job description page */}
+                    {/* Job title suggestions dropdown - Copied exactly from job-description page */}
                     {showJobTitleSuggestions && (
                       <div 
                         ref={suggestionsRef}
                         className="absolute z-50 mt-1 w-full"
-                        style={{ top: '100%', left: 0, maxWidth: searchInputRef.current?.offsetWidth }}
+                        style={{ top: '100%', left: 0 }}
                       >
                         <div className="bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto backdrop-blur-sm bg-white/80">
-                          <motion.div 
-                            className="py-1"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.2 }}
-                          >
+                          <div className="py-1">
                             {jobTitleSuggestions.length > 0 ? (
                               jobTitleSuggestions.map((title, index) => (
                                 <motion.div
                                   key={title.id}
                                   initial={{ opacity: 0, y: 5 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: index * 0.05, duration: 0.3 }}
+                                  transition={{ delay: index * 0.05 }}
                                   className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
                                   onClick={() => {
                                     console.log("Job title selected:", title.title);
@@ -668,7 +684,7 @@ const ProfessionalSummaryPage = () => {
                                 No suggestions found
                               </div>
                             )}
-                          </motion.div>
+                          </div>
                         </div>
                       </div>
                     )}
