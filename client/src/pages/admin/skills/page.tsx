@@ -121,7 +121,7 @@ export default function SkillsAdminPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [jobTitleTotalPages, setJobTitleTotalPages] = useState(1);
   const [skillJobTitleTotalPages, setSkillJobTitleTotalPages] = useState(1);
-  const [useSkillJobTitles, setUseSkillJobTitles] = useState(false); // Toggle between job titles and skill job titles
+  const [useSkillJobTitles, setUseSkillJobTitles] = useState(true); // Toggle between job titles and skill job titles
   const [isCopyingJobTitles, setIsCopyingJobTitles] = useState(false);
   
   // Dialog state
