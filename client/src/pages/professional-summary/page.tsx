@@ -236,49 +236,34 @@ const ProfessionalSummaryPage = () => {
     const fetchJobTitleSuggestions = async () => {
       if (searchTerm.trim()) {
         try {
-          // First try to get suggestions from the API
-          const apiResponse = await apiRequest('GET', `/api/professional-summary/titles?search=${encodeURIComponent(searchTerm)}`);
-          const apiData = await apiResponse.json();
-          
-          console.log("Professional summary title suggestions from API:", apiData);
-          
-          // Always fallback to static data regardless of API response for now
-          // This ensures we have suggestions to show
+          // Directly use static suggestions for guaranteed data
           const staticSuggestions = getJobTitleSuggestions(searchTerm, 10);
           console.log("Static job title suggestions:", staticSuggestions);
           
-          // Use static suggestions to guarantee data for testing
-          setJobTitleSuggestions(staticSuggestions);
-          setShowJobTitleSuggestions(true);
-          
-          // Original code to use when API data exists:
-          /*
-          if (apiData.data && apiData.data.length > 0) {
-            // Convert database titles to JobTitle format
-            const apiSuggestions = apiData.data.map((item: any) => ({
-              id: item.id.toString(),
-              title: item.title,
-              category: item.category
-            }));
-            setJobTitleSuggestions(apiSuggestions);
+          if (staticSuggestions.length > 0) {
+            setJobTitleSuggestions(staticSuggestions);
             setShowJobTitleSuggestions(true);
           } else {
-            // Fallback to static data if no API results
-            const staticSuggestions = getJobTitleSuggestions(searchTerm, 5);
-            setJobTitleSuggestions(staticSuggestions);
-            setShowJobTitleSuggestions(staticSuggestions.length > 0);
+            setShowJobTitleSuggestions(false);
           }
-          */
+          
+          // Also attempt to fetch from API for future use
+          const apiResponse = await apiRequest('GET', `/api/professional-summary/titles?search=${encodeURIComponent(searchTerm)}`);
+          const apiData = await apiResponse.json();
+          console.log("Professional summary title suggestions from API:", apiData);
         } catch (error) {
           console.error("Error fetching professional summary title suggestions:", error);
-          // Fallback to static data if API fails
+          // Ensure we still have suggestions even if API fails
           const staticSuggestions = getJobTitleSuggestions(searchTerm, 10);
-          console.log("Static job title suggestions (fallback):", staticSuggestions);
           setJobTitleSuggestions(staticSuggestions);
           setShowJobTitleSuggestions(staticSuggestions.length > 0);
         }
       } else {
-        setShowJobTitleSuggestions(false);
+        // If no search term, show default suggestions
+        const defaultSuggestions = getJobTitleSuggestions("", 10);
+        console.log("Default job title suggestions:", defaultSuggestions);
+        setJobTitleSuggestions(defaultSuggestions);
+        setShowJobTitleSuggestions(!!searchTerm.trim());
       }
     };
     
