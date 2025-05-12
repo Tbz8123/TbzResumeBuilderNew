@@ -383,7 +383,7 @@ const SkillsPage = () => {
     ? skillSuggestions.filter(skill => 
         skill.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : skillSuggestions.slice(0, 15);
+    : skillSuggestions.slice(0, 15) || [];
     
   // For debugging
   console.log("Skills for display:", {
@@ -820,7 +820,7 @@ const SkillsPage = () => {
                 >
                   <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-2">
-                      <h2 className="font-semibold">{filteredSkills.length} results</h2>
+                      <h2 className="font-semibold">{skillSuggestions.length > 0 ? skillSuggestions.length : 0} available skills</h2>
                       {isLoadingSkills && (
                         <Loader className="h-4 w-4 animate-spin text-purple-500" />
                       )}
@@ -867,8 +867,8 @@ const SkillsPage = () => {
                         animate="visible"
                         className="space-y-3"
                       >
-                        {filteredSkills.length > 0 ? (
-                          filteredSkills.map((skill, index) => (
+                        {skillSuggestions.length > 0 ? (
+                          skillSuggestions.map((skill, index) => (
                             <motion.div
                               key={`${skill}-card-${index}`}
                               variants={itemVariants}
