@@ -384,16 +384,25 @@ const SkillsPage = () => {
             
             // Update jobTitleSearchResults with the search results
             if (data && data.data) {
-              console.log(`Found ${data.data.length} job titles matching "${value}"`);
+              console.log(`Found ${data.data.length} job titles matching "${value}":`, data.data);
               // Use our dedicated state for search results
               setJobTitleSearchResults(data.data);
+            } else {
+              console.log("No job titles found or invalid response format:", data);
+              setJobTitleSearchResults([]);
             }
+          } else {
+            console.log("Job titles search response not OK:", response.status);
+            setJobTitleSearchResults([]);
           }
         } catch (error) {
           console.error("Error searching for job titles:", error);
           // Clear search results on error
           setJobTitleSearchResults([]);
         }
+      } else {
+        // Clear job title results if search term is too short
+        setJobTitleSearchResults([]);
       }
     } else {
       setShowSkillSuggestions(false);
