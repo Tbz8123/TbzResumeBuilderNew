@@ -67,10 +67,22 @@ const ProfessionalSummaryPage = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   
-  // Get the current job title from resume data
-  const currentJobTitle = resumeData.workExperience && resumeData.workExperience.length > 0 
-    ? resumeData.workExperience[0].jobTitle 
-    : 'Professional';
+  // State for managing the selected job title
+  const [currentJobTitle, setCurrentJobTitle] = useState<JobTitle | null>(null);
+  
+  // Initialize job title from resume data if available
+  useEffect(() => {
+    // Only set initial job title if not already set
+    if (!currentJobTitle && resumeData.workExperience && resumeData.workExperience.length > 0) {
+      // Try to create a JobTitle object from the saved data
+      const initialJobTitle = {
+        id: 0, // We'll use a default ID
+        title: resumeData.workExperience[0].jobTitle || 'Professional',
+        category: 'General'
+      };
+      setCurrentJobTitle(initialJobTitle as JobTitle);
+    }
+  }, [resumeData, currentJobTitle]);
   
   // Initialize professional summary from resumeData if available
   const [professionalSummary, setProfessionalSummary] = useState(resumeData.professionalSummary || '');
@@ -85,7 +97,7 @@ const ProfessionalSummaryPage = () => {
     const fetchProfessionalSummaries = async () => {
       setIsLoadingSummaries(true);
       try {
-        console.log("Searching for professional summaries for:", currentJobTitle);
+        console.log("Searching for professional summaries for:", currentJobTitle ? currentJobTitle.title : "none");
         
         if (!currentJobTitle) {
           console.log("No job title found, using default: Professional");
@@ -95,7 +107,7 @@ const ProfessionalSummaryPage = () => {
         const DEFAULT_TITLE_ID = 1;
         
         // Step 1: Find the professional summary title in the database first
-        const searchQuery = currentJobTitle || "Professional";
+        const searchQuery = currentJobTitle ? currentJobTitle.title : "Professional";
         const titlesResponse = await fetch(`/api/professional-summary/titles?search=${encodeURIComponent(searchQuery)}`, {
           method: 'GET',
           headers: {
@@ -110,8 +122,16 @@ const ProfessionalSummaryPage = () => {
         // Step 2: Determine the title ID to use
         let titleIdToUse = DEFAULT_TITLE_ID; // Start with default ID as fallback
         
-        // First check if we have stored ID
-        if (resumeData.professionalSummaryTitleId) {
+        // First check if we have a current job title directly selected by the user
+        if (currentJobTitle && currentJobTitle.id) {
+          titleIdToUse = currentJobTitle.id;
+          console.log(`Using selected job title ID: ${titleIdToUse} (${currentJobTitle.title})`);
+          
+          // Store this ID for future use
+          updateResumeData({ professionalSummaryTitleId: titleIdToUse });
+        }
+        // Then check if we have stored ID
+        else if (resumeData.professionalSummaryTitleId) {
           const storedId = typeof resumeData.professionalSummaryTitleId === 'string' 
             ? parseInt(resumeData.professionalSummaryTitleId) 
             : resumeData.professionalSummaryTitleId;
@@ -503,6 +523,8 @@ const ProfessionalSummaryPage = () => {
                                   onClick={() => {
                                     setSearchTerm(title.title);
                                     setShowJobTitleSuggestions(false);
+                                    // Set the current job title for fetching descriptions
+                                    setCurrentJobTitle(title);
                                   }}
                                 >
                                   <div className="flex items-center justify-between">
