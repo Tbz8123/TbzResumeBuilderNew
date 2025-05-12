@@ -150,6 +150,16 @@ skillsRouter.get("/job-titles", async (req, res) => {
     if (searchQuery) {
       console.log(`Searching for skill job titles matching: "${searchQuery}"`);
       queryBuilder = queryBuilder.where(sql`LOWER(${skillJobTitles.title}) LIKE LOWER(${'%' + searchQuery + '%'})`);
+      
+      // Also look for exact matches first for better results
+      const exactMatchQuery = db.select().from(skillJobTitles)
+        .where(sql`LOWER(${skillJobTitles.title}) = LOWER(${searchQuery})`)
+        .limit(1);
+      
+      const exactMatches = await exactMatchQuery;
+      if (exactMatches.length > 0) {
+        console.log(`Found exact match for "${searchQuery}": "${exactMatches[0].title}"`);
+      }
     }
     
     // Add category filter if provided and not 'all'

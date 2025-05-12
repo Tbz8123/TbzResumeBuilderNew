@@ -196,6 +196,8 @@ const SkillsPage = () => {
       if (!response.ok) {
         // If no skill job titles exist yet, fall back to regular job titles
         console.log("Couldn't fetch skill job titles, trying regular job titles");
+        // If we can't fetch skill job titles, check regular job titles as a fallback
+        console.log('Falling back to regular job titles API for skill job titles');
         const fallbackResponse = await fetch(`/api/jobs/titles?${params.toString()}`);
         if (!fallbackResponse.ok) {
           throw new Error('Failed to fetch job titles');
@@ -298,7 +300,8 @@ const SkillsPage = () => {
     // Search for this job title
     try {
       console.log("Searching for job title:", firstJob.jobTitle);
-      const response = await apiRequest('GET', `/api/jobs/titles?search=${encodeURIComponent(firstJob.jobTitle)}`);
+      // Try looking in skill job titles first
+      const response = await apiRequest('GET', `/api/skills/job-titles?search=${encodeURIComponent(firstJob.jobTitle)}`);
       
       // Type check the response structure
       if (response && 
@@ -409,15 +412,17 @@ const SkillsPage = () => {
       if (value.length > 1) {
         try {
           // First check if we need to search for job titles
-          const response = await fetch(`/api/jobs/titles?search=${encodeURIComponent(value)}&limit=5`);
+          const response = await fetch(`/api/skills/job-titles?search=${encodeURIComponent(value)}&limit=5`);
           if (response.ok) {
             const data = await response.json();
             
             // Update jobTitleSearchResults with the search results
             if (data && data.data) {
-              console.log(`Found ${data.data.length} job titles matching "${value}"`);
+              console.log(`Found ${data.data.length} skill job titles matching "${value}"`);
               // Use our dedicated state for search results
               setJobTitleSearchResults(data.data);
+            } else {
+              console.log(`No skill job titles found for "${value}"`);
             }
           }
         } catch (error) {
