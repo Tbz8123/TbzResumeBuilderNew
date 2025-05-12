@@ -500,11 +500,13 @@ const ProfessionalSummaryPage = () => {
                           ref={searchInputRef}
                           placeholder="Search by job title for pre-written examples"
                           className="w-full rounded-lg border border-gray-300 px-3 pr-10 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
-                          defaultValue={searchTerm}
-                          onInput={(e) => {
-                            const target = e.target as HTMLInputElement;
-                            console.log("Input event triggered with value:", target.value);
-                            handleSearchChange(target.value);
+                          value={searchTerm}
+                          onChange={(e) => {
+                            console.log("Input changed to:", e.target.value);
+                            handleSearchChange(e.target.value);
+                          }}
+                          onKeyDown={(e) => {
+                            console.log("Key pressed:", e.key);
                           }}
                           onFocus={() => {
                             // Always show suggestions on focus if we have any search term
@@ -519,11 +521,11 @@ const ProfessionalSummaryPage = () => {
                           <button 
                             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
                             onClick={() => {
-                              setSearchTerm('');
-                              setCurrentJobTitle(null);
-                              setSummaryDescriptions([]);
-                              setShowJobTitleSuggestions(false);
+                              // Use the same function we use for input changes
+                              handleSearchChange('');
                               console.log("Search field cleared completely");
+                              // Focus the input field after clearing
+                              searchInputRef.current?.focus();
                             }}
                           >
                             <X className="h-5 w-5" />
