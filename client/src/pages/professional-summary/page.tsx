@@ -231,13 +231,13 @@ const ProfessionalSummaryPage = () => {
     fetchProfessionalSummaries();
   }, [currentJobTitle, resumeData.professionalSummaryTitleId, searchTerm]);
   
-  // Hardcoded suggestions for testing
+  // Hardcoded suggestions for testing that match JobTitle type
   const hardcodedSuggestions = [
-    { id: 'manager', title: 'Manager', category: 'Management' },
-    { id: 'marketing-manager', title: 'Marketing Manager', category: 'Marketing' },
-    { id: 'marketing-coordinator', title: 'Marketing Coordinator', category: 'Marketing' },
-    { id: 'marketing-specialist', title: 'Marketing Specialist', category: 'Marketing' },
-    { id: 'machine-learning-engineer', title: 'Machine Learning Engineer', category: 'Technology' }
+    { id: 28, title: 'Manager', category: 'Management', createdAt: new Date(), updatedAt: new Date() },
+    { id: 29, title: 'Marketing Manager', category: 'Marketing', createdAt: new Date(), updatedAt: new Date() },
+    { id: 30, title: 'Marketing Coordinator', category: 'Marketing', createdAt: new Date(), updatedAt: new Date() },
+    { id: 31, title: 'Marketing Specialist', category: 'Marketing', createdAt: new Date(), updatedAt: new Date() },
+    { id: 32, title: 'Machine Learning Engineer', category: 'Technology', createdAt: new Date(), updatedAt: new Date() }
   ];
 
   // Effect to update job title suggestions when search term changes
@@ -407,7 +407,7 @@ const ProfessionalSummaryPage = () => {
                           onChange={handleSearchChange}
                           className="rounded-lg border-gray-300 pr-10 py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
                           onFocus={() => {
-                            if (jobTitleSuggestions.length > 0) {
+                            if (searchTerm.trim()) {
                               setShowJobTitleSuggestions(true);
                             }
                           }}
@@ -427,6 +427,7 @@ const ProfessionalSummaryPage = () => {
                       </div>
                     </div>
                   
+                    {/* Job title suggestions dropdown - Exactly like in the screenshot */}
                     {showJobTitleSuggestions && (
                       <div 
                         ref={suggestionsRef}
@@ -448,11 +449,14 @@ const ProfessionalSummaryPage = () => {
                                     setShowJobTitleSuggestions(false);
                                   }}
                                 >
-                                  <div className="font-medium text-sm">{title.title}</div>
+                                  <div className="font-medium text-gray-900">{title.title}</div>
+                                  <div className="text-xs text-gray-500">{title.category}</div>
                                 </motion.div>
                               ))
                             ) : (
-                              <div className="px-4 py-3 text-sm text-gray-500">No job titles found</div>
+                              <div className="px-4 py-3 text-sm text-gray-500">
+                                No suggestions found
+                              </div>
                             )}
                           </div>
                         </div>
