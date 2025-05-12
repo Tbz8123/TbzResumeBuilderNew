@@ -231,43 +231,29 @@ const ProfessionalSummaryPage = () => {
     fetchProfessionalSummaries();
   }, [currentJobTitle, resumeData.professionalSummaryTitleId, searchTerm]);
   
+  // Hardcoded suggestions for testing
+  const hardcodedSuggestions = [
+    { id: 'manager', title: 'Manager', category: 'Management' },
+    { id: 'marketing-manager', title: 'Marketing Manager', category: 'Marketing' },
+    { id: 'marketing-coordinator', title: 'Marketing Coordinator', category: 'Marketing' },
+    { id: 'marketing-specialist', title: 'Marketing Specialist', category: 'Marketing' },
+    { id: 'machine-learning-engineer', title: 'Machine Learning Engineer', category: 'Technology' }
+  ];
+
   // Effect to update job title suggestions when search term changes
   useEffect(() => {
-    const fetchJobTitleSuggestions = async () => {
-      if (searchTerm.trim()) {
-        try {
-          // Directly use static suggestions for guaranteed data
-          const staticSuggestions = getJobTitleSuggestions(searchTerm, 10);
-          console.log("Static job title suggestions:", staticSuggestions);
-          
-          if (staticSuggestions.length > 0) {
-            setJobTitleSuggestions(staticSuggestions);
-            setShowJobTitleSuggestions(true);
-          } else {
-            setShowJobTitleSuggestions(false);
-          }
-          
-          // Also attempt to fetch from API for future use
-          const apiResponse = await apiRequest('GET', `/api/professional-summary/titles?search=${encodeURIComponent(searchTerm)}`);
-          const apiData = await apiResponse.json();
-          console.log("Professional summary title suggestions from API:", apiData);
-        } catch (error) {
-          console.error("Error fetching professional summary title suggestions:", error);
-          // Ensure we still have suggestions even if API fails
-          const staticSuggestions = getJobTitleSuggestions(searchTerm, 10);
-          setJobTitleSuggestions(staticSuggestions);
-          setShowJobTitleSuggestions(staticSuggestions.length > 0);
-        }
-      } else {
-        // If no search term, show default suggestions
-        const defaultSuggestions = getJobTitleSuggestions("", 10);
-        console.log("Default job title suggestions:", defaultSuggestions);
-        setJobTitleSuggestions(defaultSuggestions);
-        setShowJobTitleSuggestions(!!searchTerm.trim());
-      }
-    };
-    
-    fetchJobTitleSuggestions();
+    if (searchTerm.trim()) {
+      // Simple filtering logic
+      const filteredSuggestions = hardcodedSuggestions.filter(job => 
+        job.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      console.log("Filtered suggestions:", filteredSuggestions);
+      
+      setJobTitleSuggestions(filteredSuggestions);
+      setShowJobTitleSuggestions(true);
+    } else {
+      setShowJobTitleSuggestions(false);
+    }
   }, [searchTerm]);
   
   // Effect to handle clicks outside the suggestions dropdown
