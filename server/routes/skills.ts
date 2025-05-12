@@ -964,19 +964,18 @@ skillsRouter.get("/export/json", isAuthenticated, isAdmin, async (req, res) => {
     });
     
     // Get all skills with their category info
-    const skills = await db.query.skills.findMany({
+    const skillsData = await db.query.skills.findMany({
       with: {
         category: true
-      },
-      orderBy: [asc(skills.categoryId), asc(skills.name)]
+      }
     });
     
     // Format the data for export
-    const formattedSkills = skills.map(skill => ({
+    const formattedSkills = skillsData.map((skill: any) => ({
       id: skill.id,
       name: skill.name,
       categoryId: skill.categoryId,
-      categoryName: skill.category.name,
+      categoryName: skill.category?.name || 'Unknown',
       description: skill.description || '',
       isRecommended: skill.isRecommended ? true : false
     }));
@@ -1005,16 +1004,15 @@ skillsRouter.get("/export/excel", isAuthenticated, isAdmin, async (req, res) => 
     const allSkills = await db.query.skills.findMany({
       with: {
         category: true
-      },
-      orderBy: [asc(skills.categoryId), asc(skills.name)]
+      }
     });
     
     // Format data for Excel
-    const records = allSkills.map(skill => ({
+    const records = allSkills.map((skill: any) => ({
       ID: skill.id,
       'Skill Name': skill.name,
       'Category ID': skill.categoryId,
-      'Category Name': skill.category.name,
+      'Category Name': skill.category?.name || 'Unknown',
       'Description': skill.description || '',
       'Is Recommended': skill.isRecommended ? 'Yes' : 'No'
     }));
@@ -1307,7 +1305,14 @@ skillsRouter.post("/import/csv", isAuthenticated, isAdmin, upload.single('file')
         }
         
         // Emit progress update
-        progressEmitter.emit('progress', { progress, total });
+        csvImportEmitter.emit('progress', { 
+          processed: progress,
+          created: results.skills.created,
+          updated: results.skills.updated,
+          deleted: 0,
+          errors: [],
+          isComplete: false
+        });
       } catch (err) {
         console.error(`Error processing row ${progress}:`, err);
         results.skills.errors++;
@@ -1336,11 +1341,25 @@ skillsRouter.post("/import/csv", isAuthenticated, isAdmin, upload.single('file')
   } catch (error) {
     console.error("Error importing skills:", error);
     
+    // Initialize default results if not available
+    const defaultResults = {
+      categories: {
+        created: 0,
+        existing: 0,
+        errors: 0
+      },
+      skills: {
+        created: 0,
+        updated: 0,
+        errors: 0
+      }
+    };
+    
     // Send error progress update
     csvImportEmitter.emit('progress', {
       processed: progress,
-      created: results?.skills?.created || 0,
-      updated: results?.skills?.updated || 0,
+      created: results?.skills?.created || defaultResults.skills.created,
+      updated: results?.skills?.updated || defaultResults.skills.updated,
       deleted: 0,
       errors: [{ row: 0, message: error instanceof Error ? error.message : 'Unknown error occurred' }],
       isComplete: true
