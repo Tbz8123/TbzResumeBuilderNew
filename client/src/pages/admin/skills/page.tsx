@@ -663,15 +663,23 @@ export default function SkillsAdminPage() {
 
   // Form submit handler for skill job titles
   const onSkillJobTitleFormSubmit = (data: z.infer<typeof skillJobTitleSchema>) => {
+    // Format data to handle nulls
+    const formattedData = {
+      ...data,
+      description: data.description || '',
+      title: data.title || '',
+      category: data.category || '',
+    };
+    
     if (editingSkillJobTitle) {
       // Update existing skill job title
       updateSkillJobTitleMutation.mutate({
         ...editingSkillJobTitle,
-        ...data
+        ...formattedData
       });
     } else {
       // Create new skill job title
-      createSkillJobTitleMutation.mutate(data);
+      createSkillJobTitleMutation.mutate(formattedData);
     }
   };
 
@@ -1908,7 +1916,8 @@ export default function SkillsAdminPage() {
                       <Textarea 
                         placeholder="Enter job title description..." 
                         className="resize-none h-24"
-                        {...field} 
+                        {...field}
+                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormMessage />
