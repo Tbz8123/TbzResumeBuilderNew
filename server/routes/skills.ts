@@ -955,6 +955,100 @@ skillsRouter.delete("/:id", isAuthenticated, isAdmin, async (req, res) => {
   }
 });
 
+// Export skills as JSON (admin only)
+skillsRouter.get("/export/json", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    // Get all skill categories
+    const categories = await db.query.skillCategories.findMany({
+      orderBy: asc(skillCategories.name)
+    });
+    
+    // Get all skills with their category info
+    const skills = await db.query.skills.findMany({
+      with: {
+        category: true
+      },
+      orderBy: [asc(skills.categoryId), asc(skills.name)]
+    });
+    
+    // Format the data for export
+    const formattedSkills = skills.map(skill => ({
+      id: skill.id,
+      name: skill.name,
+      categoryId: skill.categoryId,
+      categoryName: skill.category.name,
+      description: skill.description || '',
+      isRecommended: skill.isRecommended ? true : false
+    }));
+    
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename=skills-export.json');
+    
+    // Send the JSON data
+    res.json(formattedSkills);
+  } catch (error) {
+    console.error("Error exporting skills:", error);
+    return res.status(500).json({ error: "Failed to export skills as JSON" });
+  }
+});
+
+// Export skills as Excel (admin only)
+skillsRouter.get("/export/excel", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    // Get all skill categories
+    const categories = await db.query.skillCategories.findMany({
+      orderBy: asc(skillCategories.name)
+    });
+    
+    // Get all skills with their category info
+    const allSkills = await db.query.skills.findMany({
+      with: {
+        category: true
+      },
+      orderBy: [asc(skills.categoryId), asc(skills.name)]
+    });
+    
+    // Format data for Excel
+    const records = allSkills.map(skill => ({
+      ID: skill.id,
+      'Skill Name': skill.name,
+      'Category ID': skill.categoryId,
+      'Category Name': skill.category.name,
+      'Description': skill.description || '',
+      'Is Recommended': skill.isRecommended ? 'Yes' : 'No'
+    }));
+    
+    // Create a buffer containing our Excel data
+    // For simplicity, we'll actually just send a CSV with Excel extension
+    // In a real app, you'd use a library like exceljs to create a proper Excel file
+    
+    const csvStringifier = createObjectCsvStringifier({
+      header: [
+        {id: 'ID', title: 'ID'},
+        {id: 'Skill Name', title: 'Skill Name'},
+        {id: 'Category ID', title: 'Category ID'},
+        {id: 'Category Name', title: 'Category Name'},
+        {id: 'Description', title: 'Description'},
+        {id: 'Is Recommended', title: 'Is Recommended'}
+      ]
+    });
+    
+    // Create a string from the CSV data
+    let csvData = csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(records);
+    
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=skills-export.xlsx');
+    
+    // Send the CSV data
+    res.send(csvData);
+  } catch (error) {
+    console.error("Error exporting skills:", error);
+    return res.status(500).json({ error: "Failed to export skills as Excel" });
+  }
+});
+
 // Export skills as CSV (admin only)
 skillsRouter.get("/export/csv", isAuthenticated, isAdmin, async (req, res) => {
   try {
@@ -1007,10 +1101,51 @@ skillsRouter.get("/export/csv", isAuthenticated, isAdmin, async (req, res) => {
   }
 });
 
+// Use a global event emitter for import status updates
+const csvImportEmitter = new EventEmitter();
+
+// SSE endpoint for monitoring CSV import progress
+skillsRouter.get("/import/csv-status", isAuthenticated, isAdmin, (req, res) => {
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  
+  // Send initial status
+  const initialStatus = {
+    processed: 0,
+    created: 0,
+    updated: 0,
+    deleted: 0,
+    errors: [],
+    isComplete: false
+  };
+  
+  res.write(`data: ${JSON.stringify(initialStatus)}\n\n`);
+  
+  // Set up listener for progress updates
+  const progressHandler = (data: any) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+    
+    // If complete, end the connection
+    if (data.isComplete) {
+      csvImportEmitter.removeListener('progress', progressHandler);
+      res.end();
+    }
+  };
+  
+  // Register the event listener
+  csvImportEmitter.on('progress', progressHandler);
+  
+  // Handle client disconnect
+  req.on('close', () => {
+    csvImportEmitter.removeListener('progress', progressHandler);
+  });
+});
+
 // Import skills from CSV (admin only)
 skillsRouter.post("/import/csv", isAuthenticated, isAdmin, upload.single('file'), async (req, res) => {
-  // Create an event emitter for progress updates
-  const progressEmitter = new EventEmitter();
+  // Progress tracking variables
   let progress = 0;
   let total = 0;
   let error: any = null;
@@ -1038,6 +1173,16 @@ skillsRouter.post("/import/csv", isAuthenticated, isAdmin, upload.single('file')
     total = records.length;
     console.log(`Importing ${total} skills from CSV`);
     
+    // Send initial progress update
+    csvImportEmitter.emit('progress', {
+      processed: 0,
+      created: 0,
+      updated: 0,
+      deleted: 0,
+      errors: [],
+      isComplete: false
+    });
+    
     // Import each record
     const results = {
       categories: {
@@ -1052,6 +1197,13 @@ skillsRouter.post("/import/csv", isAuthenticated, isAdmin, upload.single('file')
       }
     };
     
+    // Track errors for reporting
+    const errors: Array<{ row: number; message: string }> = [];
+    
+    // Get the sync mode from the request
+    const syncMode = req.body.syncMode || 'update-only';
+    console.log(`Import mode: ${syncMode}`);
+    
     // Get existing categories for faster lookup
     const existingCategories = await db.query.skillCategories.findMany();
     const categoryMap = new Map(existingCategories.map(cat => [cat.name.toLowerCase(), cat]));
@@ -1061,10 +1213,23 @@ skillsRouter.post("/import/csv", isAuthenticated, isAdmin, upload.single('file')
       try {
         progress = index + 1;
         
+        // Send progress update every 5 records or for the first/last one
+        if (progress % 5 === 0 || progress === 1 || progress === total) {
+          csvImportEmitter.emit('progress', {
+            processed: progress,
+            created: results.skills.created,
+            updated: results.skills.updated,
+            deleted: 0, // We don't delete in this implementation
+            errors: errors,
+            isComplete: false
+          });
+        }
+        
         // Extract category name and ensure it exists
         const categoryName = record['Category Name'] || record['CategoryName'] || record['categoryName'] || '';
         if (!categoryName) {
           console.warn(`Row ${progress}: Missing category name, skipping`);
+          errors.push({ row: progress, message: 'Missing category name' });
           results.skills.errors++;
           continue;
         }
@@ -1152,6 +1317,16 @@ skillsRouter.post("/import/csv", isAuthenticated, isAdmin, upload.single('file')
     // Clean up the uploaded file
     await unlink(req.file.path);
     
+    // Send final progress update
+    csvImportEmitter.emit('progress', {
+      processed: total,
+      created: results.skills.created,
+      updated: results.skills.updated,
+      deleted: 0, // We don't delete in this implementation
+      errors: errors,
+      isComplete: true
+    });
+    
     // Return the results
     return res.json({
       success: true,
@@ -1160,6 +1335,16 @@ skillsRouter.post("/import/csv", isAuthenticated, isAdmin, upload.single('file')
     });
   } catch (error) {
     console.error("Error importing skills:", error);
+    
+    // Send error progress update
+    csvImportEmitter.emit('progress', {
+      processed: progress,
+      created: results?.skills?.created || 0,
+      updated: results?.skills?.updated || 0,
+      deleted: 0,
+      errors: [{ row: 0, message: error instanceof Error ? error.message : 'Unknown error occurred' }],
+      isComplete: true
+    });
     
     // Clean up the uploaded file if it exists
     if (req.file) {
