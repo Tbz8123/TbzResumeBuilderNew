@@ -196,22 +196,30 @@ skillsRouter.get("/job-titles", async (req, res) => {
 // Get skills by skill job title ID (using our skill-specific job titles)
 skillsRouter.get("/by-skill-job-title/:skillJobTitleId", async (req, res) => {
   try {
+    console.log(`Received request for skills by job title ID: ${req.params.skillJobTitleId}`);
+    
     const skillJobTitleId = parseInt(req.params.skillJobTitleId);
     if (isNaN(skillJobTitleId)) {
+      console.log(`Invalid skill job title ID: ${req.params.skillJobTitleId}`);
       return res.status(400).json({ error: "Invalid skill job title ID" });
     }
 
     // Get skill job title to verify it exists
+    console.log(`Looking up skill job title with ID: ${skillJobTitleId}`);
     const skillJobTitle = await db.query.skillJobTitles.findFirst({
       where: eq(skillJobTitles.id, skillJobTitleId),
     });
 
     if (!skillJobTitle) {
+      console.log(`Skill job title with ID: ${skillJobTitleId} not found`);
       return res.status(404).json({ error: "Skill job title not found" });
     }
+    
+    console.log(`Found skill job title: "${skillJobTitle.title}" (ID: ${skillJobTitleId})`);
 
     // Find all skills linked to this skill job title through the junction table
     // including their recommendation status
+    console.log(`Looking up skills for job title: "${skillJobTitle.title}" (ID: ${skillJobTitleId})`);
     const skillMappings = await db.query.skillJobTitleSkills.findMany({
       where: eq(skillJobTitleSkills.skillJobTitleId, skillJobTitleId),
       with: {

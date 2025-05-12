@@ -219,7 +219,7 @@ const SkillsPage = () => {
       // If we have a job title ID, use the dedicated endpoint to get associated skills
       if (jobTitleId) {
         console.log(`Fetching skills for job title ID: ${jobTitleId}`);
-        const response = await fetch(`/api/skills/skill-job-title/${jobTitleId}/skills`);
+        const response = await fetch(`/api/skills/by-skill-job-title/${jobTitleId}`);
         
         if (response.ok) {
           skillData = await response.json();
@@ -349,6 +349,14 @@ const SkillsPage = () => {
     initializeSkills();
   }, [resumeData.workExperience, jobTitlesData?.data]);
   
+  // Effect specifically to handle selectedJobTitle changes
+  useEffect(() => {
+    if (selectedJobTitle?.id) {
+      console.log(`Selected job title changed to: ${selectedJobTitle.title} (ID: ${selectedJobTitle.id})`);
+      fetchSkillsForJobTitle(selectedJobTitle.id);
+    }
+  }, [selectedJobTitle]);
+
   // Set up a polling interval to refresh skills 
   useEffect(() => {
     // Set up polling for skill updates (every 20 seconds)
