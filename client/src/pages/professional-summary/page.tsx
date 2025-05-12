@@ -446,8 +446,8 @@ const ProfessionalSummaryPage = () => {
                     {showJobTitleSuggestions && (
                       <div 
                         ref={suggestionsRef}
-                        className="absolute z-20 mt-1 w-[calc(100%-1px)] bg-white shadow-lg rounded-md border border-gray-200 py-1 max-h-60 overflow-y-auto left-0"
-                        style={{ width: searchInputRef.current ? searchInputRef.current.offsetWidth : 'auto' }}
+                        className="absolute z-20 mt-1 bg-white shadow-lg rounded-md border border-gray-200 py-1 max-h-60 overflow-y-auto left-0"
+                        style={{ width: searchInputRef.current ? `${searchInputRef.current.offsetWidth}px` : 'auto' }}
                       >
                         {jobTitleSuggestions.map((title) => (
                           <button
