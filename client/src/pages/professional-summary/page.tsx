@@ -375,13 +375,18 @@ const ProfessionalSummaryPage = () => {
     }
   };
 
+  // This function is now handled directly in the input's onChange handler
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     console.log("Input value changed to:", value);
     setSearchTerm(value);
     
+    // Clear the current job title if the search term is empty
+    if (value === '') {
+      setCurrentJobTitle(null);
+    }
+    
     // Show/hide dropdown based on input
-    // This will trigger the useEffect that filters the suggestions
     if (value.trim().length > 0) {
       // Make sure we have suggestions to show
       const filtered = allSuggestions.filter(job => 
@@ -396,10 +401,6 @@ const ProfessionalSummaryPage = () => {
         setShowJobTitleSuggestions(false);
       }
     } else {
-      // Clear the current job title if the search term is empty
-      if (value === '') {
-        setCurrentJobTitle(null);
-      }
       setShowJobTitleSuggestions(false);
     }
   };
@@ -498,37 +499,37 @@ const ProfessionalSummaryPage = () => {
                     <div className="relative group">
                       <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg opacity-50 group-hover:opacity-70 blur group-hover:blur-md transition duration-300"></div>
                       <div className="relative bg-white rounded-lg">
-                        <Input 
+                        <input 
                           type="text"
                           ref={searchInputRef}
                           placeholder="Search by job title for pre-written examples"
                           value={searchTerm}
                           onChange={handleSearchChange}
-                          className="rounded-lg border-gray-300 pr-10 py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
+                          className="w-full rounded-lg border border-gray-300 px-3 pr-10 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
+                          onKeyDown={(e) => {
+                            console.log("Key pressed:", e.key);
+                            if (e.key === 'Backspace' && searchTerm.length > 0) {
+                              // Manual handling for backspace if needed
+                              console.log("Backspace pressed, current value:", searchTerm);
+                            }
+                          }}
                           onFocus={() => {
                             // Always show suggestions on focus if we have any search term
                             if (searchTerm.trim()) {
                               setShowJobTitleSuggestions(true);
                             }
                           }}
-                          onKeyDown={(e) => {
-                            console.log("Key pressed:", e.key);
-                            // For any key press (including backspace), show suggestions if we have content
-                            if (!showJobTitleSuggestions && searchTerm.length > 0) {
-                              setShowJobTitleSuggestions(true);
-                            }
-                            
-                            // If backspace is pressed, ensure we're updating the input value
-                            if (e.key === 'Backspace') {
-                              // The onChange handler will take care of this, this is just for logging
-                              console.log("Backspace pressed, old value:", searchTerm);
-                            }
-                          }}
                         />
                         {searchTerm ? (
                           <button 
                             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
-                            onClick={() => setSearchTerm('')}
+                            onClick={() => {
+                              setSearchTerm('');
+                              setCurrentJobTitle(null);
+                              setSummaryDescriptions([]);
+                              setShowJobTitleSuggestions(false);
+                              console.log("Search field cleared completely");
+                            }}
                           >
                             <X className="h-5 w-5" />
                           </button>
