@@ -595,43 +595,39 @@ const SkillsPage = () => {
                           </div>
                         ) : (
                           <div className="py-1">
-                            {filteredSkills.length === 0 ? (
-                              <div className="px-4 py-3 text-center text-gray-500">
-                                No matching skills found. Try a different search.
-                              </div>
-                            ) : (
+                            {/* Job titles section */}
+                            {jobTitleSearchResults.length > 0 && (
                               <>
-                                {/* Job titles section */}
-                                {jobTitleSearchResults.length > 0 && (
-                                  <>
-                                    <div className="px-4 py-2 text-xs font-semibold text-purple-600 bg-purple-50">
-                                      Job Titles
-                                    </div>
-                                    
-                                    {jobTitleSearchResults.map((jobTitle: ApiJobTitle) => (
-                                        <div
-                                          key={`job-${jobTitle.id}`}
-                                          className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-b border-gray-100"
-                                          onClick={() => {
-                                            setSearchTerm(jobTitle.title);
-                                            setSelectedJobTitle(jobTitle);
-                                            setJobTitleId(jobTitle.id);
-                                            fetchSkillsForJobTitle(jobTitle.id);
-                                            setShowSkillSuggestions(false);
-                                          }}
-                                        >
-                                          <div className="font-medium text-gray-900 flex items-center">
-                                            <span className="mr-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
-                                              Job Title
-                                            </span>
-                                            {jobTitle.title}
-                                          </div>
-                                        </div>
-                                      ))}
-                                  </>
-                                )}
+                                <div className="px-4 py-2 text-xs font-semibold text-purple-600 bg-purple-50">
+                                  Job Titles
+                                </div>
                                 
-                                {/* Skills section */}
+                                {jobTitleSearchResults.map((jobTitle: ApiJobTitle) => (
+                                  <div
+                                    key={`job-${jobTitle.id}`}
+                                    className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-b border-gray-100"
+                                    onClick={() => {
+                                      setSearchTerm(jobTitle.title);
+                                      setSelectedJobTitle(jobTitle);
+                                      setJobTitleId(jobTitle.id);
+                                      fetchSkillsForJobTitle(jobTitle.id);
+                                      setShowSkillSuggestions(false);
+                                    }}
+                                  >
+                                    <div className="font-medium text-gray-900 flex items-center">
+                                      <span className="mr-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
+                                        Job Title
+                                      </span>
+                                      {jobTitle.title}
+                                    </div>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                            
+                            {/* Skills section, show if we have skills or no skills but with a message */}
+                            {filteredSkills.length > 0 ? (
+                              <>
                                 <div className="px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50">
                                   Skills {selectedJobTitle && `for ${selectedJobTitle.title}`}
                                 </div>
@@ -650,6 +646,12 @@ const SkillsPage = () => {
                                   </div>
                                 ))}
                               </>
+                            ) : (
+                              jobTitleSearchResults.length === 0 && (
+                                <div className="px-4 py-3 text-center text-gray-500">
+                                  No matching skills found. Try a different search.
+                                </div>
+                              )
                             )}
                           </div>
                         )}
