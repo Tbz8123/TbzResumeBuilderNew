@@ -570,63 +570,44 @@ const ProfessionalSummaryPage = () => {
                 </div>
                 
                 {/* Right Column - Text Editor */}
-                <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
-                  <div className="flex flex-col h-full">
-                    <div className="flex-grow">
+                <div>
+                  <h3 className="text-gray-700 mb-2">Professional summary:</h3>
+                  <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg opacity-50 group-hover:opacity-70 blur group-hover:blur-md transition duration-300"></div>
+                    <div className="relative p-0.5 bg-white rounded-lg">
                       <textarea 
-                        className="w-full min-h-[300px] p-4 text-gray-800 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-300 focus:border-transparent outline-none resize-none"
+                        className="w-full min-h-[300px] p-4 text-gray-800 bg-white rounded-lg shadow-inner focus:outline-none resize-none"
                         placeholder="Click on any example from the left to add it to your professional summary, or write your own."
                         value={professionalSummary}
                         onChange={(e) => setProfessionalSummary(e.target.value)}
                       ></textarea>
                     </div>
-                    
-                    <div className="flex items-center mt-4 mb-6">
-                      <div className="flex space-x-2 border-r border-gray-300 pr-4 mr-4">
-                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
-                          <span className="font-bold">B</span>
-                        </button>
-                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
-                          <span className="italic">I</span>
-                        </button>
-                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
-                          <span className="underline">U</span>
-                        </button>
-                      </div>
-                      <div className="flex space-x-2 border-r border-gray-300 pr-4 mr-4">
-                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
-                          <span className="flex items-center">•</span>
-                        </button>
-                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
-                          <span className="flex items-center">1.</span>
-                        </button>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
-                          <Undo2 className="h-4 w-4" />
-                        </button>
-                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
-                          <Redo className="h-4 w-4" />
-                        </button>
-                      </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mt-2 mb-4">
+                    <div className="text-sm text-gray-500">
+                      {professionalSummary.length} characters
                     </div>
-                    
-                    <div className="flex justify-between pt-2 border-t border-gray-100">
-                      <Button
-                        variant="outline"
-                        className="rounded-full px-6"
-                        onClick={handlePreview}
-                      >
-                        Preview
-                      </Button>
-                      
-                      <Button
-                        className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white rounded-full px-6"
-                        onClick={handleNext}
-                      >
-                        Next: Extra sections
-                      </Button>
+                    <div className="text-sm text-purple-600">
+                      Use • to create bullet points
                     </div>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <Button
+                      variant="outline"
+                      className="border-purple-500 text-purple-500 hover:bg-purple-50"
+                      onClick={handlePreview}
+                    >
+                      Preview
+                    </Button>
+                    
+                    <Button
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                      onClick={handleNext}
+                    >
+                      Next
+                    </Button>
                   </div>
                 </div>
               </div>
