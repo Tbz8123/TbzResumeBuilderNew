@@ -1719,7 +1719,9 @@ export default function SkillsAdminPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {jobTitleSkillsData
+                      {(useSkillJobTitles && selectedSkillJobTitle
+                        ? skillJobTitleSkillsData
+                        : jobTitleSkillsData)
                         .filter((skill: Skill) => !searchQuery.trim() || 
                           skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           (skill.description && skill.description.toLowerCase().includes(searchQuery.toLowerCase()))
