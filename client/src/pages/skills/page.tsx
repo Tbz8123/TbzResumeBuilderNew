@@ -548,8 +548,8 @@ const SkillsPage = () => {
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
-      {/* Debug panel - only visible for admin users */}
-      {isAdminUser && (
+      {/* Debug panel - always visible for now during development */}
+      {true && (
         <div className="bg-black text-white p-4 text-xs" style={{ opacity: 0.9 }}>
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-bold">Debug Panel (Admin Only)</h3>
@@ -719,8 +719,8 @@ const SkillsPage = () => {
                                       setSelectedJobTitle(jobTitle);
                                       setJobTitleId(jobTitle.id);
                                       
-                                      // First check if there's a matching skill job title in skillJobTitlesData
-                                      const matchingSkillJobTitle = skillJobTitlesData?.data?.find(
+                                      // First check if there's a matching skill job title in jobTitlesData
+                                      const matchingSkillJobTitle = jobTitlesData?.data?.find(
                                         (jt: ApiJobTitle) => jt.title === jobTitle.title
                                       );
                                       
