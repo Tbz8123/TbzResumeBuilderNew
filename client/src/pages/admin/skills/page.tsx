@@ -370,6 +370,24 @@ export default function SkillsAdminPage() {
     enabled: !!selectedJobTitle,
   });
   
+  // Fetch skills for selected skill job title
+  const { data: skillJobTitleSkillsData = [], isLoading: isLoadingSkillJobTitleSkills } = useQuery({
+    queryKey: ['/api/skills/by-skill-job-title', selectedSkillJobTitle?.id],
+    queryFn: async () => {
+      if (!selectedSkillJobTitle) return [];
+      
+      console.log(`Fetching skills for skill job title ID: ${selectedSkillJobTitle.id}`);
+      const res = await fetch(`/api/skills/by-skill-job-title/${selectedSkillJobTitle.id}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch skills for skill job title');
+      }
+      const data = await res.json();
+      console.log(`Fetched ${data.length} skills for skill job title ID: ${selectedSkillJobTitle.id}`);
+      return data;
+    },
+    enabled: !!selectedSkillJobTitle && useSkillJobTitles,
+  });
+  
   // Filter skills based on search query
   const filteredSkills = searchQuery
     ? skillsData.filter((skill: Skill) => 
