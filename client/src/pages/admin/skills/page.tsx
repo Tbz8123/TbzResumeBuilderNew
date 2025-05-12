@@ -1638,16 +1638,23 @@ export default function SkillsAdminPage() {
 
           <Form {...skillForm}>
             <form onSubmit={skillForm.handleSubmit((data) => {
+              // Ensure we have valid data with defaults for nullable fields
+              const formattedData = {
+                ...data,
+                description: data.description || "",
+                isRecommended: data.isRecommended === true,
+              };
+              
               if (editingSkill) {
                 updateSkillMutation.mutate({
                   ...editingSkill,
-                  name: data.name,
-                  categoryId: data.categoryId,
-                  description: data.description || "",
-                  isRecommended: data.isRecommended,
+                  name: formattedData.name,
+                  categoryId: formattedData.categoryId,
+                  description: formattedData.description,
+                  isRecommended: formattedData.isRecommended,
                 });
               } else {
-                createSkillMutation.mutate(data);
+                createSkillMutation.mutate(formattedData);
               }
             })}>
               <div className="space-y-4 mb-4">
@@ -1733,7 +1740,7 @@ export default function SkillsAdminPage() {
                       </div>
                       <FormControl>
                         <Switch
-                          checked={field.value}
+                          checked={field.value || false}
                           onCheckedChange={field.onChange}
                         />
                       </FormControl>
