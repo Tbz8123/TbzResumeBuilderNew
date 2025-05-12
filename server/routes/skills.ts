@@ -963,22 +963,47 @@ skillsRouter.get("/export/json", isAuthenticated, isAdmin, async (req, res) => {
       orderBy: asc(skillCategories.name)
     });
     
-    // Get all skills with their category info
+    // Get all skills with their category info and job title associations
     const skillsData = await db.query.skills.findMany({
       with: {
-        category: true
+        category: true,
+        skillJobTitles: {
+          with: {
+            jobTitle: true
+          }
+        }
       }
     });
     
-    // Format the data for export
-    const formattedSkills = skillsData.map((skill: any) => ({
-      id: skill.id,
-      name: skill.name,
-      categoryId: skill.categoryId,
-      categoryName: skill.category?.name || 'Unknown',
-      description: skill.description || '',
-      isRecommended: skill.isRecommended ? true : false
-    }));
+    // Format the data to include job titles
+    const formattedSkills = [];
+    
+    // Process each skill and create entries for each associated job title
+    for (const skill of skillsData) {
+      if (skill.skillJobTitles && skill.skillJobTitles.length > 0) {
+        // Create an entry for each job title associated with this skill
+        for (const association of skill.skillJobTitles) {
+          formattedSkills.push({
+            id: association.jobTitleId,
+            jobTitle: association.jobTitle?.title || 'Unknown',
+            categoryId: skill.categoryId,
+            categoryName: skill.category?.name || 'Unknown',
+            skillName: skill.name,
+            isRecommended: skill.isRecommended ? true : false
+          });
+        }
+      } else {
+        // If skill has no job titles, still include it with empty job title
+        formattedSkills.push({
+          id: null,
+          jobTitle: '',
+          categoryId: skill.categoryId,
+          categoryName: skill.category?.name || 'Unknown',
+          skillName: skill.name,
+          isRecommended: skill.isRecommended ? true : false
+        });
+      }
+    }
     
     // Set headers for file download
     res.setHeader('Content-Type', 'application/json');
@@ -1000,22 +1025,47 @@ skillsRouter.get("/export/excel", isAuthenticated, isAdmin, async (req, res) => 
       orderBy: asc(skillCategories.name)
     });
     
-    // Get all skills with their category info
+    // Get all skills with their category info and job title associations
     const allSkills = await db.query.skills.findMany({
       with: {
-        category: true
+        category: true,
+        skillJobTitles: {
+          with: {
+            jobTitle: true
+          }
+        }
       }
     });
     
-    // Format data for Excel
-    const records = allSkills.map((skill: any) => ({
-      ID: skill.id,
-      'Skill Name': skill.name,
-      'Category ID': skill.categoryId,
-      'Category Name': skill.category?.name || 'Unknown',
-      'Description': skill.description || '',
-      'Is Recommended': skill.isRecommended ? 'Yes' : 'No'
-    }));
+    // Format the data to include job titles
+    const records = [];
+    
+    // Process each skill and create entries for each associated job title
+    for (const skill of allSkills) {
+      if (skill.skillJobTitles && skill.skillJobTitles.length > 0) {
+        // Create an entry for each job title associated with this skill
+        for (const association of skill.skillJobTitles) {
+          records.push({
+            'ID': association.jobTitleId,
+            'Job Title': association.jobTitle?.title || 'Unknown',
+            'Category ID': skill.categoryId,
+            'Category Name': skill.category?.name || 'Unknown',
+            'Skill Name': skill.name,
+            'Is Recommended': skill.isRecommended ? 'Yes' : 'No'
+          });
+        }
+      } else {
+        // If skill has no job titles, still include it with empty job title
+        records.push({
+          'ID': '',
+          'Job Title': '',
+          'Category ID': skill.categoryId,
+          'Category Name': skill.category?.name || 'Unknown',
+          'Skill Name': skill.name,
+          'Is Recommended': skill.isRecommended ? 'Yes' : 'No'
+        });
+      }
+    }
     
     // Create a buffer containing our Excel data
     // For simplicity, we'll actually just send a CSV with Excel extension
@@ -1024,10 +1074,10 @@ skillsRouter.get("/export/excel", isAuthenticated, isAdmin, async (req, res) => 
     const csvStringifier = createObjectCsvStringifier({
       header: [
         {id: 'ID', title: 'ID'},
-        {id: 'Skill Name', title: 'Skill Name'},
+        {id: 'Job Title', title: 'Job Title'},
         {id: 'Category ID', title: 'Category ID'},
         {id: 'Category Name', title: 'Category Name'},
-        {id: 'Description', title: 'Description'},
+        {id: 'Skill Name', title: 'Skill Name'},
         {id: 'Is Recommended', title: 'Is Recommended'}
       ]
     });
@@ -1055,35 +1105,59 @@ skillsRouter.get("/export/csv", isAuthenticated, isAdmin, async (req, res) => {
       orderBy: asc(skillCategories.name)
     });
     
-    // Get all skills with their category info
+    // Get all skills with their category info and job title associations
     const allSkills = await db.query.skills.findMany({
       with: {
-        category: true
-      },
-      orderBy: [asc(skills.categoryId), asc(skills.name)]
+        category: true,
+        skillJobTitles: {
+          with: {
+            jobTitle: true
+          }
+        }
+      }
     });
     
-    // Create CSV stringifier
+    // Format the data to include job titles
+    const records = [];
+    
+    // Process each skill and create entries for each associated job title
+    for (const skill of allSkills) {
+      if (skill.skillJobTitles && skill.skillJobTitles.length > 0) {
+        // Create an entry for each job title associated with this skill
+        for (const association of skill.skillJobTitles) {
+          records.push({
+            id: association.jobTitleId,
+            jobTitle: association.jobTitle?.title || 'Unknown',
+            categoryId: skill.categoryId,
+            categoryName: skill.category?.name || 'Unknown',
+            skillName: skill.name,
+            isRecommended: skill.isRecommended ? 'Yes' : 'No'
+          });
+        }
+      } else {
+        // If skill has no job titles, still include it with empty job title
+        records.push({
+          id: '',
+          jobTitle: '',
+          categoryId: skill.categoryId,
+          categoryName: skill.category?.name || 'Unknown',
+          skillName: skill.name,
+          isRecommended: skill.isRecommended ? 'Yes' : 'No'
+        });
+      }
+    }
+    
+    // Create CSV stringifier with the requested column order
     const csvStringifier = createObjectCsvStringifier({
       header: [
         {id: 'id', title: 'ID'},
-        {id: 'name', title: 'Skill Name'},
+        {id: 'jobTitle', title: 'Job Title'},
         {id: 'categoryId', title: 'Category ID'},
         {id: 'categoryName', title: 'Category Name'},
-        {id: 'description', title: 'Description'},
+        {id: 'skillName', title: 'Skill Name'},
         {id: 'isRecommended', title: 'Is Recommended'}
       ]
     });
-    
-    // Format data for CSV
-    const records = allSkills.map(skill => ({
-      id: skill.id,
-      name: skill.name,
-      categoryId: skill.categoryId,
-      categoryName: skill.category.name,
-      description: skill.description || '',
-      isRecommended: skill.isRecommended ? 'Yes' : 'No'
-    }));
     
     // Set headers for file download
     res.setHeader('Content-Type', 'text/csv');
