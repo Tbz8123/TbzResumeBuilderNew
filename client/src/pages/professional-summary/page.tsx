@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useResume } from '@/contexts/ResumeContext';
 import Logo from '@/components/Logo';
-import { ArrowLeft, HelpCircle, Search, Plus, ArrowRight, RotateCw, Undo2, X } from 'lucide-react';
+import { ArrowLeft, HelpCircle, Search, Plus, ArrowRight, RotateCw, Undo2, X, Filter, Redo } from 'lucide-react';
 import { 
   Tooltip,
   TooltipContent,
@@ -10,9 +10,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { JobTitle, getJobTitleSuggestions, findJobTitleById } from '@/utils/jobTitlesData';
 import { apiRequest } from '@/lib/queryClient';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Animation variants for framer-motion
 const containerVariants = {
@@ -33,6 +34,26 @@ const itemVariants = {
     transition: {
       duration: 0.4,
       ease: "easeOut"
+    }
+  }
+};
+
+const pageTransition = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeInOut"
+    }
+  },
+  exit: { 
+    opacity: 0, 
+    y: -20,
+    transition: {
+      duration: 0.3,
+      ease: "easeInOut"
     }
   }
 };
@@ -281,10 +302,9 @@ const ProfessionalSummaryPage = () => {
   };
 
   const handleNext = () => {
-    // Save and navigate to the next page (could be a new page after this one)
+    // Save and navigate to the next page (summary page)
     saveProfessionalSummary();
-    // For now, navigate to preview as the final step
-    setLocation('/preview');
+    setLocation('/summary');
   };
 
   const saveProfessionalSummary = () => {
@@ -318,114 +338,90 @@ const ProfessionalSummaryPage = () => {
   }, [searchTerm, showingResults]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-blue-50">
-      {/* Header with logo */}
-      <header className="py-4 border-b border-gray-100 bg-white shadow-sm sticky top-0 z-30">
-        <div className="container mx-auto px-4">
-          <Logo size="medium" />
-        </div>
-      </header>
-      
-      <main className="flex-grow py-6 md:py-10 overflow-x-hidden">
-        <div className="w-full max-w-6xl mx-auto px-4 md:px-6">
-          {/* Back Button */}
-          <motion.div 
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="mb-8"
-          >
-            <button 
-              onClick={handleBack}
-              className="flex items-center gap-1 text-purple-600 hover:text-purple-800 transition-all hover:-translate-x-1 duration-300 text-sm font-medium"
+    <AnimatePresence mode="wait">
+      <motion.div
+        className="flex flex-col min-h-screen bg-white"
+        variants={pageTransition}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        key="professional-summary-page"
+      >
+        {/* Header with logo */}
+        <header className="py-4 border-b border-gray-100 bg-white shadow-sm sticky top-0 z-30">
+          <div className="container mx-auto px-4">
+            <Logo size="medium" />
+          </div>
+        </header>
+        
+        <main className="flex-grow py-6 md:py-10 overflow-x-hidden">
+          <div className="container mx-auto px-4">
+            {/* Back Button */}
+            <motion.div 
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="mb-6"
             >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Go Back</span>
-            </button>
-          </motion.div>
-          
-          {/* Main Content */}
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="mb-10"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
-                How would you describe yourself as a {currentJobTitle}?
-              </h1>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="text-gray-400 hover:text-purple-600 transition-colors">
-                      <HelpCircle className="h-5 w-5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>Your professional summary is a short statement that appears at the top of your resume, highlighting your career focus, skills and achievements.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
+              <button 
+                onClick={handleBack}
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-all hover:-translate-x-1 duration-300 text-sm font-medium"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Go Back</span>
+              </button>
+            </motion.div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Column - Text Area */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 relative">
-                <textarea 
-                  className="w-full min-h-[300px] p-3 text-gray-800 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none resize-none"
-                  placeholder="Enter your professional summary here, or select from the examples on the right..."
-                  value={professionalSummary}
-                  onChange={(e) => setProfessionalSummary(e.target.value)}
-                ></textarea>
-                
-                <div className="flex justify-between mt-4">
-                  <button 
-                    onClick={() => setProfessionalSummary('')}
-                    className="text-sm text-gray-500 flex items-center gap-1 hover:text-red-500 transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                    <span>Clear</span>
-                  </button>
-                  
-                  <div className="flex gap-3">
-                    <button 
-                      onClick={() => setProfessionalSummary(professionalSummary => professionalSummary.slice(0, professionalSummary.lastIndexOf('\n')))}
-                      className="text-sm bg-gray-100 px-3 py-1.5 rounded-md text-gray-600 flex items-center gap-1 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!professionalSummary.includes('\n')}
-                    >
-                      <Undo2 className="h-3.5 w-3.5" />
-                      <span>Undo</span>
-                    </button>
-                    
-                    <button 
-                      onClick={handlePreview}
-                      className="text-sm bg-blue-50 px-3 py-1.5 rounded-md text-blue-700 flex items-center gap-1 hover:bg-blue-100 transition-colors"
-                    >
-                      <span>Preview</span>
-                    </button>
-                  </div>
+            {/* Main Content */}
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="mb-10"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1">
+                    Briefly tell us about your background
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    Choose from our pre-written examples below or write your own.
+                  </p>
                 </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="text-blue-500 hover:text-blue-600 transition-colors">
+                        <HelpCircle className="h-5 w-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>Tips</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               
-              {/* Right Column - Summary Examples */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                <div className="flex flex-col h-full">
-                  <div className="mb-4">
-                    <h2 className="font-semibold text-gray-800 mb-1">
-                      SEARCH FOR PRE-WRITTEN EXAMPLES
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Column - Search and Examples */}
+                <div>
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+                    <h2 className="text-sm font-semibold text-gray-700 mb-3">
+                      SEARCH BY JOB TITLE FOR PRE-WRITTEN EXAMPLES
                     </h2>
                     
-                    <div className="relative">
+                    <div className="relative mb-3">
                       <Input 
                         type="text" 
-                        placeholder="Search by skills, qualities or experience..." 
                         value={searchTerm}
                         onChange={handleSearchChange}
-                        className="pl-9"
                         ref={searchInputRef}
                       />
-                      <Search className="h-4 w-4 absolute top-3 left-3 text-gray-400" />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <button className="text-purple-600 hover:text-purple-800">
+                          <Search className="h-4 w-4" />
+                        </button>
+                      </div>
                       
                       {showJobTitleSuggestions && (
                         <div 
@@ -449,25 +445,47 @@ const ProfessionalSummaryPage = () => {
                     </div>
                   </div>
                   
-                  <div className="flex-grow overflow-y-auto">
-                    <motion.div
-                      className="mb-2 text-sm font-medium text-gray-500"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      {isLoadingSummaries ? (
-                        <div className="flex items-center gap-2">
-                          <RotateCw className="h-3 w-3 animate-spin" />
-                          <span>Loading examples...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1">
-                          <span>Showing {summaryDescriptions.length} examples</span>
-                          {searchTerm && <span>for "{searchTerm}"</span>}
-                        </div>
-                      )}
-                    </motion.div>
+                  {/* Related Job Titles */}
+                  <div className="mb-4">
+                    <div className="flex justify-between items-center mb-1">
+                      <h3 className="text-sm font-medium text-gray-700">Related Job Titles</h3>
+                      <Button variant="link" size="sm" className="h-auto p-0 text-purple-600">
+                        <span className="text-sm">More</span> <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button className="inline-flex items-center text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md transition-colors">
+                        <Search className="h-3 w-3 mr-1 text-gray-500" /> General Warehouse Worker
+                      </button>
+                      <button className="inline-flex items-center text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md transition-colors">
+                        <Search className="h-3 w-3 mr-1 text-gray-500" /> Warehouse Production Worker
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Examples */}
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="flex items-center">
+                        {isLoadingSummaries ? (
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <RotateCw className="h-3 w-3 animate-spin" />
+                            <span>Loading examples...</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">
+                            Showing results for
+                            <span className="font-medium ml-1">
+                              {searchTerm || currentJobTitle}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                      <Button variant="outline" size="sm" className="h-7 gap-1 text-xs">
+                        <Filter className="h-3 w-3" />
+                        Filter by Keyword
+                      </Button>
+                    </div>
                     
                     {/* List of examples */}
                     <motion.div
@@ -476,72 +494,153 @@ const ProfessionalSummaryPage = () => {
                       animate="visible"
                       className="space-y-3"
                     >
-                      {summaryDescriptions.map((item) => (
-                        <motion.div 
-                          key={item.id}
-                          variants={itemVariants}
-                          className={`border rounded-lg p-3 cursor-pointer transition-all hover:border-purple-300 hover:shadow-sm group ${
-                            item.isRecommended ? 'border-purple-200 bg-purple-50' : 'border-gray-200'
-                          }`}
-                          onClick={() => handleSummaryClick(item.content)}
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            {item.isRecommended && (
-                              <span className="text-xs font-semibold text-purple-600 bg-purple-100 px-2 py-0.5 rounded">
-                                Recommended
-                              </span>
+                      {summaryDescriptions.length > 0 ? (
+                        summaryDescriptions.map((item) => (
+                          <motion.div 
+                            key={item.id}
+                            variants={itemVariants}
+                            className="relative border rounded-lg p-3 cursor-pointer transition-all hover:border-purple-300 hover:shadow-sm group bg-white"
+                            onClick={() => handleSummaryClick(item.content)}
+                          >
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 -ml-3">
+                              <button 
+                                className="flex items-center justify-center w-6 h-6 bg-purple-600 rounded-full text-white shadow-sm hover:bg-purple-700 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSummaryClick(item.content);
+                                }}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <div className="pl-2">
+                              {item.isRecommended && (
+                                <div className="flex items-center mb-1">
+                                  <span className="text-xs font-semibold text-purple-600 px-2 py-0.5 rounded border border-purple-200 bg-purple-50">
+                                    Expert Recommended
+                                  </span>
+                                </div>
+                              )}
+                              <p className="text-sm text-gray-700">{item.content}</p>
+                            </div>
+                          </motion.div>
+                        ))
+                      ) : !isLoadingSummaries ? (
+                        // Create example placeholder data that mirrors the screenshot
+                        [1, 2, 3].map((id) => (
+                          <motion.div 
+                            key={id}
+                            variants={itemVariants}
+                            className="relative border rounded-lg p-3 cursor-pointer transition-all hover:border-purple-300 hover:shadow-sm group bg-white"
+                            onClick={() => handleSummaryClick(id === 1 ? 
+                              "Motivated Warehouse Worker skilled at providing efficiency in shipping and receiving, inspection and storage operations. Handles diverse materials to achieve high-quality packaging standards and reduce risk. Brings related experience and dedication to meet production and quality goals." : 
+                              id === 2 ? 
+                              "Dedicated Warehouse team member skilled in operating equipment, prioritizing tasks, and carrying out fast-paced work to meet team goals. Strong understanding of OSHA standards and optimal safety guidelines. Hard worker consistently completes deadline-oriented tasks." :
+                              "Team-oriented warehouse professional accustomed to streamlining shipping and receiving processes to increase overall efficiency. Industrious and dedicated with talents in team leadership and motivation. Energetic individual equipped to work hard in fast-paced, constantly changing environment."
                             )}
-                            <button 
-                              className="text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSummaryClick(item.content);
-                              }}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <p className="text-sm text-gray-700">{item.content}</p>
-                        </motion.div>
-                      ))}
-                      
-                      {summaryDescriptions.length === 0 && !isLoadingSummaries && (
-                        <div className="text-center py-8 text-gray-500">
-                          <p>No examples found. Try a different search term.</p>
-                        </div>
-                      )}
+                          >
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 -ml-3">
+                              <button 
+                                className="flex items-center justify-center w-6 h-6 bg-purple-600 rounded-full text-white shadow-sm hover:bg-purple-700 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSummaryClick(id === 1 ? 
+                                    "Motivated Warehouse Worker skilled at providing efficiency in shipping and receiving, inspection and storage operations. Handles diverse materials to achieve high-quality packaging standards and reduce risk. Brings related experience and dedication to meet production and quality goals." : 
+                                    id === 2 ? 
+                                    "Dedicated Warehouse team member skilled in operating equipment, prioritizing tasks, and carrying out fast-paced work to meet team goals. Strong understanding of OSHA standards and optimal safety guidelines. Hard worker consistently completes deadline-oriented tasks." :
+                                    "Team-oriented warehouse professional accustomed to streamlining shipping and receiving processes to increase overall efficiency. Industrious and dedicated with talents in team leadership and motivation. Energetic individual equipped to work hard in fast-paced, constantly changing environment."
+                                  );
+                                }}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <div className="pl-2">
+                              {id <= 2 && (
+                                <div className="flex items-center mb-1">
+                                  <span className="text-xs font-semibold text-purple-600 px-2 py-0.5 rounded border border-purple-200 bg-purple-50">
+                                    Expert Recommended
+                                  </span>
+                                </div>
+                              )}
+                              <p className="text-sm text-gray-700">
+                                {id === 1 ? 
+                                  "Motivated Warehouse Worker skilled at providing efficiency in shipping and receiving, inspection and storage operations. Handles diverse materials to achieve high-quality packaging standards and reduce risk. Brings related experience and dedication to meet production and quality goals." : 
+                                  id === 2 ? 
+                                  "Dedicated Warehouse team member skilled in operating equipment, prioritizing tasks, and carrying out fast-paced work to meet team goals. Strong understanding of OSHA standards and optimal safety guidelines. Hard worker consistently completes deadline-oriented tasks." :
+                                  "Team-oriented warehouse professional accustomed to streamlining shipping and receiving processes to increase overall efficiency. Industrious and dedicated with talents in team leadership and motivation. Energetic individual equipped to work hard in fast-paced, constantly changing environment."
+                                }
+                              </p>
+                            </div>
+                          </motion.div>
+                        ))
+                      ) : null}
                     </motion.div>
                   </div>
                 </div>
+                
+                {/* Right Column - Text Editor */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <textarea 
+                    className="w-full min-h-[300px] p-3 text-gray-800 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none resize-none mb-4"
+                    placeholder="Write your summary here."
+                    value={professionalSummary}
+                    onChange={(e) => setProfessionalSummary(e.target.value)}
+                  ></textarea>
+                  
+                  <div className="flex items-center mb-4">
+                    <div className="flex space-x-2 border-r border-gray-300 pr-4 mr-4">
+                      <button className="p-2 hover:bg-gray-100 rounded">
+                        <span className="font-bold">B</span>
+                      </button>
+                      <button className="p-2 hover:bg-gray-100 rounded">
+                        <span className="italic">I</span>
+                      </button>
+                      <button className="p-2 hover:bg-gray-100 rounded">
+                        <span className="underline">U</span>
+                      </button>
+                    </div>
+                    <div className="flex space-x-2 border-r border-gray-300 pr-4 mr-4">
+                      <button className="p-2 hover:bg-gray-100 rounded">
+                        <span className="flex items-center">•</span>
+                      </button>
+                      <button className="p-2 hover:bg-gray-100 rounded">
+                        <span className="flex items-center">1.</span>
+                      </button>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button className="p-2 hover:bg-gray-100 rounded">
+                        <Undo2 className="h-4 w-4" />
+                      </button>
+                      <button className="p-2 hover:bg-gray-100 rounded">
+                        <Redo className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between mt-4">
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={handlePreview}
+                    >
+                      Preview
+                    </Button>
+                    
+                    <Button
+                      className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white"
+                      onClick={handleNext}
+                    >
+                      Next: Extra sections
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </motion.div>
-          
-          {/* Navigation Buttons */}
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="flex justify-between"
-          >
-            <button
-              onClick={handleBack}
-              className="px-6 py-2.5 border border-gray-300 rounded-full text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-            >
-              Back
-            </button>
-            
-            <button
-              onClick={handleNext}
-              className="px-8 py-2.5 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 rounded-full text-white font-medium shadow-sm hover:shadow transition-all flex items-center gap-2"
-            >
-              <span>Next</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </motion.div>
-        </div>
-      </main>
-    </div>
+            </motion.div>
+          </div>
+        </main>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 
