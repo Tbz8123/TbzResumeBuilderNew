@@ -340,7 +340,7 @@ const ProfessionalSummaryPage = () => {
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        className="flex flex-col min-h-screen bg-white"
+        className="flex flex-col min-h-screen bg-gradient-to-b from-white to-blue-50"
         variants={pageTransition}
         initial="hidden"
         animate="visible"
@@ -355,17 +355,17 @@ const ProfessionalSummaryPage = () => {
         </header>
         
         <main className="flex-grow py-6 md:py-10 overflow-x-hidden">
-          <div className="container mx-auto px-4">
+          <div className="w-full max-w-6xl mx-auto px-4 md:px-6">
             {/* Back Button */}
             <motion.div 
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.3 }}
-              className="mb-6"
+              className="mb-8"
             >
               <button 
                 onClick={handleBack}
-                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-all hover:-translate-x-1 duration-300 text-sm font-medium"
+                className="flex items-center gap-1 text-purple-600 hover:text-purple-800 transition-all hover:-translate-x-1 duration-300 text-sm font-medium"
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span>Go Back</span>
@@ -379,9 +379,9 @@ const ProfessionalSummaryPage = () => {
               transition={{ duration: 0.5 }}
               className="mb-10"
             >
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1">
+                  <h1 className="text-2xl md:text-3xl font-bold text-purple-600 mb-2">
                     Briefly tell us about your background
                   </h1>
                   <p className="text-sm text-gray-600">
@@ -391,7 +391,7 @@ const ProfessionalSummaryPage = () => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button className="text-blue-500 hover:text-blue-600 transition-colors">
+                      <button className="text-purple-500 hover:text-purple-600 transition-colors bg-purple-50 p-2 rounded-full">
                         <HelpCircle className="h-5 w-5" />
                       </button>
                     </TooltipTrigger>
@@ -405,22 +405,22 @@ const ProfessionalSummaryPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left Column - Search and Examples */}
                 <div>
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
-                    <h2 className="text-sm font-semibold text-gray-700 mb-3">
+                  <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 mb-5">
+                    <h2 className="text-xs uppercase font-bold text-gray-600 mb-2">
                       SEARCH BY JOB TITLE FOR PRE-WRITTEN EXAMPLES
                     </h2>
                     
                     <div className="relative mb-3">
                       <Input 
                         type="text" 
+                        placeholder="Search by job title"
                         value={searchTerm}
                         onChange={handleSearchChange}
+                        className="pr-10 border-purple-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-200"
                         ref={searchInputRef}
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                        <button className="text-purple-600 hover:text-purple-800">
-                          <Search className="h-4 w-4" />
-                        </button>
+                        <Search className="h-4 w-4 text-purple-400" />
                       </div>
                       
                       {showJobTitleSuggestions && (
@@ -431,7 +431,7 @@ const ProfessionalSummaryPage = () => {
                           {jobTitleSuggestions.map((title) => (
                             <button
                               key={title.id}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                              className="w-full text-left px-3 py-2 hover:bg-purple-50 text-sm"
                               onClick={() => {
                                 setSearchTerm(title.title);
                                 setShowJobTitleSuggestions(false);
@@ -447,18 +447,18 @@ const ProfessionalSummaryPage = () => {
                   
                   {/* Related Job Titles */}
                   <div className="mb-4">
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex justify-between items-center mb-2">
                       <h3 className="text-sm font-medium text-gray-700">Related Job Titles</h3>
                       <Button variant="link" size="sm" className="h-auto p-0 text-purple-600">
-                        <span className="text-sm">More</span> <ArrowRight className="h-3 w-3 ml-1" />
+                        More <ArrowRight className="h-3 w-3 ml-1" />
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <button className="inline-flex items-center text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md transition-colors">
-                        <Search className="h-3 w-3 mr-1 text-gray-500" /> General Warehouse Worker
+                      <button className="inline-flex items-center text-sm bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-1 rounded-md transition-colors">
+                        <Search className="h-3 w-3 mr-1 text-purple-500" /> General Warehouse Worker
                       </button>
-                      <button className="inline-flex items-center text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md transition-colors">
-                        <Search className="h-3 w-3 mr-1 text-gray-500" /> Warehouse Production Worker
+                      <button className="inline-flex items-center text-sm bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-1 rounded-md transition-colors">
+                        <Search className="h-3 w-3 mr-1 text-purple-500" /> Warehouse Production Worker
                       </button>
                     </div>
                   </div>
@@ -475,13 +475,13 @@ const ProfessionalSummaryPage = () => {
                         ) : (
                           <span className="text-sm text-gray-500">
                             Showing results for
-                            <span className="font-medium ml-1">
-                              {searchTerm || currentJobTitle}
+                            <span className="font-medium ml-1 text-purple-600">
+                              {searchTerm || "Warehouse Worker"}
                             </span>
                           </span>
                         )}
                       </div>
-                      <Button variant="outline" size="sm" className="h-7 gap-1 text-xs">
+                      <Button variant="outline" size="sm" className="h-7 gap-1 text-xs border-purple-200 text-purple-600 hover:bg-purple-50">
                         <Filter className="h-3 w-3" />
                         Filter by Keyword
                       </Button>
@@ -499,30 +499,19 @@ const ProfessionalSummaryPage = () => {
                           <motion.div 
                             key={item.id}
                             variants={itemVariants}
-                            className="relative border rounded-lg p-3 cursor-pointer transition-all hover:border-purple-300 hover:shadow-sm group bg-white"
+                            className={`p-3 border ${item.isRecommended ? 'border-purple-200 bg-purple-50' : 'border-gray-200 bg-gray-50'} rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
                             onClick={() => handleSummaryClick(item.content)}
                           >
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 -ml-3">
-                              <button 
-                                className="flex items-center justify-center w-6 h-6 bg-purple-600 rounded-full text-white shadow-sm hover:bg-purple-700 transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSummaryClick(item.content);
-                                }}
-                              >
-                                <Plus className="h-4 w-4" />
-                              </button>
-                            </div>
-                            <div className="pl-2">
+                            <div className="flex mb-1">
                               {item.isRecommended && (
-                                <div className="flex items-center mb-1">
-                                  <span className="text-xs font-semibold text-purple-600 px-2 py-0.5 rounded border border-purple-200 bg-purple-50">
-                                    Expert Recommended
-                                  </span>
-                                </div>
+                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full mr-1">
+                                  Expert Recommended
+                                </span>
                               )}
-                              <p className="text-sm text-gray-700">{item.content}</p>
                             </div>
+                            <p className="text-gray-800 text-sm">
+                              {item.content}
+                            </p>
                           </motion.div>
                         ))
                       ) : !isLoadingSummaries ? (
@@ -531,7 +520,7 @@ const ProfessionalSummaryPage = () => {
                           <motion.div 
                             key={id}
                             variants={itemVariants}
-                            className="relative border rounded-lg p-3 cursor-pointer transition-all hover:border-purple-300 hover:shadow-sm group bg-white"
+                            className={`p-3 border ${id <= 2 ? 'border-purple-200 bg-purple-50' : 'border-gray-200 bg-gray-50'} rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
                             onClick={() => handleSummaryClick(id === 1 ? 
                               "Motivated Warehouse Worker skilled at providing efficiency in shipping and receiving, inspection and storage operations. Handles diverse materials to achieve high-quality packaging standards and reduce risk. Brings related experience and dedication to meet production and quality goals." : 
                               id === 2 ? 
@@ -539,39 +528,21 @@ const ProfessionalSummaryPage = () => {
                               "Team-oriented warehouse professional accustomed to streamlining shipping and receiving processes to increase overall efficiency. Industrious and dedicated with talents in team leadership and motivation. Energetic individual equipped to work hard in fast-paced, constantly changing environment."
                             )}
                           >
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 -ml-3">
-                              <button 
-                                className="flex items-center justify-center w-6 h-6 bg-purple-600 rounded-full text-white shadow-sm hover:bg-purple-700 transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSummaryClick(id === 1 ? 
-                                    "Motivated Warehouse Worker skilled at providing efficiency in shipping and receiving, inspection and storage operations. Handles diverse materials to achieve high-quality packaging standards and reduce risk. Brings related experience and dedication to meet production and quality goals." : 
-                                    id === 2 ? 
-                                    "Dedicated Warehouse team member skilled in operating equipment, prioritizing tasks, and carrying out fast-paced work to meet team goals. Strong understanding of OSHA standards and optimal safety guidelines. Hard worker consistently completes deadline-oriented tasks." :
-                                    "Team-oriented warehouse professional accustomed to streamlining shipping and receiving processes to increase overall efficiency. Industrious and dedicated with talents in team leadership and motivation. Energetic individual equipped to work hard in fast-paced, constantly changing environment."
-                                  );
-                                }}
-                              >
-                                <Plus className="h-4 w-4" />
-                              </button>
-                            </div>
-                            <div className="pl-2">
+                            <div className="flex mb-1">
                               {id <= 2 && (
-                                <div className="flex items-center mb-1">
-                                  <span className="text-xs font-semibold text-purple-600 px-2 py-0.5 rounded border border-purple-200 bg-purple-50">
-                                    Expert Recommended
-                                  </span>
-                                </div>
+                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full mr-1">
+                                  Expert Recommended
+                                </span>
                               )}
-                              <p className="text-sm text-gray-700">
-                                {id === 1 ? 
-                                  "Motivated Warehouse Worker skilled at providing efficiency in shipping and receiving, inspection and storage operations. Handles diverse materials to achieve high-quality packaging standards and reduce risk. Brings related experience and dedication to meet production and quality goals." : 
-                                  id === 2 ? 
-                                  "Dedicated Warehouse team member skilled in operating equipment, prioritizing tasks, and carrying out fast-paced work to meet team goals. Strong understanding of OSHA standards and optimal safety guidelines. Hard worker consistently completes deadline-oriented tasks." :
-                                  "Team-oriented warehouse professional accustomed to streamlining shipping and receiving processes to increase overall efficiency. Industrious and dedicated with talents in team leadership and motivation. Energetic individual equipped to work hard in fast-paced, constantly changing environment."
-                                }
-                              </p>
                             </div>
+                            <p className="text-gray-800 text-sm">
+                              {id === 1 ? 
+                                "Motivated Warehouse Worker skilled at providing efficiency in shipping and receiving, inspection and storage operations. Handles diverse materials to achieve high-quality packaging standards and reduce risk. Brings related experience and dedication to meet production and quality goals." : 
+                                id === 2 ? 
+                                "Dedicated Warehouse team member skilled in operating equipment, prioritizing tasks, and carrying out fast-paced work to meet team goals. Strong understanding of OSHA standards and optimal safety guidelines. Hard worker consistently completes deadline-oriented tasks." :
+                                "Team-oriented warehouse professional accustomed to streamlining shipping and receiving processes to increase overall efficiency. Industrious and dedicated with talents in team leadership and motivation. Energetic individual equipped to work hard in fast-paced, constantly changing environment."
+                              }
+                            </p>
                           </motion.div>
                         ))
                       ) : null}
@@ -580,59 +551,63 @@ const ProfessionalSummaryPage = () => {
                 </div>
                 
                 {/* Right Column - Text Editor */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                  <textarea 
-                    className="w-full min-h-[300px] p-3 text-gray-800 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none resize-none mb-4"
-                    placeholder="Write your summary here."
-                    value={professionalSummary}
-                    onChange={(e) => setProfessionalSummary(e.target.value)}
-                  ></textarea>
-                  
-                  <div className="flex items-center mb-4">
-                    <div className="flex space-x-2 border-r border-gray-300 pr-4 mr-4">
-                      <button className="p-2 hover:bg-gray-100 rounded">
-                        <span className="font-bold">B</span>
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded">
-                        <span className="italic">I</span>
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded">
-                        <span className="underline">U</span>
-                      </button>
+                <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
+                  <div className="flex flex-col h-full">
+                    <div className="flex-grow">
+                      <textarea 
+                        className="w-full min-h-[300px] p-4 text-gray-800 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-300 focus:border-transparent outline-none resize-none"
+                        placeholder="Click on any example from the left to add it to your professional summary, or write your own."
+                        value={professionalSummary}
+                        onChange={(e) => setProfessionalSummary(e.target.value)}
+                      ></textarea>
                     </div>
-                    <div className="flex space-x-2 border-r border-gray-300 pr-4 mr-4">
-                      <button className="p-2 hover:bg-gray-100 rounded">
-                        <span className="flex items-center">•</span>
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded">
-                        <span className="flex items-center">1.</span>
-                      </button>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button className="p-2 hover:bg-gray-100 rounded">
-                        <Undo2 className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded">
-                        <Redo className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between mt-4">
-                    <Button
-                      variant="outline"
-                      className="flex items-center gap-2"
-                      onClick={handlePreview}
-                    >
-                      Preview
-                    </Button>
                     
-                    <Button
-                      className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white"
-                      onClick={handleNext}
-                    >
-                      Next: Extra sections
-                    </Button>
+                    <div className="flex items-center mt-4 mb-6">
+                      <div className="flex space-x-2 border-r border-gray-300 pr-4 mr-4">
+                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
+                          <span className="font-bold">B</span>
+                        </button>
+                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
+                          <span className="italic">I</span>
+                        </button>
+                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
+                          <span className="underline">U</span>
+                        </button>
+                      </div>
+                      <div className="flex space-x-2 border-r border-gray-300 pr-4 mr-4">
+                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
+                          <span className="flex items-center">•</span>
+                        </button>
+                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
+                          <span className="flex items-center">1.</span>
+                        </button>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
+                          <Undo2 className="h-4 w-4" />
+                        </button>
+                        <button className="p-2 hover:bg-purple-50 rounded text-gray-700">
+                          <Redo className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between pt-2 border-t border-gray-100">
+                      <Button
+                        variant="outline"
+                        className="rounded-full px-6"
+                        onClick={handlePreview}
+                      >
+                        Preview
+                      </Button>
+                      
+                      <Button
+                        className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white rounded-full px-6"
+                        onClick={handleNext}
+                      >
+                        Next: Extra sections
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
