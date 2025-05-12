@@ -1018,6 +1018,58 @@ skillsRouter.post("/import/csv", isAuthenticated, isAdmin, upload.single('file')
 });
 
 // Add bulk job-title related skills (admin only)
+// Copy job titles from job_titles table to skill_job_titles table
+skillsRouter.post("/copy-job-titles", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    // Fetch all job titles from the job_titles table
+    const existingJobTitles = await db.select().from(jobTitles);
+    console.log(`Found ${existingJobTitles.length} job titles to copy`);
+    
+    let created = 0;
+    let skipped = 0;
+    
+    // Process each job title
+    for (const jobTitle of existingJobTitles) {
+      // Check if this title already exists in skill_job_titles
+      const existingSkillJobTitle = await db.query.skillJobTitles.findFirst({
+        where: sql`LOWER(${skillJobTitles.title}) = LOWER(${jobTitle.title})`
+      });
+      
+      if (existingSkillJobTitle) {
+        console.log(`Skipping "${jobTitle.title}" - already exists in skill_job_titles`);
+        skipped++;
+        continue;
+      }
+      
+      // Insert the job title into skill_job_titles
+      await db.insert(skillJobTitles).values({
+        title: jobTitle.title,
+        category: jobTitle.category,
+        description: `Imported from job titles on ${new Date().toISOString()}`
+      });
+      
+      created++;
+      console.log(`Copied job title: "${jobTitle.title}"`);
+    }
+    
+    return res.json({
+      success: true,
+      message: `Successfully copied job titles to skill job titles.`,
+      stats: {
+        total: existingJobTitles.length,
+        created,
+        skipped
+      }
+    });
+  } catch (error) {
+    console.error("Error copying job titles:", error);
+    return res.status(500).json({ 
+      error: "Failed to copy job titles",
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
 skillsRouter.post("/bulk", isAuthenticated, isAdmin, async (req, res) => {
   try {
     const schema = z.object({
