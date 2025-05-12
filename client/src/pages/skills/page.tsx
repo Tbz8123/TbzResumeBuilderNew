@@ -679,15 +679,22 @@ const SkillsPage = () => {
                             )}
                             
                             {/* Skills section, show if we have skills or no skills but with a message */}
-                            {filteredSkills.length > 0 ? (
+                            {skillSuggestions.length > 0 ? (
                               <>
                                 <div className="px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50">
                                   Skills {selectedJobTitle && `for ${selectedJobTitle.title}`}
                                 </div>
                                 
+                                {/* Debug Info - Can be removed in production */}
+                                <div className="px-4 py-2 text-xs border-b border-gray-100">
+                                  <div className="text-gray-500">Job Title ID: {selectedJobTitle?.id || jobTitleId || 'None'}</div>
+                                  <div className="text-gray-500">API Skills: {apiSkills.length}</div>
+                                  <div className="text-gray-500">Skill Suggestions: {skillSuggestions.length}</div>
+                                </div>
+                                
                                 {/* Recommended Skills First */}
                                 {apiSkills
-                                  .filter(skill => skill.isRecommended && (
+                                  .filter(skill => skill.isRecommended === true && (
                                     !searchTerm.trim() || 
                                     skill.name.toLowerCase().includes(searchTerm.toLowerCase())
                                   ))
@@ -714,11 +721,11 @@ const SkillsPage = () => {
                                 
                                 {/* Standard Skills Next */}
                                 {apiSkills
-                                  .filter(skill => !skill.isRecommended && (
+                                  .filter(skill => skill.isRecommended !== true && (
                                     !searchTerm.trim() || 
                                     skill.name.toLowerCase().includes(searchTerm.toLowerCase())
                                   ))
-                                  .slice(0, 5)
+                                  .slice(0, 10)
                                   .map((skill, index) => (
                                     <div
                                       key={`standard-skill-${index}`}
@@ -733,12 +740,9 @@ const SkillsPage = () => {
                                     </div>
                                   ))}
                                   
-                                {/* If no skills from API match, show filtered skills from suggestions */}
-                                {apiSkills.filter(skill => 
-                                  !searchTerm.trim() || 
-                                  skill.name.toLowerCase().includes(searchTerm.toLowerCase())
-                                ).length === 0 && 
-                                  filteredSkills.slice(0, 5).map((skill, index) => (
+                                {/* If no skills from API are rendered, then show filtered skills from suggestions */}
+                                {apiSkills.length === 0 && 
+                                  skillSuggestions.slice(0, 5).map((skill, index) => (
                                     <div
                                       key={`fallback-skill-${index}`}
                                       className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors"
