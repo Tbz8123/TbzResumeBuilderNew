@@ -625,17 +625,17 @@ const ProfessionalSummaryPage = () => {
                     </div>
                   </div>
                   
-                  <div className="flex justify-between">
+                  {/* Navigation buttons */}
+                  <div className="flex justify-between items-center mt-8">
                     <button
-                      className="h-10 px-8 rounded-full border border-purple-500 bg-white text-purple-500 font-medium hover:bg-purple-50 focus:outline-none transition-colors"
                       onClick={handlePreview}
+                      className="text-purple-600 hover:text-purple-800 border border-purple-600 hover:border-purple-800 font-medium rounded-full px-10 py-2.5 text-base transition-colors duration-300 hover:bg-purple-50"
                     >
                       Preview
                     </button>
-                    
-                    <button
-                      className="h-10 px-8 rounded-full border-0 bg-yellow-500 hover:bg-yellow-600 text-white font-medium focus:outline-none transition-colors"
+                    <button 
                       onClick={handleNext}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium rounded-full px-10 py-2.5 text-base transition-colors duration-300 shadow-sm hover:shadow"
                     >
                       Next
                     </button>
