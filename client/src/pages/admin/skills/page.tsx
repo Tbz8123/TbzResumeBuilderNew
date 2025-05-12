@@ -3,7 +3,15 @@ import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Skill, SkillCategory, JobTitle, skillSchema, skillCategorySchema } from "@shared/schema";
+import { 
+  Skill, 
+  SkillCategory, 
+  JobTitle, 
+  SkillJobTitle,
+  skillSchema, 
+  skillCategorySchema,
+  skillJobTitleSchema
+} from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -102,22 +110,31 @@ export default function SkillsAdminPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [jobTitleSearchQuery, setJobTitleSearchQuery] = useState("");
+  const [skillJobTitleSearchQuery, setSkillJobTitleSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<SkillCategory | null>(null);
   const [selectedJobTitle, setSelectedJobTitle] = useState<JobTitle | null>(null);
+  const [selectedSkillJobTitle, setSelectedSkillJobTitle] = useState<SkillJobTitle | null>(null);
   const [page, setPage] = useState(1);
   const [jobTitlePage, setJobTitlePage] = useState(1);
+  const [skillJobTitlePage, setSkillJobTitlePage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [jobTitleTotalPages, setJobTitleTotalPages] = useState(1);
+  const [skillJobTitleTotalPages, setSkillJobTitleTotalPages] = useState(1);
+  const [useSkillJobTitles, setUseSkillJobTitles] = useState(false); // Toggle between job titles and skill job titles
   
   // Dialog state
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [skillDialogOpen, setSkillDialogOpen] = useState(false);
+  const [skillJobTitleDialogOpen, setSkillJobTitleDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<SkillCategory | null>(null);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
+  const [editingSkillJobTitle, setEditingSkillJobTitle] = useState<SkillJobTitle | null>(null);
   const [deleteCategoryDialogOpen, setDeleteCategoryDialogOpen] = useState(false);
   const [deleteSkillDialogOpen, setDeleteSkillDialogOpen] = useState(false);
+  const [deleteSkillJobTitleDialogOpen, setDeleteSkillJobTitleDialogOpen] = useState(false);
   const [deletingCategory, setDeletingCategory] = useState<SkillCategory | null>(null);
   const [deletingSkill, setDeletingSkill] = useState<Skill | null>(null);
+  const [deletingSkillJobTitle, setDeletingSkillJobTitle] = useState<SkillJobTitle | null>(null);
   
   // CSV Export/Import functions
   const [isExporting, setIsExporting] = useState(false);
@@ -153,6 +170,15 @@ export default function SkillsAdminPage() {
     },
   });
   
+  const skillJobTitleForm = useForm<z.infer<typeof skillJobTitleSchema>>({
+    resolver: zodResolver(skillJobTitleSchema),
+    defaultValues: {
+      title: "",
+      category: "",
+      description: "",
+    },
+  });
+  
   // Set form values when editing
   useEffect(() => {
     if (editingCategory) {
@@ -162,6 +188,17 @@ export default function SkillsAdminPage() {
       });
     }
   }, [editingCategory, categoryForm]);
+  
+  // Set form values when editing skill job titles
+  useEffect(() => {
+    if (editingSkillJobTitle) {
+      skillJobTitleForm.reset({
+        title: editingSkillJobTitle.title,
+        category: editingSkillJobTitle.category,
+        description: editingSkillJobTitle.description || "",
+      });
+    }
+  }, [editingSkillJobTitle, skillJobTitleForm]);
   
   // Helper function to get a category ID for a job title
   const getCategoryIdForJobTitle = (jobTitle: JobTitle): number => {
@@ -256,6 +293,27 @@ export default function SkillsAdminPage() {
     },
   });
   
+  // Fetch skill job titles (separate from job descriptions titles)
+  const { data: skillJobTitlesData, isLoading: isLoadingSkillJobTitles } = useQuery({
+    queryKey: ['/api/skills/job-titles', skillJobTitlePage, skillJobTitleSearchQuery],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('page', skillJobTitlePage.toString());
+      params.append('limit', '10');
+      
+      if (skillJobTitleSearchQuery) {
+        params.append('search', skillJobTitleSearchQuery);
+      }
+      
+      const res = await fetch(`/api/skills/job-titles?${params.toString()}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch skill job titles');
+      }
+      return await res.json();
+    },
+    enabled: useSkillJobTitles, // Only fetch when we're using skill job titles
+  });
+  
   // Derive categories and total pages from data
   const categories = categoriesData || [];
   useEffect(() => {
@@ -271,6 +329,14 @@ export default function SkillsAdminPage() {
       setJobTitleTotalPages(Math.ceil(jobTitlesData.total / 10) || 1);
     }
   }, [jobTitlesData]);
+  
+  // Derive skill job titles and their total pages from data
+  const skillJobTitles = skillJobTitlesData?.data || [];
+  useEffect(() => {
+    if (skillJobTitlesData && skillJobTitlesData.pagination?.total) {
+      setSkillJobTitleTotalPages(Math.ceil(skillJobTitlesData.pagination.total / 10) || 1);
+    }
+  }, [skillJobTitlesData]);
   
   // Fetch skills for selected category
   const { data: skillsData = [], isLoading: isLoadingSkills } = useQuery({
