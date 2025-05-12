@@ -377,6 +377,7 @@ const ProfessionalSummaryPage = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    console.log("Input value changed to:", value);
     setSearchTerm(value);
     
     // Show/hide dropdown based on input
@@ -395,6 +396,10 @@ const ProfessionalSummaryPage = () => {
         setShowJobTitleSuggestions(false);
       }
     } else {
+      // Clear the current job title if the search term is empty
+      if (value === '') {
+        setCurrentJobTitle(null);
+      }
       setShowJobTitleSuggestions(false);
     }
   };
@@ -507,9 +512,16 @@ const ProfessionalSummaryPage = () => {
                             }
                           }}
                           onKeyDown={(e) => {
-                            // Show suggestions when user starts typing
-                            if (e.key.length === 1 && !showJobTitleSuggestions) {
+                            console.log("Key pressed:", e.key);
+                            // For any key press (including backspace), show suggestions if we have content
+                            if (!showJobTitleSuggestions && searchTerm.length > 0) {
                               setShowJobTitleSuggestions(true);
+                            }
+                            
+                            // If backspace is pressed, ensure we're updating the input value
+                            if (e.key === 'Backspace') {
+                              // The onChange handler will take care of this, this is just for logging
+                              console.log("Backspace pressed, old value:", searchTerm);
                             }
                           }}
                         />
