@@ -1660,7 +1660,7 @@ export default function SkillsAdminPage() {
                 </div>
               </div>
 
-              {!selectedJobTitle ? (
+              {(!selectedJobTitle && !selectedSkillJobTitle) ? (
                 <div className="flex flex-col items-center justify-center p-8 h-[calc(100vh-280px)]">
                   <div className="rounded-full bg-gray-100 p-3 mb-4">
                     <Briefcase className="h-10 w-10 text-gray-400" />
@@ -1670,12 +1670,16 @@ export default function SkillsAdminPage() {
                     Choose a job title from the list on the left to view, add, or edit skills for that job.
                   </p>
                 </div>
-              ) : isLoadingJobTitleSkills ? (
+              ) : (isLoadingJobTitleSkills || isLoadingSkillJobTitleSkills) ? (
                 <div className="p-8 text-center h-[calc(100vh-280px)] flex flex-col items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                  <p className="mt-2 text-muted-foreground">Loading skills for {selectedJobTitle.title}...</p>
+                  <p className="mt-2 text-muted-foreground">
+                    Loading skills for {selectedJobTitle?.title || selectedSkillJobTitle?.title || "selected job"}...
+                  </p>
                 </div>
-              ) : jobTitleSkillsData.length === 0 ? (
+              ) : (useSkillJobTitles && selectedSkillJobTitle ? 
+                  skillJobTitleSkillsData?.length === 0 : 
+                  jobTitleSkillsData?.length === 0) ? (
                 <div className="p-8 text-center h-[calc(100vh-280px)] flex flex-col items-center justify-center">
                   <div className="rounded-full bg-gray-100 p-3 mb-4">
                     <Search className="h-10 w-10 text-gray-400" />
@@ -1769,9 +1773,9 @@ export default function SkillsAdminPage() {
                         </TableCell>
                       </TableRow>
                       
-                      {/* Display Empty State if No Skills */}
-                      {(!useSkillJobTitles || !selectedSkillJobTitle) ? null : 
-                        (skillJobTitleSkillsData?.length === 0) && (
+                      {/* Display Empty State if No Skills - Fixed Condition */}
+                      {useSkillJobTitles && selectedSkillJobTitle && 
+                        skillJobTitleSkillsData && skillJobTitleSkillsData.length === 0 && (
                           <TableRow>
                             <TableCell colSpan={3} className="text-center py-8">
                               <div className="flex flex-col items-center justify-center">
@@ -1784,11 +1788,25 @@ export default function SkillsAdminPage() {
                           </TableRow>
                         )
                       }
+
+                      {/* Add a row specifically for display debug info */}
+                      <TableRow className="bg-purple-50">
+                        <TableCell colSpan={3} className="text-xs">
+                          <div className="text-purple-700 font-mono">
+                            <div>Data Length: {useSkillJobTitles && selectedSkillJobTitle ? skillJobTitleSkillsData?.length : jobTitleSkillsData?.length} skills</div>
+                            <div>First 3 skills: {
+                              useSkillJobTitles && selectedSkillJobTitle && skillJobTitleSkillsData?.length > 0 
+                                ? skillJobTitleSkillsData.slice(0, 3).map((s: any) => s.name).join(', ') 
+                                : 'None'
+                            }</div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
                       
-                      {/* Actual skills list - with stringified debug info */}
-                      {(useSkillJobTitles && selectedSkillJobTitle
-                        ? skillJobTitleSkillsData || []
-                        : jobTitleSkillsData || [])
+                      {/* Actual skills list - corrected to ensure proper rendering */}
+                      {(useSkillJobTitles && selectedSkillJobTitle && skillJobTitleSkillsData
+                        ? [...skillJobTitleSkillsData] 
+                        : jobTitleSkillsData ? [...jobTitleSkillsData] : [])
                         .filter((skill: Skill) => !searchQuery.trim() || 
                           skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           (skill.description && skill.description.toLowerCase().includes(searchQuery.toLowerCase()))
