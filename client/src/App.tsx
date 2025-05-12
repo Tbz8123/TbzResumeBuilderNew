@@ -21,6 +21,7 @@ import EducationPage from "@/pages/education/page";
 import EducationSummaryPage from "@/pages/education-summary/page";
 import SkillsPage from "@/pages/skills/page";
 import SkillsSummaryPage from "@/pages/skills-summary/page";
+import ProfessionalSummaryPage from "@/pages/professional-summary/page";
 import AuthPage from "@/pages/auth-page";
 import AdminJobsTestApiPage from "@/pages/admin/jobs/test-api";
 import AdminTemplatesPage from "@/pages/admin/templates/page";
@@ -34,6 +35,7 @@ import AdminDashboardPage from "@/pages/admin/page";
 import AdminJobsPage from "@/pages/admin/jobs/page";
 import AdminEducationPage from "@/pages/admin/education/page";
 import AdminSkillsPage from "@/pages/admin/skills/page";
+import AdminProfessionalSummaryPage from "@/pages/admin/professional-summary/page";
 import AdminLink from "@/components/AdminLink";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -72,6 +74,7 @@ function Router() {
       <Route path="/education-summary" component={EducationSummaryPage} />
       <Route path="/skills" component={SkillsPage} />
       <Route path="/skills-summary" component={SkillsSummaryPage} />
+      <Route path="/professional-summary" component={ProfessionalSummaryPage} />
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}
@@ -82,6 +85,7 @@ function Router() {
       <ProtectedRoute path="/admin/jobs/test-api" component={AdminJobsTestApiPage} adminOnly />
       <ProtectedRoute path="/admin/education" component={() => <AdminEducationPage />} adminOnly />
       <ProtectedRoute path="/admin/skills" component={AdminSkillsPage} adminOnly />
+      <ProtectedRoute path="/admin/professional-summary" component={AdminProfessionalSummaryPage} adminOnly />
       <ProtectedRoute path="/admin/templates" component={AdminTemplatesPage} adminOnly />
       <ProtectedRoute path="/admin/templates/management" component={AdminTemplateManagementPage} adminOnly />
       <ProtectedRoute path="/admin/templates/new/basic" component={CreateNewTemplateAdminPage} adminOnly />
