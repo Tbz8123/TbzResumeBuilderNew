@@ -1028,53 +1028,29 @@ export default function SkillsAdminPage() {
           <Card className="shadow-md h-full">
             <CardContent className="p-0">
               <div className="p-4 border-b">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-xl font-semibold flex items-center">
-                    <Briefcase className="h-5 w-5 mr-2 text-gray-500" />
-                    {useSkillJobTitles ? 'Skill Job Titles' : 'Job Titles'}
-                  </h2>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant={useSkillJobTitles ? "outline" : "default"}
-                      onClick={() => {
-                        setUseSkillJobTitles(false);
-                        setSelectedSkillJobTitle(null);
-                      }}
-                    >
-                      <FileText className="h-4 w-4 mr-1" />
-                      Standard
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={useSkillJobTitles ? "default" : "outline"}
-                      onClick={() => {
-                        setUseSkillJobTitles(true);
-                        setSelectedJobTitle(null);
-                      }}
-                    >
-                      <Code className="h-4 w-4 mr-1" />
-                      Custom
-                    </Button>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Search className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Search Job Titles</h2>
                   </div>
+                  <Button 
+                    variant="default" 
+                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={() => {
+                      setSkillJobTitleDialogOpen(true);
+                      setEditingSkillJobTitle(null);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Title
+                  </Button>
                 </div>
-                <div className="flex items-center justify-between mb-3">
-                  <div></div> {/* Empty div for spacing */}
-                  <Link href="/admin/jobs">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-1" />
-                      Manage Jobs
-                    </Button>
-                  </Link>
-                </div>
-                <div className="relative">
+                
+                <div className="mt-4 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     className="pl-9"
-                    placeholder={useSkillJobTitles ? "Search skill job titles..." : "Search job titles..."}
+                    placeholder="Search job titles..."
                     value={useSkillJobTitles ? skillJobTitleSearchQuery : jobTitleSearchQuery}
                     onChange={(e) => useSkillJobTitles 
                       ? setSkillJobTitleSearchQuery(e.target.value) 
