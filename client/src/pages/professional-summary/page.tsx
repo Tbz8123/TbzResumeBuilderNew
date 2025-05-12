@@ -446,21 +446,32 @@ const ProfessionalSummaryPage = () => {
                     {showJobTitleSuggestions && (
                       <div 
                         ref={suggestionsRef}
-                        className="absolute z-20 mt-1 bg-white shadow-lg rounded-md border border-gray-200 py-1 max-h-60 overflow-y-auto left-0"
-                        style={{ width: searchInputRef.current ? `${searchInputRef.current.offsetWidth}px` : 'auto' }}
+                        className="absolute z-50 mt-1 w-full"
+                        style={{ top: '100%', left: 0 }}
                       >
-                        {jobTitleSuggestions.map((title) => (
-                          <button
-                            key={title.id}
-                            className="w-full text-left px-3 py-2 hover:bg-purple-50 text-sm"
-                            onClick={() => {
-                              setSearchTerm(title.title);
-                              setShowJobTitleSuggestions(false);
-                            }}
-                          >
-                            {title.title}
-                          </button>
-                        ))}
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto backdrop-blur-sm bg-white/80">
+                          <div className="py-1">
+                            {jobTitleSuggestions.length > 0 ? (
+                              jobTitleSuggestions.map((title, index) => (
+                                <motion.div
+                                  key={title.id}
+                                  initial={{ opacity: 0, y: 5 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: index * 0.05 }}
+                                  className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
+                                  onClick={() => {
+                                    setSearchTerm(title.title);
+                                    setShowJobTitleSuggestions(false);
+                                  }}
+                                >
+                                  <div className="font-medium text-sm">{title.title}</div>
+                                </motion.div>
+                              ))
+                            ) : (
+                              <div className="px-4 py-3 text-sm text-gray-500">No job titles found</div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </motion.div>
