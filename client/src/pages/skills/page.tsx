@@ -31,12 +31,14 @@ import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/queryClient';
+
 // Define API job title interface specifically for this component
 interface ApiJobTitle {
   id: number;
   title: string;
   category: string;
 }
+
 import { useQuery } from '@tanstack/react-query';
 import {
   Command,
@@ -229,11 +231,11 @@ const SkillsPage = () => {
           skillData = await response.json();
           
           if (skillData && Array.isArray(skillData)) {
-            console.log(`Successfully got ${skillData.length} skills for job title ID ${jobTitleId}`);
+            console.log(`Fetched ${skillData.length} skills for skill job title ID: ${jobTitleId}`);
             
             // Log all skill names for debugging
             if (skillData.length > 0) {
-              console.log("Skills received:", skillData.map(s => s.name).join(', '));
+              console.log("Skills data:", skillData);
             }
             
             // Separate skills into recommended and standard
@@ -396,8 +398,12 @@ const SkillsPage = () => {
     return () => clearInterval(intervalId);
   }, [jobTitleId, selectedJobTitle?.id]);
   
-  // Filter skills based on search term
-  const filteredSkills = searchTerm.trim() !== ''
+  // Filter skills based on search term, but only if we're not just showing job title results
+  const isSearchingForJobTitle = selectedJobTitle && searchTerm === selectedJobTitle.title;
+  
+  // If we have a selected job title and the search term is that job title, 
+  // show all skills without filtering by searchTerm
+  const filteredSkills = (searchTerm.trim() !== '' && !isSearchingForJobTitle)
     ? skillSuggestions.filter(skill => 
         skill.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -462,65 +468,14 @@ const SkillsPage = () => {
         }
       }
     } else {
-      setShowSkillSuggestions(false);
-      // Clear search results when search is empty
+      // Reset the search results when search term is empty
       setJobTitleSearchResults([]);
+      // Hide suggestions if search is empty
+      setShowSkillSuggestions(false);
     }
   };
   
-  // Handle skill selection
-  const handleSkillClick = (skillName: string) => {
-    // Add to textarea
-    if (skillText) {
-      setSkillText((prev) => prev + '\n• ' + skillName);
-    } else {
-      setSkillText('• ' + skillName);
-    }
-    
-    // Check if already in selected skills
-    const existingSkill = selectedSkills.find(s => s.name === skillName);
-    if (!existingSkill) {
-      const newSkill: Skill = {
-        id: uuidv4(),
-        name: skillName,
-        level: 3 // Default rating
-      };
-      setSelectedSkills([...selectedSkills, newSkill]);
-      setCurrentSkill(newSkill);
-    }
-  };
-  
-  // Set skill rating
-  const handleSkillRating = (skill: Skill, rating: number) => {
-    const updatedSkills = selectedSkills.map(s => 
-      s.id === skill.id ? { ...s, level: rating } : s
-    );
-    setSelectedSkills(updatedSkills);
-  };
-  
-  // Save skills to resume context
-  const saveSkills = () => {
-    // Extract skills from text if needed
-    if (skillText && selectedSkills.length === 0) {
-      const lines = skillText.split('\n');
-      const extractedSkills = lines.map(line => {
-        const skillName = line.replace(/^[•\-*]\s*/, '').trim();
-        return {
-          id: uuidv4(),
-          name: skillName,
-          level: 3 // Default rating
-        };
-      }).filter(s => s.name);
-      
-      if (extractedSkills.length > 0) {
-        updateResumeData({ skills: extractedSkills });
-      }
-    } else {
-      updateResumeData({ skills: selectedSkills });
-    }
-  };
-  
-  // Handle clicks outside the suggestions dropdown
+  // Handle clicking outside the suggestions box
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -539,11 +494,74 @@ const SkillsPage = () => {
     };
   }, []);
   
-  // Save on unmount
-  useEffect(() => {
-    return () => {
-      saveSkills();
+  // Handle skill click from suggestions
+  const handleSkillClick = (skillName: string) => {
+    // Create a new skill object
+    const newSkill: Skill = {
+      id: uuidv4(),
+      name: skillName,
+      proficiency: 3, // Default to middle rating
     };
+    
+    // Check if this skill is already in the selected skills
+    const existingSkill = selectedSkills.find(s => s.name.toLowerCase() === skillName.toLowerCase());
+    
+    if (!existingSkill) {
+      // Add the new skill to selected skills
+      const updatedSkills = [...selectedSkills, newSkill];
+      setSelectedSkills(updatedSkills);
+      
+      // Set it as the current skill
+      setCurrentSkill(newSkill);
+      
+      // Clear search term
+      setSearchTerm('');
+      setShowSkillSuggestions(false);
+    } else {
+      // If already exists, just focus on it
+      setCurrentSkill(existingSkill);
+      setSearchTerm('');
+      setShowSkillSuggestions(false);
+    }
+  };
+  
+  // Remove a skill from selected skills
+  const handleRemoveSkill = (skillToRemove: Skill) => {
+    const updatedSkills = selectedSkills.filter(skill => skill.id !== skillToRemove.id);
+    setSelectedSkills(updatedSkills);
+    
+    if (currentSkill && currentSkill.id === skillToRemove.id) {
+      setCurrentSkill(null);
+    }
+  };
+  
+  // Update a skill's proficiency rating
+  const handleSkillRating = (skill: Skill, rating: number) => {
+    const updatedSkills = selectedSkills.map(s => {
+      if (s.id === skill.id) {
+        return { ...s, proficiency: rating };
+      }
+      return s;
+    });
+    setSelectedSkills(updatedSkills);
+    
+    // Also update current skill if it's the one being rated
+    if (currentSkill && currentSkill.id === skill.id) {
+      setCurrentSkill({ ...currentSkill, proficiency: rating });
+    }
+  };
+  
+  // Save skills to resume context
+  const saveSkills = () => {
+    if (selectedSkills.length > 0 || resumeData.skills?.length > 0) {
+      updateResumeData({ ...resumeData, skills: selectedSkills });
+    }
+  };
+  
+  useEffect(() => {
+    // Auto-save skills when they change
+    saveSkills();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSkills]);
   
   return (
@@ -554,617 +572,497 @@ const SkillsPage = () => {
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-bold">Debug Panel (Admin Only)</h3>
             <Button 
-              variant="outline" 
               size="sm" 
-              className="h-6 text-xs bg-purple-700 text-white hover:bg-purple-800"
-              onClick={() => {
-                if (selectedJobTitle?.id) {
-                  fetchSkillsForJobTitle(selectedJobTitle.id);
-                }
-              }}
+              variant="outline" 
+              className="h-6 text-xs bg-transparent text-white border-white hover:bg-gray-800"
+              onClick={() => fetchSkillsForJobTitle(selectedJobTitle?.id || jobTitleId)}
             >
-              Refresh Skills Data
+              <RefreshCw className="h-3 w-3 mr-1" /> Refresh Skills
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p>Selected Job Title: {selectedJobTitle ? `${selectedJobTitle.title} (ID: ${selectedJobTitle.id})` : 'None'}</p>
-              <p>Job Title ID: {jobTitleId || 'None'}</p>
-              <p>Skills Found: {apiSkills.length}</p>
-              <p>Recommended Skills: {apiSkills.filter(s => s.isRecommended).length}</p>
+              <div className="mb-1">Job Title Info:</div>
+              <div>Selected ID: {selectedJobTitle?.id || jobTitleId || 'None'}</div>
+              <div>Title: {selectedJobTitle?.title || 'None'}</div>
+              <div>Search Term: {searchTerm || 'Empty'}</div>
+              <div>API Skills: {apiSkills.length}</div>
+              <div>Filtered Skills: {filteredSkills.length}</div>
             </div>
             <div>
-              <p>API Skills (first 5):</p>
-              <ul className="pl-4 list-disc">
-                {apiSkills.slice(0, 5).map(skill => (
-                  <li key={skill.id} className={skill.isRecommended ? 'text-green-400' : ''}>
-                    {skill.name} {skill.isRecommended ? '(⭐)' : ''}
-                  </li>
-                ))}
-              </ul>
+              <div className="mb-1">Skills Data State:</div>
+              <div>Selected Skills: {selectedSkills.length}</div>
+              <div>Current Skill: {currentSkill?.name || 'None'}</div>
+              <div>Suggestions Visible: {showSkillSuggestions ? 'Yes' : 'No'}</div>
+              <div>Is Loading: {isLoadingSkills ? 'Yes' : 'No'}</div>
+            </div>
+          </div>
+          <div className="mt-2">
+            <div className="mb-1">API Skills (first 3):</div>
+            <div className="grid grid-cols-3 gap-1">
+              {apiSkills.slice(0, 3).map((skill, idx) => (
+                <div key={`debug-skill-${idx}`} className="bg-gray-800 p-1 rounded text-xs">
+                  {skill.name} {skill.isRecommended ? '⭐' : ''}
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
-      {/* Header with logo */}
-      <header className="py-4 border-b border-gray-100 bg-white shadow-sm sticky top-0 z-30">
-        <div className="container mx-auto px-4">
-          <Logo size="medium" />
-        </div>
-      </header>
       
-      <main className="flex-grow py-6 md:py-10 overflow-x-hidden">
-        <div className="w-full max-w-6xl mx-auto px-4 md:px-6">
-          {/* Back Button */}
-          <motion.div 
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="mb-8"
-          >
-            <button 
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleBack}
-              className="flex items-center gap-1 text-purple-600 hover:text-purple-800 transition-all hover:-translate-x-1 duration-300 text-sm font-medium"
+              className="mr-2"
             >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Education</span>
-            </button>
-          </motion.div>
-          
-          {/* Main Content */}
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="mb-10"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
-                What skills would you like to highlight?
-              </h1>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="text-purple-600 hover:text-purple-700 bg-purple-50 p-2 rounded-full">
-                      <HelpCircle className="h-5 w-5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs p-4">
-                    <p className="font-medium mb-2">Tips</p>
-                    <ul className="list-disc pl-5 space-y-1 text-sm">
-                      <li>Include skills relevant to the job you're applying for</li>
-                      <li>Rate your skills honestly</li>
-                      <li>Balance technical skills with soft skills</li>
-                      <li>Prioritize skills mentioned in the job description</li>
-                    </ul>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <p className="text-gray-600 mb-8">
-              To get started, you can choose from our expert recommended skills below.
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Logo />
+          </div>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreview}
+            >
+              Preview
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleNext}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
+            >
+              Next <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+        
+        {/* Main content */}
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16"
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+        >
+          {/* Left column - Skills Input */}
+          <motion.div variants={itemVariants} className="flex flex-col">
+            <h1 className="text-2xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600">
+              Add Your Skills
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Add skills that are relevant to your experience and the job you want.
             </p>
-            
-            {/* Two Column Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left Column - Examples */}
-              <div>
-                {/* Search by skill or job title */}
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xs uppercase font-bold text-gray-600">
-                    SEARCH BY SKILL FOR PRE-WRITTEN EXAMPLES
-                  </h2>
-                  {isLoadingSkills && (
-                    <div className="flex items-center gap-1 text-xs text-purple-500">
-                      <Loader className="h-3 w-3 animate-spin" />
-                      <span>Loading skills...</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Search input */}
-                <div className="relative group mb-6">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg opacity-50 group-hover:opacity-70 blur group-hover:blur-md transition duration-300"></div>
-                  <div className="relative bg-white rounded-lg">
-                    <Input 
-                      type="text"
-                      ref={searchInputRef}
-                      placeholder="Search by job title or skill..."
-                      value={searchTerm}
-                      onChange={handleSearchChange}
-                      className="rounded-lg border-gray-300 pr-10 py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
-                      onFocus={() => {
-                        if (filteredSkills.length > 0) {
-                          setShowSkillSuggestions(true);
-                        }
-                      }}
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                      <Search className="h-5 w-5 text-purple-400" />
-                    </div>
-                    
-                    {/* Search suggestions dropdown */}
-                    {showSkillSuggestions && (
-                      <div 
-                        ref={suggestionsRef}
-                        className="absolute z-50 mt-1 w-full bg-white rounded-lg shadow-xl max-h-60 overflow-auto"
-                        style={{ top: '100%', left: 0 }}
-                      >
-                        {isLoadingSkills ? (
-                          <div className="py-6 flex justify-center items-center">
-                            <div className="flex flex-col items-center">
-                              <Loader className="h-6 w-6 animate-spin text-purple-600" />
-                              <p className="mt-2 text-sm text-gray-500">Loading skills...</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="py-1">
-                            {/* Job titles section */}
-                            {jobTitleSearchResults.length > 0 ? (
-                              <>
-                                <div className="px-4 py-2 text-xs font-semibold text-purple-600 bg-purple-50">
-                                  Job Titles
-                                </div>
-                                
-                                {jobTitleSearchResults.map((jobTitle: ApiJobTitle) => (
-                                  <div
-                                    key={`job-${jobTitle.id}`}
-                                    className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-b border-gray-100"
-                                    onClick={() => {
-                                      // Log the selection for debugging
-                                      console.log(`Selected job title: "${jobTitle.title}" (ID: ${jobTitle.id})`);
-                                      
-                                      // Update state
-                                      setSearchTerm(jobTitle.title);
-                                      setSelectedJobTitle(jobTitle);
-                                      setJobTitleId(jobTitle.id);
-                                      
-                                      // First check if there's a matching skill job title in jobTitlesData
-                                      const matchingSkillJobTitle = jobTitlesData?.data?.find(
-                                        (jt: ApiJobTitle) => jt.title === jobTitle.title
-                                      );
-                                      
-                                      if (matchingSkillJobTitle) {
-                                        console.log(`Found matching skill job title with ID: ${matchingSkillJobTitle.id}`);
-                                        fetchSkillsForJobTitle(matchingSkillJobTitle.id);
-                                      } else {
-                                        console.log(`No matching skill job title, using selected job title ID: ${jobTitle.id}`);
-                                        fetchSkillsForJobTitle(jobTitle.id);
-                                      }
-                                      
-                                      setShowSkillSuggestions(false);
-                                    }}
-                                  >
-                                    <div className="font-medium text-gray-900 flex items-center">
-                                      <span className="mr-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
-                                        Job Title
-                                      </span>
-                                      {jobTitle.title}
-                                    </div>
-                                  </div>
-                                ))}
-                              </>
-                            ) : (
-                              searchTerm.trim().length > 1 && (
-                                <div className="px-4 py-2 text-xs font-semibold text-gray-500">
-                                  Type more to search for job titles
-                                </div>
-                              )
-                            )}
-                            
-                            {/* Skills section, show if we have skills or no skills but with a message */}
-                            {filteredSkills.length > 0 ? (
-                              <>
-                                <div className="px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50">
-                                  Skills {selectedJobTitle && `for ${selectedJobTitle.title}`}
-                                </div>
-                                
-                                {/* Recommended Skills First */}
-                                {apiSkills
-                                  .filter(skill => skill.isRecommended && (
-                                    !searchTerm.trim() || 
-                                    skill.name.toLowerCase().includes(searchTerm.toLowerCase())
-                                  ))
-                                  .slice(0, 5)
-                                  .map((skill, index) => (
-                                    <div
-                                      key={`recommended-skill-${index}`}
-                                      className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-l-2 border-green-500"
-                                      onClick={() => {
-                                        setSearchTerm(skill.name);
-                                        handleSkillClick(skill.name);
-                                        setShowSkillSuggestions(false);
-                                      }}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <div className="font-medium text-gray-900">{skill.name}</div>
-                                        <div className="text-xs text-green-600 font-semibold flex items-center">
-                                          <Star className="h-3 w-3 mr-1 fill-green-500" />
-                                          Recommended
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                
-                                {/* Standard Skills Next */}
-                                {apiSkills
-                                  .filter(skill => !skill.isRecommended && (
-                                    !searchTerm.trim() || 
-                                    skill.name.toLowerCase().includes(searchTerm.toLowerCase())
-                                  ))
-                                  .slice(0, 5)
-                                  .map((skill, index) => (
-                                    <div
-                                      key={`standard-skill-${index}`}
-                                      className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors"
-                                      onClick={() => {
-                                        setSearchTerm(skill.name);
-                                        handleSkillClick(skill.name);
-                                        setShowSkillSuggestions(false);
-                                      }}
-                                    >
-                                      <div className="font-medium text-gray-900">{skill.name}</div>
-                                    </div>
-                                  ))}
-                                  
-                                {/* If no skills from API match, show filtered skills from suggestions */}
-                                {apiSkills.filter(skill => 
-                                  !searchTerm.trim() || 
-                                  skill.name.toLowerCase().includes(searchTerm.toLowerCase())
-                                ).length === 0 && 
-                                  filteredSkills.slice(0, 5).map((skill, index) => (
-                                    <div
-                                      key={`fallback-skill-${index}`}
-                                      className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors"
-                                      onClick={() => {
-                                        setSearchTerm(skill);
-                                        handleSkillClick(skill);
-                                        setShowSkillSuggestions(false);
-                                      }}
-                                    >
-                                      <div className="font-medium text-gray-900">{skill}</div>
-                                    </div>
-                                  ))}
-                              </>
-                            ) : (
-                              searchTerm.trim().length > 0 && (
-                                <div className="px-4 py-3 text-center text-gray-500">
-                                  No matching skills found. Try a different search or select a job title above.
-                                </div>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Related Skill Categories */}
-                <motion.div 
-                  initial={{ y: 30, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
-                  className="mb-6"
-                >
-                  <div className="flex justify-between items-center mb-3">
-                    <h2 className="text-base font-semibold text-gray-800">Related Skill Categories</h2>
-                    <button className="text-purple-600 text-sm font-medium hover:text-purple-800 transition-colors duration-300 flex items-center gap-1 group">
-                      More <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform duration-300" />
-                    </button>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {relatedSkills.map((skill, index) => (
-                      <motion.button
-                        key={`${skill}-${index}`}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3 + (index * 0.1) }}
-                        className="flex items-center border border-gray-200 rounded-full px-3 py-2 text-sm bg-gray-50 hover:bg-purple-50 hover:border-purple-200 transition-all duration-300"
-                        onClick={() => {
-                          setSearchTerm(skill);
-                          handleSkillClick(skill);
-                        }}
-                      >
-                        {skill}
-                      </motion.button>
-                    ))}
-                  </div>
-                </motion.div>
-                
-                {/* Results */}
-                <motion.div
-                  initial={{ y: 30, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.3 }}
-                  className="mb-6"
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="flex items-center gap-2">
-                      <h2 className="font-semibold">{filteredSkills.length} results</h2>
-                      {isLoadingSkills && (
-                        <Loader className="h-4 w-4 animate-spin text-purple-500" />
-                      )}
-                      {jobTitleId && (
-                        <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
-                          Job-specific skills
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setSearchTerm('')}
-                        className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
-                        title="Clear search"
-                        disabled={isLoadingSkills}
-                      >
-                        <Undo2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          // Re-fetch skills for the current job title
-                          fetchSkillsForJobTitle(jobTitleId);
-                        }}
-                        className="text-gray-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition-colors"
-                        title="Refresh results"
-                        disabled={isLoadingSkills}
-                      >
-                        <RotateCw className={`h-4 w-4 ${isLoadingSkills ? 'animate-spin' : ''}`} />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {isLoadingSkills ? (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <Loader className="h-8 w-8 animate-spin text-purple-500 mb-4" />
-                      <p className="text-gray-500">Loading skills for your job title...</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 py-2 bg-transparent">
-                      <motion.div 
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="visible"
-                        className="space-y-3"
-                      >
-                        {filteredSkills.length > 0 ? (
-                          filteredSkills.map((skill, index) => (
-                            <motion.div
-                              key={`${skill}-card-${index}`}
-                              variants={itemVariants}
-                              className={`p-3 border border-gray-200 ${
-                                apiSkills.find(s => s.name === skill && s.isRecommended) 
-                                  ? 'bg-purple-50 border-purple-200' 
-                                  : index < 3 ? 'bg-purple-50' : 'bg-gray-50'
-                              } rounded-lg cursor-pointer transition-all duration-300 hover:border-purple-300 hover:shadow-sm`}
-                              onClick={() => handleSkillClick(skill)}
-                            >
-                              {index < 3 && (
-                                <div className="text-xs text-purple-700 font-medium mb-1">
-                                  Expert Recommended
-                                </div>
-                              )}
-                              <p className="text-gray-800 text-sm">
-                                {skill}
-                              </p>
-                            </motion.div>
-                          ))
-                        ) : (
-                          <div className="text-center py-8">
-                            <p className="text-gray-500">No skills found matching your search.</p>
-                            <button 
-                              onClick={() => setSearchTerm('')}
-                              className="mt-2 text-purple-600 hover:text-purple-800 font-medium"
-                            >
-                              Clear search
-                            </button>
-                          </div>
-                        )}
-                      </motion.div>
-                    </div>
-                  )}
-                </motion.div>
+
+            {/* Search field */}
+            <div className="relative mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input 
+                  type="text"
+                  placeholder="SEARCH BY SKILL FOR PRE-WRITTEN EXAMPLES"
+                  className="pl-10 pr-10 py-6 rounded-full border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  onFocus={() => setShowSkillSuggestions(true)}
+                  ref={searchInputRef}
+                />
+                {searchTerm && (
+                  <X 
+                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 cursor-pointer" 
+                    onClick={() => {
+                      setSearchTerm('');
+                      setJobTitleSearchResults([]);
+                      setShowSkillSuggestions(false);
+                    }}
+                  />
+                )}
               </div>
               
-              {/* Right Column - Editor/Rating */}
-              <div>
-                {/* Tabs */}
-                <div className="flex justify-end mb-4">
-                  <div className="inline-flex rounded-full bg-gray-100 p-1">
-                    <button
-                      className={cn(
-                        "px-4 py-1.5 text-sm font-medium rounded-full transition-colors",
-                        activeTab === "text-editor"
-                          ? "bg-white shadow-sm text-purple-600"
-                          : "text-gray-600 hover:text-purple-600"
-                      )}
-                      onClick={() => setActiveTab("text-editor")}
-                    >
-                      Text Editor
-                    </button>
-                    <button
-                      className={cn(
-                        "px-4 py-1.5 text-sm font-medium rounded-full transition-colors",
-                        activeTab === "skills-rating"
-                          ? "bg-white shadow-sm text-purple-600"
-                          : "text-gray-600 hover:text-purple-600"
-                      )}
-                      onClick={() => setActiveTab("skills-rating")}
-                    >
-                      Skills Rating
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Content area based on active tab */}
-                {activeTab === "text-editor" ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <h2 className="text-lg font-semibold text-gray-800 mb-3">
-                      Your Professional Skills
-                    </h2>
-                    <p className="text-sm text-gray-600 mb-3">List your key skills below:</p>
-                    
-                    {/* Text editor with purple glow effect */}
-                    <div className="relative mb-4">
-                      <div className="absolute -inset-0.5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg opacity-30 blur"></div>
-                      <div className="relative">
-                        <textarea
-                          className="w-full h-[300px] p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                          placeholder="Click on any skill from the left to add it to your skills list, or write your own."
-                          value={skillText}
-                          onChange={(e) => setSkillText(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Character count and tips */}
-                    <div className="flex justify-between items-center mt-3 text-sm">
-                      <span className="text-gray-500">
-                        Use a bullet (•) before each skill
-                      </span>
-                      <span className="text-purple-600">
-                        Be specific and relevant
-                      </span>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {selectedSkills.length > 0 ? (
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                          Rate your skills
-                        </h2>
-                        <div className="space-y-6">
-                          {currentSkill ? (
-                            <div className="mb-6">
-                              <h3 className="font-medium text-lg mb-4">
-                                Rate your proficiency: <span className="text-purple-600">{currentSkill.name}</span>
-                              </h3>
+              {/* Suggestions dropdown */}
+              {showSkillSuggestions && (
+                <div 
+                  className="absolute z-30 mt-1 w-full bg-white rounded-md shadow-lg overflow-hidden"
+                  ref={suggestionsRef}
+                >
+                  <div className="py-1">
+                    {/* Job titles section */}
+                    {jobTitleSearchResults.length > 0 ? (
+                      <>
+                        <div className="px-4 py-2 text-xs font-semibold text-purple-600 bg-purple-50">
+                          Job Titles
+                        </div>
+                        
+                        {jobTitleSearchResults.map((jobTitle: ApiJobTitle) => (
+                          <div
+                            key={`job-${jobTitle.id}`}
+                            className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-b border-gray-100"
+                            onClick={() => {
+                              // Log the selection for debugging
+                              console.log(`Selected job title: "${jobTitle.title}" (ID: ${jobTitle.id})`);
                               
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="text-xs text-gray-500">Beginner</span>
-                                <span className="text-xs text-gray-500">Expert</span>
-                              </div>
+                              // Update state
+                              setSearchTerm(jobTitle.title);
+                              setSelectedJobTitle(jobTitle);
+                              setJobTitleId(jobTitle.id);
                               
-                              <div className="flex justify-between items-center mb-4">
-                                {[1, 2, 3, 4, 5].map((level) => (
-                                  <button
-                                    type="button"
-                                    key={level}
-                                    onClick={() => {
-                                      // Update in state
-                                      handleSkillRating(currentSkill, level);
-                                      // Force rerender by creating a new object
-                                      setCurrentSkill({...currentSkill, level});
-                                    }}
-                                    className={`flex flex-col items-center cursor-pointer ${
-                                      level <= (currentSkill.level || 0) ? "text-yellow-500" : "text-gray-300"
-                                    }`}
-                                  >
-                                    <Star
-                                      className={`h-10 w-10 ${
-                                        level <= (currentSkill.level || 0) ? "fill-yellow-500 text-yellow-500" : ""
-                                      }`}
-                                    />
-                                    <span className="text-xs mt-1">{level}</span>
-                                  </button>
-                                ))}
-                              </div>
+                              // First check if there's a matching skill job title in jobTitlesData
+                              const matchingSkillJobTitle = jobTitlesData?.data?.find(
+                                (jt: ApiJobTitle) => jt.title === jobTitle.title
+                              );
                               
-                              <div className="flex justify-between mt-4">
-                                <span className="text-sm font-medium">
-                                  {currentSkill.level === 1 && "Basic knowledge"}
-                                  {currentSkill.level === 2 && "Beginner"}
-                                  {currentSkill.level === 3 && "Intermediate"}
-                                  {currentSkill.level === 4 && "Advanced"}
-                                  {currentSkill.level === 5 && "Expert"}
-                                </span>
-                                <span className="text-sm text-purple-600">{currentSkill.level}/5</span>
-                              </div>
-                            </div>
-                          ) : null}
-                          
-                          <div>
-                            <h3 className="font-medium mb-3">Select a skill to rate:</h3>
-                            <div className="flex flex-wrap gap-2">
-                              {selectedSkills.map((skill) => (
-                                <button
-                                  key={skill.id}
-                                  onClick={() => setCurrentSkill(skill)}
-                                  className={`px-3 py-1.5 rounded-full text-sm ${
-                                    currentSkill?.id === skill.id
-                                      ? "bg-purple-100 text-purple-700 border border-purple-300"
-                                      : "bg-gray-50 text-gray-700 border border-gray-200 hover:border-purple-300"
-                                  }`}
-                                >
-                                  {skill.name}
-                                  {skill.level ? (
-                                    <span className="ml-1 inline-flex">
-                                      {Array.from({ length: 5 }).map((_, i) => (
-                                        <Star 
-                                          key={i} 
-                                          className={`h-3 w-3 ${i < skill.level ? "fill-yellow-500 text-yellow-500" : "text-gray-300"}`} 
-                                        />
-                                      ))}
-                                    </span>
-                                  ) : null}
-                                </button>
-                              ))}
+                              if (matchingSkillJobTitle) {
+                                console.log(`Found matching skill job title with ID: ${matchingSkillJobTitle.id}`);
+                                fetchSkillsForJobTitle(matchingSkillJobTitle.id);
+                              } else {
+                                console.log(`No matching skill job title, using selected job title ID: ${jobTitle.id}`);
+                                fetchSkillsForJobTitle(jobTitle.id);
+                              }
+                              
+                              setShowSkillSuggestions(false);
+                            }}
+                          >
+                            <div className="font-medium text-gray-900 flex items-center">
+                              <span className="mr-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
+                                Job Title
+                              </span>
+                              {jobTitle.title}
                             </div>
                           </div>
-                        </div>
-                      </div>
+                        ))}
+                      </>
                     ) : (
-                      <div className="text-center py-16">
-                        <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-                          <Plus className="h-8 w-8 text-purple-600" />
+                      searchTerm.trim().length > 1 && (
+                        <div className="px-4 py-2 text-xs font-semibold text-gray-500">
+                          Type more to search for job titles
                         </div>
-                        <h3 className="text-xl font-medium mb-2">No skills added yet</h3>
-                        <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                          Add skills from the suggestions on the left, then switch to this tab to rate your proficiency level for each skill.
-                        </p>
-                        <button
-                          onClick={() => setActiveTab("text-editor")}
-                          className="px-6 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
-                        >
-                          Add Skills Now
-                        </button>
-                      </div>
+                      )
                     )}
-                  </motion.div>
-                )}
-                
-                {/* Navigation buttons */}
-                <div className="flex justify-between mt-8">
-                  <Button 
-                    variant="outline" 
-                    className="border-purple-500 text-purple-500 hover:bg-purple-50 hover:text-purple-700 rounded-full px-8"
-                    onClick={handlePreview}
-                  >
-                    Preview
-                  </Button>
-                  <Button 
-                    className="bg-amber-500 hover:bg-amber-600 text-black rounded-full px-8"
-                    onClick={handleNext}
-                  >
-                    Next
-                  </Button>
+                    
+                    {/* Skills section */}
+                    {apiSkills.length > 0 || filteredSkills.length > 0 ? (
+                      <>
+                        <div className="px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50">
+                          Skills {selectedJobTitle && `for ${selectedJobTitle.title}`}
+                        </div>
+                        
+                        {/* Debug info for visibility */}
+                        <div className="px-4 py-1 text-xs text-gray-500 bg-gray-50">
+                          <span>API Skills: {apiSkills.length}</span>
+                          <span className="ml-3">Filtered Skills: {filteredSkills.length}</span>
+                        </div>
+                        
+                        {/* Display skills based on context */}
+                        {selectedJobTitle && apiSkills.length > 0 ? (
+                          // Display API skills when a job title is selected
+                          apiSkills.map((skill, index) => (
+                            <div
+                              key={`skill-api-${skill.id}`}
+                              className={`px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors ${
+                                skill.isRecommended ? 'border-l-2 border-green-500' : ''
+                              }`}
+                              onClick={() => {
+                                setSearchTerm(skill.name);
+                                handleSkillClick(skill.name);
+                                setShowSkillSuggestions(false);
+                              }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="font-medium text-gray-900">{skill.name}</div>
+                                {skill.isRecommended && (
+                                  <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                                    Recommended
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          // Fall back to filtered skills when no job title selected
+                          filteredSkills.map((skill, index) => (
+                            <div
+                              key={`skill-filtered-${index}`}
+                              className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors"
+                              onClick={() => {
+                                setSearchTerm(skill);
+                                handleSkillClick(skill);
+                                setShowSkillSuggestions(false);
+                              }}
+                            >
+                              <div className="font-medium text-gray-900">{skill}</div>
+                            </div>
+                          ))
+                        )}
+                      </>
+                    ) : (
+                      searchTerm.trim().length > 0 && (
+                        <div className="px-4 py-3 text-center text-gray-500">
+                          No matching skills found. Try a different search term.
+                        </div>
+                      )
+                    )}
+                  </div>
                 </div>
+              )}
+            </div>
+            
+            {/* Related skill categories */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                Related Skill Categories
+                <span className="text-blue-600 ml-auto hover:underline cursor-pointer">
+                  More <ArrowRight className="h-3 w-3 inline ml-1" />
+                </span>
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {relatedSkills.map((skill, index) => (
+                  <div
+                    key={`related-${index}`}
+                    className="bg-white border border-gray-200 rounded-full px-4 py-1 text-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => {
+                      setSearchTerm(skill);
+                      setShowSkillSuggestions(true);
+                    }}
+                  >
+                    {skill}
+                  </div>
+                ))}
               </div>
             </div>
+            
+            {/* Selected skills list */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+              <h3 className="text-md font-semibold mb-4">Your Selected Skills</h3>
+              
+              {selectedSkills.length === 0 ? (
+                <div className="text-center py-6 text-gray-500">
+                  <Search className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                  <p>Search for skills above and select them to add to your resume</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {selectedSkills.map((skill) => (
+                    <div 
+                      key={skill.id}
+                      className={cn(
+                        "bg-gray-50 rounded-lg p-3 transition-all duration-200",
+                        currentSkill?.id === skill.id ? "border-2 border-blue-500" : "border border-gray-200"
+                      )}
+                      onClick={() => setCurrentSkill(skill)}
+                    >
+                      <div className="flex justify-between mb-1">
+                        <div className="font-medium">{skill.name}</div>
+                        <X
+                          className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveSkill(skill);
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Skill rating */}
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((rating) => (
+                          <Star
+                            key={`star-${skill.id}-${rating}`}
+                            className={cn(
+                              "h-5 w-5 cursor-pointer transition-colors",
+                              rating <= skill.proficiency 
+                                ? "text-yellow-400 fill-yellow-400" 
+                                : "text-gray-300"
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSkillRating(skill, rating);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Skill details */}
+            {currentSkill && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <h3 className="text-md font-semibold mb-3">Skill Details</h3>
+                <p className="text-gray-500 text-sm mb-3">
+                  Provide some details about your proficiency with this skill.
+                </p>
+                
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="font-medium mb-2">{currentSkill.name}</div>
+                  <div className="flex gap-1 mb-3">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <Star
+                        key={`detail-star-${rating}`}
+                        className={cn(
+                          "h-5 w-5 cursor-pointer transition-colors",
+                          rating <= (currentSkill?.proficiency || 0) 
+                            ? "text-yellow-400 fill-yellow-400" 
+                            : "text-gray-300"
+                        )}
+                        onClick={() => {
+                          if (currentSkill) {
+                            handleSkillRating(currentSkill, rating);
+                          }
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </motion.div>
-        </div>
-      </main>
+          
+          {/* Right column - Tab Content */}
+          <motion.div variants={itemVariants} className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+            <div className="flex border-b">
+              <button
+                className={cn(
+                  "flex-1 py-4 text-center transition-colors",
+                  activeTab === 'text-editor'
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                )}
+                onClick={() => setActiveTab('text-editor')}
+              >
+                Text Editor
+              </button>
+              <button
+                className={cn(
+                  "flex-1 py-4 text-center transition-colors",
+                  activeTab === 'job-specific'
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                )}
+                onClick={() => setActiveTab('job-specific')}
+              >
+                Job-specific skills
+              </button>
+            </div>
+            
+            <div className="p-4 h-[500px] overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
+              {activeTab === 'text-editor' ? (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-bold">Create Your Professional Skills Section</h2>
+                  <p>
+                    Search for skills above that are relevant to your target job. Add them to your resume 
+                    and rate your proficiency level from 1 to 5 stars.
+                  </p>
+                  
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h3 className="text-blue-800 font-semibold mb-2">Tips for selecting skills:</h3>
+                    <ul className="list-disc pl-5 space-y-1 text-blue-700">
+                      <li>Include a mix of technical and soft skills</li>
+                      <li>Prioritize skills mentioned in the job description</li>
+                      <li>Only include skills you're comfortable discussing in an interview</li>
+                      <li>Be honest with your proficiency ratings</li>
+                    </ul>
+                  </div>
+                  
+                  <p>
+                    When you search for a specific job title, we'll suggest skills that are commonly 
+                    requested for that role, with recommended skills highlighted.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-bold">Job-Specific Skills</h2>
+                  
+                  {selectedJobTitle ? (
+                    <>
+                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <h3 className="text-purple-800 font-semibold mb-2">
+                          Skills for {selectedJobTitle.title}
+                        </h3>
+                        <p className="text-purple-700 mb-3">
+                          These skills are frequently requested in job descriptions for 
+                          {' '}{selectedJobTitle.title} roles.
+                        </p>
+                        
+                        <div className="bg-white p-3 rounded border border-purple-100">
+                          {isLoadingSkills ? (
+                            <div className="flex items-center justify-center py-4">
+                              <Loader className="h-5 w-5 text-purple-600 animate-spin mr-2" />
+                              <span>Loading skills...</span>
+                            </div>
+                          ) : apiSkills.length > 0 ? (
+                            <div className="space-y-2">
+                              {apiSkills
+                                .filter(skill => skill.isRecommended)
+                                .map((skill, index) => (
+                                  <div key={`rec-${skill.id}`} className="flex items-center">
+                                    <Check className="h-4 w-4 text-green-500 mr-2" />
+                                    <span>{skill.name}</span>
+                                    <button 
+                                      className="ml-auto text-xs text-blue-600 hover:underline"
+                                      onClick={() => handleSkillClick(skill.name)}
+                                    >
+                                      Add
+                                    </button>
+                                  </div>
+                                ))}
+                              
+                              {apiSkills
+                                .filter(skill => !skill.isRecommended)
+                                .slice(0, 5)
+                                .map((skill, index) => (
+                                  <div key={`std-${skill.id}`} className="flex items-center">
+                                    <span>{skill.name}</span>
+                                    <button 
+                                      className="ml-auto text-xs text-blue-600 hover:underline"
+                                      onClick={() => handleSkillClick(skill.name)}
+                                    >
+                                      Add
+                                    </button>
+                                  </div>
+                                ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 py-2 text-center">
+                              No specific skills found for this job title.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <p>
+                        Click "Add" next to any skill to add it to your selected skills list.
+                        You can then rate your proficiency with each skill.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="bg-gray-100 p-6 rounded-lg text-center">
+                      <Search className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                      <p className="mb-4">
+                        Search for a job title above to see skills specific to that role.
+                      </p>
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          searchInputRef.current?.focus();
+                          setShowSkillSuggestions(true);
+                        }}
+                      >
+                        Search Job Titles
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 };
