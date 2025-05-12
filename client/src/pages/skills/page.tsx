@@ -596,7 +596,7 @@ const SkillsPage = () => {
                         ) : (
                           <div className="py-1">
                             {/* Job titles section */}
-                            {jobTitleSearchResults.length > 0 && (
+                            {jobTitleSearchResults.length > 0 ? (
                               <>
                                 <div className="px-4 py-2 text-xs font-semibold text-purple-600 bg-purple-50">
                                   Job Titles
@@ -623,6 +623,12 @@ const SkillsPage = () => {
                                   </div>
                                 ))}
                               </>
+                            ) : (
+                              searchTerm.trim().length > 1 && (
+                                <div className="px-4 py-2 text-xs font-semibold text-gray-500">
+                                  Type more to search for job titles
+                                </div>
+                              )
                             )}
                             
                             {/* Skills section, show if we have skills or no skills but with a message */}
@@ -647,9 +653,9 @@ const SkillsPage = () => {
                                 ))}
                               </>
                             ) : (
-                              jobTitleSearchResults.length === 0 && (
+                              searchTerm.trim().length > 0 && (
                                 <div className="px-4 py-3 text-center text-gray-500">
-                                  No matching skills found. Try a different search.
+                                  No matching skills found. Try a different search or select a job title above.
                                 </div>
                               )
                             )}
