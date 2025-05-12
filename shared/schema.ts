@@ -285,6 +285,55 @@ export const skillJobTitleSkills = pgTable("skill_job_title_skills", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Professional Summary tables
+export const professionalSummaryTitles = pgTable("professional_summary_titles", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const professionalSummaryTitleSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  category: z.string().min(1, "Category is required"),
+  description: z.string().nullable(),
+});
+
+export type ProfessionalSummaryTitle = typeof professionalSummaryTitles.$inferSelect;
+export type InsertProfessionalSummaryTitle = z.infer<typeof professionalSummaryTitleSchema>;
+
+export const professionalSummaryDescriptions = pgTable("professional_summary_descriptions", {
+  id: serial("id").primaryKey(),
+  content: text("content").notNull(),
+  isRecommended: boolean("is_recommended").default(false),
+  professionalSummaryTitleId: integer("professional_summary_title_id").notNull().references(() => professionalSummaryTitles.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const professionalSummaryDescriptionSchema = z.object({
+  content: z.string().min(1, "Content is required"),
+  isRecommended: z.boolean().optional(),
+  professionalSummaryTitleId: z.number(),
+});
+
+export type ProfessionalSummaryDescription = typeof professionalSummaryDescriptions.$inferSelect;
+export type InsertProfessionalSummaryDescription = z.infer<typeof professionalSummaryDescriptionSchema>;
+
+// Professional Summary Relations
+export const professionalSummaryTitlesRelations = relations(professionalSummaryTitles, ({ many }) => ({
+  descriptions: many(professionalSummaryDescriptions),
+}));
+
+export const professionalSummaryDescriptionsRelations = relations(professionalSummaryDescriptions, ({ one }) => ({
+  title: one(professionalSummaryTitles, {
+    fields: [professionalSummaryDescriptions.professionalSummaryTitleId],
+    references: [professionalSummaryTitles.id],
+  }),
+}));
+
 // Define additional relations
 export const jobTitlesSkillsRelations = relations(jobTitles, ({ many }) => ({
   jobTitleSkills: many(jobTitleSkills),
