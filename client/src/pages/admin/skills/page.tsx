@@ -720,6 +720,25 @@ export default function SkillsAdminPage() {
       createSkillJobTitleMutation.mutate(formattedData);
     }
   };
+  
+  // Handlers for skill job title skills
+  const handleAddSkillToSkillJobTitle = () => {
+    console.log("Adding skill for skill job title:", selectedSkillJobTitle);
+    setEditingSkill(null);
+    setSkillDialogOpen(true);
+  };
+  
+  const handleEditSkillForSkillJobTitle = (skill: any) => {
+    console.log("Editing skill for skill job title:", skill);
+    setEditingSkill(skill);
+    setSkillDialogOpen(true);
+  };
+  
+  const handleDeleteSkillFromSkillJobTitle = (skill: any) => {
+    console.log("Deleting skill from skill job title:", skill);
+    setDeletingSkill(skill);
+    setDeleteSkillDialogOpen(true);
+  };
 
   // Handle data export in different formats
   const handleExportData = async (format: 'csv' | 'excel' | 'json') => {
@@ -1502,10 +1521,7 @@ export default function SkillsAdminPage() {
                     </>
                   )}
                   <Button
-                    onClick={() => {
-                      setEditingSkill(null);
-                      setSkillDialogOpen(true);
-                    }}
+                    onClick={handleAddSkillToSkillJobTitle}
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Add Skill
@@ -1554,10 +1570,7 @@ export default function SkillsAdminPage() {
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8"
-                              onClick={() => {
-                                setEditingSkill(skill);
-                                setSkillDialogOpen(true);
-                              }}
+                              onClick={() => handleEditSkillForSkillJobTitle(skill)}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -1565,10 +1578,7 @@ export default function SkillsAdminPage() {
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => {
-                                setDeletingSkill(skill);
-                                setDeleteSkillDialogOpen(true);
-                              }}
+                              onClick={() => handleDeleteSkillFromSkillJobTitle(skill)}
                             >
                               <Trash className="h-4 w-4" />
                             </Button>
