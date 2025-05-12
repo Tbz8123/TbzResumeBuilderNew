@@ -1074,40 +1074,172 @@ export default function SkillsAdminPage() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     className="pl-9"
-                    placeholder="Search job titles..."
-                    value={jobTitleSearchQuery}
-                    onChange={(e) => setJobTitleSearchQuery(e.target.value)}
+                    placeholder={useSkillJobTitles ? "Search skill job titles..." : "Search job titles..."}
+                    value={useSkillJobTitles ? skillJobTitleSearchQuery : jobTitleSearchQuery}
+                    onChange={(e) => useSkillJobTitles 
+                      ? setSkillJobTitleSearchQuery(e.target.value) 
+                      : setJobTitleSearchQuery(e.target.value)
+                    }
                   />
                 </div>
               </div>
 
-              {isLoadingJobTitles ? (
-                <div className="p-8 text-center">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                  <p className="mt-2 text-muted-foreground">Loading job titles...</p>
-                </div>
-              ) : jobTitles.length === 0 ? (
-                <div className="p-8 text-center">
-                  <p className="text-muted-foreground">No job titles found</p>
-                  <Link href="/admin/jobs">
+              {useSkillJobTitles ? (
+                // Skill Job Titles Section
+                <>
+                  <div className="flex justify-between items-center p-4 border-b">
                     <Button 
+                      size="sm" 
                       variant="outline"
-                      className="mt-2"
+                      onClick={() => {
+                        setSkillJobTitleDialogOpen(true);
+                        setEditingSkillJobTitle(null);
+                      }}
                     >
-                      <ExternalLink className="h-4 w-4 mr-1" />
-                      Manage Job Titles
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Custom Job Title
                     </Button>
-                  </Link>
-                </div>
-              ) : (
-                <ScrollArea className="h-[calc(100vh-320px)]">
-                  <div>
-                    {jobTitles.map((jobTitle: JobTitle) => (
-                      <div
-                        key={jobTitle.id}
-                        className={`p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors ${selectedJobTitle?.id === jobTitle.id ? 'bg-gray-50' : ''}`}
-                        onClick={() => setSelectedJobTitle(jobTitle)}
+                  </div>
+                
+                  {isLoadingSkillJobTitles ? (
+                    <div className="p-8 text-center">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                      <p className="mt-2 text-muted-foreground">Loading skill job titles...</p>
+                    </div>
+                  ) : skillJobTitles.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">No custom job titles found</p>
+                      <Button 
+                        variant="link" 
+                        className="mt-2"
+                        onClick={() => {
+                          setSkillJobTitleDialogOpen(true);
+                          setEditingSkillJobTitle(null);
+                        }}
                       >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add a custom job title
+                      </Button>
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-[calc(100vh-16rem)]">
+                      <div className="p-4">
+                        {skillJobTitles.map((jobTitle) => (
+                          <div
+                            key={jobTitle.id}
+                            className={`py-2 px-3 mb-2 rounded-md cursor-pointer ${
+                              selectedSkillJobTitle?.id === jobTitle.id
+                                ? "bg-primary text-primary-foreground"
+                                : "hover:bg-muted"
+                            }`}
+                            onClick={() => {
+                              if (selectedSkillJobTitle?.id === jobTitle.id) {
+                                setSelectedSkillJobTitle(null);
+                              } else {
+                                setSelectedSkillJobTitle(jobTitle);
+                                setSelectedCategory(null);
+                                setSelectedJobTitle(null);
+                              }
+                            }}
+                          >
+                            <div className="font-medium">{jobTitle.title}</div>
+                            <div className="text-xs opacity-70">{jobTitle.category}</div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 float-right -mt-6"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingSkillJobTitle(jobTitle);
+                                    setSkillJobTitleDialogOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingSkillJobTitle(jobTitle);
+                                    setDeleteSkillJobTitleDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+
+                  {/* Pagination for skill job titles */}
+                  <div className="p-4 border-t flex items-center justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSkillJobTitlePage((prev) => Math.max(prev - 1, 1))}
+                      disabled={skillJobTitlePage === 1 || isLoadingSkillJobTitles}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Prev
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {skillJobTitlePage} of {skillJobTitleTotalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSkillJobTitlePage((prev) => prev + 1)}
+                      disabled={skillJobTitlePage >= skillJobTitleTotalPages || isLoadingSkillJobTitles}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                // Standard Job Titles Section
+                <>
+                  {isLoadingJobTitles ? (
+                    <div className="p-8 text-center">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                      <p className="mt-2 text-muted-foreground">Loading job titles...</p>
+                    </div>
+                  ) : jobTitles.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">No job titles found</p>
+                      <Link href="/admin/jobs">
+                        <Button 
+                          variant="outline"
+                          className="mt-2"
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          Manage Job Titles
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-[calc(100vh-320px)]">
+                      <div>
+                        {jobTitles.map((jobTitle: JobTitle) => (
+                          <div
+                            key={jobTitle.id}
+                            className={`p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors ${selectedJobTitle?.id === jobTitle.id ? 'bg-gray-50' : ''}`}
+                            onClick={() => setSelectedJobTitle(jobTitle)}
+                          >
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="font-medium">{jobTitle.title}</h3>
@@ -1157,6 +1289,7 @@ export default function SkillsAdminPage() {
                   </Button>
                 </div>
               )}
+              {useSkillJobTitles && </>}
             </CardContent>
           </Card>
         </div>
