@@ -98,7 +98,8 @@ import {
   Code,
   Briefcase,
   ExternalLink,
-  FolderOpen
+  FolderOpen,
+  Import
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1090,17 +1091,41 @@ export default function SkillsAdminPage() {
                 // Skill Job Titles Section
                 <>
                   <div className="flex justify-between items-center p-4 border-b">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => {
-                        setSkillJobTitleDialogOpen(true);
-                        setEditingSkillJobTitle(null);
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Custom Job Title
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          setSkillJobTitleDialogOpen(true);
+                          setEditingSkillJobTitle(null);
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Custom Job Title
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setIsCopyingJobTitles(true);
+                          copyJobTitlesMutation.mutate();
+                        }}
+                        disabled={isCopyingJobTitles || copyJobTitlesMutation.isPending}
+                      >
+                        {isCopyingJobTitles || copyJobTitlesMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            Copying...
+                          </>
+                        ) : (
+                          <>
+                            <Import className="h-4 w-4 mr-1" />
+                            Copy From Job Titles
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 
                   {isLoadingSkillJobTitles ? (
