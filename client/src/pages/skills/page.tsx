@@ -419,6 +419,14 @@ const SkillsPage = () => {
             // Update jobTitleSearchResults with the search results
             if (data && data.data) {
               console.log(`Found ${data.data.length} skill job titles matching "${value}"`);
+              
+              // Log each result for debugging
+              if (data.data.length > 0) {
+                data.data.forEach((jt: ApiJobTitle, i: number) => {
+                  console.log(`  ${i+1}. "${jt.title}" (ID: ${jt.id})`);
+                });
+              }
+              
               // Use our dedicated state for search results
               setJobTitleSearchResults(data.data);
             } else {

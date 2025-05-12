@@ -149,16 +149,31 @@ skillsRouter.get("/job-titles", async (req, res) => {
     // Add search filter if provided
     if (searchQuery) {
       console.log(`Searching for skill job titles matching: "${searchQuery}"`);
-      queryBuilder = queryBuilder.where(sql`LOWER(${skillJobTitles.title}) LIKE LOWER(${'%' + searchQuery + '%'})`);
       
-      // Also look for exact matches first for better results
-      const exactMatchQuery = db.select().from(skillJobTitles)
-        .where(sql`LOWER(${skillJobTitles.title}) = LOWER(${searchQuery})`)
-        .limit(1);
+      // Use a word-based approach to find titles containing any words from the search
+      const searchWords = searchQuery.toLowerCase().split(/\s+/).filter(word => word.length > 0);
       
-      const exactMatches = await exactMatchQuery;
-      if (exactMatches.length > 0) {
-        console.log(`Found exact match for "${searchQuery}": "${exactMatches[0].title}"`);
+      if (searchWords.length > 0) {
+        console.log(`Search words: ${searchWords.join(', ')}`);
+        
+        // Search for exact match first
+        const exactMatchQuery = db.select().from(skillJobTitles)
+          .where(sql`LOWER(${skillJobTitles.title}) = LOWER(${searchQuery})`)
+          .limit(1);
+        
+        const exactMatches = await exactMatchQuery;
+        if (exactMatches.length > 0) {
+          console.log(`Found exact match for "${searchQuery}": "${exactMatches[0].title}"`);
+          queryBuilder = queryBuilder.where(sql`LOWER(${skillJobTitles.title}) = LOWER(${searchQuery})`);
+        } else {
+          // For partial matches, look for titles containing any of the search words
+          const firstSearchWord = searchWords[0];
+          console.log(`Using first search word: "${firstSearchWord}"`);
+          queryBuilder = queryBuilder.where(sql`LOWER(${skillJobTitles.title}) LIKE LOWER(${'%' + firstSearchWord + '%'})`);
+        }
+      } else {
+        // Fallback to standard search if no words found
+        queryBuilder = queryBuilder.where(sql`LOWER(${skillJobTitles.title}) LIKE LOWER(${'%' + searchQuery + '%'})`);
       }
     }
     
@@ -186,6 +201,33 @@ skillsRouter.get("/job-titles", async (req, res) => {
       .offset(offset);
     
     console.log(`Retrieved ${data.length} skill job titles (total: ${total})`);
+    
+    // More detailed logging for search results
+    if (searchQuery) {
+      if (data.length > 0) {
+        console.log(`Found skill job titles matching "${searchQuery}":`);
+        data.forEach((item, index) => {
+          console.log(`  ${index+1}. "${item.title}" (ID: ${item.id})`);
+        });
+      } else {
+        console.log(`No skill job titles found matching "${searchQuery}"`);
+        
+        // If search failed, let's try a more permissive search just for debugging
+        const debugQuery = await db.select()
+          .from(skillJobTitles)
+          .where(sql`${skillJobTitles.title} LIKE ${'%' + searchQuery.split(' ')[0] + '%'}`)
+          .limit(5);
+        
+        if (debugQuery.length > 0) {
+          console.log(`Debug: found ${debugQuery.length} results with more permissive search:`);
+          debugQuery.forEach((item, index) => {
+            console.log(`  ${index+1}. "${item.title}" (ID: ${item.id})`);
+          });
+        } else {
+          console.log(`Debug: no results even with permissive search`);
+        }
+      }
+    }
     
     // Return the result with pagination info
     return res.json({
