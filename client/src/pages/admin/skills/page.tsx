@@ -1788,6 +1788,143 @@ export default function SkillsAdminPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Skill Job Title Dialog */}
+      <Dialog open={skillJobTitleDialogOpen} onOpenChange={setSkillJobTitleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingSkillJobTitle ? 'Edit Job Title' : 'Add Job Title'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingSkillJobTitle 
+                ? 'Update the job title details below.'
+                : 'Enter the details for the new job title below.'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...skillJobTitleForm}>
+            <form onSubmit={skillJobTitleForm.handleSubmit(onSkillJobTitleFormSubmit)} className="space-y-6">
+              <FormField
+                control={skillJobTitleForm.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter job title..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={skillJobTitleForm.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Technology">Technology</SelectItem>
+                        <SelectItem value="Development">Development</SelectItem>
+                        <SelectItem value="Data">Data</SelectItem>
+                        <SelectItem value="Design">Design</SelectItem>
+                        <SelectItem value="Management">Management</SelectItem>
+                        <SelectItem value="Marketing">Marketing</SelectItem>
+                        <SelectItem value="Sales">Sales</SelectItem>
+                        <SelectItem value="Support">Support</SelectItem>
+                        <SelectItem value="Finance">Finance</SelectItem>
+                        <SelectItem value="HR">HR</SelectItem>
+                        <SelectItem value="Legal">Legal</SelectItem>
+                        <SelectItem value="Operations">Operations</SelectItem>
+                        <SelectItem value="Product">Product</SelectItem>
+                        <SelectItem value="Research">Research</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={skillJobTitleForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter job title description..." 
+                        className="resize-none h-24"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSkillJobTitleDialogOpen(false);
+                    setEditingSkillJobTitle(null);
+                    skillJobTitleForm.reset();
+                  }}
+                  type="button"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createSkillJobTitleMutation.isPending || updateSkillJobTitleMutation.isPending}>
+                  {(createSkillJobTitleMutation.isPending || updateSkillJobTitleMutation.isPending) && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {editingSkillJobTitle ? 'Save Changes' : 'Create Job Title'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Skill Job Title Dialog */}
+      <AlertDialog open={deleteSkillJobTitleDialogOpen} onOpenChange={setDeleteSkillJobTitleDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Job Title</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the job title "{deletingSkillJobTitle?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (deletingSkillJobTitle) {
+                  deleteSkillJobTitleMutation.mutate(deletingSkillJobTitle.id);
+                }
+              }}
+            >
+              {deleteSkillJobTitleMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
       {/* Hidden file input */}
       <input
         type="file"
