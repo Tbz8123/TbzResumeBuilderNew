@@ -242,14 +242,17 @@ const ProfessionalSummaryPage = () => {
 
   // Effect to update job title suggestions when search term changes
   useEffect(() => {
+    // Always filter suggestions regardless of whether search term is empty
+    const filteredSuggestions = hardcodedSuggestions.filter(job => 
+      job.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    console.log("Filtered suggestions:", filteredSuggestions);
+    
+    // Update suggestions
+    setJobTitleSuggestions(filteredSuggestions);
+    
+    // Only show dropdown if user has typed something
     if (searchTerm.trim()) {
-      // Simple filtering logic
-      const filteredSuggestions = hardcodedSuggestions.filter(job => 
-        job.title.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      console.log("Filtered suggestions:", filteredSuggestions);
-      
-      setJobTitleSuggestions(filteredSuggestions);
       setShowJobTitleSuggestions(true);
     } else {
       setShowJobTitleSuggestions(false);
@@ -301,9 +304,21 @@ const ProfessionalSummaryPage = () => {
     const value = e.target.value;
     setSearchTerm(value);
     
-    // Only show suggestions if there's input text
-    if (value.trim()) {
-      setShowJobTitleSuggestions(true);
+    // Show/hide dropdown based on input
+    // This will trigger the useEffect that filters the suggestions
+    if (value.trim().length > 0) {
+      // Make sure we have suggestions to show
+      const filtered = hardcodedSuggestions.filter(job => 
+        job.title.toLowerCase().includes(value.toLowerCase())
+      );
+      
+      if (filtered.length > 0) {
+        console.log(`Found ${filtered.length} matching job title suggestions for "${value}"`);
+        setJobTitleSuggestions(filtered);
+        setShowJobTitleSuggestions(true);
+      } else {
+        setShowJobTitleSuggestions(false);
+      }
     } else {
       setShowJobTitleSuggestions(false);
     }
@@ -402,12 +417,19 @@ const ProfessionalSummaryPage = () => {
                         <Input 
                           type="text"
                           ref={searchInputRef}
-                          placeholder="Search by job title"
+                          placeholder="Search by job title for pre-written examples"
                           value={searchTerm}
                           onChange={handleSearchChange}
                           className="rounded-lg border-gray-300 pr-10 py-6 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white"
                           onFocus={() => {
+                            // Always show suggestions on focus if we have any search term
                             if (searchTerm.trim()) {
+                              setShowJobTitleSuggestions(true);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            // Show suggestions when user starts typing
+                            if (e.key.length === 1 && !showJobTitleSuggestions) {
                               setShowJobTitleSuggestions(true);
                             }
                           }}
