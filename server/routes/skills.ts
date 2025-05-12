@@ -554,21 +554,23 @@ async function getRelevantCategoriesForJobTitle(jobTitle: any): Promise<number[]
     // Remove duplicates
     relevantCategoryNames = [...new Set(relevantCategoryNames)];
     
-    // Get the actual category IDs from the database that match these names
-    // We need to use LIKE clauses for each category name instead of IN to avoid SQL injection
-    let categoryQuery = db.select().from(skillCategories);
+    console.log(`Looking up categories matching: ${relevantCategoryNames.join(', ')}`);
     
-    if (relevantCategoryNames.length > 0) {
-      // Create a condition for each category name using OR
-      const conditions = relevantCategoryNames.map(name => 
-        sql`LOWER(${skillCategories.name}) LIKE LOWER(${'%' + name + '%'})`
+    // Get all categories first
+    const allCategories = await db.select().from(skillCategories);
+    console.log(`Found ${allCategories.length} total categories`);
+    
+    // Filter them in memory for safer handling
+    const matchingCategories = allCategories.filter(category => {
+      const categoryName = category.name.toLowerCase();
+      return relevantCategoryNames.some(name => 
+        categoryName.includes(name.toLowerCase())
       );
-      
-      // Combine with OR for our final WHERE clause
-      categoryQuery = categoryQuery.where(sql`(${sql.join(conditions, sql` OR `)})`);
-    }
+    });
     
-    const categories = await categoryQuery;
+    console.log(`Matched ${matchingCategories.length} categories: ${matchingCategories.map(c => c.name).join(', ')}`);
+    
+    const categories = matchingCategories;
     
     // Extract the category IDs
     const categoryIds = categories.map(c => c.id);
