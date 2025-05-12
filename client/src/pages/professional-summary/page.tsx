@@ -468,16 +468,22 @@ const ProfessionalSummaryPage = () => {
                   <div className="mb-4">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-sm font-medium text-gray-700">Related Job Titles</h3>
-                      <Button variant="link" size="sm" className="h-auto p-0 text-purple-600">
+                      <button className="text-purple-600 text-sm font-medium flex items-center hover:text-purple-800 transition-colors">
                         More <ArrowRight className="h-3 w-3 ml-1" />
-                      </Button>
+                      </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <button className="inline-flex items-center text-sm bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-1 rounded-md transition-colors">
-                        <Search className="h-3 w-3 mr-1 text-purple-500" /> General Warehouse Worker
+                      <button className="text-sm bg-white border border-gray-200 text-gray-800 px-4 py-2 rounded-full hover:shadow-sm transition-all">
+                        Assistant Manager
                       </button>
-                      <button className="inline-flex items-center text-sm bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-1 rounded-md transition-colors">
-                        <Search className="h-3 w-3 mr-1 text-purple-500" /> Warehouse Production Worker
+                      <button className="text-sm bg-white border border-gray-200 text-gray-800 px-4 py-2 rounded-full hover:shadow-sm transition-all">
+                        Project Manager
+                      </button>
+                      <button className="text-sm bg-white border border-gray-200 text-gray-800 px-4 py-2 rounded-full hover:shadow-sm transition-all">
+                        Operations Manager
+                      </button>
+                      <button className="text-sm bg-white border border-gray-200 text-gray-800 px-4 py-2 rounded-full hover:shadow-sm transition-all">
+                        General Manager
                       </button>
                     </div>
                   </div>
@@ -596,14 +602,14 @@ const ProfessionalSummaryPage = () => {
                   <div className="flex justify-between">
                     <Button
                       variant="outline"
-                      className="border-purple-500 text-purple-500 hover:bg-purple-50"
+                      className="rounded-full border-purple-500 text-purple-500 hover:bg-purple-50 px-8"
                       onClick={handlePreview}
                     >
                       Preview
                     </Button>
                     
                     <Button
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                      className="rounded-full bg-yellow-500 hover:bg-yellow-600 text-white px-8"
                       onClick={handleNext}
                     >
                       Next
