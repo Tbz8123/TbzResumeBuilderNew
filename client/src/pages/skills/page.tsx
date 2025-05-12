@@ -378,11 +378,19 @@ const SkillsPage = () => {
   }, [jobTitleId, selectedJobTitle?.id]);
   
   // Filter skills based on search term
+  // Use skillSuggestions as the primary source which comes from the API
   const filteredSkills = searchTerm.trim() !== ''
     ? skillSuggestions.filter(skill => 
         skill.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : skillSuggestions.slice(0, 15);
+    
+  // For debugging
+  console.log("Skills for display:", {
+    skillSuggestions: skillSuggestions,
+    filteredSkills: filteredSkills,
+    apiSkills: apiSkills.map(s => s.name)
+  });
   
   const relatedSkills = getRelatedSkillCategories(searchTerm);
   
