@@ -1282,3 +1282,86 @@ skillsRouter.post("/bulk", isAuthenticated, isAdmin, async (req, res) => {
     return res.status(500).json({ error: "Failed to add bulk skills" });
   }
 });
+
+// Update a skill association with a skill job title (admin only)
+skillsRouter.put("/job-titles/:skillJobTitleId/skills/:skillId", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const skillJobTitleId = parseInt(req.params.skillJobTitleId);
+    const skillId = parseInt(req.params.skillId);
+    
+    if (isNaN(skillJobTitleId) || isNaN(skillId)) {
+      return res.status(400).json({ error: "Invalid skill job title ID or skill ID" });
+    }
+    
+    // Check if the association exists
+    const existingAssociation = await db.query.skillJobTitleSkills.findFirst({
+      where: and(
+        eq(skillJobTitleSkills.skillJobTitleId, skillJobTitleId),
+        eq(skillJobTitleSkills.skillId, skillId)
+      )
+    });
+    
+    if (!existingAssociation) {
+      return res.status(404).json({ error: "Skill is not associated with this skill job title" });
+    }
+    
+    // Get the new isRecommended value
+    const isRecommended = req.body.isRecommended === undefined ? 
+      existingAssociation.isRecommended : !!req.body.isRecommended;
+    
+    console.log(`Updating association between skill ${skillId} and skill job title ${skillJobTitleId}, setting isRecommended=${isRecommended}`);
+    
+    // Update the association
+    const [updatedAssociation] = await db.update(skillJobTitleSkills)
+      .set({ isRecommended })
+      .where(and(
+        eq(skillJobTitleSkills.skillJobTitleId, skillJobTitleId),
+        eq(skillJobTitleSkills.skillId, skillId)
+      ))
+      .returning();
+    
+    return res.json(updatedAssociation);
+  } catch (error) {
+    console.error("Error updating skill association with skill job title:", error);
+    return res.status(500).json({ error: "Failed to update skill association with skill job title" });
+  }
+});
+
+// Remove a skill from a skill job title (admin only)
+skillsRouter.delete("/job-titles/:skillJobTitleId/skills/:skillId", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const skillJobTitleId = parseInt(req.params.skillJobTitleId);
+    const skillId = parseInt(req.params.skillId);
+    
+    if (isNaN(skillJobTitleId) || isNaN(skillId)) {
+      return res.status(400).json({ error: "Invalid skill job title ID or skill ID" });
+    }
+    
+    // Check if the association exists
+    const existingAssociation = await db.query.skillJobTitleSkills.findFirst({
+      where: and(
+        eq(skillJobTitleSkills.skillJobTitleId, skillJobTitleId),
+        eq(skillJobTitleSkills.skillId, skillId)
+      )
+    });
+    
+    if (!existingAssociation) {
+      return res.status(404).json({ error: "Skill is not associated with this skill job title" });
+    }
+    
+    console.log(`Removing association between skill ${skillId} and skill job title ${skillJobTitleId}`);
+    
+    // Delete the association
+    await db.delete(skillJobTitleSkills).where(
+      and(
+        eq(skillJobTitleSkills.skillJobTitleId, skillJobTitleId),
+        eq(skillJobTitleSkills.skillId, skillId)
+      )
+    );
+    
+    return res.status(204).send();
+  } catch (error) {
+    console.error("Error removing skill from skill job title:", error);
+    return res.status(500).json({ error: "Failed to remove skill from skill job title" });
+  }
+});
