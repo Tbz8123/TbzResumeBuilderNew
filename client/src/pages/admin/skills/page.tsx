@@ -1726,24 +1726,46 @@ export default function SkillsAdminPage() {
                       {/* Debug output to check data */}
                       <TableRow>
                         <TableCell colSpan={3} className="bg-muted/20 text-xs">
-                          <div>Mode: {useSkillJobTitles ? 'Skill Job Titles' : 'Regular Job Titles'}</div>
-                          <div>Selected Job Title: {selectedSkillJobTitle?.title || selectedJobTitle?.title || 'None'}</div>
-                          <div>Skills Count: {useSkillJobTitles && selectedSkillJobTitle 
-                            ? skillJobTitleSkillsData?.length || 0 
-                            : jobTitleSkillsData?.length || 0} skills</div>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              if (useSkillJobTitles && selectedSkillJobTitle) {
-                                console.log("Manually refetching skills for job title");
-                                refetchSkillJobTitleSkills();
-                              }
-                            }}
-                            className="mt-2"
-                          >
-                            Refresh Skills List
-                          </Button>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div>Mode: {useSkillJobTitles ? 'Skill Job Titles' : 'Regular Job Titles'}</div>
+                              <div>Selected Job Title: {selectedSkillJobTitle?.title || selectedJobTitle?.title || 'None'}</div>
+                              <div>Selected Job Title ID: {selectedSkillJobTitle?.id || selectedJobTitle?.id || 'None'}</div>
+                              <div>Skills Count: {useSkillJobTitles && selectedSkillJobTitle 
+                                ? skillJobTitleSkillsData?.length || 0 
+                                : jobTitleSkillsData?.length || 0} skills</div>
+                              {useSkillJobTitles && selectedSkillJobTitle && (
+                                <div className="mt-1 pt-1 border-t border-dashed border-gray-200">
+                                  <div>First skills: {
+                                    skillJobTitleSkillsData && skillJobTitleSkillsData.length > 0 
+                                    ? skillJobTitleSkillsData.slice(0, 2).map((s: any) => `${s.name} (${s.id})`).join(', ')
+                                    : 'None'
+                                  }</div>
+                                </div>
+                              )}
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                if (useSkillJobTitles && selectedSkillJobTitle) {
+                                  console.log(`Manually refetching skills for skill job title ID: ${selectedSkillJobTitle.id}`);
+                                  
+                                  // Force a refetch by invalidating the cache
+                                  queryClient.invalidateQueries({ 
+                                    queryKey: ['/api/skills/by-skill-job-title', selectedSkillJobTitle.id] 
+                                  });
+                                  
+                                  // Then explicitly refetch
+                                  refetchSkillJobTitleSkills();
+                                }
+                              }}
+                              className="ml-2"
+                            >
+                              <RefreshCw className="h-3 w-3 mr-1" />
+                              Refresh Skills List
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                       
