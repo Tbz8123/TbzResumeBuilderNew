@@ -1124,7 +1124,7 @@ export default function SkillsAdminPage() {
                   ) : (
                     <ScrollArea className="h-[calc(100vh-16rem)]">
                       <div className="p-4">
-                        {skillJobTitles.map((jobTitle) => (
+                        {skillJobTitles.map((jobTitle: any) => (
                           <div
                             key={jobTitle.id}
                             className={`py-2 px-3 mb-2 rounded-md cursor-pointer ${
@@ -1240,56 +1240,58 @@ export default function SkillsAdminPage() {
                             className={`p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors ${selectedJobTitle?.id === jobTitle.id ? 'bg-gray-50' : ''}`}
                             onClick={() => setSelectedJobTitle(jobTitle)}
                           >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">{jobTitle.title}</h3>
-                            <p className="text-sm text-gray-500 mt-1">
-                              {jobTitle.category}
-                            </p>
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="font-medium">{jobTitle.title}</h3>
+                                <p className="text-sm text-gray-500 mt-1">
+                                  {jobTitle.category}
+                                </p>
+                              </div>
+                              <div className="flex items-center">
+                                {selectedJobTitle?.id === jobTitle.id && jobTitleSkillsData && (
+                                  <Badge variant="outline" className="mr-2">
+                                    <span className="flex items-center justify-center bg-primary/10 text-primary rounded-full h-5 w-5 mr-1">
+                                      {jobTitleSkillsData.length}
+                                    </span>
+                                    skills
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center">
-                            {selectedJobTitle?.id === jobTitle.id && jobTitleSkillsData && (
-                              <Badge variant="outline" className="mr-2">
-                                <span className="flex items-center justify-center bg-primary/10 text-primary rounded-full h-5 w-5 mr-1">
-                                  {jobTitleSkillsData.length}
-                                </span>
-                                skills
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
+                    </ScrollArea>
+                  )}
 
-              {jobTitleTotalPages > 1 && (
-                <div className="flex justify-between p-4 border-t">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setJobTitlePage(Math.max(1, jobTitlePage - 1))}
-                    disabled={jobTitlePage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Prev
-                  </Button>
-                  <span className="text-sm py-2">
-                    Page {jobTitlePage} of {jobTitleTotalPages}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setJobTitlePage(Math.min(jobTitleTotalPages, jobTitlePage + 1))}
-                    disabled={jobTitlePage === jobTitleTotalPages}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
+                  {jobTitleTotalPages > 1 && (
+                    <div className="flex justify-between p-4 border-t">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setJobTitlePage(Math.max(1, jobTitlePage - 1))}
+                        disabled={jobTitlePage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Prev
+                      </Button>
+                      <span className="text-sm py-2">
+                        Page {jobTitlePage} of {jobTitleTotalPages}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setJobTitlePage(Math.min(jobTitleTotalPages, jobTitlePage + 1))}
+                        disabled={jobTitlePage === jobTitleTotalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
-              {useSkillJobTitles && </>}
+              {/* End of useSkillJobTitles section */}
             </CardContent>
           </Card>
         </div>
