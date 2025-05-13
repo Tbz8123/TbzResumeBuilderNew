@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FileText, Palette, Code, Image, Save, Eye, RefreshCw, Download, RotateCw, PlusCircle, MinusCircle, Maximize2, Camera, Upload, ImageIcon } from 'lucide-react';
+import { FileText, Palette, Code, Image, Save, Eye, RefreshCw, Download, RotateCw, PlusCircle, MinusCircle, Maximize2, Camera, Upload, ImageIcon, Link2 } from 'lucide-react';
+import { TemplateBindingInterface } from '@/components/templates/TemplateBindingInterface';
 import { ResumeData, defaultResumeData } from './TemplateEngine';
 import TemplateEngine from './TemplateEngine';
 
@@ -190,6 +191,14 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
       language: 'xml',
       getValue: (t) => t.svgContent || '',
       setValue: (value: string) => setSvgContent(value)
+    },
+    {
+      id: 'bindings-editor',
+      label: 'Bindings',
+      icon: <Link2 className="h-4 w-4 mr-1" />,
+      language: 'json',
+      getValue: (t) => '', // Not used for bindings tab
+      setValue: (value: string) => {} // Not used for bindings tab
     }
   ];
   
@@ -553,25 +562,41 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                       </div>
                     )}
                     <CardContent className="p-0 flex-1">
-                      <MonacoEditor
-                        height="100%"
-                        language={tab.language}
-                        value={
-                          tab.id === 'html-editor' ? htmlContent :
-                          tab.id === 'css-editor' ? cssContent :
-                          tab.id === 'js-editor' ? jsContent :
-                          tab.id === 'svg-editor' ? svgContent :
-                          ''
-                        }
-                        onChange={(value) => handleEditorChange(value, tab.id)}
-                        options={{
-                          minimap: { enabled: false },
-                          scrollBeyondLastLine: false,
-                          automaticLayout: true,
-                          tabSize: 2,
-                          wordWrap: 'on'
-                        }}
-                      />
+                      {tab.id === 'bindings-editor' ? (
+                        <div className="p-4 h-full">
+                          {template.id ? (
+                            <TemplateBindingInterface templateId={template.id.toString()} />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                              <Link2 className="h-16 w-16 mb-4 text-muted-foreground" />
+                              <h3 className="text-lg font-medium mb-2">Template Binding Unavailable</h3>
+                              <p className="text-sm text-muted-foreground max-w-md mb-4">
+                                You need to save the template first before you can set up data bindings.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <MonacoEditor
+                          height="100%"
+                          language={tab.language}
+                          value={
+                            tab.id === 'html-editor' ? htmlContent :
+                            tab.id === 'css-editor' ? cssContent :
+                            tab.id === 'js-editor' ? jsContent :
+                            tab.id === 'svg-editor' ? svgContent :
+                            ''
+                          }
+                          onChange={(value) => handleEditorChange(value, tab.id)}
+                          options={{
+                            minimap: { enabled: false },
+                            scrollBeyondLastLine: false,
+                            automaticLayout: true,
+                            tabSize: 2,
+                            wordWrap: 'on'
+                          }}
+                        />
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
