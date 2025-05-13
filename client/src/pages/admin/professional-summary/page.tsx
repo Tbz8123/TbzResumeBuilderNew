@@ -239,89 +239,103 @@ export default function ProfessionalSummaryAdminPage() {
       syncMode
     });
 
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('syncMode', syncMode);
-      
-      // Set up polling for import status instead of server-sent events
-      let statusCheckInterval: NodeJS.Timeout;
-      
-      // Function to check import status via polling
-      const checkImportStatus = async () => {
-        try {
-          const statusResponse = await fetch('/api/professional-summary/import-status', {
-            credentials: 'include'
-          });
-          
-          if (!statusResponse.ok) {
-            throw new Error('Failed to get import status');
-          }
-          
-          const data = await statusResponse.json();
-          
-          // Update status with the latest information
-          setUploadStatus({
-            processed: data.processed || 0,
-            created: data.created || 0,
-            updated: data.updated || 0,
-            deleted: data.deleted || 0,
-            errors: data.errors || [],
-            isComplete: data.isComplete || false,
-            syncMode: data.syncMode
-          });
-          
-          // If import is complete, stop polling and clean up
-          if (data.isComplete) {
+    // Define interval at this scope so it's available in all handlers
+    let statusCheckInterval: NodeJS.Timeout | null = null;
+    
+    // Function to check import status via polling
+    const checkImportStatus = async () => {
+      try {
+        console.log("Checking import status...");
+        const statusResponse = await fetch('/api/professional-summary/import-status', {
+          credentials: 'include'
+        });
+        
+        if (!statusResponse.ok) {
+          console.error("Status check failed with status:", statusResponse.status);
+          throw new Error('Failed to get import status');
+        }
+        
+        const data = await statusResponse.json();
+        console.log("Received status update:", data);
+        
+        // Update status with the latest information
+        setUploadStatus({
+          processed: data.processed || 0,
+          created: data.created || 0,
+          updated: data.updated || 0,
+          deleted: data.deleted || 0,
+          errors: data.errors || [],
+          isComplete: data.isComplete || false,
+          syncMode: data.syncMode
+        });
+        
+        // If import is complete, stop polling and clean up
+        if (data.isComplete) {
+          console.log("Import complete, cleaning up");
+          if (statusCheckInterval) {
             clearInterval(statusCheckInterval);
-            setIsImporting(false);
-            
-            if (data.errors && data.errors.length > 0) {
-              // If there were errors, show them
-              toast({
-                title: "Import Completed with Errors",
-                description: `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Errors: ${data.errors.length}`,
-                variant: "destructive",
-              });
-            } else {
-              // Success message
-              toast({
-                title: "Import Successful",
-                description: syncMode === 'full-sync'
-                  ? `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Deleted: ${data.deleted}`
-                  : `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}`,
-              });
-            }
-            
-            // Refresh data
-            queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/titles'] });
-            queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/categories'] });
-            
-            // Clean up
-            setUploadStatus(null);
-            if (fileInputRef.current) {
-              fileInputRef.current.value = '';
-            }
+            statusCheckInterval = null;
           }
-        } catch (error) {
-          clearInterval(statusCheckInterval);
+          
           setIsImporting(false);
           
-          toast({
-            title: "Import Status Check Failed",
-            description: error instanceof Error ? error.message : "Failed to check import status",
-            variant: "destructive",
-          });
+          if (data.errors && data.errors.length > 0) {
+            // If there were errors, show them
+            toast({
+              title: "Import Completed with Errors",
+              description: `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Errors: ${data.errors.length}`,
+              variant: "destructive",
+            });
+          } else {
+            // Success message
+            toast({
+              title: "Import Successful",
+              description: syncMode === 'full-sync'
+                ? `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Deleted: ${data.deleted}`
+                : `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}`,
+            });
+          }
           
+          // Refresh data
+          queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/titles'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/categories'] });
+          
+          // Clean up
           setUploadStatus(null);
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
           }
         }
-      };
+      } catch (error) {
+        console.error("Status check error:", error);
+        if (statusCheckInterval) {
+          clearInterval(statusCheckInterval);
+          statusCheckInterval = null;
+        }
+        
+        setIsImporting(false);
+        
+        toast({
+          title: "Import Status Check Failed",
+          description: error instanceof Error ? error.message : "Failed to check import status",
+          variant: "destructive",
+        });
+        
+        setUploadStatus(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    };
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
       
       // Use our new unified import endpoint
       const endpoint = '/api/professional-summary/import';
+      
+      console.log(`Sending file to ${endpoint}?mode=${syncMode}`);
       
       // Send the file to our new endpoint with query params instead of form fields
       const response = await fetch(`${endpoint}?mode=${syncMode}`, {
@@ -332,6 +346,7 @@ export default function ProfessionalSummaryAdminPage() {
       
       if (!response.ok) {
         // Handle HTTP error
+        console.error("Upload failed with status:", response.status);
         let errorMessage = "Failed to import data";
         try {
           const errorData = await response.json();
@@ -353,24 +368,33 @@ export default function ProfessionalSummaryAdminPage() {
           fileInputRef.current.value = '';
         }
       } else {
+        console.log("Upload successful, starting status polling");
+        
         // Start polling for import status
         // Check immediately, then every second
-        checkImportStatus(); 
+        await checkImportStatus(); 
         statusCheckInterval = setInterval(checkImportStatus, 1000);
+        
+        console.log("Polling started");
         
         // Safety cleanup after 5 minutes in case something goes wrong
         setTimeout(() => {
           if (statusCheckInterval) {
+            console.log("Safety timeout triggered");
             clearInterval(statusCheckInterval);
+            statusCheckInterval = null;
             setIsImporting(false);
             setUploadStatus(null);
           }
         }, 5 * 60 * 1000);
       }
     } catch (error) {
+      console.error("Error during import:", error);
+      
       // Clear any polling intervals if they exist
       if (statusCheckInterval) {
         clearInterval(statusCheckInterval);
+        statusCheckInterval = null;
       }
       
       setIsImporting(false);
