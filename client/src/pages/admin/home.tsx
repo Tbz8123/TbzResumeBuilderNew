@@ -71,6 +71,13 @@ const AdminHomePage = () => {
           icon: <Code className="h-5 w-5" />,
           path: '/admin/templates/advanced-edit',
           color: 'bg-orange-500'
+        },
+        {
+          title: 'Template Bindings',
+          description: 'Connect template placeholders with data fields',
+          icon: <Layers className="h-5 w-5" />,
+          path: '/admin/templates/management',
+          color: 'bg-pink-500'
         }
       ]
     },
