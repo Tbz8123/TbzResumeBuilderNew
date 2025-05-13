@@ -228,6 +228,49 @@ router.put("/templates/:templateId/bindings/:bindingId", async (req, res) => {
 });
 
 /**
+ * PATCH /api/templates/:templateId/bindings/:bindingId
+ * Partial update of a template binding
+ */
+router.patch("/templates/:templateId/bindings/:bindingId", async (req, res) => {
+  try {
+    const templateId = parseInt(req.params.templateId);
+    const bindingId = parseInt(req.params.bindingId);
+    
+    if (isNaN(templateId) || isNaN(bindingId)) {
+      return res.status(400).json({ error: "Invalid template or binding ID" });
+    }
+    
+    // Check if binding exists and belongs to the template
+    const existingBinding = await db.query.templateBindings.findFirst({
+      where: sql`${templateBindings.id} = ${bindingId} AND ${templateBindings.templateId} = ${templateId}`
+    });
+    
+    if (!existingBinding) {
+      return res.status(404).json({ error: "Binding not found or doesn't belong to this template" });
+    }
+    
+    // Create update object with only the fields that were provided
+    const updateData: Record<string, any> = {};
+    if (req.body.selector !== undefined) updateData.selector = req.body.selector;
+    if (req.body.dataField !== undefined) updateData.dataField = req.body.dataField;
+    if (req.body.description !== undefined) updateData.description = req.body.description;
+    updateData.updatedAt = new Date();
+    
+    // Update binding
+    const [updatedBinding] = await db
+      .update(templateBindings)
+      .set(updateData)
+      .where(eq(templateBindings.id, bindingId))
+      .returning();
+    
+    return res.status(200).json(updatedBinding);
+  } catch (error) {
+    console.error("Error updating template binding:", error);
+    return res.status(500).json({ error: "Failed to update template binding" });
+  }
+});
+
+/**
  * DELETE /api/templates/:templateId/bindings/:bindingId
  * Delete a template binding
  */
