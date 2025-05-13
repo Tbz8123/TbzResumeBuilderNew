@@ -516,8 +516,34 @@ const ProfessionalSummaryPage = () => {
                           placeholder="Search by job title for pre-written examples"
                           className="w-full rounded-lg border border-gray-300 px-3 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                           value={searchTerm}
+                          onKeyDown={(e) => {
+                            // Special handling for backspace
+                            if (e.key === 'Backspace' && searchTerm) {
+                              const newValue = searchTerm.slice(0, -1);
+                              console.log("Backspace detected, new value:", newValue);
+                              
+                              setSearchTerm(newValue);
+                              
+                              if (newValue === '') {
+                                setCurrentJobTitle(null);
+                                setSummaryDescriptions([]);
+                                // Show default suggestions
+                                setJobTitleSuggestions(allSuggestions.slice(0, 5));
+                              } else {
+                                // Filter suggestions
+                                const filtered = allSuggestions.filter(job => 
+                                  job.title.toLowerCase().includes(newValue.toLowerCase())
+                                );
+                                setJobTitleSuggestions(filtered);
+                              }
+                              
+                              // Always show dropdown when typing
+                              setShowJobTitleSuggestions(true);
+                            }
+                          }}
                           onChange={(e) => {
                             const newValue = e.target.value;
+                            console.log("Input change:", newValue);
                             setSearchTerm(newValue);
                             
                             // Show dropdown while typing
