@@ -843,7 +843,7 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
           // Now insert the description - use the schema to validate
           const descriptionData = professionalSummaryDescriptionSchema.parse({
             content: normalizedRow.Description,
-            isRecommended: isRecommended,
+            isRecommended: isRecommendedValue,
             professionalSummaryTitleId: titleId
           });
           
