@@ -624,10 +624,34 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
         rows = XLSX.utils.sheet_to_json(worksheet, { 
           defval: "",
           raw: false, // Convert all data to strings
-          blankrows: false // Skip blank rows
+          blankrows: false, // Skip blank rows
+          header: 'A' // Use A, B, C as header if no header row
         });
         
+        // Log full Excel data for debugging
         console.log(`Successfully parsed ${rows.length} rows from Excel`);
+        if (rows.length > 0) {
+          console.log("First row keys:", Object.keys(rows[0]));
+          console.log("Excel file column headers detected:", Object.keys(rows[0]));
+          
+          // If we are getting numeric headers (A, B, C), try to find header row
+          const firstRowKeys = Object.keys(rows[0]);
+          if (firstRowKeys.length > 0 && firstRowKeys[0] === 'A') {
+            console.log("Excel file doesn't have proper headers. Using the first row as headers.");
+            // Use the first row as headers and re-parse
+            rows = XLSX.utils.sheet_to_json(worksheet, { 
+              defval: "",
+              raw: false,
+              blankrows: false,
+              range: 1 // Skip the first row (which contains headers)
+            });
+            
+            console.log(`Re-parsed Excel with first row as headers. Now have ${rows.length} data rows`);
+            if (rows.length > 0) {
+              console.log("New first row keys after using first row as header:", Object.keys(rows[0]));
+            }
+          }
+        }
         
         // Validate required columns
         if (rows.length > 0) {
@@ -711,59 +735,76 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
           console.log(`Original row ${rowNumber} keys:`, Object.keys(row));
           console.log(`Original row ${rowNumber} values:`, Object.values(row));
           
-          // Normalize field names with explicit column name handling
-          // Check for variations of "JobTitleID" or "Title ID"
-          let jobTitleId = null;
-          for (const key of Object.keys(row)) {
-            const lowerKey = key.toLowerCase();
-            if (lowerKey.includes('title') && lowerKey.includes('id')) {
-              jobTitleId = row[key];
-              break;
-            }
-          }
+          // Enhanced column mapping for Excel imports
+          // Create a map of column patterns to field names for more robust matching
+          const columnMappings = [
+            { field: 'jobTitleId', patterns: ['titleid', 'jobtitleid', 'title id', 'title_id', 'job_title_id', 'id'] },
+            { field: 'jobTitle', patterns: ['jobtitle', 'job title', 'title', 'job_title', 'title name'] },
+            { field: 'category', patterns: ['category', 'job category', 'job_category'] },
+            { field: 'description', patterns: ['description', 'summary', 'professional summary', 'professional_summary', 'professional summary description', 'summary_description'] },
+            { field: 'isRecommended', patterns: ['recommended', 'isrecommended', 'is recommended', 'is_recommended', 'recommended flag'] }
+          ];
           
-          // Check for variations of "JobTitle" or "Title"
-          let jobTitle = '';
-          for (const key of Object.keys(row)) {
-            const lowerKey = key.toLowerCase();
-            if (lowerKey.includes('title') && !lowerKey.includes('id')) {
-              jobTitle = row[key];
-              break;
-            }
-          }
+          // Log the row data for debugging
+          console.log(`Processing row ${rowNumber} with fields:`, row);
           
-          // Check for variations of "Category"
-          let category = '';
-          for (const key of Object.keys(row)) {
-            const lowerKey = key.toLowerCase();
-            if (lowerKey.includes('category')) {
-              category = row[key];
-              break;
+          // Create a normalized data object with default values
+          const normalizedData: any = {
+            jobTitleId: null,
+            jobTitle: '',
+            category: 'General',
+            description: '',
+            isRecommended: false
+          };
+
+          // Match each column in the input to our expected fields
+          Object.keys(row).forEach(key => {
+            // Skip empty columns
+            if (!key || row[key] === undefined || row[key] === null) return;
+            
+            const lowerKey = key.toLowerCase().trim();
+            const value = row[key];
+
+            // Try to find a match in our mappings
+            for (const mapping of columnMappings) {
+              if (mapping.patterns.some(pattern => lowerKey.includes(pattern))) {
+                // Special handling for isRecommended boolean conversion
+                if (mapping.field === 'isRecommended') {
+                  normalizedData[mapping.field] = typeof value === 'string' 
+                    ? ['true', 'yes', '1', 'y', 't'].includes(value.toLowerCase())
+                    : !!value;
+                } else {
+                  normalizedData[mapping.field] = value;
+                }
+                console.log(`Mapped column '${key}' to field '${mapping.field}' with value:`, value);
+                break;
+              }
             }
+          });
+
+          // Handle Excel-specific column mappings for files with A, B, C headers
+          if (Object.keys(row).some(k => k === 'A' || k === 'B' || k === 'C')) {
+            // For Excel files with column letters, assume standard format:
+            // A = ID, B = Title, C = Category, D = Description, E = IsRecommended
+            normalizedData.jobTitleId = row['A'] || null;
+            normalizedData.jobTitle = row['B'] || '';
+            normalizedData.category = row['C'] || 'General';
+            normalizedData.description = row['D'] || '';
+            
+            const recValue = row['E'];
+            normalizedData.isRecommended = typeof recValue === 'string'
+              ? ['true', 'yes', '1', 'y', 't'].includes(recValue.toLowerCase())
+              : !!recValue;
+            
+            console.log('Mapped Excel columns A-E to fields:', normalizedData);
           }
-          
-          // Check for variations of "Description" or "Professional Summary Description"
-          let description = '';
-          for (const key of Object.keys(row)) {
-            const lowerKey = key.toLowerCase();
-            if (lowerKey.includes('description')) {
-              description = row[key];
-              break;
-            }
-          }
-          
-          // Check for variations of "IsRecommended" or "Is Recommended"
-          let isRecommended = false;
-          for (const key of Object.keys(row)) {
-            const lowerKey = key.toLowerCase();
-            if (lowerKey.includes('recommended')) {
-              const value = row[key];
-              isRecommended = typeof value === 'string'
-                ? ['true', 'yes', '1'].includes(value.toLowerCase())
-                : !!value;
-              break;
-            }
-          }
+
+          // Final extraction of values from the normalized data
+          const jobTitleId = normalizedData.jobTitleId;
+          const jobTitle = normalizedData.jobTitle;
+          const category = normalizedData.category;
+          const description = normalizedData.description;
+          const isRecommended = normalizedData.isRecommended;
           
           const normalizedRow = {
             JobTitleID: jobTitleId,
@@ -793,8 +834,7 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
             continue;
           }
           
-          // Use the normalized IsRecommended value directly since we've already converted it
-          const isRecommendedValue = normalizedRow.IsRecommended;
+          // IsRecommended value is already normalized
           
           // Process the title
           let titleId: number | null = null;
@@ -843,7 +883,7 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
           // Now insert the description - use the schema to validate
           const descriptionData = professionalSummaryDescriptionSchema.parse({
             content: normalizedRow.Description,
-            isRecommended: isRecommendedValue,
+            isRecommended: normalizedRow.IsRecommended,
             professionalSummaryTitleId: titleId
           });
           
