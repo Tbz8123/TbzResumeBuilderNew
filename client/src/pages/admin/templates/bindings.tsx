@@ -54,12 +54,19 @@ import { TemplateBinding } from '@shared/schema';
 const bindingFormSchema = z.object({
   placeholderToken: z.string().min(1, 'Placeholder is required'),
   dataField: z.string().min(1, 'Field path is required'),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
 });
 
 type BindingFormValues = z.infer<typeof bindingFormSchema>;
 
-const TemplateBindingsPage = () => {
+// Extended type for binding data with proper nullables 
+type BindingData = {
+  placeholderToken: string;
+  dataField: string;
+  description: string | null;
+};
+
+const TemplateBindingsPage: React.FC = () => {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -79,42 +86,72 @@ const TemplateBindingsPage = () => {
     defaultValues: {
       placeholderToken: '',
       dataField: '',
-      description: '',
+      description: null,
     },
   });
 
-  const handleEditSave = async (bindingId: number, data: BindingFormValues) => {
-    try {
-      await updateBindingMutation.mutateAsync({
-        id: bindingId,
-        templateId: Number(templateId),
-        placeholderToken: data.placeholderToken,
-        dataField: data.dataField,
-        description: data.description,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      
-      setEditMode((prev) => ({ ...prev, [bindingId]: false }));
-    } catch (error) {
-      toast({
-        title: 'Update failed',
-        description: 'Failed to update template binding',
-        variant: 'destructive',
-      });
-    }
+  const handleEditSave = (bindingId: number, data: BindingFormValues) => {
+    if (!templateId) return;
+    
+    updateBindingMutation.mutate({
+      id: bindingId,
+      templateId: Number(templateId),
+      placeholderToken: data.placeholderToken,
+      dataField: data.dataField,
+      description: data.description || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }, {
+      onSuccess: () => {
+        setEditMode((prev) => ({ ...prev, [bindingId]: false }));
+      },
+      onError: (error) => {
+        toast({
+          title: 'Update failed',
+          description: error.message || 'Failed to update template binding',
+          variant: 'destructive',
+        });
+      }
+    });
   };
 
-  const handleDelete = async (bindingId: number) => {
-    try {
-      await deleteBindingMutation.mutateAsync(bindingId);
-    } catch (error) {
-      toast({
-        title: 'Delete failed',
-        description: 'Failed to delete template binding',
-        variant: 'destructive',
-      });
-    }
+  const handleDelete = (bindingId: number) => {
+    deleteBindingMutation.mutate(bindingId, {
+      onError: (error) => {
+        toast({
+          title: 'Delete failed',
+          description: error.message || 'Failed to delete template binding',
+          variant: 'destructive',
+        });
+      }
+    });
+  };
+
+  const handleCreate = (data: BindingFormValues) => {
+    createBindingMutation.mutate({
+      placeholderToken: data.placeholderToken,
+      dataField: data.dataField,
+      description: data.description || null
+    }, {
+      onSuccess: () => {
+        setAddMode(false);
+        form.reset();
+      },
+      onError: (error) => {
+        toast({
+          title: 'Creation failed',
+          description: error.message || 'Failed to create template binding',
+          variant: 'destructive',
+        });
+      }
+    });
+  };
+
+  const handleEditClick = (binding: TemplateBinding) => {
+    form.setValue('placeholderToken', binding.placeholderToken);
+    form.setValue('dataField', binding.dataField);
+    form.setValue('description', binding.description);
+    setEditMode((prev) => ({ ...prev, [binding.id]: true }));
   };
 
   return (
@@ -200,7 +237,7 @@ const TemplateBindingsPage = () => {
                       {editMode[binding.id] ? (
                         <Input 
                           defaultValue={binding.description || ''}
-                          onChange={(e) => form.setValue('description', e.target.value)}
+                          onChange={(e) => form.setValue('description', e.target.value || null)}
                         />
                       ) : (
                         binding.description || '-'
@@ -217,7 +254,7 @@ const TemplateBindingsPage = () => {
                                 handleEditSave(binding.id, {
                                   placeholderToken: form.getValues('placeholderToken') || binding.placeholderToken,
                                   dataField: form.getValues('dataField') || binding.dataField,
-                                  description: form.getValues('description') || binding.description || null,
+                                  description: form.getValues('description')
                                 });
                               }}
                             >
@@ -236,13 +273,7 @@ const TemplateBindingsPage = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
-                                // Pre-fill the form with current values
-                                form.setValue('placeholderToken', binding.placeholderToken);
-                                form.setValue('dataField', binding.dataField);
-                                form.setValue('description', binding.description || '');
-                                setEditMode((prev) => ({ ...prev, [binding.id]: true }));
-                              }}
+                              onClick={() => handleEditClick(binding)}
                             >
                               <Edit2 className="h-4 w-4" />
                             </Button>
@@ -301,7 +332,7 @@ const TemplateBindingsPage = () => {
             <div>
               <h3 className="font-medium">Placeholder format</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Placeholders in your template should be in the format: <code>{'{{ placeholder_name }}'}</code>
+                Placeholders in your template should be in the format: <code>{"{{ placeholder_name }}"}</code>
               </p>
             </div>
             <div>
@@ -335,23 +366,7 @@ const TemplateBindingsPage = () => {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form className="space-y-4" onSubmit={form.handleSubmit(async (data) => {
-              try {
-                await createBindingMutation.mutateAsync({
-                  placeholderToken: data.placeholderToken,
-                  dataField: data.dataField,
-                  description: data.description
-                });
-                setAddMode(false);
-                form.reset();
-              } catch (error) {
-                toast({
-                  title: 'Creation failed',
-                  description: 'Failed to create template binding',
-                  variant: 'destructive',
-                });
-              }
-            })}>
+            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
               <FormField
                 control={form.control}
                 name="placeholderToken"
@@ -359,7 +374,7 @@ const TemplateBindingsPage = () => {
                   <FormItem>
                     <FormLabel>Placeholder</FormLabel>
                     <FormControl>
-                      <Input placeholder="{{ name }}" {...field} />
+                      <Input placeholder="name" {...field} />
                     </FormControl>
                     <FormDescription>
                       The placeholder in your template HTML (without {{ }})
@@ -394,7 +409,8 @@ const TemplateBindingsPage = () => {
                       <Textarea 
                         placeholder="Describes what this binding is used for"
                         className="resize-none"
-                        {...field}
+                        value={field.value || ''}
+                        onChange={(e) => field.onChange(e.target.value || null)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -408,23 +424,7 @@ const TemplateBindingsPage = () => {
               Cancel
             </Button>
             <Button 
-              onClick={form.handleSubmit(async (data) => {
-                try {
-                  await createBindingMutation.mutateAsync({
-                    placeholderToken: data.placeholderToken,
-                    dataField: data.dataField,
-                    description: data.description || null
-                  });
-                  setAddMode(false);
-                  form.reset();
-                } catch (error) {
-                  toast({
-                    title: 'Creation failed',
-                    description: 'Failed to create template binding',
-                    variant: 'destructive',
-                  });
-                }
-              })}
+              onClick={form.handleSubmit(handleCreate)}
             >
               Add Binding
             </Button>

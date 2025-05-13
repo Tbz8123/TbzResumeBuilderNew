@@ -22,7 +22,7 @@ type PlaceholdersResponse = {
 type BindingInput = {
   placeholderToken: string;
   dataField: string;
-  description?: string;
+  description?: string | null;
 };
 
 /**
