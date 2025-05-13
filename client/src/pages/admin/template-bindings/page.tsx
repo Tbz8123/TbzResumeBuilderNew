@@ -194,167 +194,104 @@ export default function TemplateBindingsPage() {
     }
   }, [template, bindings]);
 
-  // Parse form data structure - simplified example
+  // Parse resume schema into data fields
   useEffect(() => {
-    const mockDataFields: DataField[] = [
-      {
-        id: 'name',
-        name: 'Name',
-        path: 'name',
-        type: 'string',
-        description: 'Full name of the user'
-      },
-      {
-        id: 'contact',
-        name: 'Contact',
-        path: 'contact',
-        type: 'object',
-        children: [
-          {
-            id: 'contact.email',
-            name: 'Email',
-            path: 'contact.email',
-            type: 'string',
-            description: 'Email address'
-          },
-          {
-            id: 'contact.phone',
-            name: 'Phone',
-            path: 'contact.phone',
-            type: 'string',
-            description: 'Phone number'
-          },
-          {
-            id: 'contact.address',
-            name: 'Address',
-            path: 'contact.address',
-            type: 'object',
-            children: [
-              {
-                id: 'contact.address.street',
-                name: 'Street',
-                path: 'contact.address.street',
-                type: 'string'
-              },
-              {
-                id: 'contact.address.city',
-                name: 'City',
-                path: 'contact.address.city',
-                type: 'string'
-              },
-            ]
-          }
-        ]
-      },
-      {
-        id: 'sections',
-        name: 'Sections',
-        path: 'sections',
-        type: 'object',
-        children: [
-          {
-            id: 'sections.experience',
-            name: 'Experience',
-            path: 'sections.experience',
-            type: 'array',
-            children: [
-              {
-                id: 'sections.experience[].company',
-                name: 'Company',
-                path: 'sections.experience[].company',
-                type: 'string'
-              },
-              {
-                id: 'sections.experience[].title',
-                name: 'Title',
-                path: 'sections.experience[].title',
-                type: 'string'
-              },
-              {
-                id: 'sections.experience[].startDate',
-                name: 'Start Date',
-                path: 'sections.experience[].startDate',
-                type: 'date'
-              },
-              {
-                id: 'sections.experience[].endDate',
-                name: 'End Date',
-                path: 'sections.experience[].endDate',
-                type: 'date'
-              },
-              {
-                id: 'sections.experience[].description',
-                name: 'Description',
-                path: 'sections.experience[].description',
-                type: 'string'
-              }
-            ]
-          },
-          {
-            id: 'sections.education',
-            name: 'Education',
-            path: 'sections.education',
-            type: 'array',
-            children: [
-              {
-                id: 'sections.education[].institution',
-                name: 'Institution',
-                path: 'sections.education[].institution',
-                type: 'string'
-              },
-              {
-                id: 'sections.education[].degree',
-                name: 'Degree',
-                path: 'sections.education[].degree',
-                type: 'string'
-              },
-              {
-                id: 'sections.education[].year',
-                name: 'Year',
-                path: 'sections.education[].year',
-                type: 'number'
-              },
-              {
-                id: 'sections.education[].description',
-                name: 'Description',
-                path: 'sections.education[].description',
-                type: 'string'
-              }
-            ]
-          },
-          {
-            id: 'sections.skills',
-            name: 'Skills',
-            path: 'sections.skills',
-            type: 'array',
-            children: [
-              {
-                id: 'sections.skills[].name',
-                name: 'Name',
-                path: 'sections.skills[].name',
-                type: 'string'
-              },
-              {
-                id: 'sections.skills[].level',
-                name: 'Level',
-                path: 'sections.skills[].level',
-                type: 'number'
-              }
-            ]
-          }
-        ]
-      },
-      {
-        id: 'professionalSummary',
-        name: 'Professional Summary',
-        path: 'professionalSummary',
-        type: 'string',
-        description: 'Brief professional summary'
-      },
-    ];
+    // Use template-specific schema or fall back to general schema
+    const schema = resumeSchema || generalResumeSchema;
     
-    setDataFields(mockDataFields);
-  }, []);
+    if (!schema) {
+      console.log('No schema available, loading default fields');
+      // Default fields as fallback if both schemas are unavailable
+      const defaultFields: DataField[] = [
+        {
+          id: 'firstName',
+          name: 'First Name',
+          path: 'firstName',
+          type: 'string',
+          description: 'First name'
+        },
+        {
+          id: 'surname',
+          name: 'Last Name',
+          path: 'surname',
+          type: 'string', 
+          description: 'Last name'
+        },
+        {
+          id: 'email',
+          name: 'Email',
+          path: 'email',
+          type: 'string',
+          description: 'Email address'
+        },
+        {
+          id: 'professionalSummary',
+          name: 'Professional Summary',
+          path: 'professionalSummary',
+          type: 'string',
+          description: 'Professional summary'
+        }
+      ];
+      setDataFields(defaultFields);
+      return;
+    }
+    
+    // Convert schema to data fields format
+    const convertedFields: DataField[] = [];
+    
+    // Helper function to format field names from camelCase
+    const formatFieldName = (name: string) => {
+      return name
+        .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+        .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+    };
+    
+    // Process each top-level property
+    Object.entries(schema).forEach(([key, fieldSchema]: [string, any]) => {
+      if (typeof fieldSchema === 'object' && fieldSchema !== null) {
+        const field: DataField = {
+          id: key,
+          name: fieldSchema.description || formatFieldName(key),
+          path: key,
+          type: fieldSchema.type as any,
+          description: fieldSchema.description || ''
+        };
+        
+        // Handle arrays with items
+        if (fieldSchema.type === 'array' && fieldSchema.items) {
+          // For arrays like workExperience
+          if (fieldSchema.items.type === 'object' && fieldSchema.items.properties) {
+            field.children = [];
+            
+            // Add child fields for each property in the array items
+            Object.entries(fieldSchema.items.properties).forEach(([childKey, childValue]: [string, any]) => {
+              field.children?.push({
+                id: `${key}[0].${childKey}`,
+                name: childValue.description || formatFieldName(childKey),
+                path: `${key}[0].${childKey}`,
+                type: childValue.type as any,
+                description: childValue.description || ''
+              });
+            });
+          } else {
+            // Simple array of primitive values
+            field.children = [{
+              id: `${key}[0]`,
+              name: `${formatFieldName(key)} Item`,
+              path: `${key}[0]`,
+              type: fieldSchema.items.type as any,
+              description: `Individual ${key} item`
+            }];
+          }
+        }
+        
+        convertedFields.push(field);
+      }
+    });
+    
+    console.log('Generated data fields from schema:', convertedFields);
+    setDataFields(convertedFields);
+  }, [resumeSchema, generalResumeSchema]);
 
   // Extract tokens from template HTML
   const extractTemplateTokens = (html: string) => {
