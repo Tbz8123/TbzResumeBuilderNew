@@ -71,12 +71,16 @@ router.get("/templates/:id/placeholders", async (req, res) => {
     const jsPlaceholders = detectPlaceholders(template.jsContent || "");
     
     // Combine all unique placeholders
-    const allPlaceholders = [...new Set([
-      ...svgPlaceholders,
-      ...htmlPlaceholders,
-      ...cssPlaceholders,
-      ...jsPlaceholders
-    ])];
+    const placeholdersSet = new Set();
+    
+    // Add all placeholders to the set
+    svgPlaceholders.forEach(p => placeholdersSet.add(p));
+    htmlPlaceholders.forEach(p => placeholdersSet.add(p));
+    cssPlaceholders.forEach(p => placeholdersSet.add(p));
+    jsPlaceholders.forEach(p => placeholdersSet.add(p));
+    
+    // Convert set to array
+    const allPlaceholders = Array.from(placeholdersSet);
     
     return res.status(200).json({ 
       placeholders: allPlaceholders,

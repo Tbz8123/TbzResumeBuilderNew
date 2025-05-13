@@ -201,7 +201,7 @@ export function TemplateBindingInterface({ templateId }: TemplateBindingInterfac
           <TabsContent value="placeholders">
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
-                Select a placeholder from your template. These are markers like <code>{"{{name}}"}</code>, <code>{"[[SECTION]]"}</code>, or <code>{"data-field='email'"}</code>.
+                Select a placeholder from your template. These are markers like <code>&#123;&#123;name&#125;&#125;</code>, <code>[[SECTION]]</code>, or <code>data-field='email'</code>.
               </div>
               
               <TemplatePlaceholders
@@ -415,7 +415,7 @@ export function TemplateBindingInterface({ templateId }: TemplateBindingInterfac
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete this binding?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      This will remove the binding between <code>{binding.placeholderToken}</code> and <code>{binding.dataField}</code>.
+                                      This will remove the binding between the placeholder and data field.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
