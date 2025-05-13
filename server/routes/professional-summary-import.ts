@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@db";
 import { isAdmin, isAuthenticated } from "../auth";
 import { professionalSummaryTitles, professionalSummaryDescriptions, professionalSummaryDescriptionSchema } from "@shared/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import * as XLSX from 'xlsx';
 import multer from "multer";
 import { parse } from "csv-parse";
@@ -207,8 +207,40 @@ async function processImport(file: Express.Multer.File, status: any, syncMode: s
             
             const existingTitle = titleIdMap.get(id);
             if (!existingTitle) {
-              status.errors.push({ row: rowIdx, message: `Title with ID ${id} not found` });
-              continue;
+              // Instead of error, create a new title with the specified ID
+              console.log(`Title with ID ${id} not found. Creating a placeholder title.`);
+              
+              // Create placeholder title name using Job Title from the file or a default
+              const titleText = data.jobTitle || `Professional Summary Title ${id}`;
+              const category = data.category || 'General';
+              
+              try {
+                // Use SQL to insert with a specific ID
+                await db.execute(sql`
+                  INSERT INTO professional_summary_titles (id, title, category) 
+                  VALUES (${id}, ${titleText}, ${category})
+                  ON CONFLICT (id) DO NOTHING
+                `);
+                
+                // Add to maps and sets
+                const newTitle = {
+                  id: id,
+                  title: titleText,
+                  category: category,
+                  description: '',
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                };
+                
+                titleIdMap.set(id, newTitle);
+                titleMap.set(titleText.toLowerCase(), newTitle);
+                status.created++;
+                console.log(`Successfully created placeholder professional summary title with ID ${id}`);
+              } catch (error: any) {
+                console.error(`Error creating placeholder title with ID ${id}:`, error);
+                status.errors.push({ row: rowIdx, message: `Failed to create title with ID ${id}: ${error.message || "Unknown error"}` });
+                continue;
+              }
             }
             
             titleId = id;
