@@ -692,10 +692,6 @@ const AdminTemplateEditPage = () => {
                           <Layers className="h-4 w-4 mr-1" />
                           HTML+CSS
                         </TabsTrigger>
-                        <TabsTrigger value="bindings" className="flex items-center">
-                          <Link2 className="h-4 w-4 mr-1" />
-                          Bindings
-                        </TabsTrigger>
                         <TabsTrigger value="preview" className="flex items-center">
                           <Eye className="h-4 w-4 mr-1" />
                           Preview
@@ -868,30 +864,6 @@ const AdminTemplateEditPage = () => {
                             />
                           </div>
                         </div>
-                      </TabsContent>
-                      
-                      {/* Bindings Tab */}
-                      <TabsContent value="bindings" className="mt-4 border rounded-md p-4">
-                        {id ? (
-                          <TemplateBindingInterface templateId={id} />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center p-8 text-center">
-                            <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
-                            <h3 className="text-lg font-medium mb-2">Template Not Saved</h3>
-                            <p className="text-muted-foreground mb-4">
-                              Please save the template first before configuring data bindings.
-                            </p>
-                            <Button 
-                              type="button" 
-                              onClick={handleSubmit} 
-                              disabled={updateTemplateMutation.isPending || createTemplateMutation.isPending}
-                              className="flex items-center"
-                            >
-                              <Save className="mr-2 h-4 w-4" />
-                              Save Template
-                            </Button>
-                          </div>
-                        )}
                       </TabsContent>
                       
                       {/* Preview Tab */}
