@@ -991,7 +991,7 @@ function ProfessionalSummaryAdmin() {
               </div>
             ) : (
               <div className="divide-y">
-                {professionalSummaryDescriptions.map((description) => (
+                {professionalSummaryDescriptions.map((description: ProfessionalSummaryDescription) => (
                   <div key={description.id} className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 mr-4">

@@ -92,11 +92,17 @@ professionalSummaryRouter.get("/titles", async (req, res) => {
     
     const totalCount = totalCountResult[0]?.count || 0;
     
-    // Get the titles
-    const titles = await db
+    // Get the titles with proper SQL handling
+    let query = db
       .select()
-      .from(professionalSummaryTitles)
-      .where(whereClause)
+      .from(professionalSummaryTitles);
+      
+    // Only add the where clause if it exists
+    if (whereClause) {
+      query = query.where(whereClause);
+    }
+    
+    const titles = await query
       .limit(limit)
       .offset(offset)
       .orderBy(desc(professionalSummaryTitles.id));
@@ -342,7 +348,8 @@ professionalSummaryRouter.get("/descriptions/search", async (req, res) => {
       whereClause = whereClause ? and(whereClause, titleFilter) : titleFilter;
     }
     
-    const descriptions = await db
+    // Build the query with proper SQL handling
+    let query = db
       .select({
         description: professionalSummaryDescriptions,
         title: professionalSummaryTitles
@@ -351,19 +358,26 @@ professionalSummaryRouter.get("/descriptions/search", async (req, res) => {
       .leftJoin(
         professionalSummaryTitles, 
         eq(professionalSummaryDescriptions.professionalSummaryTitleId, professionalSummaryTitles.id)
-      )
-      .where(whereClause)
+      );
+      
+    // Only add the where clause if it exists
+    if (whereClause) {
+      query = query.where(whereClause);
+    }
+      
+    // Execute the query
+    const descriptions = await query
       .orderBy(
         desc(professionalSummaryDescriptions.isRecommended),
         desc(professionalSummaryDescriptions.id)
       )
       .limit(100);
     
-    // Format the results
+    // Format the results with null safety
     const formattedResults = descriptions.map(item => ({
       ...item.description,
-      titleName: item.title.title,
-      titleCategory: item.title.category
+      titleName: item.title?.title || "Unknown Title",
+      titleCategory: item.title?.category || "Uncategorized"
     }));
     
     return res.status(200).json(formattedResults);
