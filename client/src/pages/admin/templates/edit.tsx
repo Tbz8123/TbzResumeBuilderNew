@@ -46,7 +46,8 @@ import {
   Layers, 
   Palette, 
   Upload,
-  AlertTriangle 
+  AlertTriangle,
+  Link2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -670,7 +671,7 @@ const AdminTemplateEditPage = () => {
                   </AccordionTrigger>
                   <AccordionContent>
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                      <TabsList className="grid w-full grid-cols-6">
+                      <TabsList className="grid w-full grid-cols-7">
                         <TabsTrigger value="svg-editor" className="flex items-center">
                           <Image className="h-4 w-4 mr-1" />
                           SVG
@@ -690,6 +691,10 @@ const AdminTemplateEditPage = () => {
                         <TabsTrigger value="combined-editor" className="flex items-center">
                           <Layers className="h-4 w-4 mr-1" />
                           HTML+CSS
+                        </TabsTrigger>
+                        <TabsTrigger value="bindings" className="flex items-center">
+                          <Link2 className="h-4 w-4 mr-1" />
+                          Bindings
                         </TabsTrigger>
                         <TabsTrigger value="preview" className="flex items-center">
                           <Eye className="h-4 w-4 mr-1" />

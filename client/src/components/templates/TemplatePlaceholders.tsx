@@ -199,29 +199,31 @@ export function TemplatePlaceholders({
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value={activeTab}>
-          <div className="space-y-2 mt-2">
-            {filteredPlaceholders.length === 0 ? (
-              <div className="p-4 border border-muted bg-muted/10 rounded-md text-sm text-muted-foreground">
-                No matching placeholders found.
-              </div>
-            ) : (
-              filteredPlaceholders.map((placeholder) => (
-                <div
-                  key={placeholder}
-                  className={`p-3 border rounded-md cursor-pointer ${
-                    selectedPlaceholder === placeholder
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  onClick={() => onSelectPlaceholder(placeholder)}
-                >
-                  <div className="font-mono text-xs">{placeholder}</div>
+        {["all", "svg", "html", "css", "js"].map((tab) => (
+          <TabsContent key={tab} value={tab}>
+            <div className="space-y-2 mt-2">
+              {filteredPlaceholders.length === 0 ? (
+                <div className="p-4 border border-muted bg-muted/10 rounded-md text-sm text-muted-foreground">
+                  No matching placeholders found.
                 </div>
-              ))
-            )}
-          </div>
-        </TabsContent>
+              ) : (
+                filteredPlaceholders.map((placeholder) => (
+                  <div
+                    key={placeholder}
+                    className={`p-3 border rounded-md cursor-pointer ${
+                      selectedPlaceholder === placeholder
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                    onClick={() => onSelectPlaceholder(placeholder)}
+                  >
+                    <div className="font-mono text-xs">{placeholder}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   );
