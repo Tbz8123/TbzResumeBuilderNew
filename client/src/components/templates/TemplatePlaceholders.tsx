@@ -102,7 +102,7 @@ export function TemplatePlaceholders({
   if (!placeholdersData || placeholdersData.placeholders.length === 0) {
     return (
       <div className="p-4 border border-muted bg-muted/10 rounded-md text-sm text-muted-foreground">
-        No placeholders detected in this template. Make sure your template includes placeholders like {{name}}, [[CUSTOM_SECTION]], or data-field="email" attributes.
+        No placeholders detected in this template. Make sure your template includes placeholders like {"{{name}}"}, [[CUSTOM_SECTION]], or data-field="email" attributes.
       </div>
     );
   }
