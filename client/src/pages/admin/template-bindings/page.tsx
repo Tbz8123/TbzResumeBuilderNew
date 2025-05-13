@@ -411,6 +411,8 @@ export default function TemplateBindingsPage() {
       if (binding.selector && binding.selector.trim() !== '') return;
       
       // Extract the field name from placeholder - assumes format like [[FIELD:name]]
+      if (!binding.placeholder || typeof binding.placeholder !== 'string') return;
+      
       const fieldMatch = binding.placeholder.match(/\[\[(?:FIELD|LOOP|IF):([^\]]+)\]\]/);
       if (!fieldMatch) return;
       
@@ -564,9 +566,11 @@ export default function TemplateBindingsPage() {
       
       // Find corresponding token and highlight it
       const binding = bindings[wizardStep + 1];
-      const token = highlightedTokens.find(t => t.text === binding.placeholder);
-      if (token) {
-        setActiveToken(token.id);
+      if (binding && binding.placeholder && typeof binding.placeholder === 'string') {
+        const token = highlightedTokens.find(t => t.text === binding.placeholder);
+        if (token) {
+          setActiveToken(token.id);
+        }
       }
     } else {
       // End of wizard
@@ -584,9 +588,11 @@ export default function TemplateBindingsPage() {
       
       // Find corresponding token and highlight it
       const binding = bindings[wizardStep - 1];
-      const token = highlightedTokens.find(t => t.text === binding.placeholder);
-      if (token) {
-        setActiveToken(token.id);
+      if (binding && binding.placeholder && typeof binding.placeholder === 'string') {
+        const token = highlightedTokens.find(t => t.text === binding.placeholder);
+        if (token) {
+          setActiveToken(token.id);
+        }
       }
     }
   };
@@ -600,9 +606,11 @@ export default function TemplateBindingsPage() {
       setSelectedBinding(bindings[0]);
       
       // Find corresponding token and highlight it
-      const token = highlightedTokens.find(t => t.text === bindings[0].placeholder);
-      if (token) {
-        setActiveToken(token.id);
+      if (bindings[0]?.placeholder && typeof bindings[0].placeholder === 'string') {
+        const token = highlightedTokens.find(t => t.text === bindings[0].placeholder);
+        if (token) {
+          setActiveToken(token.id);
+        }
       }
     }
   };
@@ -764,12 +772,14 @@ export default function TemplateBindingsPage() {
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
                                 <Badge variant={binding.selector ? "default" : "outline"} className="h-5 px-1">
-                                  {binding.placeholder.includes('FIELD:') ? 'FIELD' : 
-                                   binding.placeholder.includes('LOOP:') ? 'LOOP' : 
-                                   binding.placeholder.includes('IF:') ? 'IF' : 'TOKEN'}
+                                  {binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.indexOf('FIELD:') >= 0 ? 'FIELD' : 
+                                   binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.indexOf('LOOP:') >= 0 ? 'LOOP' : 
+                                   binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.indexOf('IF:') >= 0 ? 'IF' : 'TOKEN'}
                                 </Badge>
                                 <div className="font-medium text-sm truncate">
-                                  {binding.placeholder.replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '')}
+                                  {binding.placeholder && typeof binding.placeholder === 'string' 
+                                    ? binding.placeholder.replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '') 
+                                    : ''}
                                 </div>
                               </div>
                               
