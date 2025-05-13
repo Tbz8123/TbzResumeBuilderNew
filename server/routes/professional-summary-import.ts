@@ -207,10 +207,10 @@ async function processImport(file: Express.Multer.File, status: any, syncMode: s
             
             const existingTitle = titleIdMap.get(id);
             if (!existingTitle) {
-              // Instead of error, create a new title with the specified ID
-              console.log(`Title with ID ${id} not found. Creating a placeholder title.`);
+              // Title doesn't exist, create a new one with the specified ID
+              console.log(`Title with ID ${id} not found. Creating a new title.`);
               
-              // Create placeholder title name using Job Title from the file or a default
+              // Create title using Job Title from the file or a default
               const titleText = data.jobTitle || `Professional Summary Title ${id}`;
               const category = data.category || 'General';
               
@@ -235,11 +235,46 @@ async function processImport(file: Express.Multer.File, status: any, syncMode: s
                 titleIdMap.set(id, newTitle);
                 titleMap.set(titleText.toLowerCase(), newTitle);
                 status.created++;
-                console.log(`Successfully created placeholder professional summary title with ID ${id}`);
+                console.log(`Successfully created professional summary title with ID ${id}`);
               } catch (error: any) {
-                console.error(`Error creating placeholder title with ID ${id}:`, error);
+                console.error(`Error creating title with ID ${id}:`, error);
                 status.errors.push({ row: rowIdx, message: `Failed to create title with ID ${id}: ${error.message || "Unknown error"}` });
                 continue;
+              }
+            } else if (data.jobTitle && existingTitle.title !== data.jobTitle) {
+              // Title exists but name is different, update the title
+              console.log(`Updating title ID ${id} from "${existingTitle.title}" to "${data.jobTitle}"`);
+              
+              try {
+                // Update the title name and category
+                await db.update(professionalSummaryTitles)
+                  .set({ 
+                    title: data.jobTitle,
+                    category: data.category || existingTitle.category,
+                    updatedAt: new Date()
+                  })
+                  .where(eq(professionalSummaryTitles.id, id));
+                
+                // Update maps with new data
+                const updatedTitle = {
+                  ...existingTitle,
+                  title: data.jobTitle,
+                  category: data.category || existingTitle.category,
+                  updatedAt: new Date()
+                };
+                
+                // Remove old title from map
+                titleMap.delete(existingTitle.title.toLowerCase());
+                
+                // Update maps with new title data
+                titleIdMap.set(id, updatedTitle);
+                titleMap.set(data.jobTitle.toLowerCase(), updatedTitle);
+                
+                status.updated++;
+                console.log(`Successfully updated professional summary title with ID ${id}`);
+              } catch (error: any) {
+                console.error(`Error updating title with ID ${id}:`, error);
+                status.errors.push({ row: rowIdx, message: `Failed to update title with ID ${id}: ${error.message || "Unknown error"}` });
               }
             }
             
@@ -254,6 +289,35 @@ async function processImport(file: Express.Multer.File, status: any, syncMode: s
             if (existingTitle) {
               titleId = existingTitle.id;
               processedTitleIds.add(titleId);
+              
+              // Check if we need to update the category
+              if (data.category && existingTitle.category !== data.category) {
+                console.log(`Updating category for title "${data.jobTitle}" from "${existingTitle.category}" to "${data.category}"`);
+                
+                try {
+                  // Update just the category
+                  await db.update(professionalSummaryTitles)
+                    .set({ 
+                      category: data.category,
+                      updatedAt: new Date()
+                    })
+                    .where(eq(professionalSummaryTitles.id, existingTitle.id));
+                  
+                  // Update maps
+                  const updatedTitle = {
+                    ...existingTitle,
+                    category: data.category,
+                    updatedAt: new Date()
+                  };
+                  
+                  titleIdMap.set(existingTitle.id, updatedTitle);
+                  titleMap.set(titleKey, updatedTitle);
+                  
+                  status.updated++;
+                } catch (error: any) {
+                  console.error(`Error updating category for title "${data.jobTitle}":`, error);
+                }
+              }
             } else {
               // Create new title
               const newTitle = {
