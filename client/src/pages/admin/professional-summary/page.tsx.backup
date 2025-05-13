@@ -282,7 +282,7 @@ export default function ProfessionalSummaryAdminPage() {
           
           if (data.errors && data.errors.length > 0) {
             // Show detailed error information for the first few errors
-            const errorDetails = data.errors.slice(0, 3).map((err: any) => 
+            const errorDetails = data.errors.slice(0, 3).map(err => 
               `Row ${err.row}: ${err.message}`
             ).join('\n');
             
@@ -348,67 +348,73 @@ export default function ProfessionalSummaryAdminPage() {
       
       console.log(`Sending file to ${endpoint}?mode=${syncMode}`);
       
-      // Upload the file
+      // Use the correct endpoint with proper content type and credentials
+      console.log(`Uploading file to ${endpoint}?mode=${syncMode}`);
+      
       const response = await fetch(`${endpoint}?mode=${syncMode}`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
       });
-      
-      console.log("Upload response status:", response.status);
-      
-      // Handle failure
-      if (!response.ok) {
-        console.error("Upload failed with status:", response.status);
-        let errorMessage = "Failed to import data";
         
-        try {
-          const errorText = await response.text();
-          console.log("Error response text:", errorText);
+        console.log("Upload response status:", response.status);
+        
+        if (!response.ok) {
+          // Handle HTTP error
+          console.error("Upload failed with status:", response.status);
+          let errorMessage = "Failed to import data";
           
-          if (errorText && errorText.trim().startsWith('{')) {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.error || errorMessage;
+          try {
+            const errorText = await response.text(); // First get text to inspect
+            console.log("Error response text:", errorText);
+            
+            if (errorText && errorText.trim().startsWith('{')) {
+              // Try to parse as JSON if it looks like JSON
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error || errorMessage;
+            }
+          } catch (e) {
+            console.error("Error parsing response:", e);
+            // If can't parse, use generic message
           }
-        } catch (e) {
-          console.error("Error parsing response:", e);
-        }
-        
-        setIsImporting(false);
-        setUploadStatus(null);
-        
-        toast({
-          title: "Import Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        
-        return;
-      }
-      
-      // Handle success
-      console.log("Upload successful, starting status polling");
-      
-      // Start polling for import status
-      // Check immediately, then every second
-      await checkImportStatus(); 
-      statusCheckInterval = setInterval(checkImportStatus, 1000);
-      
-      // Safety cleanup after 5 minutes in case something goes wrong
-      setTimeout(() => {
-        if (statusCheckInterval) {
-          console.log("Safety timeout triggered");
-          clearInterval(statusCheckInterval);
-          statusCheckInterval = null;
+          
           setIsImporting(false);
           setUploadStatus(null);
+          
+          toast({
+            title: "Import Failed",
+            description: errorMessage,
+            variant: "destructive",
+          });
+          
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          
+          return; // Exit early on error
         }
-      }, 5 * 60 * 1000);
-    } catch (error: any) {
+      } else {
+        console.log("Upload successful, starting status polling");
+        
+        // Start polling for import status
+        // Check immediately, then every second
+        await checkImportStatus(); 
+        statusCheckInterval = setInterval(checkImportStatus, 1000);
+        
+        console.log("Polling started");
+        
+        // Safety cleanup after 5 minutes in case something goes wrong
+        setTimeout(() => {
+          if (statusCheckInterval) {
+            console.log("Safety timeout triggered");
+            clearInterval(statusCheckInterval);
+            statusCheckInterval = null;
+            setIsImporting(false);
+            setUploadStatus(null);
+          }
+        }, 5 * 60 * 1000);
+      }
+    } catch (error) {
       console.error("Error during import:", error);
       
       // Clear any polling intervals if they exist
@@ -422,7 +428,7 @@ export default function ProfessionalSummaryAdminPage() {
       
       toast({
         title: "Import Failed",
-        description: error.message || "An unexpected error occurred",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       });
       
