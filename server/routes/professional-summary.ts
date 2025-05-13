@@ -497,35 +497,32 @@ professionalSummaryRouter.get("/export/excel", isAuthenticated, isAdmin, async (
       };
     });
     
-    // Create a buffer containing our Excel data
-    // For simplicity, we'll actually just send a CSV with Excel extension
-    // In a real app, you'd use a library like exceljs to create a proper Excel file
-    const csvStringifier = createObjectCsvStringifier({
-      header: [
-        {id: 'Title ID', title: 'Title ID'},
-        {id: 'Title', title: 'Title'},
-        {id: 'Category', title: 'Category'},
-        {id: 'Description', title: 'Description'},
-        {id: 'Is Recommended', title: 'Is Recommended'}
-      ]
+    // Format the data for Excel - ensure consistency with CSV export format
+    const excelRecords = descriptions.map(desc => {
+      const title = titleMap.get(desc.professionalSummaryTitleId);
+      return {
+        JobTitleID: desc.professionalSummaryTitleId,
+        JobTitle: title?.title || 'Unknown',
+        Category: title?.category || 'Unknown',
+        'Professional Summary Description': desc.content,
+        IsRecommended: desc.isRecommended ? "true" : "false"
+      };
     });
-    
-    const csv = csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(records);
     
     // Set headers for file download
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=professional-summaries-export.xlsx');
     
-    // Create workbook
+    // Create workbook with consistent column names
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([
-      ['Title ID', 'Title', 'Category', 'Description', 'Is Recommended'],
-      ...records.map(r => [
-        r['Title ID'], 
-        r['Title'], 
-        r['Category'], 
-        r['Description'], 
-        r['Is Recommended']
+      ['JobTitleID', 'JobTitle', 'Category', 'Professional Summary Description', 'IsRecommended'],
+      ...excelRecords.map(r => [
+        r.JobTitleID, 
+        r.JobTitle, 
+        r.Category, 
+        r['Professional Summary Description'], 
+        r.IsRecommended
       ])
     ]);
     
@@ -710,14 +707,74 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
         importStatus.processed++;
         
         try {
-          // Normalize field names - handle case sensitivity and different naming conventions
+          // Log the raw row for debugging
+          console.log(`Original row ${rowNumber} keys:`, Object.keys(row));
+          console.log(`Original row ${rowNumber} values:`, Object.values(row));
+          
+          // Normalize field names with explicit column name handling
+          // Check for variations of "JobTitleID" or "Title ID"
+          let jobTitleId = null;
+          for (const key of Object.keys(row)) {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes('title') && lowerKey.includes('id')) {
+              jobTitleId = row[key];
+              break;
+            }
+          }
+          
+          // Check for variations of "JobTitle" or "Title"
+          let jobTitle = '';
+          for (const key of Object.keys(row)) {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes('title') && !lowerKey.includes('id')) {
+              jobTitle = row[key];
+              break;
+            }
+          }
+          
+          // Check for variations of "Category"
+          let category = '';
+          for (const key of Object.keys(row)) {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes('category')) {
+              category = row[key];
+              break;
+            }
+          }
+          
+          // Check for variations of "Description" or "Professional Summary Description"
+          let description = '';
+          for (const key of Object.keys(row)) {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes('description')) {
+              description = row[key];
+              break;
+            }
+          }
+          
+          // Check for variations of "IsRecommended" or "Is Recommended"
+          let isRecommended = false;
+          for (const key of Object.keys(row)) {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes('recommended')) {
+              const value = row[key];
+              isRecommended = typeof value === 'string'
+                ? ['true', 'yes', '1'].includes(value.toLowerCase())
+                : !!value;
+              break;
+            }
+          }
+          
           const normalizedRow = {
-            JobTitleID: row.JobTitleID || row.jobTitleID || row.jobtitleid || row['Job Title ID'] || row['job_title_id'] || null,
-            JobTitle: row.JobTitle || row.jobTitle || row.jobtitle || row['Job Title'] || row['job_title'] || '',
-            Category: row.Category || row.category || row['Job Category'] || row['job_category'] || '',
-            Description: row['Professional Summary Description'] || row.Description || row.description || row['professional summary description'] || row['Job Description'] || row['job_description'] || '',
-            IsRecommended: row.IsRecommended || row.isRecommended || row.isrecommended || row['Is Recommended'] || row['is_recommended'] || false
+            JobTitleID: jobTitleId,
+            JobTitle: jobTitle,
+            Category: category,
+            Description: description,
+            IsRecommended: isRecommended
           };
+          
+          // Debug the parsed row data
+          console.log(`Normalized row ${rowNumber}:`, normalizedRow);
           
           // Validate required fields
           if (!normalizedRow.JobTitleID && !normalizedRow.JobTitle) {
@@ -736,10 +793,8 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
             continue;
           }
           
-          // Convert IsRecommended to boolean
-          const isRecommended = typeof normalizedRow.IsRecommended === 'string'
-            ? ['true', 'yes', '1'].includes(normalizedRow.IsRecommended.toLowerCase())
-            : !!normalizedRow.IsRecommended;
+          // Use the normalized IsRecommended value directly since we've already converted it
+          const isRecommendedValue = normalizedRow.IsRecommended;
           
           // Process the title
           let titleId: number | null = null;
