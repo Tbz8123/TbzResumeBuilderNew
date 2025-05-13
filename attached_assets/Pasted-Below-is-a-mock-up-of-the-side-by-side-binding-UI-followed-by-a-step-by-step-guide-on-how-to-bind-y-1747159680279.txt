@@ -1,0 +1,74 @@
+Below is a mock‑up of the side‑by‑side binding UI, followed by a step‑by‑step guide on how to bind your webapp fields to your template placeholders.
+
+⸻
+
+📐 Mock‑Up of the Two‑Pane Binding Interface
+
+┌───────────────────────┐    ┌───────────────────────────┐
+│ Your Web‑App Fields   │    │ Template Placeholders     │
+│ (resumeData Schema)   │    │ (Detected in your HTML)   │
+├───────────────────────┤    ├───────────────────────────┤
+│ 🔍 Search fields…      │    │ 🔍 Search tokens…          │
+│                       │    │                           │
+│ • name                │    │ • {{ name }}               │
+│ • contact.email       │    │ • {{ contact.email }}      │
+│ • contact.phone       │    │ • {{ contact.phone }}      │
+│ • sections.about      │    │ • {{ sections.about }}     │
+│ • sections.skills[]   │    │ • {{#each sections.skills}}│
+│    └─ .name           │    │    • {{ this.name }}       │
+│    └─ .level          │    │    • {{ this.level }}      │
+│ • sections.education[]│    │ • {{#each sections.education}}│
+│    └─ .year           │    │    • {{ this.year }}       │
+│    └─ .desc           │    │    • {{ this.desc }}       │
+│ • sections.experience[]│   │ • {{#each sections.experience}}│
+│ • sections.customSections[]││ • {{ customSectionTitle }}  │
+│                       │    │ • …                         │
+└───────────────────────┘    └───────────────────────────┘
+
+─────────↓ Drag & Drop or Click to Bind ↓─────────
+
+┌────────────────────────────────────────────────────────────────┐
+│ ▶ Live Preview (iframe or srcDoc)                            │
+│   — shows your template with real data filling in the fields │
+└────────────────────────────────────────────────────────────────┘
+
+
+⸻
+
+🛠️ Step‑by‑Step Binding Guide
+	1.	Load Your Template
+Upload your HTML template (with your {{…}} placeholders) to the Templates page. The system parses it and populates the Template Placeholders column.
+	2.	Fetch Your Data Schema
+Ensure the admin UI is fetching your resume schema (via /api/resume/schema). You should see fields like name, contact.email, sections.skills[], etc., listed in the Your Web‑App Fields column.
+	3.	Map Single‑Value Fields
+	•	Click on a placeholder in the right panel (e.g. {{ name }}) to highlight it.
+	•	Drag the matching field from the left panel (e.g. name) onto the highlighted placeholder — or click the placeholder, then select the field from a dropdown that appears.
+	•	Once mapped, the placeholder will turn green and your Live Preview will update to show your actual name in place of {{ name }}.
+	4.	Map Loop Blocks
+	•	Click on the loop token (e.g. {{#each sections.skills}}) in the Placeholders column.
+	•	Bind it to the array field on the left (sections.skills).
+	•	Next, bind the inner tokens ({{ this.name }}, {{ this.level }}) to their corresponding sub‑fields (sections.skills[].name, sections.skills[].level).
+	•	Your Live Preview will now render one “skill” card per entry in your data.
+	5.	Handle Custom Sections
+	•	If you have user‑defined or repeating blocks (sections.customSections[]), bind each loop and its items the same way.
+	•	The preview pane will expand that block however many times your user has defined.
+	6.	Use Search & Filters
+– When you have dozens of fields, use the Search fields… box in the left panel to instantly find contact.phone or sections.education[].
+– Similarly, use Search tokens… on the right to locate {{ contact.phone }} without scrolling.
+	7.	Review & Finalize Mappings
+	•	Switch to the Mappings tab (or look at the bottom of each panel) to see a summary of all “Placeholder → Field” pairs.
+	•	Unmapped placeholders will be flagged in red—click each one and repeat the binding step.
+	8.	Real‑Time Preview
+	•	Every time you bind or change a mapping, the Live Preview pane re‑renders (debounced at ~300 ms) to show exactly how your template will look with real user data.
+	•	Adjust widths, fonts, or spacing in your HTML/CSS as needed and reload the preview.
+
+⸻
+
+🎉 You’re Done!
+
+By the end of these steps you’ll have a fully wired template:
+	•	All {{…}} tokens replaced by their real data.
+	•	All loops expanded according to the length of your arrays.
+	•	A live, side‑by‑side view of your data model and template placeholders, with instant visual feedback.
+
+Let me know if any specific token doesn’t respond in the preview, or if you need help customizing the drag‑and‑drop to your admin framework!

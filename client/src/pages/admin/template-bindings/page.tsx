@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'wouter';
+import { useParams, Link } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -9,32 +9,12 @@ import { Button } from '@/components/ui/button';
 import { 
   Loader2, Save, ArrowLeft, Search, ChevronRight, 
   ChevronLeft, Code, AlertTriangle, Settings, Check, 
-  Filter, WandSparkles, Eye, Lightbulb, RefreshCw 
+  Filter, WandSparkles, Lightbulb, RefreshCw 
 } from 'lucide-react';
-import { Link } from 'wouter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Types
@@ -80,7 +60,6 @@ export default function TemplateBindingsPage() {
   const [dataFields, setDataFields] = useState<DataField[]>([]);
   const [completionPercentage, setCompletionPercentage] = useState<number>(0);
   const [selectedBinding, setSelectedBinding] = useState<Binding | null>(null);
-  const [showWizardDialog, setShowWizardDialog] = useState<boolean>(false);
   const [autoSuggestMade, setAutoSuggestMade] = useState<boolean>(false);
 
   // Helper colors for token highlighting
@@ -483,153 +462,175 @@ export default function TemplateBindingsPage() {
     updateBindingMutation.mutate(binding);
   };
 
-  // Handle token click in the preview
-  const handleTokenClick = (tokenId: string) => {
-    const token = highlightedTokens.find(t => t.id === tokenId);
-    if (!token) return;
-    
-    setActiveToken(tokenId);
-    
-    // Find the binding that corresponds to this token
-    const text = token.text;
-    const matchingBinding = bindings.find(b => b.placeholder === text);
-    
-    if (matchingBinding) {
-      setSelectedBinding(matchingBinding);
-      
-      // Scroll to the binding in the list
-      const element = document.getElementById(`binding-${matchingBinding.id}`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+  // Handle binding selection for data field mapping
+  const handleBindingSelection = (binding: Binding, tokenId?: string) => {
+    setSelectedBinding(binding);
+    if (tokenId) {
+      setActiveToken(tokenId);
     }
   };
 
-  // Wizard mode navigation
-  const nextWizardStep = () => {
-    if (wizardStep < bindings.length - 1) {
-      setWizardStep(prev => prev + 1);
-      
-      // Select the binding for the current step
-      setSelectedBinding(bindings[wizardStep + 1]);
-      
-      // Find corresponding token and highlight it
-      const binding = bindings[wizardStep + 1];
-      if (binding && binding.placeholder && typeof binding.placeholder === 'string') {
-        const token = highlightedTokens.find(t => t.text === binding.placeholder);
-        if (token) {
-          setActiveToken(token.id);
-        }
-      }
-    } else {
-      // End of wizard
-      setWizardMode(false);
-      setShowWizardDialog(true);
-    }
-  };
-
-  const prevWizardStep = () => {
-    if (wizardStep > 0) {
-      setWizardStep(prev => prev - 1);
-      
-      // Select the binding for the current step
-      setSelectedBinding(bindings[wizardStep - 1]);
-      
-      // Find corresponding token and highlight it
-      const binding = bindings[wizardStep - 1];
-      if (binding && binding.placeholder && typeof binding.placeholder === 'string') {
-        const token = highlightedTokens.find(t => t.text === binding.placeholder);
-        if (token) {
-          setActiveToken(token.id);
-        }
-      }
-    }
-  };
-
+  // Start wizard mode
   const startWizard = () => {
     setWizardMode(true);
-    setWizardStep(0);
     
-    // Select the first binding
-    if (bindings.length > 0) {
-      setSelectedBinding(bindings[0]);
+    // Find the first unmapped binding
+    const unmappedBindings = bindings.filter(b => !b.selector || b.selector.trim() === '');
+    if (unmappedBindings.length > 0) {
+      setSelectedBinding(unmappedBindings[0]);
       
-      // Find corresponding token and highlight it
-      if (bindings[0]?.placeholder && typeof bindings[0].placeholder === 'string') {
-        const token = highlightedTokens.find(t => t.text === bindings[0].placeholder);
-        if (token) {
-          setActiveToken(token.id);
-        }
+      // Find the token that corresponds to this binding
+      const token = highlightedTokens.find(t => t.text === unmappedBindings[0].placeholder);
+      if (token) {
+        setActiveToken(token.id);
       }
+      
+      setWizardStep(0);
+    } else {
+      toast({
+        title: "All bindings mapped",
+        description: "All tokens have been mapped to data fields",
+      });
     }
   };
 
-  // Apply binding from data field
-  const handleApplyDataField = (fieldPath: string) => {
+  // Navigate to the next binding in wizard mode
+  const goToNextBinding = () => {
+    const unmappedBindings = bindings.filter(b => !b.selector || b.selector.trim() === '');
+    if (wizardStep < unmappedBindings.length - 1) {
+      setWizardStep(prev => prev + 1);
+      setSelectedBinding(unmappedBindings[wizardStep + 1]);
+      
+      // Find the token that corresponds to this binding
+      const token = highlightedTokens.find(t => t.text === unmappedBindings[wizardStep + 1].placeholder);
+      if (token) {
+        setActiveToken(token.id);
+      }
+    } else {
+      setWizardMode(false);
+      toast({
+        title: "Wizard completed",
+        description: "You've gone through all unmapped bindings",
+      });
+    }
+  };
+
+  // Handle data field selection for binding
+  const handleDataFieldSelect = (field: DataField) => {
     if (!selectedBinding) return;
     
-    // Update the binding with the selected data field
-    setBindings(prevBindings =>
-      prevBindings.map(binding =>
-        binding.id === selectedBinding.id 
-          ? { ...binding, selector: fieldPath, isMapped: true } 
-          : binding
-      )
+    // Update the binding with the selected field
+    const updatedBindings = bindings.map(binding => 
+      binding.id === selectedBinding.id 
+        ? { ...binding, selector: field.path, isMapped: true } 
+        : binding
     );
     
-    // Save the binding
-    updateBindingMutation.mutate({
-      ...selectedBinding,
-      selector: fieldPath
-    });
+    setBindings(updatedBindings);
     
-    // In wizard mode, automatically go to next step
+    // Update the selected binding
+    setSelectedBinding({ ...selectedBinding, selector: field.path, isMapped: true });
+    
+    // Save the binding
+    handleSaveBinding({ ...selectedBinding, selector: field.path });
+    
+    // If in wizard mode, go to the next binding
     if (wizardMode) {
-      nextWizardStep();
+      goToNextBinding();
     }
   };
 
-  const isLoading = isLoadingTemplate || isLoadingBindings;
-
-  if (isLoading) {
+  // Render a single data field
+  const renderDataField = (field: DataField, level = 0) => {
+    const isMapped = bindings.some(binding => binding.selector === field.path);
+    
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div key={field.id} style={{ marginLeft: `${level * 16}px` }}>
+        <div 
+          className={`py-2 px-3 my-1 rounded-md cursor-pointer hover:bg-slate-100 
+            ${isMapped ? 'bg-green-50 border border-green-200' : 'border border-slate-200'}`}
+          onClick={() => handleDataFieldSelect(field)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="mr-2">
+                {field.type === 'object' ? (
+                  <div className="w-4 h-4 rounded-full bg-blue-200 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-blue-800">O</span>
+                  </div>
+                ) : field.type === 'array' ? (
+                  <div className="w-4 h-4 rounded-full bg-amber-200 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-amber-800">A</span>
+                  </div>
+                ) : field.type === 'string' ? (
+                  <div className="w-4 h-4 rounded-full bg-green-200 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-green-800">S</span>
+                  </div>
+                ) : (
+                  <div className="w-4 h-4 rounded-full bg-purple-200 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-purple-800">{field.type.charAt(0).toUpperCase()}</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="text-sm font-medium">{field.name}</div>
+                <div className="text-xs text-muted-foreground">{field.path}</div>
+              </div>
+            </div>
+            {isMapped && (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                Mapped
+              </Badge>
+            )}
+          </div>
+        </div>
+        
+        {field.children && field.children.length > 0 && (
+          <div className="ml-4 pl-2 border-l-2 border-slate-200">
+            {field.children.map(child => renderDataField(child, level + 1))}
+          </div>
+        )}
       </div>
     );
-  }
+  };
 
-  // Filtered data fields based on search
-  const filteredDataFields = filterText 
-    ? filterDataFields(dataFields, filterText) 
-    : dataFields;
+  // Render data fields tree
+  const renderDataFields = (fields: DataField[]) => {
+    const filteredFields = filterDataFields(fields, filterText);
+    
+    return (
+      <div className="space-y-1">
+        {filteredFields.map(field => renderDataField(field))}
+      </div>
+    );
+  };
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="container py-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <Link href="/admin/templates" className="mb-2 flex items-center text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back to Templates
-          </Link>
-          <h1 className="text-3xl font-bold">{templateName} - Bindings</h1>
-          <p className="text-muted-foreground">Interactive template binding interface</p>
+          <h1 className="text-3xl font-bold">Template Bindings</h1>
+          <p className="text-gray-500 mt-1">
+            Connect data fields to template placeholders for{' '}
+            <span className="font-medium text-primary">{templateName}</span>
+          </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
                   variant="outline" 
-                  size="sm"
                   onClick={refreshTokenHighlights}
+                  size="sm"
+                  className="gap-1"
                 >
-                  <RefreshCw className="h-4 w-4 mr-1" />
+                  <RefreshCw className="h-4 w-4" />
                   Refresh
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                Refresh the token highlights
+                <p>Refresh token detection</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -639,15 +640,16 @@ export default function TemplateBindingsPage() {
               <TooltipTrigger asChild>
                 <Button 
                   variant="outline" 
-                  size="sm"
                   onClick={autoSuggestBindings}
+                  size="sm"
+                  className="gap-1"
                 >
-                  <WandSparkles className="h-4 w-4 mr-1" />
+                  <Lightbulb className="h-4 w-4" />
                   Auto-suggest
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                Automatically suggest bindings based on field names
+                <p>Automatically suggest bindings based on field names</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -659,108 +661,184 @@ export default function TemplateBindingsPage() {
                   variant={wizardMode ? "default" : "outline"}
                   size="sm"
                   onClick={startWizard}
+                  className="gap-1"
                 >
-                  <Lightbulb className="h-4 w-4 mr-1" />
+                  <WandSparkles className="h-4 w-4" />
                   Wizard
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                Step-by-step guided binding configuration
+                <p>Guide through all bindings one by one</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          
+          <Link href="/admin/templates">
+            <Button variant="ghost" size="sm" className="gap-1">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Templates
+            </Button>
+          </Link>
         </div>
       </div>
       
-      <div className="mb-4">
-        <div className="flex items-center space-x-2">
-          <Progress value={completionPercentage} className="h-2" />
-          <span className="text-sm font-medium">{completionPercentage}%</span>
+      {/* Progress bar */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-sm font-medium">Binding Progress</div>
+          <div className="text-sm text-muted-foreground">{completionPercentage}% Complete</div>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          {bindings.filter(b => b.selector && b.selector.trim() !== '').length} of {bindings.length} fields mapped
-        </p>
+        <Progress value={completionPercentage} className="h-2" />
       </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Left column: Binding controls with two-column layout */}
-        <div className="space-y-4">
-          <Card className="overflow-hidden">
-            <Tabs defaultValue="tokens" className="w-full">
-              <TabsList className="w-full">
-                <TabsTrigger value="tokens" className="flex-1">Template Tokens</TabsTrigger>
-                <TabsTrigger value="preview-tokens" className="flex-1">Highlighted Preview</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="tokens" className="p-4">
-                <div className="flex items-center space-x-2 mb-3">
-                  <Search className="h-4 w-4 text-muted-foreground" />
+      
+      {isLoadingTemplate || isLoadingBindings ? (
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Two-column layout for Data Fields and Template Placeholders */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left column: Data Fields */}
+            <Card className="overflow-hidden">
+              <div className="px-4 py-3 border-b bg-blue-50">
+                <h2 className="font-semibold text-blue-900">Your Web-App Fields</h2>
+                <p className="text-xs text-blue-600 mt-0.5">resumeData Schema</p>
+              </div>
+              <div className="p-4">
+                <div className="flex items-center px-3 py-2 rounded-md border mb-3">
+                  <Search className="h-4 w-4 mr-2 text-muted-foreground" />
                   <Input 
-                    placeholder="Search placeholders..." 
-                    className="h-8"
+                    type="text"
+                    placeholder="Search fields..."
                     value={filterText}
                     onChange={(e) => setFilterText(e.target.value)}
+                    className="border-0 p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
-                
-                <ScrollArea className="h-[550px] pr-4">
+                <ScrollArea className="h-[520px] pr-2">
+                  {renderDataFields(dataFields)}
+                </ScrollArea>
+              </div>
+            </Card>
+            
+            {/* Right column: Template Placeholders */}
+            <Card className="overflow-hidden">
+              <div className="px-4 py-3 border-b bg-purple-50">
+                <h2 className="font-semibold text-purple-900">Template Placeholders</h2>
+                <p className="text-xs text-purple-600 mt-0.5">Detected in your HTML</p>
+              </div>
+              <div className="p-4">
+                <div className="flex items-center px-3 py-2 rounded-md border mb-3">
+                  <Search className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <Input 
+                    type="text"
+                    placeholder="Search tokens..."
+                    className="border-0 p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
+                    onChange={(e) => {
+                      // Filter tokens based on input
+                      const filterValue = e.target.value.toLowerCase();
+                      const filtered = highlightedTokens.filter(token => 
+                        token.text.toLowerCase().includes(filterValue)
+                      );
+                      if (filtered.length > 0 && filterValue.trim() !== '') {
+                        setActiveToken(filtered[0].id);
+                      }
+                    }}
+                  />
+                </div>
+                <ScrollArea className="h-[520px] pr-2">
                   <div className="space-y-3">
                     {bindings.map(binding => {
+                      const token = highlightedTokens.find(t => t.text === binding.placeholder);
                       const isSelected = selectedBinding?.id === binding.id;
+                      const isActive = token && activeToken === token.id;
+                      const isMapped = binding.selector && binding.selector.trim() !== '';
                       
                       return (
                         <div 
                           key={binding.id}
                           id={`binding-${binding.id}`}
                           className={`border rounded-md p-3 relative ${
-                            isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
+                            isSelected ? 'border-primary bg-primary/5' : 
+                            isMapped ? 'border-green-200 bg-green-50' : 
+                            'hover:border-primary/50'
                           }`}
-                          onClick={() => setSelectedBinding(binding)}
+                          onClick={() => handleBindingSelection(binding, token?.id)}
                         >
-                          <div className="flex items-start justify-between">
+                          <div className="flex items-start">
                             <div className="flex-1">
-                              <div className="flex items-center space-x-2">
-                                <Badge variant={binding.selector ? "default" : "outline"} className="h-5 px-1">
-                                  {binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.indexOf('FIELD:') >= 0 ? 'FIELD' : 
-                                   binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.indexOf('LOOP:') >= 0 ? 'LOOP' : 
-                                   binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.indexOf('IF:') >= 0 ? 'IF' : 'TOKEN'}
-                                </Badge>
-                                <div className="font-medium text-sm truncate">
-                                  {binding.placeholder && typeof binding.placeholder === 'string' 
-                                    ? binding.placeholder.replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '') 
-                                    : ''}
-                                </div>
+                              <div className={`inline-flex items-center px-2 py-1 rounded text-sm ${
+                                binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.includes('FIELD:') ? 'bg-blue-100 text-blue-800' : 
+                                binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.includes('LOOP:') ? 'bg-amber-100 text-amber-800' : 
+                                binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.includes('IF:') ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                <Code className="h-3.5 w-3.5 mr-1.5" />
+                                {binding.placeholder && typeof binding.placeholder === 'string' 
+                                  ? binding.placeholder.replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '') 
+                                  : 'Unknown token'}
                               </div>
                               
-                              <div className="mt-2 flex items-center space-x-2">
-                                <div className="flex-1">
+                              {isMapped && (
+                                <div className="mt-2">
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                    {binding.selector}
+                                  </Badge>
+                                </div>
+                              )}
+
+                              {isSelected && !isMapped && (
+                                <div className="mt-2 space-y-2">
+                                  <p className="text-xs text-muted-foreground">Select a data field from the left panel</p>
                                   <Input
                                     value={binding.selector || ''}
-                                    onChange={e => handleSelectorChange(binding.id, e.target.value)}
-                                    placeholder="Select a data field..."
-                                    className="h-8 text-sm"
+                                    onChange={(e) => handleSelectorChange(binding.id, e.target.value)}
+                                    placeholder="Or type a data field path..."
+                                    className="h-8 text-sm mt-1"
                                   />
+                                  <Button 
+                                    size="sm" 
+                                    className="w-full mt-1"
+                                    disabled={!binding.selector}
+                                    onClick={() => handleSaveBinding(binding)}
+                                  >
+                                    {updateBindingMutation.isPending && selectedBinding?.id === binding.id ? (
+                                      <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                                    ) : (
+                                      <Save className="h-3 w-3 mr-2" />
+                                    )}
+                                    Save Binding
+                                  </Button>
                                 </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleSaveBinding(binding)}
-                                  disabled={updateBindingMutation.isPending}
-                                  className="h-8 px-2"
-                                >
-                                  {updateBindingMutation.isPending && selectedBinding?.id === binding.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : binding.selector ? (
-                                    <Check className="h-3 w-3" />
-                                  ) : (
-                                    <Save className="h-3 w-3" />
-                                  )}
-                                </Button>
-                              </div>
+                              )}
+
+                              {isSelected && isMapped && (
+                                <div className="mt-2 space-y-2">
+                                  <div className="flex items-center">
+                                    <Input
+                                      value={binding.selector || ''}
+                                      onChange={(e) => handleSelectorChange(binding.id, e.target.value)}
+                                      className="h-8 text-sm"
+                                    />
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost"
+                                      className="ml-2"
+                                      onClick={() => handleSaveBinding(binding)}
+                                    >
+                                      {updateBindingMutation.isPending && selectedBinding?.id === binding.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <Save className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                           
-                          {binding.selector && (
+                          {isMapped && (
                             <Badge 
                               variant="secondary"
                               className="absolute top-2 right-2 text-xs bg-green-100 text-green-800 border-green-200"
@@ -773,257 +851,36 @@ export default function TemplateBindingsPage() {
                     })}
                   </div>
                 </ScrollArea>
-              </TabsContent>
-              
-              <TabsContent value="preview-tokens" className="border-t">
-                <div className="p-4 bg-slate-50">
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="font-medium text-sm">Token Positions</h3>
-                    <Badge variant="outline" className="h-5 text-xs">Visual representation</Badge>
-                  </div>
-                  
-                  <div className="relative h-[550px] border rounded bg-white overflow-hidden">
-                    {highlightedTokens.map((token) => {
-                      const isActive = activeToken === token.id;
-                      const matchingBinding = bindings.find(b => b.placeholder === token.text);
-                      const isMapped = matchingBinding && matchingBinding.selector && matchingBinding.selector.trim() !== '';
-                      
-                      return (
-                        <div
-                          key={token.id}
-                          className={`absolute cursor-pointer transition-all hover:border-2 ${
-                            isActive ? 'border-2 border-primary' : 'border border-dashed'
-                          } ${isMapped ? 'border-green-500' : 'border-yellow-500'}`}
-                          style={{
-                            left: `${token.position.x}px`,
-                            top: `${token.position.y}px`,
-                            width: `${token.position.width}px`,
-                            height: `${token.position.height}px`,
-                            backgroundColor: isMapped ? 'rgba(34, 197, 94, 0.1)' : token.color,
-                          }}
-                          onClick={() => handleTokenClick(token.id)}
-                        >
-                          <div className={`absolute -bottom-6 left-0 text-xs whitespace-nowrap px-1 py-0.5 rounded ${
-                            isMapped ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {token.text.substring(0, 20)}{token.text.length > 20 ? '...' : ''}
-                          </div>
-                          
-                          {isMapped && (
-                            <div className="absolute -top-6 left-0 text-xs bg-green-100 text-green-800 px-1 py-0.5 rounded whitespace-nowrap">
-                              {matchingBinding?.selector}
-                            </div>
-                          )}
-                          
-                          <div className="absolute -right-2 -top-2">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-5 w-5 rounded-full bg-white border shadow-sm hover:bg-primary hover:text-white"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleTokenClick(token.id);
-                              }}
-                            >
-                              <Settings className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
+              </div>
+            </Card>
+          </div>
+
+          {/* Live Preview Section */}
+          <Card>
+            <div className="px-4 py-3 border-b bg-gradient-to-r from-slate-50 to-slate-100">
+              <h2 className="font-semibold">Live Preview</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Interactive preview with drag & drop or click to bind</p>
+            </div>
+            <div className="p-4">
+              <div 
+                className="border rounded-md h-[400px] bg-white"
+                ref={previewRef}
+              >
+                <div className="h-full flex items-center justify-center text-center p-10">
+                  <div>
+                    <AlertTriangle className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Preview Not Available</h3>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      Live preview will be enabled once the feature is fully implemented. For now, please use the
+                      two-column interface above to bind your data fields to the template placeholders.
+                    </p>
                   </div>
                 </div>
-              </TabsContent>
-            </Tabs>
+              </div>
+            </div>
           </Card>
         </div>
-
-        {/* Right column: Data fields selection and preview */}
-        <div className="space-y-4">
-          <Tabs defaultValue="data-fields" className="w-full">
-            <TabsList className="w-full">
-              <TabsTrigger value="data-fields" className="flex-1">Resume Data Fields</TabsTrigger>
-              <TabsTrigger value="live-preview" className="flex-1">Live Preview</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="data-fields" className="border rounded-md mt-2">
-              <div className="p-4">
-                <div className="flex items-center space-x-2 mb-3">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search data fields..." 
-                    className="h-8"
-                    value={filterText}
-                    onChange={(e) => setFilterText(e.target.value)}
-                  />
-                </div>
-                
-                <ScrollArea className="h-[550px] pr-4">
-                  <div className="space-y-3">
-                    {selectedBinding && (
-                      <div className="mb-4 p-3 bg-slate-50 rounded-md">
-                        <h3 className="font-medium text-sm mb-1">Currently Mapping</h3>
-                        <div className="text-xs text-muted-foreground mb-2">
-                          {selectedBinding.placeholder}
-                        </div>
-                        <div className="flex items-center text-sm">
-                          <span className="mr-2">Current value:</span>
-                          {selectedBinding.selector ? (
-                            <Badge className="font-mono">{selectedBinding.selector}</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-muted-foreground">Not mapped</Badge>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {renderDataFields(filteredDataFields)}
-                    
-                    {filteredDataFields.length === 0 && (
-                      <div className="flex flex-col items-center justify-center p-8 text-center">
-                        <AlertTriangle className="h-8 w-8 text-yellow-500 mb-2" />
-                        <h3 className="font-medium">No matching fields</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Try a different search term
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="live-preview" className="border rounded-md overflow-hidden mt-2">
-              <div className="bg-secondary px-4 py-2 flex items-center justify-between">
-                <span className="font-medium">Live Preview</span>
-                <Badge variant="outline" className="h-5 text-xs">
-                  Updates as you bind
-                </Badge>
-              </div>
-              <div className="h-[600px] w-full overflow-auto bg-white" ref={previewRef}>
-                <iframe
-                  key={previewKey}
-                  src={`/api/templates/${templateId}?preview=true`}
-                  className="h-full w-full border-0"
-                  title="Template Preview"
-                />
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
-      
-      {/* Wizard mode navigation */}
-      {wizardMode && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white rounded-full border shadow-lg p-1 flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={prevWizardStep}
-            disabled={wizardStep === 0}
-            className="rounded-full"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          
-          <div className="px-4 text-sm font-medium">
-            Step {wizardStep + 1} of {bindings.length}
-          </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={nextWizardStep}
-            className="rounded-full"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setWizardMode(false)}
-            className="rounded-full"
-          >
-            Cancel
-          </Button>
-        </div>
       )}
-      
-      {/* Wizard completion dialog */}
-      <Dialog open={showWizardDialog} onOpenChange={setShowWizardDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Binding Wizard Complete!</DialogTitle>
-            <DialogDescription>
-              You've successfully completed the binding wizard.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <Progress value={completionPercentage} className="h-2" />
-            <p className="text-sm mt-2">
-              {completionPercentage}% of template tokens are now mapped.
-            </p>
-          </div>
-          
-          <DialogFooter>
-            <Button onClick={() => setShowWizardDialog(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
-  
-  // Helper function to render data fields recursively
-  function renderDataFields(fields: DataField[], level = 0) {
-    return fields.map(field => (
-      <div key={field.id} className="space-y-1">
-        <div 
-          className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-slate-50 ${
-            level > 0 ? 'ml-4' : ''
-          }`}
-        >
-          <div className="flex-1">
-            <div className="flex items-center">
-              {field.type === 'array' ? (
-                <Badge variant="outline" className="mr-2 bg-blue-50 text-blue-800 border-blue-200">Array</Badge>
-              ) : field.type === 'object' ? (
-                <Badge variant="outline" className="mr-2 bg-purple-50 text-purple-800 border-purple-200">Object</Badge>
-              ) : (
-                <Badge variant="outline" className="mr-2 bg-green-50 text-green-800 border-green-200">{field.type}</Badge>
-              )}
-              <span className="font-medium text-sm">{field.name}</span>
-            </div>
-            
-            {field.description && (
-              <p className="text-xs text-muted-foreground mt-0.5">{field.description}</p>
-            )}
-            
-            <code className="text-xs text-muted-foreground mt-1 font-mono block">{field.path}</code>
-          </div>
-          
-          {field.type !== 'object' && field.type !== 'array' && (
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="h-7"
-              disabled={!selectedBinding}
-              onClick={() => handleApplyDataField(field.path)}
-            >
-              Apply
-            </Button>
-          )}
-        </div>
-        
-        {field.children && field.children.length > 0 && (
-          <div className="border-l-2 border-slate-200 pl-2 ml-3 mt-1">
-            {renderDataFields(field.children, level + 1)}
-          </div>
-        )}
-      </div>
-    ));
-  }
 }
