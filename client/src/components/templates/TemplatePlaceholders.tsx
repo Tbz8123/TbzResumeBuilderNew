@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Search, FileCode, FileHtml, FileJson, FileText } from "lucide-react";
+import { Search, FileCode, FileText, Code, PencilRuler } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { usePlaceholderDetection } from "@/hooks/use-template-bindings";
 import {
@@ -151,7 +151,7 @@ export function TemplatePlaceholders({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1">
-                    <FileHtml className="h-3.5 w-3.5" />
+                    <Code className="h-3.5 w-3.5" />
                     <Badge variant="outline">
                       {placeholdersData.counts.html}
                     </Badge>
@@ -185,7 +185,7 @@ export function TemplatePlaceholders({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1">
-                    <FileJson className="h-3.5 w-3.5" />
+                    <PencilRuler className="h-3.5 w-3.5" />
                     <Badge variant="outline">
                       {placeholdersData.counts.js}
                     </Badge>

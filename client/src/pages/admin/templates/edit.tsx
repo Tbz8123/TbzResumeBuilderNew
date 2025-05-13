@@ -7,6 +7,7 @@ import {
 } from "@/hooks/use-templates";
 import { ResumeTemplate } from "@shared/schema";
 import { Editor } from "@monaco-editor/react";
+import { TemplateBindingInterface } from "@/components/templates/TemplateBindingInterface";
 import {
   Card,
   CardContent,
