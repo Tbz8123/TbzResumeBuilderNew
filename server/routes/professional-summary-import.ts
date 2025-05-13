@@ -342,28 +342,30 @@ async function processImport(file: Express.Multer.File, status: any, syncMode: s
           if (syncMode === 'full-sync') {
             // In full-sync mode, we need to delete any existing descriptions for this title that aren't in the import file
             try {
-              // Get existing descriptions for this title
+              // We no longer delete all descriptions for a title ID in full-sync mode
+              // Instead we'll just check for duplicates and add new descriptions
+              console.log(`Processing title ID ${titleId} with full-sync mode, preserving multiple descriptions`);
+              
+              // Get existing descriptions for this title just to track them
               const existingDescForTitle = await db
                 .select()
                 .from(professionalSummaryDescriptions)
                 .where(eq(professionalSummaryDescriptions.professionalSummaryTitleId, titleId));
                 
-              if (existingDescForTitle.length > 0) {
-                console.log(`Deleting ${existingDescForTitle.length} existing descriptions for title ID ${titleId} before adding new ones`);
-                
-                const descIds = existingDescForTitle.map(d => d.id);
-                await db.delete(professionalSummaryDescriptions)
-                  .where(inArray(professionalSummaryDescriptions.id, descIds));
-                  
-                status.deleted += existingDescForTitle.length;
+              // Add all existing description IDs to the processed set so they won't be deleted
+              for (const desc of existingDescForTitle) {
+                processedDescriptionIds.add(desc.id);
               }
+              
+              console.log(`Found ${existingDescForTitle.length} existing descriptions for title ID ${titleId}, preserving them`);
             } catch (error) {
-              console.error(`Error clearing existing descriptions for title ID ${titleId}:`, error);
+              console.error(`Error processing existing descriptions for title ID ${titleId}:`, error);
             }
           }
           
-          // Now check if a very similar description already exists (to avoid duplicates)
-          const similarDescriptions = await db
+          // Only check for exact content matches. We want to allow similar but different descriptions
+          // This allows multiple descriptions for the same job title
+          const duplicateDescriptions = await db
             .select()
             .from(professionalSummaryDescriptions)
             .where(
@@ -373,11 +375,22 @@ async function processImport(file: Express.Multer.File, status: any, syncMode: s
               )
             );
             
-          if (similarDescriptions.length > 0) {
-            console.log(`Skipping duplicate description for title ID ${titleId}: "${data.description.substring(0, 30)}..."`);
+          if (duplicateDescriptions.length > 0) {
+            console.log(`Found exact duplicate description for title ID ${titleId}: "${data.description.substring(0, 30)}..."`);
             
-            // Instead of adding a duplicate, just mark the ID as processed
-            processedDescriptionIds.add(similarDescriptions[0].id);
+            // Just mark the ID as processed, we don't need to add it again
+            processedDescriptionIds.add(duplicateDescriptions[0].id);
+            
+            // Update the isRecommended flag if needed
+            if (duplicateDescriptions[0].isRecommended !== data.isRecommended) {
+              await db.update(professionalSummaryDescriptions)
+                .set({ isRecommended: data.isRecommended })
+                .where(eq(professionalSummaryDescriptions.id, duplicateDescriptions[0].id));
+                
+              console.log(`Updated isRecommended status for description ID ${duplicateDescriptions[0].id}`);
+              status.updated++;
+            }
+            
             continue; // Skip to next row
           }
             
@@ -405,12 +418,35 @@ async function processImport(file: Express.Multer.File, status: any, syncMode: s
         }
       }
       
-      // Handle full-sync deletion - use try/catch to prevent fatal errors
+      // In full-sync mode, we now only delete descriptions that weren't processed
+      // This allows us to keep multiple descriptions per job title
       if (syncMode === 'full-sync' && processedTitleIds.size > 0) {
         try {
-          // We don't need this anymore since we're now handling deletion per title ID
-          // This code is being removed to prevent errors
-          console.log("Skipping global description cleanup as we now clean up per title ID");
+          // Find descriptions for processed titles that weren't included in the import
+          const descriptionsToDelete = existingDescriptions.filter(d => 
+            processedTitleIds.has(d.professionalSummaryTitleId) && 
+            !processedDescriptionIds.has(d.id)
+          );
+          
+          if (descriptionsToDelete.length > 0) {
+            console.log(`Found ${descriptionsToDelete.length} descriptions to delete in full-sync cleanup`);
+            
+            // Delete these descriptions in batches to avoid overwhelming the database
+            const batchSize = 100;
+            for (let i = 0; i < descriptionsToDelete.length; i += batchSize) {
+              const batch = descriptionsToDelete.slice(i, i + batchSize);
+              const idsToDelete = batch.map(d => d.id);
+              
+              await db.delete(professionalSummaryDescriptions)
+                .where(inArray(professionalSummaryDescriptions.id, idsToDelete));
+              
+              console.log(`Deleted batch of ${batch.length} descriptions`);
+            }
+            
+            status.deleted = descriptionsToDelete.length;
+          } else {
+            console.log("No descriptions to delete in full-sync cleanup");
+          }
         } catch (error: any) {
           console.error("Error in full-sync cleanup:", error);
           status.errors.push({ row: 0, message: `Error in full-sync cleanup: ${error.message || String(error)}` });
