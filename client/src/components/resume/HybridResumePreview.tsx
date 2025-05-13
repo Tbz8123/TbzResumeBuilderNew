@@ -66,7 +66,14 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   const processHtmlWithData = () => {
     if (!templateHtmlRef.current) return;
     
-    console.log("Processing HTML with data");
+    console.log("Processing HTML with data", {
+      firstName: resumeData.firstName,
+      surname: resumeData.surname,
+      profession: resumeData.profession,
+      email: resumeData.email,
+      city: resumeData.city,
+      country: resumeData.country
+    });
     
     // Use the enhanced template processor with more robust placeholder handling
     const processedHtml = processTemplateHtml(templateHtmlRef.current, resumeData);
@@ -79,28 +86,28 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   
   // Watch for resume data changes with detailed logging
   useEffect(() => {
-    console.log("Resume data changed:", resumeData);
+    console.log("HybridResumePreview - Resume data changed:", {
+      firstName: resumeData.firstName,
+      surname: resumeData.surname,
+      profession: resumeData.profession,
+      email: resumeData.email,
+      phone: resumeData.phone,
+      city: resumeData.city,
+      country: resumeData.country,
+      postalCode: resumeData.postalCode,
+      summaryLength: resumeData.summary?.length || 0,
+      professionalSummaryLength: resumeData.professionalSummary?.length || 0,
+      photoPresent: resumeData.photo ? 'yes' : 'no',
+      additionalInfoKeys: Object.keys(resumeData.additionalInfo || {}),
+      workExperienceCount: resumeData.workExperience?.length || 0,
+      educationCount: resumeData.education?.length || 0,
+      skillsCount: resumeData.skills?.length || 0
+    });
+    
+    // Process the HTML with the updated data
     processHtmlWithData();
   }, [
-    resumeData.firstName, 
-    resumeData.surname, 
-    resumeData.profession,
-    resumeData.email,
-    resumeData.phone,
-    resumeData.city,
-    resumeData.country,
-    resumeData.postalCode,
-    resumeData.summary,
-    resumeData.professionalSummary,
-    resumeData.photo,
-    // Track additional info changes
-    JSON.stringify(resumeData.additionalInfo),
-    // Track work experience changes
-    JSON.stringify(resumeData.workExperience),
-    // Track education changes
-    JSON.stringify(resumeData.education),
-    // Track skills changes
-    JSON.stringify(resumeData.skills)
+    resumeData,  // Track the entire resumeData object for more reliable updates
   ]);
   
   // Fallback direct template if template processing fails

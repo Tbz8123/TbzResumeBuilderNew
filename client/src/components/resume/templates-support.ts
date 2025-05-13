@@ -147,13 +147,18 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     'olnvewon': resumeData.country || 'olnvewon',
     'ovnewon': resumeData.postalCode || 'ovnewon',
     
-    // Testing template specific placeholders
-    'Your Name': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim(),
-    'Job Title': resumeData.profession || '',
-    'email@example.com': resumeData.email || '',
-    '123-456-7890': resumeData.phone || '',
-    'Your Location': [resumeData.city, resumeData.country].filter(Boolean).join(', ') || '',
-    'A brief description about yourself and your career goals.': resumeData.professionalSummary || resumeData.summary || '',
+    // Testing template specific placeholders - with more detailed replacements
+    'Your Name': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim() || 'Your Name',
+    'Job Title': resumeData.profession || 'Job Title',
+    'email@example.com': resumeData.email || 'email@example.com',
+    '123-456-7890': resumeData.phone || '123-456-7890',
+    'Your Location': [resumeData.city, resumeData.country].filter(Boolean).join(', ') || 'Your Location',
+    'A brief description about yourself and your career goals.': resumeData.professionalSummary || resumeData.summary || 'A brief description about yourself and your career goals.',
+    
+    // More specific Testing template text replacements for clearer testing
+    'YOUR NAME': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim().toUpperCase() || 'YOUR NAME',
+    'YOUR PROFESSION': resumeData.profession?.toUpperCase() || 'YOUR PROFESSION',
+    'Your Current Location': [resumeData.city, resumeData.country, resumeData.postalCode].filter(Boolean).join(', ') || 'Your Current Location',
   };
   
   // Apply all replacements

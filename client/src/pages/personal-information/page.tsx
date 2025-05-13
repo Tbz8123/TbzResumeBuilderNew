@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, Link } from 'wouter';
 import { ArrowLeft, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -38,15 +38,41 @@ const PersonalInformationPage = () => {
     setLocation('/work-history');
   };
   
-  // Handle input changes with real-time updates
+  // Create state to track form inputs with debounced updates
+  const [formState, setFormState] = useState({
+    firstName: resumeData.firstName || '',
+    surname: resumeData.surname || '',
+    profession: resumeData.profession || '',
+    email: resumeData.email || '',
+    phone: resumeData.phone || '',
+    city: resumeData.city || '',
+    country: resumeData.country || '',
+    postalCode: resumeData.postalCode || '',
+    summary: resumeData.summary || ''
+  });
+  
+  // Effect to update resume data when form state changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      console.log("Debounced update with form state:", formState);
+      updateResumeData(formState);
+    }, 300); // 300ms debounce
+    
+    return () => clearTimeout(timeoutId);
+  }, [formState]);
+  
+  // Handle input changes with debounced updates
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     
-    // Use object based update for simple fields
-    updateResumeData({ [name]: value } as Partial<ResumeData>);
+    // Update local form state first
+    setFormState(prev => ({
+      ...prev,
+      [name]: value
+    }));
     
     // Log update for debugging
-    console.log(`Updated field ${name} to:`, value);
+    console.log(`Field changed ${name} to:`, value);
   };
   
   // Preview resume
