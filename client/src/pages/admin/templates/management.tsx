@@ -49,7 +49,8 @@ import {
   Download, 
   FileText, 
   Code, 
-  AlertTriangle
+  AlertTriangle,
+  Link2
 } from 'lucide-react';
 import {
   Dialog,
@@ -342,6 +343,14 @@ const AdminTemplateManagementPage = () => {
                                   title="Advanced Edit"
                                 >
                                   <Code className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => navigate(`/admin/templates/${template.id}/bindings`)}
+                                  title="Template Bindings"
+                                >
+                                  <Link2 className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
