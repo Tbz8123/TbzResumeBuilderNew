@@ -43,7 +43,7 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
   const { 
     data: achievements,
     isLoading: isAchievementsLoading 
-  } = useQuery({
+  } = useQuery<Achievement[]>({
     queryKey: ['/api/achievements'],
     enabled: true, // Everyone can see achievements
   });
@@ -53,7 +53,7 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
     data: userAchievements,
     isLoading: isUserAchievementsLoading,
     refetch: refetchUserAchievements
-  } = useQuery({
+  } = useQuery<(UserAchievement & { achievement: Achievement })[]>({
     queryKey: ['/api/user-achievements'],
     enabled: isAuthenticated,
   });
@@ -63,7 +63,7 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
     data: userProgress,
     isLoading: isUserProgressLoading,
     refetch: refetchUserProgress
-  } = useQuery({
+  } = useQuery<UserProgressData>({
     queryKey: ['/api/user-progress'],
     enabled: isAuthenticated,
   });

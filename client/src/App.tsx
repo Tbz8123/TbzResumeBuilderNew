@@ -130,19 +130,21 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ThemeProvider>
-          <ResumeProvider>
-            <div className="flex flex-col min-h-screen">
-              {!isWizardPage && !isAdminPage && location !== "/auth" && <Header />}
-              <main className={`flex-grow ${isAdminPage ? 'bg-gray-50' : ''}`}>
-                <Router />
-              </main>
-              {!isWizardPage && !isAdminPage && location !== "/auth" && <Footer />}
-              {!isAdminPage && <AdminLink />}
-            </div>
-            <Toaster />
-          </ResumeProvider>
-        </ThemeProvider>
+        <AchievementProvider>
+          <ThemeProvider>
+            <ResumeProvider>
+              <div className="flex flex-col min-h-screen">
+                {!isWizardPage && !isAdminPage && location !== "/auth" && <Header />}
+                <main className={`flex-grow ${isAdminPage ? 'bg-gray-50' : ''}`}>
+                  <Router />
+                </main>
+                {!isWizardPage && !isAdminPage && location !== "/auth" && <Footer />}
+                {!isAdminPage && <AdminLink />}
+              </div>
+              <Toaster />
+            </ResumeProvider>
+          </ThemeProvider>
+        </AchievementProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
