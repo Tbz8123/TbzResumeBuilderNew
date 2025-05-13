@@ -363,36 +363,9 @@ async function processImport(file: Express.Multer.File, status: any, syncMode: s
             }
           }
           
-          // Only check for exact content matches. We want to allow similar but different descriptions
-          // This allows multiple descriptions for the same job title
-          const duplicateDescriptions = await db
-            .select()
-            .from(professionalSummaryDescriptions)
-            .where(
-              and(
-                eq(professionalSummaryDescriptions.professionalSummaryTitleId, titleId),
-                eq(professionalSummaryDescriptions.content, data.description)
-              )
-            );
-            
-          if (duplicateDescriptions.length > 0) {
-            console.log(`Found exact duplicate description for title ID ${titleId}: "${data.description.substring(0, 30)}..."`);
-            
-            // Just mark the ID as processed, we don't need to add it again
-            processedDescriptionIds.add(duplicateDescriptions[0].id);
-            
-            // Update the isRecommended flag if needed
-            if (duplicateDescriptions[0].isRecommended !== data.isRecommended) {
-              await db.update(professionalSummaryDescriptions)
-                .set({ isRecommended: data.isRecommended })
-                .where(eq(professionalSummaryDescriptions.id, duplicateDescriptions[0].id));
-                
-              console.log(`Updated isRecommended status for description ID ${duplicateDescriptions[0].id}`);
-              status.updated++;
-            }
-            
-            continue; // Skip to next row
-          }
+          // In replace mode, we don't check for duplicates
+          // We want to add all descriptions from the import file
+          // and will delete the others after processing
             
           // Create new description
           const descriptionData = {

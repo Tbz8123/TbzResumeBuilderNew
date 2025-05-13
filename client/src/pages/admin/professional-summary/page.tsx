@@ -310,13 +310,25 @@ export default function ProfessionalSummaryAdminPage() {
           // Refresh data - add a cache-busting timestamp to force refresh
           const timestamp = new Date().getTime();
           console.log(`Invalidating queries with timestamp: ${timestamp}`);
+          
+          // Invalidate all relevant queries
           queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/titles'] });
           queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/categories'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/descriptions/by-title'] });
           
-          // Force refetch after a short delay to ensure backend changes are reflected
+          // Force a complete UI refresh by refetching all related data after a short delay
           setTimeout(() => {
             queryClient.refetchQueries({ queryKey: ['/api/professional-summary/titles'] });
-            console.log('Forced refetch of titles data');
+            
+            // If we have a selected title, also refetch its descriptions
+            if (selectedTitle?.id) {
+              queryClient.refetchQueries({ 
+                queryKey: ['/api/professional-summary/descriptions/by-title', selectedTitle.id] 
+              });
+              console.log(`Forced refetch of descriptions for title ID ${selectedTitle.id}`);
+            }
+            
+            console.log('Forced refetch of all professional summary data');
           }, 500);
           
           // Clean up

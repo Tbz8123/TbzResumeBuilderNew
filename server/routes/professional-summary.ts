@@ -256,6 +256,13 @@ professionalSummaryRouter.get("/descriptions/by-title/:titleId", async (req, res
     const titleId = parseInt(req.params.titleId);
     const search = req.query.search as string || "";
     
+    // Add cache control headers to prevent browser caching
+    res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    console.log(`Fetching descriptions for title ID ${titleId}${search ? ` with search: "${search}"` : ''}`);
+    
     let whereClause = eq(professionalSummaryDescriptions.professionalSummaryTitleId, titleId);
     
     // Add search filter if provided
@@ -271,6 +278,8 @@ professionalSummaryRouter.get("/descriptions/by-title/:titleId", async (req, res
       .from(professionalSummaryDescriptions)
       .where(whereClause)
       .orderBy(desc(professionalSummaryDescriptions.isRecommended), desc(professionalSummaryDescriptions.id));
+    
+    console.log(`Found ${descriptions.length} descriptions for title ID ${titleId}`);
     
     return res.status(200).json(descriptions);
   } catch (error) {
