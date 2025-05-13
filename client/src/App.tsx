@@ -22,6 +22,7 @@ import EducationSummaryPage from "@/pages/education-summary/page";
 import SkillsPage from "@/pages/skills/page";
 import SkillsSummaryPage from "@/pages/skills-summary/page";
 import ProfessionalSummaryPage from "@/pages/professional-summary/page";
+import AddSectionPage from "@/pages/add-section/page";
 import AuthPage from "@/pages/auth-page";
 import AdminJobsTestApiPage from "@/pages/admin/jobs/test-api";
 import AdminTemplatesPage from "@/pages/admin/templates/page";
@@ -55,7 +56,8 @@ function Router() {
                        location.startsWith("/education-summary") ||
                        location.startsWith("/skills") ||
                        location.startsWith("/skills-summary") ||
-                       location.startsWith("/professional-summary");
+                       location.startsWith("/professional-summary") ||
+                       location.startsWith("/add-section");
   
   const isAdminPage = location.startsWith("/admin");
   
@@ -76,6 +78,7 @@ function Router() {
       <Route path="/skills" component={SkillsPage} />
       <Route path="/skills-summary" component={SkillsSummaryPage} />
       <Route path="/professional-summary" component={ProfessionalSummaryPage} />
+      <Route path="/add-section" component={AddSectionPage} />
       <Route path="/auth" component={AuthPage} />
       
       {/* Admin Routes - Protected + Admin Only */}
@@ -116,7 +119,8 @@ function App() {
                        location.startsWith("/education-summary") ||
                        location.startsWith("/skills") ||
                        location.startsWith("/skills-summary") ||
-                       location.startsWith("/professional-summary");
+                       location.startsWith("/professional-summary") ||
+                       location.startsWith("/add-section");
   
   const isAdminPage = location.startsWith("/admin");
   

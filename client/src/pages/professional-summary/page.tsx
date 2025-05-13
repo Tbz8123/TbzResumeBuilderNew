@@ -373,9 +373,9 @@ const ProfessionalSummaryPage = () => {
   };
 
   const handleNext = () => {
-    // Save and navigate to the next page (summary page)
+    // Save and navigate to the next page (add-section page)
     saveProfessionalSummary();
-    setLocation('/summary');
+    setLocation('/add-section');
   };
 
   const saveProfessionalSummary = () => {
