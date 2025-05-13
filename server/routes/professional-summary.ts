@@ -109,6 +109,11 @@ professionalSummaryRouter.get("/titles", async (req, res) => {
     
     console.log(`Retrieved ${titles.length} professional summary titles (total: ${totalCount})`);
     
+    // Add cache control headers to prevent caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
     return res.status(200).json({ 
       data: titles, 
       pagination: {
@@ -151,6 +156,10 @@ professionalSummaryRouter.get("/categories", async (req, res) => {
         "Management"
       ];
     }
+    // Add cache control headers to prevent caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     
     return res.status(200).json(categoryList);
   } catch (error) {

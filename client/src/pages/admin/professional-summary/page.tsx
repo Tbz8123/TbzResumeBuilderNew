@@ -307,9 +307,17 @@ export default function ProfessionalSummaryAdminPage() {
             });
           }
           
-          // Refresh data
+          // Refresh data - add a cache-busting timestamp to force refresh
+          const timestamp = new Date().getTime();
+          console.log(`Invalidating queries with timestamp: ${timestamp}`);
           queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/titles'] });
           queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/categories'] });
+          
+          // Force refetch after a short delay to ensure backend changes are reflected
+          setTimeout(() => {
+            queryClient.refetchQueries({ queryKey: ['/api/professional-summary/titles'] });
+            console.log('Forced refetch of titles data');
+          }, 500);
           
           // Clean up
           setUploadStatus(null);
