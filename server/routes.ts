@@ -11,6 +11,7 @@ import { skillsRouter } from "./routes/skills";
 import { professionalSummaryRouter } from "./routes/professional-summary";
 import { professionalSummaryImportRouter } from "./routes/professional-summary-import";
 import templateBindingsRouter from "./routes/template-bindings";
+import resumeSchemaRouter from "./routes/resume-schema";
 import { registerAchievementRoutes } from "./routes/achievements";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -20,6 +21,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register API routes
   app.use("/api/templates", templateRoutes);
   app.use("/api", templateBindingsRouter);
+  app.use("/api", resumeSchemaRouter);
   app.use("/api/export", exportRoutes);
   app.use("/api/jobs", jobsRouter);
   app.use("/api/jobs", jobCsvRouter);

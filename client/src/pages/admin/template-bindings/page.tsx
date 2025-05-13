@@ -110,6 +110,18 @@ export default function TemplateBindingsPage() {
     queryKey: [`/api/templates/${templateId}/bindings`],
     enabled: !!templateId,
   });
+  
+  // Fetch resume schema
+  const { data: resumeSchema, isLoading: isLoadingSchema } = useQuery<Record<string, any>>({
+    queryKey: [`/api/templates/${templateId}/schema`],
+    enabled: !!templateId,
+  });
+  
+  // Fetch general resume schema as fallback
+  const { data: generalResumeSchema, isLoading: isLoadingGeneralSchema } = useQuery<Record<string, any>>({
+    queryKey: ['/api/resume/schema'],
+    enabled: !!templateId,
+  });
 
   // Update template bindings mutation
   const updateBindingMutation = useMutation({
