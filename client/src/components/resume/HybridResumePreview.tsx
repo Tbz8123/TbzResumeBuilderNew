@@ -90,6 +90,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     resumeData.city,
     resumeData.country,
     resumeData.summary,
+    resumeData.professionalSummary, // Add professional summary to tracked fields
     resumeData.photo
   ]);
   
@@ -158,7 +159,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                 PROFILE
               </h2>
               <p className="text-xs text-gray-600">
-                {resumeData.summary || 'This section will display your professional summary.'}
+                {resumeData.professionalSummary || resumeData.summary || 'This section will display your professional summary.'}
               </p>
             </section>
             

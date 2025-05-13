@@ -24,12 +24,13 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '{{address}}': [resumeData.city, resumeData.country].filter(Boolean).join(', '),
     
     // Different variations of summary/profile
-    '{{summary}}': resumeData.summary || '',
-    '{{profile}}': resumeData.summary || '',
-    '{{aboutMe}}': resumeData.summary || '',
-    '{{bio}}': resumeData.summary || '',
-    '{{description}}': resumeData.summary || '',
-    '{{about-me}}': resumeData.summary || '',
+    '{{summary}}': resumeData.professionalSummary || resumeData.summary || '',
+    '{{profile}}': resumeData.professionalSummary || resumeData.summary || '',
+    '{{aboutMe}}': resumeData.professionalSummary || resumeData.summary || '',
+    '{{bio}}': resumeData.professionalSummary || resumeData.summary || '',
+    '{{description}}': resumeData.professionalSummary || resumeData.summary || '',
+    '{{about-me}}': resumeData.professionalSummary || resumeData.summary || '',
+    '{{professionalSummary}}': resumeData.professionalSummary || '',
     
     // Common template placeholder patterns
     'SAHIB KHAN': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim().toUpperCase(),
@@ -75,23 +76,36 @@ export function processTemplateHtml(html: string, resumeData: any): string {
   }
   
   // Additional pattern matches for text that appears in templates
-  if (resumeData.summary) {
+  const summaryContent = resumeData.professionalSummary || resumeData.summary;
+  if (summaryContent) {
     // Replace text between ABOUT ME header and next section
     const aboutMeRegex = new RegExp('<h2[^>]*>ABOUT ME</h2>\\s*<p[^>]*>(.*?)</p>', 'i');
     processedHtml = processedHtml.replace(aboutMeRegex, (match, p1) => {
-      return match.replace(p1, resumeData.summary);
+      return match.replace(p1, summaryContent);
     });
     
     // Also try "About Me" case variation
     const aboutMeRegex2 = new RegExp('<h2[^>]*>About Me</h2>\\s*<p[^>]*>(.*?)</p>', 'i');
     processedHtml = processedHtml.replace(aboutMeRegex2, (match, p1) => {
-      return match.replace(p1, resumeData.summary);
+      return match.replace(p1, summaryContent);
     });
     
     // And "Profile" variations
     const profileRegex = new RegExp('<h2[^>]*>Profile</h2>\\s*<p[^>]*>(.*?)</p>', 'i');
     processedHtml = processedHtml.replace(profileRegex, (match, p1) => {
-      return match.replace(p1, resumeData.summary);
+      return match.replace(p1, summaryContent);
+    });
+    
+    // Professional Summary section
+    const professionalSummaryRegex = new RegExp('<h2[^>]*>Professional Summary</h2>\\s*<p[^>]*>(.*?)</p>', 'i');
+    processedHtml = processedHtml.replace(professionalSummaryRegex, (match, p1) => {
+      return match.replace(p1, summaryContent);
+    });
+    
+    // Summary section
+    const summaryRegex = new RegExp('<h2[^>]*>Summary</h2>\\s*<p[^>]*>(.*?)</p>', 'i');
+    processedHtml = processedHtml.replace(summaryRegex, (match, p1) => {
+      return match.replace(p1, summaryContent);
     });
   }
   

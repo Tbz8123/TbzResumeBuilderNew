@@ -329,7 +329,7 @@ const AddSectionPage = () => {
               variants={itemVariants}
             >
               <div className="flex flex-col items-center justify-center">
-                <HybridResumePreview width={280} height={362} />
+                <HybridResumePreview width={225} height={320} />
                 <button
                   onClick={() => setTemplateModalOpen(true)}
                   className="mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium"
