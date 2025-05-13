@@ -73,7 +73,7 @@ const initialResumeData: ResumeData = {
 // Define context type
 interface ResumeContextType {
   resumeData: ResumeData;
-  updateResumeData: (newData: Partial<ResumeData>) => void;
+  updateResumeData: (newData: Partial<ResumeData> | ((prevData: ResumeData) => ResumeData)) => void;
   updateAdditionalInfo: (key: string, value: string) => void;
   removeAdditionalInfo: (key: string) => void;
   selectedTemplateId: number | null;
@@ -103,16 +103,28 @@ export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, []);
 
   // Update resume data with improved reactivity
-  const updateResumeData = (newData: Partial<ResumeData>) => {
-    console.log("ResumeContext - Updating data:", newData);
-    setResumeData(prev => {
-      const updated = {
-        ...prev,
-        ...newData
-      };
-      console.log("ResumeContext - Updated data:", updated);
-      return updated;
-    });
+  const updateResumeData = (
+    newData: Partial<ResumeData> | ((prevData: ResumeData) => ResumeData)
+  ) => {
+    console.log("ResumeContext - Updating data");
+    
+    // Handle both direct and functional updates
+    if (typeof newData === 'function') {
+      setResumeData(prev => {
+        const updated = newData(prev);
+        console.log("ResumeContext - Updated data via function:", updated);
+        return updated;
+      });
+    } else {
+      setResumeData(prev => {
+        const updated = {
+          ...prev,
+          ...newData
+        };
+        console.log("ResumeContext - Updated data directly:", updated);
+        return updated;
+      });
+    }
   };
 
   // Add or update additional info

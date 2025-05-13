@@ -38,10 +38,15 @@ const PersonalInformationPage = () => {
     setLocation('/work-history');
   };
   
-  // Handle input changes
+  // Handle input changes with real-time updates
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    updateResumeData({ [name]: value } as any);
+    
+    // Use object based update for simple fields
+    updateResumeData({ [name]: value } as Partial<ResumeData>);
+    
+    // Log update for debugging
+    console.log(`Updated field ${name} to:`, value);
   };
   
   // Preview resume

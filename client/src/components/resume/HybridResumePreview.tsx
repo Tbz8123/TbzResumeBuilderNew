@@ -89,9 +89,18 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     resumeData.phone,
     resumeData.city,
     resumeData.country,
+    resumeData.postalCode,
     resumeData.summary,
-    resumeData.professionalSummary, // Add professional summary to tracked fields
-    resumeData.photo
+    resumeData.professionalSummary,
+    resumeData.photo,
+    // Track additional info changes
+    JSON.stringify(resumeData.additionalInfo),
+    // Track work experience changes
+    JSON.stringify(resumeData.workExperience),
+    // Track education changes
+    JSON.stringify(resumeData.education),
+    // Track skills changes
+    JSON.stringify(resumeData.skills)
   ]);
   
   // Fallback direct template if template processing fails
