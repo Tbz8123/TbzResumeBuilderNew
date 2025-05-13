@@ -48,9 +48,21 @@ export const resumeTemplateVersions = pgTable("resume_template_versions", {
   changelog: text("changelog"),
 });
 
+// Template bindings table for storing placeholder mappings
+export const templateBindings = pgTable("template_bindings", {
+  id: serial("id").primaryKey(),
+  templateId: integer("template_id").references(() => resumeTemplates.id).notNull(),
+  placeholderToken: text("placeholder_token").notNull(),
+  dataField: text("data_field").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const resumeTemplatesRelations = relations(resumeTemplates, ({ many }) => ({
   versions: many(resumeTemplateVersions),
+  bindings: many(templateBindings),
 }));
 
 export const resumeTemplateVersionsRelations = relations(resumeTemplateVersions, ({ one }) => ({
@@ -103,6 +115,16 @@ export type InsertResumeTemplate = z.infer<typeof resumeTemplateSchema>;
 
 export type ResumeTemplateVersion = typeof resumeTemplateVersions.$inferSelect;
 export type InsertResumeTemplateVersion = z.infer<typeof resumeTemplateVersionSchema>;
+
+// Template binding schema
+export const templateBindingSchema = createInsertSchema(templateBindings, {
+  placeholderToken: (schema) => schema.min(2, "Placeholder token must be at least 2 characters"),
+  dataField: (schema) => schema.min(2, "Data field must be at least 2 characters"),
+  description: (schema) => schema.optional(),
+});
+
+export type TemplateBinding = typeof templateBindings.$inferSelect;
+export type InsertTemplateBinding = z.infer<typeof templateBindingSchema>;
 
 // Job Titles and Descriptions Schema
 export const jobTitles = pgTable("job_titles", {

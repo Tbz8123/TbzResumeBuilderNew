@@ -1,0 +1,150 @@
+1. Make Sure Your Data Shapes Match
+Your preview component (e.g. HybridResumePreview) is expecting a certain shape—say:
+
+ts
+Copy
+Edit
+interface ResumeData {
+  name: string;
+  contact: { email: string; phone: string };
+  sections: {
+    professionalSummary: string;
+    experience: { company: string; role: string; years: string }[];
+    // …etc
+  };
+}
+But your form inputs may be building an object that looks slightly different:
+
+ts
+Copy
+Edit
+{
+  fullName: "Alice",
+  emailAddress: "a@example.com",
+  experiences: [/*…*/],
+  summaryText: "…"
+}
+Solution:
+Introduce a small “mapping” or “adapter” function that takes your raw form state and massages it into exactly the shape your preview needs:
+
+ts
+Copy
+Edit
+function mapFormToResume(form: FormState): ResumeData {
+  return {
+    name: form.fullName,
+    contact: { email: form.emailAddress, phone: form.phoneNumber },
+    sections: {
+      professionalSummary: form.summaryText,
+      experience: form.experiences.map(e => ({ company: e.org, role: e.title, years: e.duration }))
+    }
+  };
+}
+Then always pass mapFormToResume(formState) into your preview.
+
+2. Use a Single Source of Truth & Reactivity
+If you’re juggling local state in your form and separate state in your resume context, it’s easy to accidentally update one without the other.
+
+Centralize state in one place (e.g. your ResumeContext).
+
+Have your form controls read and write directly to that context, instead of duplicating state:
+
+jsx
+Copy
+Edit
+const { resumeData, updateResumeData } = useResume();
+
+<Input
+  value={resumeData.sections.professionalSummary}
+  onChange={e => updateResumeData({
+    ...resumeData,
+    sections: {
+      ...resumeData.sections,
+      professionalSummary: e.target.value
+    }
+  })}
+/>
+Your preview then simply does:
+
+jsx
+Copy
+Edit
+<HybridResumePreview data={resumeData} />
+Because they share the same object, you can’t get out of sync.
+
+3. Watch for Asynchronous Updates
+If your form fires an API call or a debounced save, make sure the preview doesn’t render before the data has arrived.
+
+Use useEffect in your preview-wrapper to only render once the context has valid data:
+
+jsx
+Copy
+Edit
+useEffect(() => {
+  if (!resumeData.sections) return;
+  setIsReady(true);
+}, [resumeData]);
+
+if (!isReady) return <LoadingSpinner/>;
+Or show old data until the new data lands.
+
+4. Build a Field-by-Field Sanity Checker
+When things get messy, a quick debugging trick is to:
+
+Dump both your form state and your mapped resume state side-by-side in JSON.
+
+Compare key paths to spot missing or renamed fields.
+
+For example:
+
+jsx
+Copy
+Edit
+<pre>
+FormState: {JSON.stringify(formState, null, 2)}
+</pre>
+<pre>
+ResumeData: {JSON.stringify(mappedResume, null, 2)}
+</pre>
+Seeing them together often reveals typos:
+experiences vs experience,
+summaryText vs professionalSummary, etc.
+
+5. Consider a Schema-Driven Approach
+If your “resume” always has the same sections, you can define a JSON schema:
+
+json
+Copy
+Edit
+{
+  "type":"object",
+  "properties": {
+    "sections": {
+      "properties": {
+        "professionalSummary": { "type":"string" },
+        "experience": {
+          "type":"array",
+          "items": {
+            "type":"object",
+            "properties": {
+              "company": { "type":"string" },
+              "role": { "type":"string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+Then you can validate at runtime (with Ajv or similar) and catch any missing fields before you attempt to render.
+
+TL;DR
+Map your form shape into the exact shape your preview expects.
+
+Centralize your resume data in one context or store so there’s no duplicate state.
+
+Guard your preview against rendering until the data is fresh.
+
+Use side-by-side JSON dumps to catch naming mismatches.
+
+For larger apps, adopt a schema-driven approach so your form, API, and preview all agree on the data model.
