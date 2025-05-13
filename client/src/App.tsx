@@ -33,6 +33,7 @@ import CreateNewTemplateAdminPage from "@/pages/admin/templates/new";
 import TemplateVersionsPage from "@/pages/admin/templates/versions";
 import AdminTemplateManagementPage from "@/pages/admin/templates/management";
 import TemplateBindingsPage from "@/pages/admin/templates/bindings";
+import DedicatedTemplateBindingsPage from "@/pages/admin/template-bindings/page";
 import AdminHomePage from "@/pages/admin/home";
 import AdminDashboardPage from "@/pages/admin/page";
 import AdminJobsPage from "@/pages/admin/jobs/page";
@@ -99,6 +100,7 @@ function Router() {
       <ProtectedRoute path="/admin/templates/:id/advanced" component={AdvancedTemplateEditPage} adminOnly />
       <ProtectedRoute path="/admin/templates/:id/versions" component={TemplateVersionsPage} adminOnly />
       <ProtectedRoute path="/admin/templates/:id/bindings" component={TemplateBindingsPage} adminOnly />
+      <ProtectedRoute path="/admin/template-bindings/:templateId" component={DedicatedTemplateBindingsPage} adminOnly />
       <ProtectedRoute path="/admin/templates/:id" component={AdminTemplateEditPage} adminOnly />
       
       {/* Fallback to 404 */}
