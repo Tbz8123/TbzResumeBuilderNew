@@ -281,12 +281,22 @@ export default function ProfessionalSummaryAdminPage() {
           setIsImporting(false);
           
           if (data.errors && data.errors.length > 0) {
-            // If there were errors, show them
+            // Show detailed error information for the first few errors
+            const errorDetails = data.errors.slice(0, 3).map(err => 
+              `Row ${err.row}: ${err.message}`
+            ).join('\n');
+            
+            const moreErrorsText = data.errors.length > 3 
+              ? `\n...and ${data.errors.length - 3} more errors.` 
+              : '';
+              
             toast({
               title: "Import Completed with Errors",
-              description: `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Errors: ${data.errors.length}`,
+              description: `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Errors: ${data.errors.length}\n\n${errorDetails}${moreErrorsText}`,
               variant: "destructive",
             });
+            
+            console.log("Import errors:", data.errors);
           } else {
             // Success message
             toast({
