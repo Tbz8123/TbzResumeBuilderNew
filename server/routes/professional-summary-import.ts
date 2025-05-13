@@ -51,6 +51,13 @@ let lastImportStatus: any = null;
 
 // Endpoint to check import status
 professionalSummaryImportRouter.get("/import-status", isAuthenticated, isAdmin, (req, res) => {
+  console.log("Import status requested, returning:", lastImportStatus);
+  res.json(lastImportStatus || { isComplete: true, processed: 0, errors: [] });
+});
+
+// Debug endpoint to just check import status without auth (temporary)
+professionalSummaryImportRouter.get("/debug-import-status", (req, res) => {
+  console.log("Debug import status requested, returning:", lastImportStatus);
   res.json(lastImportStatus || { isComplete: true, processed: 0, errors: [] });
 });
 
