@@ -618,55 +618,78 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
         if (!worksheet['!ref']) {
           throw new Error('Excel sheet is empty');
         }
-        
-        // Convert to JSON with headers and more debug info
-        console.log(`Converting Excel data to JSON format`);
-        rows = XLSX.utils.sheet_to_json(worksheet, { 
+
+        // Special handling for the Excel format from the screenshot
+        // First, try with column headers to see what we get
+        console.log(`First attempting to parse Excel with headers`);
+        const rowsWithHeaders = XLSX.utils.sheet_to_json(worksheet, { 
           defval: "",
           raw: false, // Convert all data to strings
-          blankrows: false, // Skip blank rows
-          header: 'A' // Use A, B, C as header if no header row
+          blankrows: false // Skip blank rows
         });
         
-        // Log full Excel data for debugging
-        console.log(`Successfully parsed ${rows.length} rows from Excel`);
-        if (rows.length > 0) {
-          console.log("First row keys:", Object.keys(rows[0]));
-          console.log("Excel file column headers detected:", Object.keys(rows[0]));
+        console.log(`Parsed ${rowsWithHeaders.length} rows with headers`);
+        if (rowsWithHeaders.length > 0) {
+          console.log("Headers detected:", Object.keys(rowsWithHeaders[0]));
+        }
+        
+        // Now try with positional headers (A, B, C, D, E)
+        console.log(`Now trying with positional headers`);
+        const rowsWithPositionalHeaders = XLSX.utils.sheet_to_json(worksheet, { 
+          defval: "",
+          raw: false,
+          blankrows: false,
+          header: 'A' // Use A, B, C as positional headers
+        });
+        
+        console.log(`Parsed ${rowsWithPositionalHeaders.length} rows with positional headers`);
+        if (rowsWithPositionalHeaders.length > 0) {
+          console.log("Positional headers:", Object.keys(rowsWithPositionalHeaders[0]));
+        }
+        
+        // Decide which approach to use based on the results
+        if (rowsWithHeaders.length > 0 && Object.keys(rowsWithHeaders[0]).some(k => 
+          k.toLowerCase().includes('title') || k.toLowerCase().includes('description'))) {
+          // The named headers approach seems to work
+          console.log("Using named headers approach");
+          rows = rowsWithHeaders;
+        } else {
+          // Either no named headers or they don't contain our expected columns
+          console.log("Using positional headers approach");
+          rows = rowsWithPositionalHeaders;
           
-          // If we are getting numeric headers (A, B, C), try to find header row
-          const firstRowKeys = Object.keys(rows[0]);
-          if (firstRowKeys.length > 0 && firstRowKeys[0] === 'A') {
-            console.log("Excel file doesn't have proper headers. Using the first row as headers.");
-            // Use the first row as headers and re-parse
-            rows = XLSX.utils.sheet_to_json(worksheet, { 
-              defval: "",
-              raw: false,
-              blankrows: false,
-              range: 1 // Skip the first row (which contains headers)
+          // If we used positional headers, check if the first row seems to be a header
+          // and map values to our expected columns
+          if (rows.length > 0) {
+            const firstRowValues = Object.values(rows[0]);
+            const hasHeaderValues = firstRowValues.some(v => 
+              String(v).toLowerCase().includes('title') || 
+              String(v).toLowerCase().includes('description') || 
+              String(v).toLowerCase().includes('recommended'));
+            
+            if (hasHeaderValues) {
+              console.log("First row with positional headers appears to be a header row, skipping it");
+              rows = rows.slice(1);
+            }
+            
+            // Map positional columns to meaningful names based on the format in the screenshot
+            console.log("Mapping positional columns to meaningful names");
+            rows = rows.map(row => {
+              // From the screenshot: A=ID, B=Title, C=Category, D=Description, E=IsRecommended
+              return {
+                JobTitleID: row.A || '',
+                JobTitle: row.B || '',
+                Category: row.C || '',
+                Description: row.D || '',
+                IsRecommended: (row.E || '').toString().toLowerCase() === 'true'
+              };
             });
             
-            console.log(`Re-parsed Excel with first row as headers. Now have ${rows.length} data rows`);
-            if (rows.length > 0) {
-              console.log("New first row keys after using first row as header:", Object.keys(rows[0]));
-            }
+            console.log("After mapping positional headers, first row:", rows.length > 0 ? rows[0] : 'No rows');
           }
         }
         
-        // Validate required columns
-        if (rows.length > 0) {
-          const firstRow = rows[0];
-          const requiredColumns = ['JobTitle', 'Professional Summary Description'];
-          const foundColumns = Object.keys(firstRow).map(k => k.toLowerCase());
-          
-          const missingColumns = requiredColumns.filter(col => 
-            !foundColumns.some(f => f.toLowerCase() === col.toLowerCase() || 
-                               f.toLowerCase().includes(col.toLowerCase().replace(/\s+/g, ''))));
-          
-          if (missingColumns.length > 0) {
-            throw new Error(`Required columns missing: ${missingColumns.join(', ')}. Please ensure your Excel file has the following headers: JobTitleID or JobTitle, and Professional Summary Description.`);
-          }
-        }
+        console.log(`Final Excel parse result: ${rows.length} rows`);
       } catch (excelError: any) {
         console.error("Excel parsing error:", excelError);
         importStatus.errors.push({
@@ -706,6 +729,14 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
       console.error(`Failed to delete temporary file ${filePath}:`, unlinkError);
     }
     
+    // Add additional debug logs to understand the rows structure
+    console.log("File type:", fileExt);
+    console.log("Number of rows parsed:", rows.length);
+    if (rows.length > 0) {
+      console.log("First row:", rows[0]);
+      console.log("Keys in first row:", Object.keys(rows[0]));
+    }
+    
     // Process the parsed data in batches
     if (rows.length > 0) {
       const batchSize = 500;
@@ -726,8 +757,31 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
         allExistingDescriptions = await db.select().from(professionalSummaryDescriptions);
       }
       
-      for (const row of rows) {
-        rowNumber++;
+      // Skip first row if it looks like a header row (especially for CSV files)
+      let startFrom = 0;
+      if (rows.length > 1) {
+        const firstRow = rows[0];
+        const firstRowKeys = Object.keys(firstRow);
+        
+        // Check if the first row contains header-like values
+        const looksLikeHeader = firstRowKeys.some(key => {
+          const value = String(firstRow[key] || '').toLowerCase();
+          return value.includes('title') || value.includes('description') || 
+                 value.includes('category') || value.includes('recommended');
+        });
+        
+        if (looksLikeHeader) {
+          console.log("First row appears to be a header, skipping it:", firstRow);
+          startFrom = 1;
+        }
+      }
+      
+      console.log(`Processing rows starting from index ${startFrom}, total rows: ${rows.length}`);
+      
+      // Process rows, skipping header if needed
+      for (let i = startFrom; i < rows.length; i++) {
+        const row = rows[i];
+        rowNumber = i + 1; // 1-based row number for user-friendly messages
         importStatus.processed++;
         
         try {
