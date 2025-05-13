@@ -245,8 +245,9 @@ export default function ProfessionalSummaryAdminPage() {
     // Function to check import status via polling
     const checkImportStatus = async () => {
       try {
+        // Use the debug endpoint for now to verify if polling works
         console.log("Checking import status...");
-        const statusResponse = await fetch('/api/professional-summary/import-status', {
+        const statusResponse = await fetch('/api/professional-summary/debug-import-status', {
           credentials: 'include'
         });
         
@@ -337,12 +338,15 @@ export default function ProfessionalSummaryAdminPage() {
       
       console.log(`Sending file to ${endpoint}?mode=${syncMode}`);
       
-      // Send the file to our new endpoint with query params instead of form fields
+      // Use the correct endpoint with proper content type and credentials
+      console.log(`Uploading file to ${endpoint}?mode=${syncMode}`);
       const response = await fetch(`${endpoint}?mode=${syncMode}`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
       });
+      
+      console.log("Upload response status:", response.status);
       
       if (!response.ok) {
         // Handle HTTP error
