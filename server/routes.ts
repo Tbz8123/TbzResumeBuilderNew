@@ -11,6 +11,7 @@ import { skillsRouter } from "./routes/skills";
 import { professionalSummaryRouter } from "./routes/professional-summary";
 import { professionalSummaryImportRouter } from "./routes/professional-summary-import";
 import templateBindingsRouter from "./routes/template-bindings";
+import { registerAchievementRoutes } from "./routes/achievements";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -26,6 +27,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/skills", skillsRouter);
   app.use("/api/professional-summary", professionalSummaryRouter);
   app.use("/api/professional-summary", professionalSummaryImportRouter);
+  
+  // Register achievement routes
+  registerAchievementRoutes(app);
   
   // Register development/test routes
   app.use("/api/triggers", triggerThumbnailRouter);

@@ -1,6 +1,7 @@
 import { db } from "./index";
 import * as schema from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { seedAchievements } from "./achievements-seed";
 
 async function seed() {
   try {
@@ -68,6 +69,9 @@ async function seed() {
     } else {
       console.log(`Skipping job titles seeding as ${existingTitles.length} titles already exist.`);
     }
+    
+    // Seed achievements
+    await seedAchievements();
     
     console.log("Seeding completed successfully!");
   } catch (error) {
