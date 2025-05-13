@@ -159,6 +159,17 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     'YOUR NAME': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim().toUpperCase() || 'YOUR NAME',
     'YOUR PROFESSION': resumeData.profession?.toUpperCase() || 'YOUR PROFESSION',
     'Your Current Location': [resumeData.city, resumeData.country, resumeData.postalCode].filter(Boolean).join(', ') || 'Your Current Location',
+    
+    // Additional summary patterns with multiple phrases for better matching
+    'professional summary': resumeData.professionalSummary || resumeData.summary || 'Professional Summary',
+    'Professional Summary': resumeData.professionalSummary || resumeData.summary || 'Professional Summary',
+    'PROFESSIONAL SUMMARY': resumeData.professionalSummary || resumeData.summary || 'PROFESSIONAL SUMMARY',
+    'Summary of Qualifications': resumeData.summary || resumeData.professionalSummary || 'Summary of Qualifications',
+    'Career Summary': resumeData.summary || resumeData.professionalSummary || 'Career Summary',
+    'Profile Summary': resumeData.summary || resumeData.professionalSummary || 'Profile Summary',
+    
+    // Generic summary placeholder
+    'Write your summary here...': resumeData.summary || 'Write your summary here...',
   };
   
   // Apply all replacements

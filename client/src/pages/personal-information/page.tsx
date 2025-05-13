@@ -323,6 +323,28 @@ const PersonalInformationPage = () => {
                 </div>
               </div>
               
+              {/* Professional Summary */}
+              <div className="mb-6">
+                <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
+                  SUMMARY
+                </div>
+                <textarea 
+                  id="summary" 
+                  name="summary"
+                  value={formState.summary}
+                  onChange={(e) => {
+                    setFormState(prev => ({
+                      ...prev,
+                      summary: e.target.value
+                    }));
+                    console.log('Summary updated:', e.target.value.substring(0, 20) + '...');
+                  }}
+                  rows={5}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Write a brief professional summary"
+                />
+              </div>
+              
               {/* Additional Information Section */}
               <div className="mb-20">
                 <div className="flex items-center mb-4">
