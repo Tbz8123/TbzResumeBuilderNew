@@ -134,7 +134,7 @@ export function AchievementProvider({ children }: { children: ReactNode }) {
     onSuccess: (data) => {
       // Find the achievement that was earned
       const achievement = achievements?.find(
-        (a) => a.id === data.achievement.achievementId
+        (a: Achievement) => a.id === data.achievement.achievementId
       );
 
       if (achievement) {
