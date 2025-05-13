@@ -338,7 +338,50 @@ async function processImport(file: Express.Multer.File, status: any, syncMode: s
             }
           }
           
-          // Create description
+          // Check if we should clear existing descriptions first (for full-sync mode)
+          if (syncMode === 'full-sync') {
+            // In full-sync mode, we need to delete any existing descriptions for this title that aren't in the import file
+            try {
+              // Get existing descriptions for this title
+              const existingDescForTitle = await db
+                .select()
+                .from(professionalSummaryDescriptions)
+                .where(eq(professionalSummaryDescriptions.professionalSummaryTitleId, titleId));
+                
+              if (existingDescForTitle.length > 0) {
+                console.log(`Deleting ${existingDescForTitle.length} existing descriptions for title ID ${titleId} before adding new ones`);
+                
+                const descIds = existingDescForTitle.map(d => d.id);
+                await db.delete(professionalSummaryDescriptions)
+                  .where(inArray(professionalSummaryDescriptions.id, descIds));
+                  
+                status.deleted += existingDescForTitle.length;
+              }
+            } catch (error) {
+              console.error(`Error clearing existing descriptions for title ID ${titleId}:`, error);
+            }
+          }
+          
+          // Now check if a very similar description already exists (to avoid duplicates)
+          const similarDescriptions = await db
+            .select()
+            .from(professionalSummaryDescriptions)
+            .where(
+              and(
+                eq(professionalSummaryDescriptions.professionalSummaryTitleId, titleId),
+                eq(professionalSummaryDescriptions.content, data.description)
+              )
+            );
+            
+          if (similarDescriptions.length > 0) {
+            console.log(`Skipping duplicate description for title ID ${titleId}: "${data.description.substring(0, 30)}..."`);
+            
+            // Instead of adding a duplicate, just mark the ID as processed
+            processedDescriptionIds.add(similarDescriptions[0].id);
+            continue; // Skip to next row
+          }
+            
+          // Create new description
           const descriptionData = {
             content: data.description,
             isRecommended: data.isRecommended,
