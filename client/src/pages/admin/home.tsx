@@ -76,7 +76,7 @@ const AdminHomePage = () => {
           title: 'Template Bindings',
           description: 'Connect template placeholders with data fields',
           icon: <Layers className="h-5 w-5" />,
-          path: '/admin/templates/management',
+          path: '/admin/templates',
           color: 'bg-pink-500'
         }
       ]

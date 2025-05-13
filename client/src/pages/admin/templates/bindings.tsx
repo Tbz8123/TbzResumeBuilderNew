@@ -263,7 +263,10 @@ const TemplateBindingsPage: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => setEditMode((prev) => ({ ...prev, [binding.id]: false }))}
+                              onClick={() => {
+                                setEditMode((prev) => ({ ...prev, [binding.id]: false }));
+                                form.reset();
+                              }}
                             >
                               <X className="h-4 w-4" />
                             </Button>
