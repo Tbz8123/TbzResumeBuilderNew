@@ -399,7 +399,7 @@ professionalSummaryRouter.get("/export/csv", isAuthenticated, isAdmin, async (re
     // Get all descriptions with their title IDs
     const descriptions = await db.select().from(professionalSummaryDescriptions);
     
-    // Format the data for CSV - match the job export format but with one column name change
+    // Format the data for CSV - ensure consistency with Excel export format
     const records = descriptions.map(desc => {
       const title = titleMap.get(desc.professionalSummaryTitleId);
       return {
@@ -407,17 +407,17 @@ professionalSummaryRouter.get("/export/csv", isAuthenticated, isAdmin, async (re
         JobTitle: title?.title || 'Unknown',
         Category: title?.category || 'Unknown',
         Description: desc.content,
-        IsRecommended: desc.isRecommended ? "true" : "false"
+        IsRecommended: desc.isRecommended ? "TRUE" : "FALSE" // Uppercase for consistency
       };
     });
     
-    // Create CSV stringifier - match the job export format exactly but rename Description column
+    // Create CSV stringifier with column names matching the Excel export
     const csvStringifier = createObjectCsvStringifier({
       header: [
         {id: 'JobTitleID', title: 'JobTitleID'},
         {id: 'JobTitle', title: 'JobTitle'},
         {id: 'Category', title: 'Category'},
-        {id: 'Description', title: 'Professional Summary Description'},
+        {id: 'Description', title: 'Description'}, // Use consistent naming
         {id: 'IsRecommended', title: 'IsRecommended'}
       ]
     });
@@ -485,27 +485,15 @@ professionalSummaryRouter.get("/export/excel", isAuthenticated, isAdmin, async (
     // Get all descriptions with their title IDs
     const descriptions = await db.select().from(professionalSummaryDescriptions);
     
-    // Format the data for Excel
-    const records = descriptions.map(desc => {
-      const title = titleMap.get(desc.professionalSummaryTitleId);
-      return {
-        'Title ID': desc.professionalSummaryTitleId,
-        'Title': title?.title || 'Unknown',
-        'Category': title?.category || 'Unknown',
-        'Description': desc.content,
-        'Is Recommended': desc.isRecommended ? 'Yes' : 'No'
-      };
-    });
-    
-    // Format the data for Excel - ensure consistency with CSV export format
-    const excelRecords = descriptions.map(desc => {
+    // Format the data for Excel with standard column names that match the import format
+    const excelData = descriptions.map(desc => {
       const title = titleMap.get(desc.professionalSummaryTitleId);
       return {
         JobTitleID: desc.professionalSummaryTitleId,
         JobTitle: title?.title || 'Unknown',
         Category: title?.category || 'Unknown',
-        'Professional Summary Description': desc.content,
-        IsRecommended: desc.isRecommended ? "true" : "false"
+        Description: desc.content, // Using "Description" for compatibility
+        IsRecommended: desc.isRecommended ? "TRUE" : "FALSE" // Using uppercase for boolean values
       };
     });
     
@@ -513,24 +501,29 @@ professionalSummaryRouter.get("/export/excel", isAuthenticated, isAdmin, async (
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=professional-summaries-export.xlsx');
     
-    // Create workbook with consistent column names
+    // Create workbook with proper column formatting
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([
-      ['JobTitleID', 'JobTitle', 'Category', 'Professional Summary Description', 'IsRecommended'],
-      ...excelRecords.map(r => [
-        r.JobTitleID, 
-        r.JobTitle, 
-        r.Category, 
-        r['Professional Summary Description'], 
-        r.IsRecommended
-      ])
-    ]);
+    
+    // Convert array of objects to worksheet - this preserves column names better than AOA format
+    const ws = XLSX.utils.json_to_sheet(excelData, {
+      header: ['JobTitleID', 'JobTitle', 'Category', 'Description', 'IsRecommended']
+    });
+    
+    // Add column widths for better readability
+    const colWidths = [
+      { wch: 10 },  // JobTitleID
+      { wch: 30 },  // JobTitle
+      { wch: 15 },  // Category
+      { wch: 60 },  // Description
+      { wch: 15 },  // IsRecommended
+    ];
+    ws['!cols'] = colWidths;
     
     XLSX.utils.book_append_sheet(wb, ws, 'Professional Summaries');
     
-    // Write to buffer and send response
-    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    res.send(buf);
+    // Write directly to Excel format and send
+    const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.send(excelBuffer);
   } catch (error) {
     console.error("Error exporting professional summaries as Excel:", error);
     return res.status(500).json({ error: "Failed to export professional summaries as Excel" });
@@ -802,63 +795,114 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
           // Log the row data for debugging
           console.log(`Processing row ${rowNumber} with fields:`, row);
           
-          // Create a normalized data object with default values
-          const normalizedData: any = {
-            jobTitleId: null,
-            jobTitle: '',
-            category: 'General',
-            description: '',
-            isRecommended: false
-          };
-
-          // Match each column in the input to our expected fields
-          Object.keys(row).forEach(key => {
-            // Skip empty columns
-            if (!key || row[key] === undefined || row[key] === null) return;
-            
-            const lowerKey = key.toLowerCase().trim();
-            const value = row[key];
-
-            // Try to find a match in our mappings
-            for (const mapping of columnMappings) {
-              if (mapping.patterns.some(pattern => lowerKey.includes(pattern))) {
-                // Special handling for isRecommended boolean conversion
-                if (mapping.field === 'isRecommended') {
-                  normalizedData[mapping.field] = typeof value === 'string' 
-                    ? ['true', 'yes', '1', 'y', 't'].includes(value.toLowerCase())
-                    : !!value;
-                } else {
-                  normalizedData[mapping.field] = value;
-                }
-                console.log(`Mapped column '${key}' to field '${mapping.field}' with value:`, value);
+          // DIRECT ROW PROCESSING - Get values directly from row with fallbacks
+          // This handles both Excel-style (A,B,C) and named column formats
+          
+          console.log("Direct row access - Row keys:", Object.keys(row));
+          
+          // Try to get JobTitleID first
+          let jobTitleId = null;
+          if (row.JobTitleID !== undefined) {
+            jobTitleId = row.JobTitleID;
+          } else if (row.A !== undefined) {
+            jobTitleId = row.A;
+          } else {
+            // Try to find any key that might contain 'id' and 'title'
+            for (const key of Object.keys(row)) {
+              const lowerKey = key.toLowerCase();
+              if (lowerKey.includes('id') && lowerKey.includes('title')) {
+                jobTitleId = row[key];
                 break;
               }
             }
-          });
-
-          // Handle Excel-specific column mappings for files with A, B, C headers
-          if (Object.keys(row).some(k => k === 'A' || k === 'B' || k === 'C')) {
-            // For Excel files with column letters, assume standard format:
-            // A = ID, B = Title, C = Category, D = Description, E = IsRecommended
-            normalizedData.jobTitleId = row['A'] || null;
-            normalizedData.jobTitle = row['B'] || '';
-            normalizedData.category = row['C'] || 'General';
-            normalizedData.description = row['D'] || '';
-            
-            const recValue = row['E'];
-            normalizedData.isRecommended = typeof recValue === 'string'
-              ? ['true', 'yes', '1', 'y', 't'].includes(recValue.toLowerCase())
-              : !!recValue;
-            
-            console.log('Mapped Excel columns A-E to fields:', normalizedData);
           }
-
-          // Final extraction of values from the normalized data
-          const jobTitleId = normalizedData.jobTitleId;
-          const jobTitle = normalizedData.jobTitle;
-          const category = normalizedData.category;
-          const description = normalizedData.description;
-          const isRecommended = normalizedData.isRecommended;
+          
+          // Try to get JobTitle
+          let jobTitle = '';
+          if (row.JobTitle !== undefined) {
+            jobTitle = row.JobTitle;
+          } else if (row.B !== undefined) {
+            jobTitle = row.B;
+          } else {
+            // Try to find any key that might contain 'title' but not 'id'
+            for (const key of Object.keys(row)) {
+              const lowerKey = key.toLowerCase();
+              if (lowerKey.includes('title') && !lowerKey.includes('id')) {
+                jobTitle = row[key];
+                break;
+              }
+            }
+          }
+          
+          // Try to get Category
+          let category = 'General';
+          if (row.Category !== undefined) {
+            category = row.Category;
+          } else if (row.C !== undefined) {
+            category = row.C;
+          } else {
+            // Try to find any key that might contain 'category'
+            for (const key of Object.keys(row)) {
+              const lowerKey = key.toLowerCase();
+              if (lowerKey.includes('category')) {
+                category = row[key];
+                break;
+              }
+            }
+          }
+          
+          // Try to get Description
+          let description = '';
+          if (row.Description !== undefined) {
+            description = row.Description;
+          } else if (row['Professional Summary Description'] !== undefined) {
+            description = row['Professional Summary Description'];
+          } else if (row.D !== undefined) {
+            description = row.D;
+          } else {
+            // Try to find any key that might contain 'description' or 'summary'
+            for (const key of Object.keys(row)) {
+              const lowerKey = key.toLowerCase();
+              if (lowerKey.includes('description') || lowerKey.includes('summary')) {
+                description = row[key];
+                break;
+              }
+            }
+          }
+          
+          // Try to get IsRecommended
+          let isRecommended = false;
+          if (row.IsRecommended !== undefined) {
+            const value = row.IsRecommended;
+            isRecommended = typeof value === 'string'
+              ? ['true', 'yes', '1', 'y', 't', 'TRUE'].includes(value.toString().toLowerCase())
+              : !!value;
+          } else if (row.E !== undefined) {
+            const value = row.E;
+            isRecommended = typeof value === 'string'
+              ? ['true', 'yes', '1', 'y', 't', 'TRUE'].includes(value.toString().toLowerCase())
+              : !!value;
+          } else {
+            // Try to find any key that might contain 'recommended'
+            for (const key of Object.keys(row)) {
+              const lowerKey = key.toLowerCase();
+              if (lowerKey.includes('recommended')) {
+                const value = row[key];
+                isRecommended = typeof value === 'string'
+                  ? ['true', 'yes', '1', 'y', 't', 'TRUE'].includes(value.toString().toLowerCase())
+                  : !!value;
+                break;
+              }
+            }
+          }
+          
+          console.log("Final values extracted:", {
+            jobTitleId,
+            jobTitle,
+            category,
+            description,
+            isRecommended
+          });
           
           const normalizedRow = {
             JobTitleID: jobTitleId,
