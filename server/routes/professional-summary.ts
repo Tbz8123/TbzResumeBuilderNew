@@ -9,14 +9,15 @@ import {
   type ProfessionalSummaryTitle,
   type ProfessionalSummaryDescription
 } from "@shared/schema";
-import { eq, like, desc, asc, and, or, SQL, sql } from "drizzle-orm";
+import { eq, like, desc, asc, and, or, SQL, sql, inArray } from "drizzle-orm";
 import { createObjectCsvStringifier } from "csv-writer";
-import { parse } from "csv-parse/sync";
+import { parse } from "csv-parse";
 import * as XLSX from "xlsx";
 import { EventEmitter } from "events";
 import multer from "multer";
 import * as fs from 'fs';
 import path from "path";
+import { unlink } from "fs/promises";
 
 const professionalSummaryRouter = Router();
 
@@ -527,108 +528,319 @@ professionalSummaryRouter.get("/export/excel", isAuthenticated, isAdmin, async (
 
 // Import professional summary titles and descriptions from CSV (admin only)
 professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.single('file'), async (req, res) => {
+  console.log("Professional summary import request received:", req.headers);
+  console.log("Request file:", req.file);
+  console.log("Request body:", req.body);
+  
+  if (!req.file) {
+    console.error("No file was uploaded");
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+  
+  // Check if sync mode is specified (defaults to update-only)
+  const syncMode = req.body.syncMode || 'update-only';
+  console.log(`Import sync mode: ${syncMode}`);
+  
+  // Reset import status
+  importStatus = {
+    processed: 0,
+    created: 0,
+    updated: 0,
+    deleted: 0,
+    errors: [],
+    isComplete: false,
+    syncMode: syncMode
+  };
+  
+  // Emit the initial status
+  importStatusEmitter.emit('update', importStatus);
+  
+  // Return success immediately - processing will happen in background
+  res.status(200).json({ message: "Import started" });
+  
   try {
-    // Reset import status
-    importStatus = {
-      inProgress: true,
-      total: 0,
-      processed: 0,
-      successful: 0,
-      failed: 0,
-      errors: [],
-      isComplete: false
-    };
-    importStatusEmitter.emit('update', importStatus);
-    
-    if (!req.file) {
-      importStatus.isComplete = true;
-      importStatus.inProgress = false;
-      importStatus.errors.push("No file uploaded");
-      importStatusEmitter.emit('update', importStatus);
-      return res.status(400).json({ error: "No file uploaded" });
-    }
-    
     const filePath = req.file.path;
-    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const fileExt = path.extname(req.file.originalname).toLowerCase();
+    let rows: any[] = [];
     
-    // Clean up the file after reading
-    fs.unlinkSync(filePath);
+    console.log(`Processing ${fileExt} file: ${req.file.originalname}`);
     
-    const csvData = fileContent;
-    
-    // Parse CSV data
-    const records = parse(csvData, {
-      columns: true,
-      skip_empty_lines: true
-    });
-    
-    if (records.length === 0) {
-      return res.status(400).json({ error: "No valid records found in CSV" });
-    }
-    
-    // Process the records
-    const results = {
-      titlesAdded: 0,
-      descriptionsAdded: 0,
-      errors: [] as string[]
-    };
-    
-    // Get existing titles for duplicate checking
-    const existingTitles = await db.select().from(professionalSummaryTitles);
-    const titleMap = new Map(existingTitles.map(t => [t.title.toLowerCase(), t]));
-    
-    // Process each record
-    for (let i = 0; i < records.length; i++) {
-      const record = records[i];
-      
+    // Parse the file based on its extension
+    if (fileExt === '.json') {
+      // Process JSON file
       try {
-        // Check if title exists
-        const titleLower = record.Title?.toLowerCase() || "";
-        let titleId = null;
+        const jsonData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
         
-        if (!titleLower) {
-          results.errors.push(`Row ${i + 2}: Missing title`);
-          continue;
-        }
-        
-        // Check if title already exists
-        if (titleMap.has(titleLower)) {
-          titleId = titleMap.get(titleLower)?.id;
+        if (Array.isArray(jsonData)) {
+          rows = jsonData;
         } else {
-          // Create new title
-          const newTitle = {
-            title: record.Title,
-            category: record.Category || "General",
-            description: ""
-          };
-          
-          const [insertedTitle] = await db.insert(professionalSummaryTitles).values(newTitle).returning();
-          titleId = insertedTitle.id;
-          titleMap.set(titleLower, insertedTitle);
-          results.titlesAdded++;
+          importStatus.errors.push({
+            row: 0,
+            message: "JSON data must be an array of professional summary data objects"
+          });
+        }
+      } catch (jsonError: any) {
+        importStatus.errors.push({
+          row: 0,
+          message: `Failed to parse JSON file: ${jsonError.message}`
+        });
+      }
+    } else if (fileExt === '.xlsx' || fileExt === '.xls') {
+      // Process Excel file
+      try {
+        console.log(`Reading Excel file: ${filePath}`);
+        const workbook = XLSX.readFile(filePath);
+        
+        if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+          throw new Error('Excel file has no sheets');
         }
         
-        // Add description if it exists
-        if (record.Description) {
-          const newDescription = {
-            content: record.Description,
-            isRecommended: record["Is Recommended"]?.toLowerCase() === "yes",
-            professionalSummaryTitleId: titleId
-          };
-          
-          await db.insert(professionalSummaryDescriptions).values(newDescription);
-          results.descriptionsAdded++;
+        const sheetName = workbook.SheetNames[0]; // Get the first sheet
+        console.log(`Using first sheet: ${sheetName}`);
+        
+        const worksheet = workbook.Sheets[sheetName];
+        if (!worksheet) {
+          throw new Error(`Could not access sheet "${sheetName}"`);
         }
-      } catch (error) {
-        console.error(`Error processing row ${i + 2}:`, error);
-        results.errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : String(error)}`);
+        
+        // Check if worksheet has data
+        if (!worksheet['!ref']) {
+          throw new Error('Excel sheet is empty');
+        }
+        
+        // Convert to JSON with headers and more debug info
+        console.log(`Converting Excel data to JSON format`);
+        rows = XLSX.utils.sheet_to_json(worksheet, { 
+          defval: "",
+          raw: false, // Convert all data to strings
+          blankrows: false // Skip blank rows
+        });
+        
+        console.log(`Successfully parsed ${rows.length} rows from Excel`);
+        
+        // Validate required columns
+        if (rows.length > 0) {
+          const firstRow = rows[0];
+          const requiredColumns = ['JobTitle', 'Professional Summary Description'];
+          const foundColumns = Object.keys(firstRow).map(k => k.toLowerCase());
+          
+          const missingColumns = requiredColumns.filter(col => 
+            !foundColumns.some(f => f.toLowerCase() === col.toLowerCase() || 
+                               f.toLowerCase().includes(col.toLowerCase().replace(/\s+/g, ''))));
+          
+          if (missingColumns.length > 0) {
+            throw new Error(`Required columns missing: ${missingColumns.join(', ')}. Please ensure your Excel file has the following headers: JobTitleID or JobTitle, and Professional Summary Description.`);
+          }
+        }
+      } catch (excelError: any) {
+        console.error("Excel parsing error:", excelError);
+        importStatus.errors.push({
+          row: 0,
+          message: `Failed to parse Excel file: ${excelError.message}`
+        });
+      }
+    } else {
+      // Default to CSV processing
+      try {
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        rows = await new Promise((resolve, reject) => {
+          parse(fileContent, {
+            columns: true,
+            skipEmptyLines: true,
+            trim: true
+          }, (err, output) => {
+            if (err) reject(err);
+            else resolve(output);
+          });
+        });
+      } catch (csvError: any) {
+        importStatus.errors.push({
+          row: 0,
+          message: `Failed to parse CSV file: ${csvError.message}`
+        });
       }
     }
     
-    return res.status(200).json(results);
+    // Clean up the file after reading
+    try {
+      await unlink(filePath);
+      console.log(`Temporary file ${filePath} deleted`);
+    } catch (unlinkError) {
+      console.error(`Failed to delete temporary file ${filePath}:`, unlinkError);
+    }
+    
+    // Process the parsed data in batches
+    if (rows.length > 0) {
+      const batchSize = 500;
+      let batch = [];
+      let rowNumber = 0;
+      
+      // Get existing titles and descriptions for sync and duplicate checking
+      const existingTitles = await db.select().from(professionalSummaryTitles);
+      const titleMap = new Map(existingTitles.map(t => [t.title.toLowerCase(), t]));
+      
+      // Keep track of processed titles and descriptions for full-sync mode
+      const processedTitleIds = new Set<number>();
+      const processedDescriptionIds = new Set<number>();
+      
+      // Get all existing descriptions if in full-sync mode
+      let allExistingDescriptions: any[] = [];
+      if (syncMode === 'full-sync') {
+        allExistingDescriptions = await db.select().from(professionalSummaryDescriptions);
+      }
+      
+      for (const row of rows) {
+        rowNumber++;
+        importStatus.processed++;
+        
+        try {
+          // Normalize field names - handle case sensitivity and different naming conventions
+          const normalizedRow = {
+            JobTitleID: row.JobTitleID || row.jobTitleID || row.jobtitleid || row['Job Title ID'] || row['job_title_id'] || null,
+            JobTitle: row.JobTitle || row.jobTitle || row.jobtitle || row['Job Title'] || row['job_title'] || '',
+            Category: row.Category || row.category || row['Job Category'] || row['job_category'] || '',
+            Description: row['Professional Summary Description'] || row.Description || row.description || row['professional summary description'] || row['Job Description'] || row['job_description'] || '',
+            IsRecommended: row.IsRecommended || row.isRecommended || row.isrecommended || row['Is Recommended'] || row['is_recommended'] || false
+          };
+          
+          // Validate required fields
+          if (!normalizedRow.JobTitleID && !normalizedRow.JobTitle) {
+            importStatus.errors.push({
+              row: rowNumber,
+              message: "Missing required JobTitleID or JobTitle"
+            });
+            continue;
+          }
+          
+          if (!normalizedRow.Description) {
+            importStatus.errors.push({
+              row: rowNumber,
+              message: "Missing required Description"
+            });
+            continue;
+          }
+          
+          // Convert IsRecommended to boolean
+          const isRecommended = typeof normalizedRow.IsRecommended === 'string'
+            ? ['true', 'yes', '1'].includes(normalizedRow.IsRecommended.toLowerCase())
+            : !!normalizedRow.IsRecommended;
+          
+          // Process the title
+          let titleId: number | null = null;
+          let title: string = '';
+          
+          if (normalizedRow.JobTitleID) {
+            // Check if a title with this ID exists
+            const existingTitle = existingTitles.find(t => t.id === Number(normalizedRow.JobTitleID));
+            if (existingTitle) {
+              titleId = existingTitle.id;
+              title = existingTitle.title;
+              processedTitleIds.add(titleId);
+            } else {
+              importStatus.errors.push({
+                row: rowNumber,
+                message: `JobTitleID ${normalizedRow.JobTitleID} not found in database`
+              });
+              continue;
+            }
+          } else {
+            // Look up by title name
+            const titleLower = normalizedRow.JobTitle.toLowerCase();
+            const existingTitle = titleMap.get(titleLower);
+            
+            if (existingTitle) {
+              titleId = existingTitle.id;
+              title = existingTitle.title;
+              processedTitleIds.add(titleId);
+            } else {
+              // Create a new title
+              const newTitle = {
+                title: normalizedRow.JobTitle,
+                category: normalizedRow.Category || 'General',
+                description: ''
+              };
+              
+              const [insertedTitle] = await db.insert(professionalSummaryTitles).values(newTitle).returning();
+              titleId = insertedTitle.id;
+              title = insertedTitle.title;
+              titleMap.set(titleLower, insertedTitle);
+              processedTitleIds.add(titleId);
+              importStatus.created++;
+            }
+          }
+          
+          // Now insert the description
+          const description = {
+            content: normalizedRow.Description,
+            isRecommended: isRecommended,
+            professionalSummaryTitleId: titleId
+          };
+          
+          const [insertedDescription] = await db.insert(professionalSummaryDescriptions)
+            .values(description)
+            .returning();
+            
+          processedDescriptionIds.add(insertedDescription.id);
+          importStatus.created++;
+          
+          // Update status periodically
+          if (rowNumber % 100 === 0 || rowNumber === rows.length) {
+            importStatusEmitter.emit('update', importStatus);
+          }
+        } catch (error) {
+          console.error(`Error processing row ${rowNumber}:`, error);
+          importStatus.errors.push({
+            row: rowNumber,
+            message: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+      
+      // If in full-sync mode, delete records that weren't in the import
+      if (syncMode === 'full-sync') {
+        try {
+          // Delete descriptions not in the import
+          if (processedDescriptionIds.size > 0) {
+            const descriptionsToDelete = allExistingDescriptions.filter(d => !processedDescriptionIds.has(d.id));
+            
+            if (descriptionsToDelete.length > 0) {
+              console.log(`Deleting ${descriptionsToDelete.length} descriptions in full-sync mode`);
+              const descriptionIds = descriptionsToDelete.map(d => d.id);
+              
+              for (let i = 0; i < descriptionIds.length; i += 500) {
+                const batch = descriptionIds.slice(i, i + 500);
+                await db.delete(professionalSummaryDescriptions)
+                  .where(inArray(professionalSummaryDescriptions.id, batch));
+              }
+              
+              importStatus.deleted += descriptionsToDelete.length;
+            }
+          }
+        } catch (error) {
+          console.error("Error performing full sync cleanup:", error);
+          importStatus.errors.push({
+            row: 0,
+            message: `Error performing full sync cleanup: ${error instanceof Error ? error.message : String(error)}`
+          });
+        }
+      }
+    }
+    
+    // Mark import as complete
+    importStatus.isComplete = true;
+    importStatusEmitter.emit('update', importStatus);
+    
+    console.log("Professional summary import completed:", importStatus);
   } catch (error) {
-    console.error("Error importing professional summaries from CSV:", error);
-    return res.status(500).json({ error: "Failed to import professional summaries from CSV" });
+    console.error("Error importing professional summaries:", error);
+    
+    // Mark import as complete with error
+    importStatus.isComplete = true;
+    importStatus.errors.push({
+      row: 0,
+      message: `Import failed: ${error instanceof Error ? error.message : String(error)}`
+    });
+    importStatusEmitter.emit('update', importStatus);
   }
 });
 
@@ -712,7 +924,7 @@ professionalSummaryRouter.post("/import/json", isAuthenticated, isAdmin, async (
 });
 
 // Server-sent events endpoint for import status updates
-professionalSummaryRouter.get("/import-status", isAdmin, (req, res) => {
+professionalSummaryRouter.get("/import-status", isAuthenticated, isAdmin, (req, res) => {
   // Setup SSE connection
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
