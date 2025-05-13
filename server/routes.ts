@@ -9,6 +9,7 @@ import { jobCsvRouter } from "./routes/job-csv";
 import { educationRouter } from "./routes/education";
 import { skillsRouter } from "./routes/skills";
 import { professionalSummaryRouter } from "./routes/professional-summary";
+import { professionalSummaryImportRouter } from "./routes/professional-summary-import";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -22,6 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/education", educationRouter);
   app.use("/api/skills", skillsRouter);
   app.use("/api/professional-summary", professionalSummaryRouter);
+  app.use("/api/professional-summary", professionalSummaryImportRouter);
   
   // Register development/test routes
   app.use("/api/triggers", triggerThumbnailRouter);
