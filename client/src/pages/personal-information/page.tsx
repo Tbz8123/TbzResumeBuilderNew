@@ -48,7 +48,8 @@ const PersonalInformationPage = () => {
     city: resumeData.city || '',
     country: resumeData.country || '',
     postalCode: resumeData.postalCode || '',
-    summary: resumeData.summary || ''
+    summary: resumeData.summary || '',
+    photo: resumeData.photo || null
   });
   
   // Effect to update resume data when form state changes
@@ -184,7 +185,13 @@ const PersonalInformationPage = () => {
                         if (file) {
                           const reader = new FileReader();
                           reader.onload = (event) => {
-                            updateResumeData({ photo: event.target?.result as string });
+                            // Update both form state and resume data
+                            const photoData = event.target?.result as string;
+                            setFormState(prev => ({
+                              ...prev,
+                              photo: photoData
+                            }));
+                            console.log('Photo updated');
                           };
                           reader.readAsDataURL(file);
                         }
@@ -203,7 +210,7 @@ const PersonalInformationPage = () => {
                         id="firstName"
                         name="firstName"
                         placeholder="e.g. Saanvi"
-                        value={resumeData.firstName}
+                        value={formState.firstName}
                         onChange={handleInputChange}
                         className="border border-gray-300 h-10 rounded-none"
                       />
@@ -217,7 +224,7 @@ const PersonalInformationPage = () => {
                         id="surname"
                         name="surname"
                         placeholder="e.g. Patel"
-                        value={resumeData.surname}
+                        value={formState.surname}
                         onChange={handleInputChange}
                         className="border border-gray-300 h-10 rounded-none"
                       />
@@ -233,7 +240,7 @@ const PersonalInformationPage = () => {
                       id="profession"
                       name="profession"
                       placeholder="e.g. Retail Sales Associate"
-                      value={resumeData.profession}
+                      value={formState.profession}
                       onChange={handleInputChange}
                       className="border border-gray-300 h-10 rounded-none w-full"
                     />
@@ -251,7 +258,7 @@ const PersonalInformationPage = () => {
                     id="city"
                     name="city"
                     placeholder="e.g. New Delhi"
-                    value={resumeData.city}
+                    value={formState.city}
                     onChange={handleInputChange}
                     className="border border-gray-300 h-10 rounded-none w-full"
                   />
@@ -265,7 +272,7 @@ const PersonalInformationPage = () => {
                     id="country"
                     name="country"
                     placeholder="e.g. India"
-                    value={resumeData.country}
+                    value={formState.country}
                     onChange={handleInputChange}
                     className="border border-gray-300 h-10 rounded-none w-full"
                   />
@@ -279,7 +286,7 @@ const PersonalInformationPage = () => {
                     id="postalCode"
                     name="postalCode"
                     placeholder="e.g. 110034"
-                    value={resumeData.postalCode}
+                    value={formState.postalCode}
                     onChange={handleInputChange}
                     className="border border-gray-300 h-10 rounded-none w-full"
                   />
@@ -297,7 +304,7 @@ const PersonalInformationPage = () => {
                     name="phone"
                     type="tel"
                     placeholder="e.g. +91 22 1234 5677"
-                    value={resumeData.phone}
+                    value={formState.phone}
                     onChange={handleInputChange}
                     className="border border-gray-300 h-10 rounded-none w-full"
                   />
@@ -315,7 +322,7 @@ const PersonalInformationPage = () => {
                     name="email"
                     type="email"
                     placeholder="e.g. saanvipatel@sample.in"
-                    value={resumeData.email}
+                    value={formState.email}
                     onChange={handleInputChange}
                     required
                     className="border border-gray-300 h-10 rounded-none w-full"
