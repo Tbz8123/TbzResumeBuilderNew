@@ -370,15 +370,7 @@ export default function ProfessionalSummaryAdminPage() {
   
   return (
     <div className="container mx-auto py-8 px-4">
-        {/* Hidden file input for import */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,.xlsx,.xls,.json"
-          className="hidden"
-          onChange={handleFileImport}
-          disabled={isImporting}
-        />
+        {/* Hidden file input is defined later in the code */}
         
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
