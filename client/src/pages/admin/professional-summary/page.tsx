@@ -244,39 +244,75 @@ export default function ProfessionalSummaryAdminPage() {
       formData.append('file', file);
       formData.append('syncMode', syncMode);
       
-      // Set up server-sent events to receive import progress updates
-      const eventSource = new EventSource(`/api/professional-summary/import-status?syncMode=${syncMode}`);
+      // Set up polling for import status instead of server-sent events
+      let statusCheckInterval: NodeJS.Timeout;
       
-      eventSource.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        // Update status with the latest information
-        setUploadStatus({
-          processed: data.processed || 0,
-          created: data.created || 0,
-          updated: data.updated || 0,
-          deleted: data.deleted || 0,
-          errors: data.errors || [],
-          isComplete: data.isComplete || false,
-          syncMode: data.syncMode
-        });
-        
-        // Close the connection when complete
-        if (data.isComplete) {
-          eventSource.close();
+      // Function to check import status via polling
+      const checkImportStatus = async () => {
+        try {
+          const statusResponse = await fetch('/api/professional-summary/import-status', {
+            credentials: 'include'
+          });
+          
+          if (!statusResponse.ok) {
+            throw new Error('Failed to get import status');
+          }
+          
+          const data = await statusResponse.json();
+          
+          // Update status with the latest information
+          setUploadStatus({
+            processed: data.processed || 0,
+            created: data.created || 0,
+            updated: data.updated || 0,
+            deleted: data.deleted || 0,
+            errors: data.errors || [],
+            isComplete: data.isComplete || false,
+            syncMode: data.syncMode
+          });
+          
+          // If import is complete, stop polling and clean up
+          if (data.isComplete) {
+            clearInterval(statusCheckInterval);
+            setIsImporting(false);
+            
+            if (data.errors && data.errors.length > 0) {
+              // If there were errors, show them
+              toast({
+                title: "Import Completed with Errors",
+                description: `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Errors: ${data.errors.length}`,
+                variant: "destructive",
+              });
+            } else {
+              // Success message
+              toast({
+                title: "Import Successful",
+                description: syncMode === 'full-sync'
+                  ? `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Deleted: ${data.deleted}`
+                  : `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}`,
+              });
+            }
+            
+            // Refresh data
+            queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/titles'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/categories'] });
+            
+            // Clean up
+            setUploadStatus(null);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+          }
+        } catch (error) {
+          clearInterval(statusCheckInterval);
           setIsImporting(false);
           
           toast({
-            title: "Import Successful",
-            description: syncMode === 'full-sync'
-              ? `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}, Deleted: ${data.deleted}`
-              : `Processed: ${data.processed}, Created: ${data.created}, Updated: ${data.updated}`,
+            title: "Import Status Check Failed",
+            description: error instanceof Error ? error.message : "Failed to check import status",
+            variant: "destructive",
           });
           
-          // Refresh data
-          queryClient.invalidateQueries({ queryKey: ['/api/professional-summary/titles'] });
-          
-          setIsImporting(false);
           setUploadStatus(null);
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -284,51 +320,18 @@ export default function ProfessionalSummaryAdminPage() {
         }
       };
       
-      eventSource.onerror = () => {
-        eventSource.close();
-        setIsImporting(false);
-        
-        toast({
-          title: "Import Failed",
-          description: "There was an error processing your file.",
-          variant: "destructive",
-        });
-        
-        setIsImporting(false);
-        setUploadStatus(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-      };
+      // Use our new unified import endpoint
+      const endpoint = '/api/professional-summary/import';
       
-      // Determine endpoint based on file type
-      let endpoint = '';
-      switch (fileExt) {
-        case 'csv':
-          endpoint = '/api/professional-summary/import/csv';
-          break;
-        case 'xlsx':
-        case 'xls':
-          endpoint = '/api/professional-summary/import/excel';
-          break;
-        case 'json':
-          endpoint = '/api/professional-summary/import/json';
-          break;
-        default:
-          endpoint = '/api/professional-summary/import/csv';
-      }
-      
-      // Send the file
-      const response = await fetch(endpoint, {
+      // Send the file to our new endpoint with query params instead of form fields
+      const response = await fetch(`${endpoint}?mode=${syncMode}`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
       });
       
       if (!response.ok) {
-        eventSource.close();
-        
-        // Get the error message
+        // Handle HTTP error
         let errorMessage = "Failed to import data";
         try {
           const errorData = await response.json();
@@ -349,8 +352,27 @@ export default function ProfessionalSummaryAdminPage() {
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+      } else {
+        // Start polling for import status
+        // Check immediately, then every second
+        checkImportStatus(); 
+        statusCheckInterval = setInterval(checkImportStatus, 1000);
+        
+        // Safety cleanup after 5 minutes in case something goes wrong
+        setTimeout(() => {
+          if (statusCheckInterval) {
+            clearInterval(statusCheckInterval);
+            setIsImporting(false);
+            setUploadStatus(null);
+          }
+        }, 5 * 60 * 1000);
       }
     } catch (error) {
+      // Clear any polling intervals if they exist
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+      }
+      
       setIsImporting(false);
       setUploadStatus(null);
       
