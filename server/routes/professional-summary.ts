@@ -643,15 +643,10 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
       // Default to CSV processing
       try {
         const fileContent = fs.readFileSync(filePath, 'utf8');
-        rows = await new Promise((resolve, reject) => {
-          parse(fileContent, {
-            columns: true,
-            skipEmptyLines: true,
-            trim: true
-          }, (err, output) => {
-            if (err) reject(err);
-            else resolve(output);
-          });
+        rows = parse(fileContent, {
+          columns: true,
+          skip_empty_lines: true,
+          trim: true
         });
       } catch (csvError: any) {
         importStatus.errors.push({
