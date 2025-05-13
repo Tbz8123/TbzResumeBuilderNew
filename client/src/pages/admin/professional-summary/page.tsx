@@ -320,13 +320,10 @@ export default function ProfessionalSummaryAdminPage() {
           setTimeout(() => {
             queryClient.refetchQueries({ queryKey: ['/api/professional-summary/titles'] });
             
-            // If we have a selected title, also refetch its descriptions
-            if (selectedTitle?.id) {
-              queryClient.refetchQueries({ 
-                queryKey: ['/api/professional-summary/descriptions/by-title', selectedTitle.id] 
-              });
-              console.log(`Forced refetch of descriptions for title ID ${selectedTitle.id}`);
-            }
+            // Refetch all description queries regardless of title
+            queryClient.refetchQueries({ 
+              queryKey: ['/api/professional-summary/descriptions/by-title'] 
+            });
             
             console.log('Forced refetch of all professional summary data');
           }, 500);

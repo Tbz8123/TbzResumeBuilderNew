@@ -338,28 +338,30 @@ async function processImport(file: Express.Multer.File, status: any, syncMode: s
             }
           }
           
-          // Check if we should clear existing descriptions first (for full-sync mode)
+          // In full-sync mode, remove all existing descriptions for this title first
           if (syncMode === 'full-sync') {
-            // In full-sync mode, we need to delete any existing descriptions for this title that aren't in the import file
             try {
-              // We no longer delete all descriptions for a title ID in full-sync mode
-              // Instead we'll just check for duplicates and add new descriptions
-              console.log(`Processing title ID ${titleId} with full-sync mode, preserving multiple descriptions`);
+              // Delete all existing descriptions for this title
+              console.log(`Full-sync mode: Deleting all existing descriptions for title ID ${titleId}`);
               
-              // Get existing descriptions for this title just to track them
+              // Get existing descriptions for this title 
               const existingDescForTitle = await db
                 .select()
                 .from(professionalSummaryDescriptions)
                 .where(eq(professionalSummaryDescriptions.professionalSummaryTitleId, titleId));
                 
-              // Add all existing description IDs to the processed set so they won't be deleted
-              for (const desc of existingDescForTitle) {
-                processedDescriptionIds.add(desc.id);
+              if (existingDescForTitle.length > 0) {
+                // Delete all existing descriptions for this title
+                await db.delete(professionalSummaryDescriptions)
+                  .where(eq(professionalSummaryDescriptions.professionalSummaryTitleId, titleId));
+                  
+                console.log(`Deleted ${existingDescForTitle.length} existing descriptions for title ID ${titleId}`);
+                status.deleted += existingDescForTitle.length;
+              } else {
+                console.log(`No existing descriptions found for title ID ${titleId}`);
               }
-              
-              console.log(`Found ${existingDescForTitle.length} existing descriptions for title ID ${titleId}, preserving them`);
             } catch (error) {
-              console.error(`Error processing existing descriptions for title ID ${titleId}:`, error);
+              console.error(`Error deleting existing descriptions for title ID ${titleId}:`, error);
             }
           }
           
@@ -391,39 +393,10 @@ async function processImport(file: Express.Multer.File, status: any, syncMode: s
         }
       }
       
-      // In full-sync mode, we now only delete descriptions that weren't processed
-      // This allows us to keep multiple descriptions per job title
-      if (syncMode === 'full-sync' && processedTitleIds.size > 0) {
-        try {
-          // Find descriptions for processed titles that weren't included in the import
-          const descriptionsToDelete = existingDescriptions.filter(d => 
-            processedTitleIds.has(d.professionalSummaryTitleId) && 
-            !processedDescriptionIds.has(d.id)
-          );
-          
-          if (descriptionsToDelete.length > 0) {
-            console.log(`Found ${descriptionsToDelete.length} descriptions to delete in full-sync cleanup`);
-            
-            // Delete these descriptions in batches to avoid overwhelming the database
-            const batchSize = 100;
-            for (let i = 0; i < descriptionsToDelete.length; i += batchSize) {
-              const batch = descriptionsToDelete.slice(i, i + batchSize);
-              const idsToDelete = batch.map(d => d.id);
-              
-              await db.delete(professionalSummaryDescriptions)
-                .where(inArray(professionalSummaryDescriptions.id, idsToDelete));
-              
-              console.log(`Deleted batch of ${batch.length} descriptions`);
-            }
-            
-            status.deleted = descriptionsToDelete.length;
-          } else {
-            console.log("No descriptions to delete in full-sync cleanup");
-          }
-        } catch (error: any) {
-          console.error("Error in full-sync cleanup:", error);
-          status.errors.push({ row: 0, message: `Error in full-sync cleanup: ${error.message || String(error)}` });
-        }
+      // We're now doing deletion upfront for each title, so no need for final cleanup
+      if (syncMode === 'full-sync') {
+        console.log(`Full-sync complete. All old descriptions deleted and new ones added.`);
+        console.log(`Total deleted: ${status.deleted}, Total created: ${status.created}`);
       }
     }
     
