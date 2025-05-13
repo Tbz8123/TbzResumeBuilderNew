@@ -44,13 +44,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -186,28 +179,28 @@ const TemplateBindingsPage = () => {
                     <TableCell className="font-mono">
                       {editMode[binding.id] ? (
                         <Input 
-                          defaultValue={binding.placeholder}
-                          onChange={(e) => form.setValue(`placeholder`, e.target.value)}
+                          defaultValue={binding.placeholderToken}
+                          onChange={(e) => form.setValue('placeholderToken', e.target.value)}
                         />
                       ) : (
-                        binding.placeholder
+                        binding.placeholderToken
                       )}
                     </TableCell>
                     <TableCell>
                       {editMode[binding.id] ? (
                         <Input 
-                          defaultValue={binding.fieldPath}
-                          onChange={(e) => form.setValue(`fieldPath`, e.target.value)}
+                          defaultValue={binding.dataField}
+                          onChange={(e) => form.setValue('dataField', e.target.value)}
                         />
                       ) : (
-                        binding.fieldPath
+                        binding.dataField
                       )}
                     </TableCell>
                     <TableCell>
                       {editMode[binding.id] ? (
                         <Input 
                           defaultValue={binding.description || ''}
-                          onChange={(e) => form.setValue(`description`, e.target.value)}
+                          onChange={(e) => form.setValue('description', e.target.value)}
                         />
                       ) : (
                         binding.description || '-'
@@ -222,9 +215,9 @@ const TemplateBindingsPage = () => {
                               size="icon"
                               onClick={() => {
                                 handleEditSave(binding.id, {
-                                  placeholder: form.getValues(`placeholder`) || binding.placeholder,
-                                  fieldPath: form.getValues(`fieldPath`) || binding.fieldPath,
-                                  description: form.getValues(`description`) || binding.description || '',
+                                  placeholderToken: form.getValues('placeholderToken') || binding.placeholderToken,
+                                  dataField: form.getValues('dataField') || binding.dataField,
+                                  description: form.getValues('description') || binding.description || null,
                                 });
                               }}
                             >
@@ -245,8 +238,8 @@ const TemplateBindingsPage = () => {
                               size="icon"
                               onClick={() => {
                                 // Pre-fill the form with current values
-                                form.setValue('placeholder', binding.placeholder);
-                                form.setValue('fieldPath', binding.fieldPath);
+                                form.setValue('placeholderToken', binding.placeholderToken);
+                                form.setValue('dataField', binding.dataField);
                                 form.setValue('description', binding.description || '');
                                 setEditMode((prev) => ({ ...prev, [binding.id]: true }));
                               }}
@@ -315,13 +308,13 @@ const TemplateBindingsPage = () => {
               <h3 className="font-medium">Field paths</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 Field paths reference the resume data structure, such as:
-                <ul className="list-disc list-inside mt-2">
-                  <li><code>personalInfo.name</code> - User's full name</li>
-                  <li><code>personalInfo.email</code> - User's email address</li>
-                  <li><code>personalInfo.phone</code> - User's phone number</li>
-                  <li><code>workHistory[0].jobTitle</code> - First job title</li>
-                </ul>
               </p>
+              <ul className="list-disc list-inside mt-2 text-sm text-muted-foreground">
+                <li><code>personalInfo.name</code> - User's full name</li>
+                <li><code>personalInfo.email</code> - User's email address</li>
+                <li><code>personalInfo.phone</code> - User's phone number</li>
+                <li><code>workHistory[0].jobTitle</code> - First job title</li>
+              </ul>
             </div>
           </div>
           <DialogFooter>
@@ -342,10 +335,26 @@ const TemplateBindingsPage = () => {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={form.handleSubmit(async (data) => {
+              try {
+                await createBindingMutation.mutateAsync({
+                  placeholderToken: data.placeholderToken,
+                  dataField: data.dataField,
+                  description: data.description
+                });
+                setAddMode(false);
+                form.reset();
+              } catch (error) {
+                toast({
+                  title: 'Creation failed',
+                  description: 'Failed to create template binding',
+                  variant: 'destructive',
+                });
+              }
+            })}>
               <FormField
                 control={form.control}
-                name="placeholder"
+                name="placeholderToken"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Placeholder</FormLabel>
@@ -361,7 +370,7 @@ const TemplateBindingsPage = () => {
               />
               <FormField
                 control={form.control}
-                name="fieldPath"
+                name="dataField"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Field Path</FormLabel>
@@ -401,16 +410,13 @@ const TemplateBindingsPage = () => {
             <Button 
               onClick={form.handleSubmit(async (data) => {
                 try {
-                  await updateBindingMutation.mutateAsync({
-                    templateId: Number(templateId),
-                    binding: data,
+                  await createBindingMutation.mutateAsync({
+                    placeholderToken: data.placeholderToken,
+                    dataField: data.dataField,
+                    description: data.description || null
                   });
                   setAddMode(false);
                   form.reset();
-                  toast({
-                    title: 'Binding created',
-                    description: 'Template binding has been created successfully',
-                  });
                 } catch (error) {
                   toast({
                     title: 'Creation failed',
