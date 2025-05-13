@@ -384,26 +384,26 @@ professionalSummaryRouter.get("/export/csv", isAuthenticated, isAdmin, async (re
     // Get all descriptions with their title IDs
     const descriptions = await db.select().from(professionalSummaryDescriptions);
     
-    // Format the data for CSV
+    // Format the data for CSV - match the job export format but with one column name change
     const records = descriptions.map(desc => {
       const title = titleMap.get(desc.professionalSummaryTitleId);
       return {
-        titleId: desc.professionalSummaryTitleId,
-        title: title?.title || 'Unknown',
-        category: title?.category || 'Unknown',
-        description: desc.content,
-        isRecommended: desc.isRecommended ? 'Yes' : 'No'
+        JobTitleID: desc.professionalSummaryTitleId,
+        JobTitle: title?.title || 'Unknown',
+        Category: title?.category || 'Unknown',
+        Description: desc.content,
+        IsRecommended: desc.isRecommended ? "true" : "false"
       };
     });
     
-    // Create CSV stringifier
+    // Create CSV stringifier - match the job export format exactly but rename Description column
     const csvStringifier = createObjectCsvStringifier({
       header: [
-        {id: 'titleId', title: 'Title ID'},
-        {id: 'title', title: 'Title'},
-        {id: 'category', title: 'Category'},
-        {id: 'description', title: 'Description'},
-        {id: 'isRecommended', title: 'Is Recommended'}
+        {id: 'JobTitleID', title: 'JobTitleID'},
+        {id: 'JobTitle', title: 'JobTitle'},
+        {id: 'Category', title: 'Category'},
+        {id: 'Description', title: 'Professional Summary Description'},
+        {id: 'IsRecommended', title: 'IsRecommended'}
       ]
     });
     
@@ -738,6 +738,56 @@ professionalSummaryRouter.get("/import-status", isAdmin, (req, res) => {
   req.on('close', () => {
     importStatusEmitter.removeListener('update', sendStatus);
   });
+});
+
+// Dedicated endpoint for CSV export matching the frontend URL pattern
+professionalSummaryRouter.get("/export-csv", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    // Get all titles
+    const titles = await db.select().from(professionalSummaryTitles);
+    
+    // Create a map for quick title lookup
+    const titleMap = new Map(titles.map(t => [t.id, t]));
+    
+    // Get all descriptions with their title IDs
+    const descriptions = await db.select().from(professionalSummaryDescriptions);
+    
+    // Format the data for CSV - match the job export format but with one column name change
+    const records = descriptions.map(desc => {
+      const title = titleMap.get(desc.professionalSummaryTitleId);
+      return {
+        JobTitleID: desc.professionalSummaryTitleId,
+        JobTitle: title?.title || 'Unknown',
+        Category: title?.category || 'Unknown',
+        Description: desc.content,
+        IsRecommended: desc.isRecommended ? "true" : "false"
+      };
+    });
+    
+    // Create CSV stringifier - match the job export format exactly but rename Description column
+    const csvStringifier = createObjectCsvStringifier({
+      header: [
+        {id: 'JobTitleID', title: 'JobTitleID'},
+        {id: 'JobTitle', title: 'JobTitle'},
+        {id: 'Category', title: 'Category'},
+        {id: 'Description', title: 'Professional Summary Description'},
+        {id: 'IsRecommended', title: 'IsRecommended'}
+      ]
+    });
+    
+    // Set headers for file download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=professional-summaries-export.csv');
+    
+    // Write headers and records
+    res.write(csvStringifier.getHeaderString());
+    res.write(csvStringifier.stringifyRecords(records));
+    
+    res.end();
+  } catch (error) {
+    console.error("Error exporting professional summaries as CSV:", error);
+    return res.status(500).json({ error: "Failed to export professional summaries as CSV" });
+  }
 });
 
 export { professionalSummaryRouter };
