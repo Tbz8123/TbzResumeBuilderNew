@@ -24,13 +24,19 @@ export default function TemplateBindingsPage() {
   const [previewKey, setPreviewKey] = useState<number>(0);
 
   // Fetch template data
-  const { data: template, isLoading: isLoadingTemplate } = useQuery({
+  const { data: template, isLoading: isLoadingTemplate } = useQuery<{
+    id: number;
+    name: string;
+    description: string;
+    category: string;
+    isActive: boolean;
+  }>({
     queryKey: [`/api/templates/${templateId}`],
     enabled: !!templateId,
   });
 
   // Fetch template bindings
-  const { data: bindingsData, isLoading: isLoadingBindings } = useQuery({
+  const { data: bindingsData, isLoading: isLoadingBindings } = useQuery<Binding[]>({
     queryKey: [`/api/templates/${templateId}/bindings`],
     enabled: !!templateId,
   });
@@ -81,7 +87,7 @@ export default function TemplateBindingsPage() {
 
   useEffect(() => {
     if (template && typeof template === 'object' && 'name' in template) {
-      setTemplateName(template.name);
+      setTemplateName(template.name as string);
     }
   }, [template]);
 

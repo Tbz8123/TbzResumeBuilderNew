@@ -347,7 +347,7 @@ const AdminTemplateManagementPage = () => {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => navigate(`/admin/templates/${template.id}/bindings`)}
+                                  onClick={() => navigate(`/admin/template-bindings/${template.id}`)}
                                   title="Template Bindings"
                                 >
                                   <Link2 className="h-4 w-4" />
