@@ -515,35 +515,15 @@ const ProfessionalSummaryPage = () => {
                           id="professional-summary-search"
                           placeholder="Search by job title for pre-written examples"
                           className="w-full rounded-lg border border-gray-300 px-3 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                          value={searchTerm}
-                          onKeyDown={(e) => {
-                            // Special handling for backspace
-                            if (e.key === 'Backspace' && searchTerm) {
-                              const newValue = searchTerm.slice(0, -1);
-                              console.log("Backspace detected, new value:", newValue);
-                              
-                              setSearchTerm(newValue);
-                              
-                              if (newValue === '') {
-                                setCurrentJobTitle(null);
-                                setSummaryDescriptions([]);
-                                // Show default suggestions
-                                setJobTitleSuggestions(allSuggestions.slice(0, 5));
-                              } else {
-                                // Filter suggestions
-                                const filtered = allSuggestions.filter(job => 
-                                  job.title.toLowerCase().includes(newValue.toLowerCase())
-                                );
-                                setJobTitleSuggestions(filtered);
-                              }
-                              
-                              // Always show dropdown when typing
-                              setShowJobTitleSuggestions(true);
-                            }
-                          }}
-                          onChange={(e) => {
-                            const newValue = e.target.value;
-                            console.log("Input change:", newValue);
+                          // Switch to uncontrolled input to resolve backspace issues
+                          defaultValue={searchTerm}
+                          onInput={(e) => {
+                            // Use the uncontrolled input's value directly
+                            const target = e.target as HTMLInputElement;
+                            const newValue = target.value;
+                            console.log("Input event with value:", newValue);
+                            
+                            // Update state
                             setSearchTerm(newValue);
                             
                             // Show dropdown while typing
@@ -595,10 +575,20 @@ const ProfessionalSummaryPage = () => {
                             <button 
                               className="p-1 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
                               onClick={() => {
+                                // Clear the search term state
                                 setSearchTerm('');
+                                
+                                // Clear the input field value directly for uncontrolled input
+                                if (searchInputRef.current) {
+                                  searchInputRef.current.value = '';
+                                }
+                                
+                                // Reset related states
                                 setCurrentJobTitle(null);
                                 setSummaryDescriptions([]);
                                 setShowJobTitleSuggestions(false);
+                                
+                                // Focus back on the input
                                 searchInputRef.current?.focus();
                               }}
                             >
@@ -623,7 +613,16 @@ const ProfessionalSummaryPage = () => {
                                 className="px-4 py-2 cursor-pointer hover:bg-purple-50 border-b border-gray-100 last:border-0"
                                 onClick={() => {
                                   console.log("Job title selected:", job.title);
+                                  
+                                  // Update the search term state
                                   setSearchTerm(job.title);
+                                  
+                                  // Also update the input field value directly for uncontrolled input
+                                  if (searchInputRef.current) {
+                                    searchInputRef.current.value = job.title;
+                                  }
+                                  
+                                  // Update selected job title and hide dropdown
                                   setCurrentJobTitle(job);
                                   setShowJobTitleSuggestions(false);
                                 }}
