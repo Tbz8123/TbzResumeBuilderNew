@@ -1,0 +1,69 @@
+1. Show an Interactive Template Preview with Highlighted Tokens
+Render the raw HTML in a scrollable preview pane.
+
+Overlay colored boxes around each placeholder token (e.g. [[FIELD:name]], [[LOOP:sections.education]]) so you can see exactly where they live in the layout.
+
+When you click on a highlighted region, the corresponding placeholder token is auto-selected in your binding panel.
+
+This gives you a “point-and-see” workflow: click on “John Doe” in the preview and the admin UI jumps to the name binding.
+
+2. Two-Column Bindings Panel with Live Search & Filter
+Left column: list of placeholder tokens found in the template (name, contact.email, [[LOOP:sections.experience]], etc.).
+
+Right column: live search/filterable tree of your data fields (name, contact.phone, sections.education[].year, etc.).
+
+Workflow:
+
+Click a placeholder in the left list.
+
+Type “edu” in the right tree’s search box to quickly find and select sections.education[].year.
+
+The binding is saved immediately and the preview updates.
+
+3. Wizard Mode for Linear Walk-Through
+If the template is long, offer a “Next →” wizard that guides you placeholder by placeholder:
+
+Step 1: “Bind your page title” → selects [[FIELD:name]] region/highlight → dropdown to choose name.
+
+Step 2: “Bind your contact block” → jump to [[FIELD:contact.email]] → map to contact.email.
+
+Step 3: “Bind your education loop” → preview snippet repeated n times → select sections.education array → map ITEM:year and ITEM:desc.
+
+…and so on, until every token is mapped.
+
+At the end you get a quick “100% complete” status.
+
+4. Inline “Bind” Buttons in the Preview
+Next to each placeholder in the HTML preview (perhaps via a subtle “⚙️” icon), show a small “Bind ▼” button:
+
+html
+Copy
+Edit
+<h1>[[FIELD:name]] <button class="bind-btn">Bind ▼</button></h1>
+Clicking that drops open a mini-dropdown right there, listing your data fields.
+
+Pick “name” and the button turns green.
+
+Hover over it to see “Bound to: name.”
+
+This inline approach makes it immediately obvious which bit of text you’re binding.
+
+5. Auto-Suggest & Smart Defaults
+When a new template is uploaded, run a quick heuristic:
+
+If you see [[FIELD:name]], auto-select the name field for you.
+
+If you detect a loop over sections.skills, auto-bind it to your skills array.
+
+If placeholder and data keys match exactly, pre-populate the dropdown.
+
+You then only need to tweak the few that didn’t match or add your custom sections.
+
+Putting It All Together
+Preview pane with visual highlights + inline bind buttons
+
+Bindings list with search/filter of your data model
+
+Wizard mode to step through each token in sequence
+
+Auto-binding for exact matches to reduce manual work
