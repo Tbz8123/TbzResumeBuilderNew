@@ -643,11 +643,18 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
       // Default to CSV processing
       try {
         const fileContent = fs.readFileSync(filePath, 'utf8');
-        rows = parse(fileContent, {
+        const parsedData = parse(fileContent, {
           columns: true,
           skip_empty_lines: true,
           trim: true
         });
+        // Safely convert to array
+        rows = Array.isArray(parsedData) ? parsedData : [];
+        
+        if (rows.length === 0 && parsedData) {
+          // Handle case where parse returns an object but not an array
+          rows = [parsedData];
+        }
       } catch (csvError: any) {
         importStatus.errors.push({
           row: 0,
@@ -764,15 +771,15 @@ professionalSummaryRouter.post("/import/csv", isAuthenticated, isAdmin, upload.s
             }
           }
           
-          // Now insert the description
-          const description = {
+          // Now insert the description - use the schema to validate
+          const descriptionData = professionalSummaryDescriptionSchema.parse({
             content: normalizedRow.Description,
             isRecommended: isRecommended,
             professionalSummaryTitleId: titleId
-          };
+          });
           
           const [insertedDescription] = await db.insert(professionalSummaryDescriptions)
-            .values(description)
+            .values(descriptionData)
             .returning();
             
           processedDescriptionIds.add(insertedDescription.id);
@@ -896,14 +903,18 @@ professionalSummaryRouter.post("/import/json", isAuthenticated, isAdmin, async (
         
         // Add description if it exists
         if (record.description) {
-          const newDescription = {
-            content: record.description,
-            isRecommended: !!record.isRecommended,
-            professionalSummaryTitleId: titleId
-          };
-          
-          await db.insert(professionalSummaryDescriptions).values(newDescription);
-          results.descriptionsAdded++;
+          try {
+            const newDescriptionData = professionalSummaryDescriptionSchema.parse({
+              content: record.description,
+              isRecommended: !!record.isRecommended,
+              professionalSummaryTitleId: titleId
+            });
+            
+            await db.insert(professionalSummaryDescriptions).values(newDescriptionData);
+            results.descriptionsAdded++;
+          } catch (validationError) {
+            results.errors.push(`Item ${i + 1}: Invalid description data - ${validationError}`);
+          }
         }
       } catch (error) {
         console.error(`Error processing item ${i + 1}:`, error);
