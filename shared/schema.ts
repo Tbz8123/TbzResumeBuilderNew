@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -8,6 +8,8 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   isAdmin: boolean("is_admin").default(false),
+  xpPoints: integer("xp_points").default(0),
+  level: integer("level").default(1),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -391,3 +393,81 @@ export const skillJobTitleSkillsRelations = relations(skillJobTitleSkills, ({ on
     references: [skills.id],
   }),
 }));
+
+// Achievements system tables
+export const achievements = pgTable("achievements", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  icon: text("icon").notNull(),
+  xpPoints: integer("xp_points").notNull(),
+  type: text("type").notNull(), // 'section_completion', 'milestone', 'quality', etc.
+  triggerCondition: jsonb("trigger_condition").notNull(), // JSON with conditions to trigger the achievement
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const userAchievements = pgTable("user_achievements", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  achievementId: integer("achievement_id").references(() => achievements.id).notNull(),
+  unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const userProgress = pgTable("user_progress", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  sectionKey: text("section_key").notNull(), // 'personal_info', 'work_history', 'education', etc.
+  status: text("status").notNull(), // 'not_started', 'in_progress', 'completed'
+  progress: integer("progress").default(0).notNull(), // percentage of completion (0-100)
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Add relation definitions for achievement tables
+export const usersAchievementsRelations = relations(users, ({ many }) => ({
+  achievements: many(userAchievements),
+  progress: many(userProgress)
+}));
+
+export const achievementsRelations = relations(achievements, ({ many }) => ({
+  userAchievements: many(userAchievements)
+}));
+
+export const userAchievementsRelations = relations(userAchievements, ({ one }) => ({
+  user: one(users, {
+    fields: [userAchievements.userId],
+    references: [users.id]
+  }),
+  achievement: one(achievements, {
+    fields: [userAchievements.achievementId],
+    references: [achievements.id]
+  })
+}));
+
+export const userProgressRelations = relations(userProgress, ({ one }) => ({
+  user: one(users, {
+    fields: [userProgress.userId],
+    references: [users.id]
+  })
+}));
+
+// Schema definitions for achievements tables
+export const achievementSchema = createInsertSchema(achievements, {
+  name: (schema) => schema.min(3, "Name must be at least 3 characters"),
+  description: (schema) => schema.min(10, "Description must be at least 10 characters"),
+  xpPoints: (schema) => schema.min(1, "XP points must be at least 1")
+});
+
+export const userAchievementSchema = createInsertSchema(userAchievements);
+export const userProgressSchema = createInsertSchema(userProgress);
+
+// Type definitions
+export type Achievement = typeof achievements.$inferSelect;
+export type InsertAchievement = z.infer<typeof achievementSchema>;
+
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type InsertUserAchievement = z.infer<typeof userAchievementSchema>;
+
+export type UserProgress = typeof userProgress.$inferSelect;
+export type InsertUserProgress = z.infer<typeof userProgressSchema>;
