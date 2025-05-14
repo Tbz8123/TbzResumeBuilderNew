@@ -86,17 +86,17 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '{{skillsList}}': resumeData.skills && resumeData.skills.length > 0 ? resumeData.skills.map((skill: { name: string }) => skill.name).join(', ') : '',
     '{{skills_list}}': resumeData.skills && resumeData.skills.length > 0 ? resumeData.skills.map((skill: { name: string }) => skill.name).join(', ') : '',
     
-    // Website & social media - only include if explicitly added by user
-    '{{website}}': 'website' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.website : '',
-    '{{personal_website}}': 'website' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.website : '',
-    '{{linkedin}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '',
-    '{{linkedinUrl}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '',
-    '{{linkedin_url}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '',
+    // Website & social media - only include if explicitly added by user, replace with empty string to completely remove from template
+    '{{website}}': 'website' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
+    '{{personal_website}}': 'website' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
+    '{{linkedin}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
+    '{{linkedinUrl}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
+    '{{linkedin_url}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
     
-    // Additional info - only include if explicitly added by user
-    '{{drivingLicense}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '',
-    '{{driving_license}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '',
-    '{{license}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '',
+    // Additional info - only include if explicitly added by user, replace with empty string to completely remove from template
+    '{{drivingLicense}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
+    '{{driving_license}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
+    '{{license}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
     
     // Common template text patterns
     'SAHIB KHAN': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim().toUpperCase(),
@@ -136,8 +136,8 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '📍 address, city, st zip code': [resumeData.city, resumeData.country].filter(Boolean).length > 0 ? 
       `📍 ${[resumeData.city, resumeData.country].filter(Boolean).join(', ')}` : 
       '📍 address, city, st zip code',
-    '🔗 website': 'website' in (resumeData.additionalInfo || {}) ? `🔗 ${resumeData.additionalInfo.website}` : '🔗 website',
-    '💼 linkedin': 'linkedin' in (resumeData.additionalInfo || {}) ? `💼 ${resumeData.additionalInfo.linkedin}` : '💼 linkedin',
+    '🔗 website': 'website' in (resumeData.additionalInfo || {}) ? `🔗 ${resumeData.additionalInfo.website}` : '##REMOVE_THIS##',
+    '💼 linkedin': 'linkedin' in (resumeData.additionalInfo || {}) ? `💼 ${resumeData.additionalInfo.linkedin}` : '##REMOVE_THIS##',
       
     // Professional template patterns and placeholders
     'moahmed': resumeData.firstName || 'moahmed',
@@ -180,6 +180,16 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       processedHtml = processedHtml.replace(regex, replacement);
     }
   });
+  
+  // Post-processing to completely remove any DOM elements containing our removal marker
+  // This will remove entire elements (like list items, div elements, etc.) that contain the marker
+  processedHtml = processedHtml.replace(/<li[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/li>/gi, '');
+  processedHtml = processedHtml.replace(/<div[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/div>/gi, '');
+  processedHtml = processedHtml.replace(/<p[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/p>/gi, '');
+  processedHtml = processedHtml.replace(/<span[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/span>/gi, '');
+  
+  // Also remove any remaining instances of the marker
+  processedHtml = processedHtml.replace(/##REMOVE_THIS##/g, '');
   
   // Handle special case for full name with variant spellings - find any double-word name and replace
   const fullName = `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim();
