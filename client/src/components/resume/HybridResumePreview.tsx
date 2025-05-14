@@ -24,12 +24,26 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   const [templateKey, setTemplateKey] = useState<number>(0); // Force re-renders with a key
   const templateHtmlRef = useRef<string>('');
   
-  // Special debug function to check additionalInfo
+  // Special debug function to check additionalInfo and visibility
   const hasAdditionalInfo = (key: string): boolean => {
-    const result = resumeData.additionalInfo && key in resumeData.additionalInfo;
-    console.log(`hasAdditionalInfo('${key}'): ${result}`, resumeData.additionalInfo);
-    return result;
+    const hasInfo = resumeData.additionalInfo && key in resumeData.additionalInfo;
+    const isVisible = resumeData.additionalInfoVisibility && 
+                      key in resumeData.additionalInfoVisibility && 
+                      resumeData.additionalInfoVisibility[key] === true;
+    
+    console.log(`hasAdditionalInfo('${key}'):`, {
+      hasInfo,
+      isVisible,
+      infoValue: resumeData.additionalInfo?.[key],
+      visibilityValue: resumeData.additionalInfoVisibility?.[key]
+    });
+    
+    return hasInfo;
   };
+  
+  // Debug logging for rendering
+  console.log("RENDER DEBUG - additionalInfo:", resumeData.additionalInfo);
+  console.log("RENDER DEBUG - additionalInfoVisibility:", resumeData.additionalInfoVisibility);
   
   // Get template ID from localStorage if needed
   useEffect(() => {
@@ -188,38 +202,29 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                     {[resumeData.city, resumeData.country].filter(Boolean).join(', ')}
                   </div>
                 )}
+                
+                {/* Render each additional info field independently */}
+                {resumeData.additionalInfo?.linkedin && resumeData.additionalInfoVisibility?.linkedin && (
+                  <div>
+                    <span className="font-medium">LinkedIn: </span>
+                    {resumeData.additionalInfo.linkedin}
+                  </div>
+                )}
+                
+                {resumeData.additionalInfo?.website && resumeData.additionalInfoVisibility?.website && (
+                  <div>
+                    <span className="font-medium">Website: </span>
+                    {resumeData.additionalInfo.website}
+                  </div>
+                )}
+                
+                {resumeData.additionalInfo?.drivingLicense && resumeData.additionalInfoVisibility?.drivingLicense && (
+                  <div>
+                    <span className="font-medium">License: </span>
+                    {resumeData.additionalInfo.drivingLicense}
+                  </div>
+                )}
               </div>
-
-               {/* Additional info section - only render container if at least one field has visibility true */}
-               {(
-                 (resumeData.additionalInfo?.linkedin && resumeData.additionalInfoVisibility?.linkedin) ||
-                 (resumeData.additionalInfo?.website && resumeData.additionalInfoVisibility?.website) ||
-                 (resumeData.additionalInfo?.drivingLicense && resumeData.additionalInfoVisibility?.drivingLicense)
-               ) && (
-                 <div className="text-xs space-y-1 text-gray-600 mt-4">
-                   {/* LinkedIn - only render if field exists and visibility is true */}
-                   {resumeData.additionalInfo?.linkedin && resumeData.additionalInfoVisibility?.linkedin && (
-                     <div>
-                       <span className="font-medium">LinkedIn: </span>
-                       {resumeData.additionalInfo.linkedin}
-                     </div>
-                   )}
-                   {/* Website - only render if field exists and visibility is true */}
-                   {resumeData.additionalInfo?.website && resumeData.additionalInfoVisibility?.website && (
-                     <div>
-                       <span className="font-medium">Website: </span>
-                       {resumeData.additionalInfo.website}
-                     </div>
-                   )}
-                   {/* Driving License - only render if field exists and visibility is true */}
-                   {resumeData.additionalInfo?.drivingLicense && resumeData.additionalInfoVisibility?.drivingLicense && (
-                     <div>
-                       <span className="font-medium">License: </span>
-                       {resumeData.additionalInfo.drivingLicense}
-                     </div>
-                   )}
-                 </div>
-               )}
               </section>
           
             

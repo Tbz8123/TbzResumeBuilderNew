@@ -127,25 +127,35 @@ const PersonalInformationPage = () => {
   
   // Handle additional information
   const handleAddInfo = (type: string) => {
+    // When adding a field, set both the value and visibility
     updateAdditionalInfo(type, '');
+    console.log(`Added info field: ${type}`);
   };
   
   const handleRemoveInfo = (type: string) => {
+    // When removing, clear both value and visibility
     removeAdditionalInfo(type);
+    console.log(`Removed info field: ${type}`);
   };
   
   const handleInfoChange = (type: string, value: string) => {
+    // Value changes maintain visibility
     updateAdditionalInfo(type, value);
+    console.log(`Changed info field ${type} to: ${value}`);
   };
   
   // Check if specific additional info exists
   const hasAdditionalInfo = (type: string) => {
-    return resumeData.additionalInfo && type in resumeData.additionalInfo;
+    const hasInfo = resumeData.additionalInfo && type in resumeData.additionalInfo;
+    console.log(`Checking info field ${type}: ${hasInfo}`);
+    return hasInfo;
   };
   
   // Get additional info value
   const getAdditionalInfoValue = (type: string) => {
-    return resumeData.additionalInfo?.[type] || '';
+    const value = resumeData.additionalInfo?.[type] || '';
+    console.log(`Getting info field ${type}: ${value}`);
+    return value;
   };
 
   return (
