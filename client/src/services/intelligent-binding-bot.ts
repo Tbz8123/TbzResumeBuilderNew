@@ -98,13 +98,13 @@ export class IntelligentBindingBot {
     // Try matching with field paths
     for (const field of this.flattenedFields) {
       // Compare with path
-      const pathScore = stringSimilarity.compareTwoStrings(
+      const pathScore = compareStrings(
         cleanPlaceholder.toLowerCase(),
         field.path.toLowerCase()
       );
       
       // Compare with name
-      const nameScore = stringSimilarity.compareTwoStrings(
+      const nameScore = compareStrings(
         cleanPlaceholder.toLowerCase(),
         field.name.toLowerCase()
       );
@@ -112,7 +112,7 @@ export class IntelligentBindingBot {
       // Compare with description if available
       let descScore = 0;
       if (field.description) {
-        descScore = stringSimilarity.compareTwoStrings(
+        descScore = compareStrings(
           cleanPlaceholder.toLowerCase(),
           field.description.toLowerCase()
         ) * 0.7; // Weight description matches less
@@ -134,7 +134,7 @@ export class IntelligentBindingBot {
       for (const field of arrayFields) {
         // Extract array name from path like "education[]"
         const arrayName = field.path.split('[')[0];
-        const score = stringSimilarity.compareTwoStrings(
+        const score = compareStrings(
           cleanPlaceholder.toLowerCase(),
           arrayName.toLowerCase()
         );
