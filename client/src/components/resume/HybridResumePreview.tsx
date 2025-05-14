@@ -88,6 +88,52 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       return;
     }
     
+    // Cast resumeData to any to access legacy fields
+    const data = resumeData as any;
+    
+    // DIRECT PRE-PROCESSING: Handle the optional-info div before any other processing
+    let htmlToProcess = templateHtmlRef.current;
+    
+    // Check for the specific optional-info div in the template
+    const optionalInfoRegex = /<div\s+class=["']optional-info["'][^>]*>([\s\S]*?)<\/div>/i;
+    const optionalInfoMatch = htmlToProcess.match(optionalInfoRegex);
+    
+    console.log("LinkedIn available?", Boolean(data.additionalFields?.linkedin?.value));
+    console.log("Website available?", Boolean(data.additionalFields?.website?.value));
+    console.log("Driving License available?", Boolean(data.additionalFields?.drivingLicense?.value));
+    
+    if (optionalInfoMatch) {
+      // Extract the optional info content to manipulate
+      const optionalInfoContent = optionalInfoMatch[0];
+      console.log("Found optional-info div:", optionalInfoContent);
+      
+      // Create a modified version based on what fields are actually present
+      let modifiedOptionalInfo = '';
+      
+      // Check each field and only include if it exists
+      if (data.additionalFields?.linkedin?.value) {
+        modifiedOptionalInfo += `🔗 LinkedIn: ${data.additionalFields.linkedin.value}<br>`;
+      }
+      
+      if (data.additionalFields?.website?.value) {
+        modifiedOptionalInfo += `🌐 Website: ${data.additionalFields.website.value}<br>`;
+      }
+      
+      if (data.additionalFields?.drivingLicense?.value) {
+        modifiedOptionalInfo += `🚘 Driving License: ${data.additionalFields.drivingLicense.value}<br>`;
+      }
+      
+      // If we have any fields, wrap them in the div
+      if (modifiedOptionalInfo) {
+        modifiedOptionalInfo = `<div class="optional-info">${modifiedOptionalInfo}</div>`;
+        console.log("Created modified optional info:", modifiedOptionalInfo);
+      }
+      
+      // Replace the original optional-info div with our modified version (or empty if no fields)
+      htmlToProcess = htmlToProcess.replace(optionalInfoMatch[0], modifiedOptionalInfo);
+      console.log("Replaced optional-info div in template");
+    }
+    
     console.log("Processing HTML with data", {
       firstName: resumeData.firstName,
       surname: resumeData.surname,
@@ -100,8 +146,8 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       dataUpdateTimestamp: new Date().toISOString() // For tracking update timing
     });
     
-    // Use the enhanced template processor with more robust placeholder handling
-    const processedHtml = processTemplateHtml(templateHtmlRef.current, resumeData);
+    // Now use the enhanced template processor on our pre-processed HTML
+    const processedHtml = processTemplateHtml(htmlToProcess, resumeData);
     
     console.log("HTML processed with data", processedHtml.substring(0, 200) + "...");
     
