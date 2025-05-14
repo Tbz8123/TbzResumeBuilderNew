@@ -10,7 +10,8 @@ import {
   Loader2, Save, ArrowLeft, Search, ChevronRight, 
   ChevronLeft, Code, AlertTriangle, Settings, Check, 
   Filter, WandSparkles, Lightbulb, RefreshCw, Bot,
-  Type, ListOrdered, SplitSquareVertical, Hash
+  Type, ListOrdered, SplitSquareVertical, Hash, Box,
+  ToggleLeft, CircleDot, Calendar as CalendarIcon
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
