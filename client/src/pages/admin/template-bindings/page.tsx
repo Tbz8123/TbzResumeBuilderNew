@@ -870,50 +870,102 @@ export default function TemplateBindingsPage() {
   // Render a single data field
   const renderDataField = (field: DataField, level = 0) => {
     const isMapped = bindings.some(binding => binding.selector === field.path);
+    const usedByBindingIds = bindings
+      .filter(binding => binding.selector === field.path)
+      .map(binding => binding.id);
+    
+    // Get colors and icons based on type
+    let typeColor, typeBg, typeBorder, typeIcon;
+    
+    switch (field.type) {
+      case 'string':
+        typeColor = 'text-blue-700';
+        typeBg = 'bg-blue-50';
+        typeBorder = 'border-blue-200';
+        typeIcon = <Type className="h-4 w-4 text-blue-600" />;
+        break;
+      case 'array':
+        typeColor = 'text-amber-700';
+        typeBg = 'bg-amber-50';
+        typeBorder = 'border-amber-200';
+        typeIcon = <ListOrdered className="h-4 w-4 text-amber-600" />;
+        break;
+      case 'object':
+        typeColor = 'text-indigo-700';
+        typeBg = 'bg-indigo-50';
+        typeBorder = 'border-indigo-200';
+        typeIcon = <Box className="h-4 w-4 text-indigo-600" />;
+        break;
+      case 'number':
+        typeColor = 'text-purple-700';
+        typeBg = 'bg-purple-50';
+        typeBorder = 'border-purple-200';
+        typeIcon = <Hash className="h-4 w-4 text-purple-600" />;
+        break;
+      case 'boolean':
+        typeColor = 'text-green-700';
+        typeBg = 'bg-green-50';
+        typeBorder = 'border-green-200';
+        typeIcon = <ToggleLeft className="h-4 w-4 text-green-600" />;
+        break;
+      case 'date':
+        typeColor = 'text-pink-700';
+        typeBg = 'bg-pink-50';
+        typeBorder = 'border-pink-200';
+        typeIcon = <CalendarIcon className="h-4 w-4 text-pink-600" />;
+        break;
+      default:
+        typeColor = 'text-gray-700';
+        typeBg = 'bg-gray-50';
+        typeBorder = 'border-gray-200';
+        typeIcon = <CircleDot className="h-4 w-4 text-gray-600" />;
+    }
     
     return (
       <div key={field.id} style={{ marginLeft: `${level * 16}px` }}>
         <div 
-          className={`py-2 px-3 my-1 rounded-md cursor-pointer hover:bg-slate-100 
-            ${isMapped ? 'bg-green-50 border border-green-200' : 'border border-slate-200'}`}
+          className={`py-2 px-3 my-1 rounded-md cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 
+            ${isMapped 
+              ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+              : 'border border-slate-200 dark:border-slate-700'
+            }
+            transition-all duration-150
+          `}
           onClick={() => handleDataFieldSelect(field)}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="mr-2">
-                {field.type === 'object' ? (
-                  <div className="w-4 h-4 rounded-full bg-blue-200 flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-blue-800">O</span>
-                  </div>
-                ) : field.type === 'array' ? (
-                  <div className="w-4 h-4 rounded-full bg-amber-200 flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-amber-800">A</span>
-                  </div>
-                ) : field.type === 'string' ? (
-                  <div className="w-4 h-4 rounded-full bg-green-200 flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-green-800">S</span>
-                  </div>
-                ) : (
-                  <div className="w-4 h-4 rounded-full bg-purple-200 flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-purple-800">{field.type.charAt(0).toUpperCase()}</span>
-                  </div>
-                )}
+                <div className={`w-8 h-8 rounded-md ${typeBg} dark:bg-opacity-20 ${typeBorder} flex items-center justify-center`}>
+                  {typeIcon}
+                </div>
               </div>
               <div>
                 <div className="text-sm font-medium">{field.name}</div>
-                <div className="text-xs text-muted-foreground">{field.path}</div>
+                <div className="text-xs text-muted-foreground font-mono">{field.path}</div>
+                {field.description && (
+                  <div className="text-xs text-muted-foreground mt-0.5 italic">{field.description}</div>
+                )}
               </div>
             </div>
-            {isMapped && (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                Mapped
+            
+            <div className="flex flex-col items-end gap-1">
+              <Badge variant="outline" className={`${typeBg} ${typeColor} border-${typeBorder}`}>
+                {field.type}
               </Badge>
-            )}
+              
+              {isMapped && (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:border-green-800">
+                  <Check className="h-3 w-3 mr-1" />
+                  Mapped {usedByBindingIds.length > 1 ? `(${usedByBindingIds.length})` : ''}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
         
         {field.children && field.children.length > 0 && (
-          <div className="ml-4 pl-2 border-l-2 border-slate-200">
+          <div className="ml-4 pl-2 border-l-2 border-slate-200 dark:border-slate-700">
             {field.children.map(child => renderDataField(child, level + 1))}
           </div>
         )}
@@ -1265,7 +1317,7 @@ export default function TemplateBindingsPage() {
             </div>
             <div className="p-4">
               <div 
-                className="border rounded-md h-[400px] bg-white"
+                className="border rounded-md h-[500px] bg-white dark:bg-slate-900"
                 ref={previewRef}
               >
                 {templateHtml ? (
@@ -1275,21 +1327,74 @@ export default function TemplateBindingsPage() {
                       dangerouslySetInnerHTML={{ __html: templateHtml }}
                     />
                     {/* Token highlight overlays */}
-                    {highlightedTokens.map(token => (
-                      <div
-                        key={token.id}
-                        className="absolute pointer-events-none rounded-sm border-2"
-                        style={{
-                          left: `${token.position.x}px`,
-                          top: `${token.position.y}px`,
-                          width: `${token.position.width}px`,
-                          height: `${token.position.height}px`,
-                          borderColor: token.color || 'rgba(59, 130, 246, 0.5)',
-                          backgroundColor: token.color || 'rgba(59, 130, 246, 0.1)',
-                          zIndex: activeToken === token.id ? 20 : 10
-                        }}
-                      />
-                    ))}
+                    {highlightedTokens.map(token => {
+                      // Get binding for this token
+                      const binding = bindings.find(b => 
+                        b.placeholder === token.text ||
+                        b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.text.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
+                        b.placeholder.replace(/{{|}}/g, '').trim() === token.text.replace(/{{|}}/g, '').trim()
+                      );
+                      
+                      const isMapped = binding && binding.selector && binding.selector.trim() !== '';
+                      const isActive = activeToken === token.id;
+                      
+                      // Set color based on mapping status and activity
+                      let borderColor = 'rgba(59, 130, 246, 0.5)';
+                      let bgColor = 'rgba(59, 130, 246, 0.1)';
+                      
+                      if (isMapped) {
+                        borderColor = 'rgba(16, 185, 129, 0.5)';
+                        bgColor = 'rgba(16, 185, 129, 0.1)';
+                      } else {
+                        borderColor = 'rgba(239, 68, 68, 0.5)';
+                        bgColor = 'rgba(239, 68, 68, 0.1)';
+                      }
+                      
+                      if (isActive) {
+                        borderColor = 'rgba(59, 130, 246, 0.8)';
+                        bgColor = 'rgba(59, 130, 246, 0.2)';
+                      }
+                      
+                      // Display token name, stripped of syntax markers
+                      const displayText = token.text
+                        .replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '')
+                        .replace(/{{(?:#(?:each|if))?|}}/g, '')
+                        .trim();
+                      
+                      return (
+                        <div
+                          key={token.id}
+                          className={`absolute rounded-sm border-2 cursor-pointer transition-all duration-150 ${
+                            isActive ? 'shadow-md' : ''
+                          }`}
+                          style={{
+                            left: `${token.position.x}px`,
+                            top: `${token.position.y}px`,
+                            width: `${token.position.width}px`,
+                            height: `${token.position.height}px`,
+                            borderColor,
+                            backgroundColor: bgColor,
+                            zIndex: isActive ? 20 : 10,
+                            pointerEvents: 'auto'
+                          }}
+                          onClick={() => {
+                            setActiveToken(token.id);
+                            if (binding) {
+                              setSelectedBinding(binding);
+                            }
+                          }}
+                        >
+                          {/* Token label */}
+                          <div className={`absolute top-0 left-0 transform -translate-y-full px-2 py-0.5 text-xs rounded ${
+                            isMapped ? 'bg-green-50 text-green-700 border border-green-200' : 
+                            'bg-red-50 text-red-700 border border-red-200'
+                          }`}>
+                            {isMapped ? '✓ ' : '! '}
+                            {displayText}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="h-full flex items-center justify-center text-center p-10">
@@ -1299,6 +1404,15 @@ export default function TemplateBindingsPage() {
                       <p className="text-sm text-muted-foreground max-w-md">
                         No HTML content found for this template. Please make sure the template has HTML content.
                       </p>
+                      <Button 
+                        className="mt-4" 
+                        size="sm" 
+                        variant="outline"
+                        onClick={refreshTokenHighlights}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Refresh Template
+                      </Button>
                     </div>
                   </div>
                 )}
