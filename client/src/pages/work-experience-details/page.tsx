@@ -5,7 +5,16 @@ import Logo from '@/components/Logo';
 import { ArrowLeft, HelpCircle, Search, X } from 'lucide-react';
 import { getJobTitleSuggestions } from '@/utils/jobTitlesData';
 import { apiRequest } from '@/lib/queryClient';
-import { JobTitle } from '@shared/schema';
+import { JobTitle, ResumeTemplate } from '@shared/schema';
+import HybridResumePreview from '@/components/resume/HybridResumePreview';
+import { useTemplates } from '@/hooks/use-templates';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose
+} from '@/components/ui/dialog';
 import { 
   Select,
   SelectContent,
@@ -44,9 +53,11 @@ const generateYears = () => {
 
 const WorkExperienceDetailsPage = () => {
   const [, setLocation] = useLocation();
-  const { resumeData, updateResumeData } = useResume();
+  const { resumeData, updateResumeData, selectedTemplateId, setSelectedTemplateId } = useResume();
   const jobTitleRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const { data: templates } = useTemplates();
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   
   // Initialize with empty values
   const [workExperience, setWorkExperience] = useState<WorkExperience>({
@@ -127,8 +138,9 @@ const WorkExperienceDetailsPage = () => {
   const handlePreview = () => {
     // Save before previewing
     saveWorkExperience();
-    // Navigate to preview (you'll need to create this page)
-    setLocation('/preview');
+    // Open the preview modal instead of navigating
+    console.log('Opening resume preview modal');
+    setPreviewModalOpen(true);
   };
 
   const handleNext = () => {
