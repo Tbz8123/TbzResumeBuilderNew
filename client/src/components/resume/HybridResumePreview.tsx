@@ -182,30 +182,28 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                 )}
               </div>
 
-               {/* Only show additional info section if user has added any information */}
-               {(resumeData.additionalInfo?.linkedin ||
-                  resumeData.additionalInfo?.website ||
-                  resumeData.additionalInfo?.drivingLicense) && (
+               {/* Only show additional info section if user has explicitly added any information */}
+               {(Object.keys(resumeData.additionalInfo || {}).length > 0) && (
                   <div className="text-xs space-y-1 text-gray-600 mt-4">
-                    {/* Only show LinkedIn if user has added it */}
-                    {resumeData.additionalInfo?.linkedin && (
+                    {/* Only show LinkedIn if user has explicitly added it */}
+                    {'linkedin' in (resumeData.additionalInfo || {}) && (
                       <div>
                         <span className="font-medium">LinkedIn: </span>
-                        {resumeData.additionalInfo.linkedin}
+                        {resumeData.additionalInfo?.linkedin}
                       </div>
                     )}
-                    {/* Only show Website if user has added it */}
-                    {resumeData.additionalInfo?.website && (
+                    {/* Only show Website if user has explicitly added it */}
+                    {'website' in (resumeData.additionalInfo || {}) && (
                       <div>
                         <span className="font-medium">Website: </span>
-                        {resumeData.additionalInfo.website}
+                        {resumeData.additionalInfo?.website}
                       </div>
                     )}
-                    {/* Only show Driving License if user has added it */}
-                    {resumeData.additionalInfo?.drivingLicense && (
+                    {/* Only show Driving License if user has explicitly added it */}
+                    {'drivingLicense' in (resumeData.additionalInfo || {}) && (
                       <div>
                         <span className="font-medium">License: </span>
-                        {resumeData.additionalInfo.drivingLicense}
+                        {resumeData.additionalInfo?.drivingLicense}
                       </div>
                     )}
                   </div>

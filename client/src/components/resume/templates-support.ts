@@ -86,17 +86,17 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '{{skillsList}}': resumeData.skills && resumeData.skills.length > 0 ? resumeData.skills.map((skill: { name: string }) => skill.name).join(', ') : '',
     '{{skills_list}}': resumeData.skills && resumeData.skills.length > 0 ? resumeData.skills.map((skill: { name: string }) => skill.name).join(', ') : '',
     
-    // Website & social media
-    '{{website}}': resumeData.additionalInfo?.website || '',
-    '{{personal_website}}': resumeData.additionalInfo?.website || '',
-    '{{linkedin}}': resumeData.additionalInfo?.linkedin || '',
-    '{{linkedinUrl}}': resumeData.additionalInfo?.linkedin || '',
-    '{{linkedin_url}}': resumeData.additionalInfo?.linkedin || '',
+    // Website & social media - only include if explicitly added by user
+    '{{website}}': 'website' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.website : '',
+    '{{personal_website}}': 'website' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.website : '',
+    '{{linkedin}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '',
+    '{{linkedinUrl}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '',
+    '{{linkedin_url}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '',
     
-    // Additional info
-    '{{drivingLicense}}': resumeData.additionalInfo?.drivingLicense || '',
-    '{{driving_license}}': resumeData.additionalInfo?.drivingLicense || '',
-    '{{license}}': resumeData.additionalInfo?.drivingLicense || '',
+    // Additional info - only include if explicitly added by user
+    '{{drivingLicense}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '',
+    '{{driving_license}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '',
+    '{{license}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '',
     
     // Common template text patterns
     'SAHIB KHAN': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim().toUpperCase(),
@@ -136,8 +136,8 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '📍 address, city, st zip code': [resumeData.city, resumeData.country].filter(Boolean).length > 0 ? 
       `📍 ${[resumeData.city, resumeData.country].filter(Boolean).join(', ')}` : 
       '📍 address, city, st zip code',
-    '🔗 website': resumeData.additionalInfo?.website ? `🔗 ${resumeData.additionalInfo.website}` : '🔗 website',
-    '💼 linkedin': resumeData.additionalInfo?.linkedin ? `💼 ${resumeData.additionalInfo.linkedin}` : '💼 linkedin',
+    '🔗 website': 'website' in (resumeData.additionalInfo || {}) ? `🔗 ${resumeData.additionalInfo.website}` : '🔗 website',
+    '💼 linkedin': 'linkedin' in (resumeData.additionalInfo || {}) ? `💼 ${resumeData.additionalInfo.linkedin}` : '💼 linkedin',
       
     // Professional template patterns and placeholders
     'moahmed': resumeData.firstName || 'moahmed',
