@@ -496,304 +496,132 @@ export default function TemplateBindingsPage() {
         // For demonstration purposes, also add some other relevant suggestions
         const additionalSuggestions: {field: DataField, score: number}[] = [];
         
+        // Add top 3 additional suggestions
         for (const field of flatFields) {
-          // Skip already selected best match
+          // Skip the best match
           if (bestMatch && field.path === bestMatch.path) continue;
           
-          // Generate relevance score based on field type and name similarity
           let score = 0;
           
-          // Type-based scoring (prefer strings for most fields)
-          if (field.type === 'string') score += 0.2;
+          // Calculate similarity scores based on simple patterns
+          if (field.path.includes(fieldName.toLowerCase()) ||
+              fieldName.toLowerCase().includes(field.path)) {
+            score = 0.5;
+          } else if (field.name.toLowerCase().includes(fieldName.toLowerCase()) ||
+                    fieldName.toLowerCase().includes(field.name.toLowerCase())) {
+            score = 0.4;
+          }
           
-          // Name-based scoring
-          const nameSimilarity = calculateStringSimilarity(fieldName.toLowerCase(), field.name.toLowerCase());
-          score += nameSimilarity * 0.5;
-          
-          // Path-based scoring
-          const pathSimilarity = calculateStringSimilarity(fieldName.toLowerCase(), field.path.toLowerCase());
-          score += pathSimilarity * 0.3;
-          
-          // Add if score is good enough
-          if (score > 0.3) {
-            additionalSuggestions.push({field, score});
+          if (score > 0) {
+            additionalSuggestions.push({ field, score });
           }
         }
         
-        // Sort additional suggestions by score
+        // Sort by score and take top 3
         additionalSuggestions.sort((a, b) => b.score - a.score);
+        const topSuggestions = additionalSuggestions.slice(0, 3);
         
-        // Keep top 3 additional suggestions
-        const topAdditionalSuggestions = additionalSuggestions.slice(0, 3);
-        
-        // Add the suggestions
+        // Add to suggestions list
         if (bestMatch) {
           suggestions.push({
-            bindingId: binding.id,
-            token: binding.placeholder,
+            binding,
             suggestions: [
-              { fieldPath: bestMatch.path, fieldName: bestMatch.name, confidence: bestScore },
-              ...topAdditionalSuggestions.map(s => ({
-                fieldPath: s.field.path,
-                fieldName: s.field.name,
-                confidence: s.score
-              }))
+              { field: bestMatch, score: bestScore },
+              ...topSuggestions
             ]
+          });
+        } else if (topSuggestions.length > 0) {
+          suggestions.push({
+            binding,
+            suggestions: topSuggestions
           });
         }
       }
       
-      // Show suggestions dialog if we have any
-      if (suggestions.length > 0) {
-        setBindingSuggestions(suggestions);
-        setShowSuggestionsDialog(true);
-        setAutoSuggestMade(true);
-      } else {
+      // Set the suggestions and show the dialog
+      setBindingSuggestions(suggestions);
+      setShowSuggestionsDialog(true);
+      
+      // Set flag to remember we've made suggestions
+      setAutoSuggestMade(true);
+      
+      // Finish processing
+      setIsProcessingBindings(false);
+      
+      // If no suggestions, show a toast
+      if (suggestions.length === 0) {
         toast({
-          title: "No suggestions",
-          description: "Could not generate any suggestions for the unmapped fields",
+          title: "No suggestions found",
+          description: "Could not find any suitable field matches",
         });
       }
-    } catch (error) {
-      console.error("Error generating suggestions:", error);
+    } catch (err) {
+      console.error("Error generating binding suggestions:", err);
+      setIsProcessingBindings(false);
       toast({
         title: "Error generating suggestions",
-        description: "An error occurred while analyzing the template fields",
+        description: "An error occurred while analyzing template fields",
         variant: "destructive",
       });
-    } finally {
-      setIsProcessingBindings(false);
     }
   };
 
-  // Simple string similarity calculation
-  const calculateStringSimilarity = (str1: string, str2: string): number => {
-    if (!str1.length && !str2.length) return 1.0;
-    if (!str1.length || !str2.length) return 0.0;
-    
-    // Count matching characters
-    let matches = 0;
-    const maxLen = Math.max(str1.length, str2.length);
-    
-    for (let i = 0; i < str1.length && i < str2.length; i++) {
-      if (str1[i] === str2[i]) matches++;
+  // Apply suggestions from AI binding suggestions
+  const applySuggestions = (accepted: BindingSuggestion[]) => {
+    if (accepted.length === 0) {
+      setShowSuggestionsDialog(false);
+      return;
     }
     
-    return matches / maxLen;
-  };
-
-  // Handle accepting an AI suggestion
-  const handleAcceptSuggestion = (bindingId: number, fieldPath: string) => {
-    const binding = bindings.find(b => b.id === bindingId);
-    if (!binding) return;
-    
-    const updatedBinding = { ...binding, selector: fieldPath, isMapped: true };
-    setBindings(prev => prev.map(b => b.id === bindingId ? updatedBinding : b));
-    
-    // Save the binding
-    updateBindingMutation.mutate(updatedBinding);
-  };
-
-  // Handle accepting all AI suggestions at once
-  const handleAcceptAllSuggestions = (suggestions: BindingSuggestion[]) => {
-    // Update bindings with top suggestions
+    // Update bindings with accepted suggestions
     const updatedBindings = [...bindings];
     
-    for (const suggestion of suggestions) {
-      const topSuggestion = suggestion.suggestions[0];
-      if (topSuggestion && topSuggestion.confidence >= 0.5) {
-        const index = updatedBindings.findIndex(b => b.id === suggestion.bindingId);
+    for (const item of accepted) {
+      const binding = item.binding;
+      const bestSuggestion = item.suggestions[0];
+      
+      if (bestSuggestion) {
+        // Find and update binding
+        const index = updatedBindings.findIndex(b => b.id === binding.id);
         if (index !== -1) {
           updatedBindings[index] = {
-            ...updatedBindings[index],
-            selector: topSuggestion.fieldPath,
+            ...binding,
+            selector: bestSuggestion.field.path,
             isMapped: true
           };
-          
-          // Save the binding
-          updateBindingMutation.mutate(updatedBindings[index]);
         }
       }
     }
     
+    // Update bindings state
     setBindings(updatedBindings);
+    
+    // Save updated bindings
+    updatedBindings
+      .filter(b => b.selector && b.selector.trim() !== '')
+      .forEach(b => {
+        updateBindingMutation.mutate(b);
+      });
+    
+    // Close dialog and show success message
     setShowSuggestionsDialog(false);
+    
+    toast({
+      title: "Applied suggestions",
+      description: `Updated ${accepted.length} bindings with suggested fields`,
+    });
   };
 
-  // Handle dismissing the AI suggestions
-  const handleDismissSuggestion = () => {
-    setShowSuggestionsDialog(false);
+  // Analyze the completion percentage
+  const analyzeCompletion = () => {
+    if (bindings.length === 0) return 0;
+    
+    const mappedCount = bindings.filter(b => b.selector && b.selector.trim() !== '').length;
+    const percentage = Math.round((mappedCount / bindings.length) * 100);
+    
+    return percentage;
   };
 
-  // Helper function to prepare iframe content with HTML and CSS
-  const getTemplateIframeContent = () => {
-    if (!template) return '';
-
-    // Prepare a full HTML document with the template content and CSS
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>Template Preview</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-              color: #333;
-              line-height: 1.5;
-              margin: 0;
-              padding: 10px;
-            }
-            
-            /* Template placeholder highlighting */
-            .template-token {
-              background-color: rgba(59, 130, 246, 0.1);
-              border: 2px solid rgba(59, 130, 246, 0.5);
-              border-radius: 3px;
-              cursor: pointer;
-              position: relative;
-              padding: 0 3px;
-              margin: 0 2px;
-              display: inline-block;
-            }
-            
-            .template-token.mapped {
-              background-color: rgba(16, 185, 129, 0.1);
-              border-color: rgba(16, 185, 129, 0.5);
-            }
-            
-            .template-token.active {
-              background-color: rgba(59, 130, 246, 0.2);
-              border-color: rgba(59, 130, 246, 0.8);
-              box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-            }
-            
-            .field-selector {
-              position: absolute;
-              background: white;
-              border: 1px solid #ccc;
-              border-radius: 4px;
-              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-              z-index: 1000;
-              max-height: 300px;
-              overflow-y: auto;
-              width: 250px;
-            }
-            
-            .field-selector-item {
-              padding: 8px 12px;
-              border-bottom: 1px solid #eee;
-              cursor: pointer;
-            }
-            
-            .field-selector-item:hover {
-              background-color: #f5f5f5;
-            }
-            
-            /* Template CSS */
-            ${template.css || ''}
-          </style>
-        </head>
-        <body>
-          ${template.htmlContent || 'No HTML content available for this template.'}
-          
-          <script>
-            // This script will be executed in the iframe to handle click events
-            // and communicate with the parent window
-            document.addEventListener('DOMContentLoaded', function() {
-              // Find all placeholders in the template
-              const placeholderRegexes = [
-                /\\[\\[FIELD:(.*?)\\]\\]/g,
-                /{{([^#/][^}]*)}}/g,
-                /{{#each\\s+(.*?)}}/g,
-                /{{#if\\s+(.*?)}}/g
-              ];
-              
-              // Function to process text nodes and wrap placeholders
-              function processTextNodes(node) {
-                if (node.nodeType === Node.TEXT_NODE) {
-                  let content = node.textContent;
-                  let hasMatch = false;
-                  
-                  // Check each placeholder pattern
-                  placeholderRegexes.forEach(regex => {
-                    if (content.match(regex)) {
-                      hasMatch = true;
-                    }
-                  });
-                  
-                  if (hasMatch) {
-                    const span = document.createElement('span');
-                    span.innerHTML = content;
-                    node.parentNode.replaceChild(span, node);
-                    
-                    // Now apply the regex replacement to the span's innerHTML
-                    placeholderRegexes.forEach(regex => {
-                      span.innerHTML = span.innerHTML.replace(regex, (match) => {
-                        return \`<span class="template-token" data-token="\${match}">\${match}</span>\`;
-                      });
-                    });
-                  }
-                } else if (node.nodeType === Node.ELEMENT_NODE) {
-                  // Skip script tags
-                  if (node.tagName === 'SCRIPT') return;
-                  
-                  // Process child nodes
-                  Array.from(node.childNodes).forEach(child => {
-                    processTextNodes(child);
-                  });
-                }
-              }
-              
-              // Process the entire document
-              processTextNodes(document.body);
-              
-              // Add click event listeners to all tokens
-              document.querySelectorAll('.template-token').forEach(token => {
-                token.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  
-                  // Send message to parent window
-                  window.parent.postMessage({
-                    type: 'TOKEN_CLICKED',
-                    token: this.dataset.token,
-                    rect: this.getBoundingClientRect()
-                  }, '*');
-                  
-                  // Remove active class from all tokens
-                  document.querySelectorAll('.template-token.active').forEach(t => {
-                    t.classList.remove('active');
-                  });
-                  
-                  // Add active class to this token
-                  this.classList.add('active');
-                });
-              });
-              
-              // Listen for messages from parent window
-              window.addEventListener('message', function(event) {
-                if (event.data.type === 'UPDATE_TOKEN_MAPPING') {
-                  const { token, isMapped } = event.data;
-                  
-                  // Find all matching tokens
-                  document.querySelectorAll(\`.template-token[data-token="\${token}"]\`).forEach(el => {
-                    if (isMapped) {
-                      el.classList.add('mapped');
-                    } else {
-                      el.classList.remove('mapped');
-                    }
-                  });
-                }
-              });
-            });
-          </script>
-        </body>
-      </html>
-    `;
-  };
-  
   // Set up interactivity for the template preview iframe
   const setupTemplatePreviewInteractivity = (iframe: HTMLIFrameElement | null) => {
     if (!iframe) return;
@@ -807,15 +635,13 @@ export default function TemplateBindingsPage() {
     // Add message event listener to catch clicks from the iframe
     const handleIframeMessage = (event: MessageEvent) => {
       // Skip messages from other sources
-      if (!iframe.contentWindow || event.source !== iframe.contentWindow) {
-        return;
-      }
+      if (!iframe.contentWindow || event.source !== iframe.contentWindow) return;
       
       // Handle token click events
-      if (event.data.type === 'TOKEN_CLICKED') {
-        const { token, rect } = event.data;
+      if (event.data.type === 'tokenClick') {
+        const token = event.data.token;
         
-        // Find the binding for this token
+        // Find binding for this token
         const binding = bindings.find(b => 
           b.placeholder === token ||
           b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
@@ -823,20 +649,15 @@ export default function TemplateBindingsPage() {
         );
         
         if (binding) {
-          // Select the binding in the UI
+          // Set as active binding
           setSelectedBinding(binding);
           
-          // Position field selector if needed
-          const iframeRect = iframe.getBoundingClientRect();
-          setFieldSelectorPosition({
-            x: iframeRect.left + rect.left + rect.width / 2,
-            y: iframeRect.top + rect.top + rect.height
-          });
-          
-          // Store the clicked token
+          // Show the field selector at the clicked position
           setPreviewClickedToken(token);
-          
-          // Open the field selector
+          setFieldSelectorPosition({
+            x: event.data.x,
+            y: event.data.y
+          });
           setShowFieldSelector(true);
         } else {
           // If no binding exists, we may want to create one
@@ -851,245 +672,348 @@ export default function TemplateBindingsPage() {
       }
     };
     
-    // Add the event listener
+    // Add event listener
     window.addEventListener('message', handleIframeMessage);
     
-    // Clean up the event listener when component unmounts
+    // Return clean-up function
     return () => {
       window.removeEventListener('message', handleIframeMessage);
     };
   };
-  
-  // Highlight placeholders in the preview after iframe loads
+
+  // Inject highlighting and interaction code into the iframe
   const highlightPreviewPlaceholders = () => {
-    // Wait for iframe to load completely
     if (!iframeRef.current || !iframeRef.current.contentWindow) return;
     
-    // Update token mappings in the iframe
-    bindings.forEach(binding => {
-      iframeRef.current?.contentWindow?.postMessage({
-        type: 'UPDATE_TOKEN_MAPPING',
-        token: binding.placeholder,
-        isMapped: binding.selector && binding.selector.trim() !== '',
-      }, '*');
-    });
+    // Get all bindings text for highlighting
+    const placeholders = bindings.map(b => b.placeholder);
+    
+    // Simple detection of placeholder patterns for highlighting
+    const script = `
+      (function() {
+        // Find and highlight template placeholders
+        function highlightTokens() {
+          const placeholders = ${JSON.stringify(placeholders)};
+          const bindings = ${JSON.stringify(bindings)};
+          
+          // Helper to check if a string contains a placeholder
+          function containsPlaceholder(text, placeholder) {
+            return text.includes(placeholder);
+          }
+          
+          // Find all text nodes
+          function findTextNodes(element) {
+            const textNodes = [];
+            const treeWalker = document.createTreeWalker(
+              element,
+              NodeFilter.SHOW_TEXT,
+              { acceptNode: node => NodeFilter.FILTER_ACCEPT },
+              false
+            );
+            
+            let node;
+            while ((node = treeWalker.nextNode())) {
+              textNodes.push(node);
+            }
+            
+            return textNodes;
+          }
+          
+          // Highlight a token in a text node
+          function highlightToken(textNode, token) {
+            const text = textNode.nodeValue;
+            if (!text || !containsPlaceholder(text, token)) return false;
+            
+            // Replace the token with a highlighted span
+            const binding = bindings.find(b => b.placeholder === token);
+            const isMapped = binding && binding.selector && binding.selector.trim() !== '';
+            
+            const parts = text.split(token);
+            if (parts.length < 2) return false;
+            
+            const span = document.createElement('span');
+            span.setAttribute('data-token', token);
+            span.textContent = token;
+            span.style.backgroundColor = isMapped ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+            span.style.border = isMapped ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(239, 68, 68, 0.5)';
+            span.style.borderRadius = '3px';
+            span.style.padding = '1px 3px';
+            span.style.cursor = 'pointer';
+            span.style.display = 'inline-block';
+            
+            // Add event listener for interaction
+            span.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              // Send message to parent window
+              window.parent.postMessage({
+                type: 'tokenClick',
+                token: token,
+                x: e.clientX + window.scrollX,
+                y: e.clientY + window.scrollY
+              }, '*');
+            });
+            
+            const fragment = document.createDocumentFragment();
+            fragment.appendChild(document.createTextNode(parts[0]));
+            fragment.appendChild(span);
+            
+            if (parts.length > 2) {
+              for (let i = 1; i < parts.length - 1; i++) {
+                const nestedSpan = span.cloneNode(true);
+                nestedSpan.textContent = token;
+                nestedSpan.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  window.parent.postMessage({
+                    type: 'tokenClick',
+                    token: token,
+                    x: e.clientX + window.scrollX,
+                    y: e.clientY + window.scrollY
+                  }, '*');
+                });
+                
+                fragment.appendChild(nestedSpan);
+                fragment.appendChild(document.createTextNode(parts[i]));
+              }
+            }
+            
+            fragment.appendChild(document.createTextNode(parts[parts.length - 1]));
+            
+            // Replace the text node with our processed fragment
+            textNode.parentNode.replaceChild(fragment, textNode);
+            return true;
+          }
+          
+          // Process all text nodes in the body
+          const textNodes = findTextNodes(document.body);
+          
+          // First pass - simple tokens (exact matches)
+          for (const node of textNodes) {
+            for (const placeholder of placeholders) {
+              if (containsPlaceholder(node.nodeValue || '', placeholder)) {
+                if (highlightToken(node, placeholder)) {
+                  // If this node was processed, we need to re-find text nodes as DOM has changed
+                  break;
+                }
+              }
+            }
+          }
+          
+          console.log('Highlighted tokens in template preview');
+        }
+        
+        // Run the highlighter
+        highlightTokens();
+        
+        // Add CSS for better rendering
+        const style = document.createElement('style');
+        style.textContent = \`
+          body { 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
+            line-height: 1.4;
+            color: #333;
+          }
+        \`;
+        document.head.appendChild(style);
+      })();
+    `;
+    
+    // Inject the script
+    try {
+      const iframeWindow = iframeRef.current.contentWindow;
+      const scriptElement = iframeWindow.document.createElement('script');
+      scriptElement.textContent = script;
+      iframeWindow.document.body.appendChild(scriptElement);
+    } catch (err) {
+      console.error('Error injecting script into iframe:', err);
+    }
   };
 
-  // Load initial data
-  useEffect(() => {
-    if (template) {
-      if (template.html) {
-        setTemplateHtml(template.html);
-      } else if (template.htmlContent) {
-        setTemplateHtml(template.htmlContent);
-      }
-      setTemplateName(template.name);
-    }
-  }, [template]);
+  // Generate HTML for the template preview iframe
+  const getTemplateIframeContent = () => {
+    if (!template) return '';
+    
+    const html = template.html || template.htmlContent || '';
+    const css = template.css || template.cssContent || '';
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            ${css}
+            /* Additional styling for preview */
+            body {
+              padding: 1rem;
+              font-family: system-ui, -apple-system, sans-serif;
+            }
+          </style>
+        </head>
+        <body>
+          ${html}
+        </body>
+      </html>
+    `;
+  };
 
-  // Process server bindings into client bindings
+  // Render a nested data field tree
+  const renderDataFields = (fields: DataField[] = []) => {
+    // Filter fields based on search text
+    const filteredFields = filterText 
+      ? filterDataFields(fields, filterText)
+      : fields;
+    
+    if (filteredFields.length === 0) {
+      return (
+        <div className="px-4 py-8 text-center text-muted-foreground">
+          {filterText ? (
+            <>
+              <Search className="h-5 w-5 mx-auto mb-2 text-muted-foreground/50" />
+              <p>No fields matching "{filterText}"</p>
+              <Button 
+                variant="link" 
+                className="mt-1 h-auto p-0" 
+                onClick={() => setFilterText('')}
+              >
+                Clear search
+              </Button>
+            </>
+          ) : (
+            <>
+              <p>No schema fields available</p>
+            </>
+          )}
+        </div>
+      );
+    }
+    
+    const renderField = (field: DataField, level = 0) => {
+      const isObject = field.type === 'object';
+      const isArray = field.type === 'array';
+      const hasChildren = isObject || isArray;
+      
+      return (
+        <div key={field.path} className={level === 0 ? 'mb-3' : 'ml-3 mt-1'}>
+          <div 
+            className={`flex items-center px-2 py-1.5 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer ${
+              selectedBinding?.selector === field.path ? 'bg-blue-50 dark:bg-blue-900' : ''
+            }`}
+            onClick={() => handleDataFieldSelect(field)}
+          >
+            <div className="flex-1 flex items-center">
+              {hasChildren ? (
+                <ChevronRight className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+              ) : (
+                <span className="h-3.5 w-3.5 mr-1 flex-shrink-0">
+                  {field.type === 'string' && <Type className="h-3.5 w-3.5 text-blue-600" />}
+                  {field.type === 'number' && <Hash className="h-3.5 w-3.5 text-purple-600" />}
+                  {field.type === 'boolean' && <ToggleLeft className="h-3.5 w-3.5 text-green-600" />}
+                  {field.type === 'date' && <CalendarIcon className="h-3.5 w-3.5 text-amber-600" />}
+                </span>
+              )}
+              <span className="text-sm font-medium">{field.name}</span>
+            </div>
+            <div className="text-xs font-mono text-muted-foreground truncate">{field.path}</div>
+          </div>
+          
+          {hasChildren && field.children && field.children.length > 0 && (
+            <div className="mt-1">
+              {field.children.map(child => renderField(child, level + 1))}
+            </div>
+          )}
+        </div>
+      );
+    };
+    
+    return filteredFields.map(field => renderField(field));
+  };
+
+  // Initialize on mount and when dependencies change
   useEffect(() => {
+    // Set template name for UI display
+    if (template) {
+      setTemplateName(template.name);
+      setTemplateHtml(template.html || template.htmlContent || '');
+    }
+    
+    // Initialize bindings
     if (serverBindings) {
       setBindings(mapBindings(serverBindings));
     }
-  }, [serverBindings]);
-
-  // Process schema into flat data fields
-  useEffect(() => {
+    
+    // Initialize data fields from schema
     if (resumeSchema) {
-      // Convert the schema to a list of DataField objects
-      const fields: DataField[] = [];
-      
-      for (const [key, value] of Object.entries(resumeSchema)) {
-        fields.push({
-          id: key,
-          name: value.title || key,
-          path: key,
-          description: value.description,
-          type: value.type as any,
-          children: processSchemaChildren(value, key)
-        });
-      }
+      // Convert schema to field structure
+      const fields: DataField[] = [
+        {
+          id: 'personal',
+          name: 'Personal Information',
+          path: 'personal',
+          type: 'object',
+          children: [
+            { id: 'name', name: 'Full Name', path: 'personal.fullName', type: 'string' },
+            { id: 'email', name: 'Email', path: 'personal.email', type: 'string' },
+            { id: 'phone', name: 'Phone', path: 'personal.phone', type: 'string' },
+            { id: 'address', name: 'Address', path: 'personal.address', type: 'string' },
+          ]
+        },
+        {
+          id: 'workHistory',
+          name: 'Work History',
+          path: 'workHistory',
+          type: 'array',
+          children: [
+            { id: 'jobTitle', name: 'Job Title', path: 'workHistory[].jobTitle', type: 'string' },
+            { id: 'company', name: 'Company', path: 'workHistory[].company', type: 'string' },
+            { id: 'startDate', name: 'Start Date', path: 'workHistory[].startDate', type: 'date' },
+            { id: 'endDate', name: 'End Date', path: 'workHistory[].endDate', type: 'date' },
+            { id: 'description', name: 'Description', path: 'workHistory[].description', type: 'string' },
+          ]
+        },
+        {
+          id: 'education',
+          name: 'Education',
+          path: 'education',
+          type: 'array',
+          children: [
+            { id: 'degree', name: 'Degree', path: 'education[].degree', type: 'string' },
+            { id: 'school', name: 'School', path: 'education[].school', type: 'string' },
+            { id: 'startDate', name: 'Start Date', path: 'education[].startDate', type: 'date' },
+            { id: 'endDate', name: 'End Date', path: 'education[].endDate', type: 'date' },
+            { id: 'description', name: 'Description', path: 'education[].description', type: 'string' },
+          ]
+        },
+        {
+          id: 'skills',
+          name: 'Skills',
+          path: 'skills',
+          type: 'array',
+          children: [
+            { id: 'name', name: 'Skill Name', path: 'skills[].name', type: 'string' },
+            { id: 'level', name: 'Skill Level', path: 'skills[].level', type: 'number' },
+          ]
+        },
+        {
+          id: 'summary',
+          name: 'Professional Summary',
+          path: 'summary',
+          type: 'string',
+        },
+      ];
       
       setDataFields(fields);
     }
-  }, [resumeSchema]);
-
-  // Helper function to process nested schema properties
-  const processSchemaChildren = (schema: any, parentPath: string): DataField[] | undefined => {
-    if (schema.type === 'object' && schema.properties) {
-      const children: DataField[] = [];
-      
-      for (const [key, value] of Object.entries(schema.properties)) {
-        children.push({
-          id: `${parentPath}.${key}`,
-          name: (value as any).title || key,
-          path: `${parentPath}.${key}`,
-          description: (value as any).description,
-          type: (value as any).type as any,
-          children: processSchemaChildren(value, `${parentPath}.${key}`)
-        });
-      }
-      
-      return children;
-    } else if (schema.type === 'array' && schema.items) {
-      return [
-        {
-          id: `${parentPath}[0]`,
-          name: 'Array Item',
-          path: `${parentPath}[0]`,
-          description: 'First item in the array',
-          type: (schema.items as any).type as any,
-          children: processSchemaChildren(schema.items, `${parentPath}[0]`)
-        }
-      ];
-    }
     
-    return undefined;
-  };
-
-  // Generate token highlights
-  useEffect(() => {
-    if (template?.html) {
-      refreshTokenHighlights();
-    }
-  }, [template?.html]);
-
-  // Calculate completion percentage
-  useEffect(() => {
-    if (bindings.length > 0) {
-      const mappedCount = bindings.filter(b => b.selector && b.selector.trim() !== '').length;
-      const percentage = Math.round((mappedCount / bindings.length) * 100);
-      setCompletionPercentage(percentage);
-    }
-  }, [bindings]);
-
-  // Reset selected binding when bindings change
-  useEffect(() => {
-    setSelectedBinding(null);
-  }, [templateId]);
-
-  // Render a data field (recursive)
-  const renderDataField = (field: DataField, level = 0) => {
-    // Check if this field is used by any bindings
-    const usedByBindingIds = bindings
-      .filter(b => b.selector === field.path)
-      .map(b => b.id);
+    // Initialize highlighted tokens
+    refreshTokenHighlights();
     
-    const isMapped = usedByBindingIds.length > 0;
-    
-    // Determine display based on field type
-    let typeIcon;
-    let typeColor;
-    let typeBg;
-    let typeBorder;
-    
-    switch (field.type) {
-      case 'string':
-        typeColor = 'text-blue-700';
-        typeBg = 'bg-blue-50';
-        typeBorder = 'border-blue-200';
-        typeIcon = <Type className="h-4 w-4 text-blue-600" />;
-        break;
-      case 'array':
-        typeColor = 'text-amber-700';
-        typeBg = 'bg-amber-50';
-        typeBorder = 'border-amber-200';
-        typeIcon = <ListOrdered className="h-4 w-4 text-amber-600" />;
-        break;
-      case 'object':
-        typeColor = 'text-slate-700';
-        typeBg = 'bg-slate-50';
-        typeBorder = 'border-slate-200';
-        typeIcon = <Box className="h-4 w-4 text-slate-600" />;
-        break;
-      case 'number':
-        typeColor = 'text-purple-700';
-        typeBg = 'bg-purple-50';
-        typeBorder = 'border-purple-200';
-        typeIcon = <Hash className="h-4 w-4 text-purple-600" />;
-        break;
-      case 'boolean':
-        typeColor = 'text-green-700';
-        typeBg = 'bg-green-50';
-        typeBorder = 'border-green-200';
-        typeIcon = <ToggleLeft className="h-4 w-4 text-green-600" />;
-        break;
-      case 'date':
-        typeColor = 'text-pink-700';
-        typeBg = 'bg-pink-50';
-        typeBorder = 'border-pink-200';
-        typeIcon = <CalendarIcon className="h-4 w-4 text-pink-600" />;
-        break;
-      default:
-        typeColor = 'text-gray-700';
-        typeBg = 'bg-gray-50';
-        typeBorder = 'border-gray-200';
-        typeIcon = <CircleDot className="h-4 w-4 text-gray-600" />;
-    }
-    
-    return (
-      <div key={field.id} style={{ marginLeft: `${level * 16}px` }}>
-        <div 
-          className={`py-2 px-3 my-1 rounded-md cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 
-            ${isMapped 
-              ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
-              : 'border border-slate-200 dark:border-slate-700'
-            }
-            transition-all duration-150
-          `}
-          onClick={() => handleDataFieldSelect(field)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="mr-2">
-                <div className={`w-8 h-8 rounded-md ${typeBg} dark:bg-opacity-20 ${typeBorder} flex items-center justify-center`}>
-                  {typeIcon}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm font-medium">{field.name}</div>
-                <div className="text-xs text-muted-foreground font-mono">{field.path}</div>
-                {field.description && (
-                  <div className="text-xs text-muted-foreground mt-0.5 italic">{field.description}</div>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex flex-col items-end gap-1">
-              <Badge variant="outline" className={`${typeBg} ${typeColor} border-${typeBorder}`}>
-                {field.type}
-              </Badge>
-              
-              {isMapped && (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:border-green-800">
-                  <Check className="h-3 w-3 mr-1" />
-                  Mapped {usedByBindingIds.length > 1 ? `(${usedByBindingIds.length})` : ''}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        {field.children && field.children.length > 0 && (
-          <div className="ml-4 pl-2 border-l-2 border-slate-200 dark:border-slate-700">
-            {field.children.map(child => renderDataField(child, level + 1))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Render data fields tree
-  const renderDataFields = (fields: DataField[]) => {
-    const filteredFields = filterDataFields(fields, filterText);
-    
-    return (
-      <div className="space-y-1">
-        {filteredFields.map(field => renderDataField(field))}
-      </div>
-    );
-  };
+    // Calculate completion percentage
+    const percentage = analyzeCompletion();
+    setCompletionPercentage(percentage);
+  }, [template, serverBindings, resumeSchema]);
 
   // Field selector popup component
   const FieldSelectorPopup = () => {
@@ -1180,35 +1104,15 @@ export default function TemplateBindingsPage() {
               <TooltipTrigger asChild>
                 <Button 
                   variant="outline" 
-                  onClick={refreshTokenHighlights}
                   size="sm"
-                  className="gap-1"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Refresh
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Refresh token detection</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
                   onClick={performBasicMatching}
-                  size="sm"
-                  className="gap-1"
                 >
-                  <Lightbulb className="h-4 w-4" />
+                  <WandSparkles className="h-4 w-4 mr-2" />
                   Auto Match
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Automatically match template fields to data fields by name</p>
+                <p>Automatically match template fields to data fields based on names</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -1218,84 +1122,64 @@ export default function TemplateBindingsPage() {
               <TooltipTrigger asChild>
                 <Button 
                   variant="outline" 
-                  onClick={autoSuggestBindings}
                   size="sm"
-                  className="gap-1 border-purple-200 bg-purple-50 hover:bg-purple-100 hover:text-purple-900 text-purple-700"
+                  onClick={autoSuggestBindings}
+                  disabled={isProcessingBindings}
                 >
-                  <Bot className="h-4 w-4" />
+                  {isProcessingBindings ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Lightbulb className="h-4 w-4 mr-2" />
+                  )}
                   AI Suggest
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Use AI to intelligently suggest field matches with confidence scores</p>
+                <p>Get AI-powered suggestions for template field mappings</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setWizardMode(!wizardMode)}
-                  size="sm"
-                  className={`gap-1 ${wizardMode ? 'bg-blue-50 text-blue-700 border-blue-200' : ''}`}
-                >
-                  <WandSparkles className="h-4 w-4" />
-                  Wizard Mode
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Guide through all bindings one by one</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <Link href="/admin/templates">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="gap-1"
-            >
-              <ArrowLeft className="h-4 w-4" />
+          <Button variant="secondary" size="sm" asChild>
+            <Link href="/admin/templates">
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Templates
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
       
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <div className="text-sm font-medium">Binding Progress</div>
-          <div className="text-sm text-muted-foreground">{completionPercentage}% Complete</div>
+      {/* Binding completion progress */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="text-sm text-muted-foreground">Mapping completion</div>
+          <div className="text-sm font-medium">{completionPercentage}%</div>
         </div>
-        <Progress value={completionPercentage} className="h-2" />
+        <Progress value={completionPercentage} />
       </div>
       
-      {/* AI Binding Suggestions Dialog */}
+      {/* AI Suggestions Dialog */}
       <Dialog open={showSuggestionsDialog} onOpenChange={setShowSuggestionsDialog}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bot className="h-5 w-5" />
-              AI-Powered Template Binding Suggestions
-            </DialogTitle>
+            <DialogTitle>Binding Suggestions</DialogTitle>
           </DialogHeader>
           
-          <BindingSuggestions 
-            suggestions={bindingSuggestions}
-            onAccept={handleAcceptSuggestion}
-            onAcceptAll={handleAcceptAllSuggestions}
-            onDismiss={handleDismissSuggestion}
-            isLoading={isProcessingBindings}
-          />
+          <ScrollArea className="flex-grow">
+            <div className="py-2">
+              <BindingSuggestions
+                suggestions={bindingSuggestions}
+                onApply={applySuggestions}
+              />
+            </div>
+          </ScrollArea>
           
           <DialogFooter>
             <Button 
               variant="outline" 
               onClick={() => setShowSuggestionsDialog(false)}
             >
-              Close
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1506,7 +1390,7 @@ export default function TemplateBindingsPage() {
                   className="border rounded-md h-full bg-white dark:bg-slate-900 flex flex-col"
                   ref={previewRef}
                 >
-                  {template?.htmlContent ? (
+                  {template?.htmlContent || template?.html ? (
                     <div className="flex flex-col h-full">
                       {/* Template visualization with tokens (smaller at the top) */}
                       <div className="bg-gray-50 dark:bg-gray-900 border-b p-3 flex-shrink-0">
