@@ -74,7 +74,10 @@ export default function TemplateBindingsPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const { toast } = useToast();
   const previewRef = useRef<HTMLDivElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  
+  // Track the iframe element in state
+  const [iframeElement, setIframeElement] = useState<HTMLIFrameElement | null>(null);
+  
   const [bindings, setBindings] = useState<Binding[]>([]);
   const [templateName, setTemplateName] = useState<string>('');
   const [previewKey, setPreviewKey] = useState<number>(0);
@@ -168,6 +171,7 @@ export default function TemplateBindingsPage() {
         title: "Binding created",
         description: "The template binding has been created successfully",
       });
+      return data;
     },
     onError: (error) => {
       toast({
@@ -416,6 +420,319 @@ export default function TemplateBindingsPage() {
       case 'boolean': return <ToggleLeft className="h-3 w-3 text-green-600" />;
       case 'date': return <CalendarIcon className="h-3 w-3 text-pink-600" />;
       default: return <CircleDot className="h-3 w-3 text-gray-600" />;
+    }
+  };
+  
+  // Set up message listener for the iframe communication
+  useEffect(() => {
+    if (!iframeElement) return;
+    
+    const handleIframeMessage = (event: MessageEvent) => {
+      // Skip messages from other sources
+      if (!iframeElement.contentWindow || event.source !== iframeElement.contentWindow) return;
+      
+      // Handle token click events
+      if (event.data.type === 'tokenClick') {
+        const token = event.data.token;
+        const fieldName = event.data.field || token.replace(/[{{\[\]}}]/g, '').trim();
+        
+        console.log('Token clicked:', token, 'field:', fieldName);
+        
+        // Find binding for this token
+        const binding = bindings.find(b => 
+          b.placeholder === token ||
+          b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
+          b.placeholder.replace(/{{|}}/g, '').trim() === token.replace(/{{|}}/g, '').trim()
+        );
+        
+        // Calculate position for the field selector (adjust for iframe)
+        const iframeRect = iframeElement.getBoundingClientRect();
+        const adjustedPosition = {
+          x: iframeRect.left + event.data.x,
+          y: iframeRect.top + event.data.y
+        };
+        
+        // Show the field selector at the clicked position
+        setPreviewClickedToken(token);
+        setFieldSelectorPosition(adjustedPosition);
+        setShowFieldSelector(true);
+        
+        if (binding) {
+          // Set as active binding
+          setSelectedBinding(binding);
+          
+          // Highlight this as the active token
+          setActiveToken(token);
+          
+          // Log the current mapping status
+          console.log('Existing binding found:', binding);
+        } else {
+          // Create a new binding for this token
+          const newBinding: Binding = {
+            id: 0, // Will be assigned by server
+            templateId: parseInt(templateId),
+            placeholder: token,
+            selector: '',
+            description: `Maps template field ${fieldName}`,
+          };
+          
+          // Add to bindings - will be saved when a field is selected
+          setBindings(prev => [...prev, newBinding]);
+          setSelectedBinding(newBinding);
+          
+          toast({
+            title: "New binding detected",
+            description: `Creating a new binding for ${fieldName}. Click a field to map it.`
+          });
+        }
+      }
+    };
+    
+    // Add message listener to the window
+    window.addEventListener('message', handleIframeMessage);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('message', handleIframeMessage);
+    };
+  }, [iframeElement, bindings, templateId]);
+
+  // Inject highlighting and interaction code into the iframe
+  const highlightPreviewPlaceholders = () => {
+    if (!iframeElement || !iframeElement.contentWindow) return;
+    
+    // Get all bindings text for highlighting
+    const placeholders = bindings.map(b => b.placeholder);
+    
+    // Enhanced detection of placeholder patterns for highlighting
+    const script = `
+      (function() {
+        // Find and highlight template placeholders
+        function highlightTokens() {
+          const placeholders = ${JSON.stringify(placeholders)};
+          const bindings = ${JSON.stringify(bindings)};
+          
+          // Find template tokens in the document
+          function findTemplateTokens() {
+            // Define token patterns to search for 
+            const tokenPatterns = [
+              { regex: /\\{\\{\\s*([^\\}\\{#\\/]+?)\\s*\\}\\}/g, type: 'handlebars' },  // {{ fieldName }}
+              { regex: /\\[\\[FIELD:([^\\]]+)\\]\\]/g, type: 'bracket' },              // [[FIELD:fieldName]]
+              { regex: /\\{field:([^\\}]+)\\}/g, type: 'brace' },                      // {field:fieldName}
+              { regex: /\\$\\{([^\\}]+)\\}/g, type: 'template-literal' }               // \${fieldName}
+            ];
+            
+            // Find all text nodes
+            const textNodes = [];
+            const treeWalker = document.createTreeWalker(
+              document.body,
+              NodeFilter.SHOW_TEXT,
+              { acceptNode: node => NodeFilter.FILTER_ACCEPT },
+              false
+            );
+            
+            let node;
+            while ((node = treeWalker.nextNode())) {
+              textNodes.push(node);
+            }
+            
+            // Process each text node
+            textNodes.forEach(textNode => {
+              if (!textNode.nodeValue || textNode.nodeValue.trim() === '') return;
+              
+              // Check for each token pattern
+              tokenPatterns.forEach(pattern => {
+                let matches;
+                const text = textNode.nodeValue;
+                const regex = pattern.regex;
+                
+                // Reset regex lastIndex
+                regex.lastIndex = 0;
+                
+                // Find all matches in this text node
+                while ((matches = regex.exec(text)) !== null) {
+                  // Get the full token and the field name
+                  const fullToken = matches[0];
+                  const fieldName = matches[1].trim();
+                  
+                  // Check if this token is in our binding list
+                  const binding = bindings.find(b => 
+                    b.placeholder === fullToken || 
+                    b.placeholder.includes(fieldName)
+                  );
+                  
+                  // Replace this token with a span
+                  replaceTokenInNode(textNode, fullToken, fieldName, binding);
+                }
+              });
+            });
+          }
+          
+          // Replace a token in a text node with an interactive span
+          function replaceTokenInNode(textNode, fullToken, fieldName, binding) {
+            const text = textNode.nodeValue;
+            if (!text) return;
+            
+            // Check if binding exists
+            const isMapped = binding && binding.selector && binding.selector.trim() !== '';
+            
+            // Split text around the token
+            const parts = text.split(fullToken);
+            if (parts.length < 2) return;
+            
+            // Create fragment to replace the text node
+            const fragment = document.createDocumentFragment();
+            
+            // First part of text
+            fragment.appendChild(document.createTextNode(parts[0]));
+            
+            // Create the token span
+            for (let i = 0; i < parts.length - 1; i++) {
+              if (i > 0) {
+                fragment.appendChild(document.createTextNode(parts[i]));
+              }
+              
+              // Create token element
+              const span = document.createElement('span');
+              span.className = 'template-token' + (isMapped ? ' token-mapped' : ' token-unmapped');
+              span.setAttribute('data-token', fullToken);
+              span.setAttribute('data-field', fieldName);
+              
+              // Create the display inside the token
+              const tokenDisplay = document.createElement('span');
+              tokenDisplay.className = 'token-display';
+              
+              // Create the token wrapper and badge
+              if (isMapped) {
+                // Mapped token
+                tokenDisplay.innerHTML = \`
+                  <span class="token-name">\${fieldName}</span>
+                  <span class="token-badge mapped">✓</span>
+                \`;
+              } else {
+                // Unmapped token
+                tokenDisplay.innerHTML = \`
+                  <span class="token-name">\${fieldName}</span>
+                  <span class="token-badge unmapped">Map</span>
+                \`;
+              }
+              
+              span.appendChild(tokenDisplay);
+              
+              // Style the token
+              span.style.backgroundColor = isMapped ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+              span.style.border = isMapped ? '1px solid rgba(16, 185, 129, 0.5)' : '1px dashed rgba(239, 68, 68, 0.5)';
+              span.style.borderRadius = '4px';
+              span.style.padding = '2px 6px';
+              span.style.margin = '0 2px';
+              span.style.cursor = 'pointer';
+              span.style.display = 'inline-flex';
+              span.style.alignItems = 'center';
+              span.style.justifyContent = 'center';
+              span.style.position = 'relative';
+              span.style.whiteSpace = 'nowrap';
+              
+              // Style internal elements
+              tokenDisplay.style.display = 'flex';
+              tokenDisplay.style.alignItems = 'center';
+              tokenDisplay.style.gap = '4px';
+              
+              // Add event listener for interaction
+              span.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Highlight this token
+                span.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.5)';
+                span.style.zIndex = '10';
+                
+                // Send message to parent window
+                window.parent.postMessage({
+                  type: 'tokenClick',
+                  token: fullToken,
+                  field: fieldName,
+                  x: e.clientX + window.scrollX,
+                  y: e.clientY + window.scrollY
+                }, '*');
+              });
+              
+              fragment.appendChild(span);
+            }
+            
+            // Last part of text
+            fragment.appendChild(document.createTextNode(parts[parts.length - 1]));
+            
+            // Replace the text node with our processed fragment
+            textNode.parentNode.replaceChild(fragment, textNode);
+          }
+          
+          // Add CSS for token styling
+          function addTokenStyles() {
+            const style = document.createElement('style');
+            style.textContent = \`
+              body { 
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
+                line-height: 1.4;
+                color: #333;
+              }
+              
+              .template-token {
+                transition: all 0.2s ease;
+                font-size: 0.9em;
+              }
+              
+              .template-token:hover {
+                transform: translateY(-1px);
+              }
+              
+              .token-name {
+                font-family: monospace;
+                font-size: 0.9em;
+              }
+              
+              .token-badge {
+                font-size: 0.7em;
+                padding: 1px 4px;
+                border-radius: 3px;
+                font-weight: bold;
+              }
+              
+              .token-badge.mapped {
+                background-color: rgba(16, 185, 129, 0.2);
+                color: rgb(4, 120, 87);
+              }
+              
+              .token-badge.unmapped {
+                background-color: rgba(239, 68, 68, 0.2);
+                color: rgb(185, 28, 28);
+              }
+            \`;
+            document.head.appendChild(style);
+          }
+          
+          // Initialize the token highlighting
+          addTokenStyles();
+          findTemplateTokens();
+          
+          console.log('Enhanced token highlighting complete');
+        }
+        
+        // Run the highlighter with a small delay to ensure DOM is fully loaded
+        setTimeout(highlightTokens, 100);
+      })();
+    `;
+    
+    // Inject the script safely
+    try {
+      const iframeDoc = iframeElement.contentDocument || 
+                       (iframeElement.contentWindow as any).document;
+      
+      // Create a script element instead of using eval
+      const scriptEl = iframeDoc.createElement('script');
+      scriptEl.textContent = script;
+      iframeDoc.head.appendChild(scriptEl);
+    } catch (error) {
+      console.error('Failed to inject highlighting script:', error);
     }
   };
   
@@ -692,339 +1009,6 @@ export default function TemplateBindingsPage() {
         </div>
       </div>
     );
-  };
-
-  // Inject highlighting and interaction code into the iframe
-  const highlightPreviewPlaceholders = () => {
-    if (!iframeRef.current || !iframeRef.current.contentWindow) return;
-    
-    // Get all bindings text for highlighting
-    const placeholders = bindings.map(b => b.placeholder);
-    
-    // Enhanced detection of placeholder patterns for highlighting
-    const script = `
-      (function() {
-        // Find and highlight template placeholders
-        function highlightTokens() {
-          const placeholders = ${JSON.stringify(placeholders)};
-          const bindings = ${JSON.stringify(bindings)};
-          
-          // Find template tokens in the document
-          function findTemplateTokens() {
-            // Define token patterns to search for 
-            const tokenPatterns = [
-              { regex: /\\{\\{\\s*([^\\}\\{#\\/]+?)\\s*\\}\\}/g, type: 'handlebars' },  // {{ fieldName }}
-              { regex: /\\[\\[FIELD:([^\\]]+)\\]\\]/g, type: 'bracket' },              // [[FIELD:fieldName]]
-              { regex: /\\{field:([^\\}]+)\\}/g, type: 'brace' },                      // {field:fieldName}
-              { regex: /\\$\\{([^\\}]+)\\}/g, type: 'template-literal' }               // \${fieldName}
-            ];
-            
-            // Find all text nodes
-            const textNodes = [];
-            const treeWalker = document.createTreeWalker(
-              document.body,
-              NodeFilter.SHOW_TEXT,
-              { acceptNode: node => NodeFilter.FILTER_ACCEPT },
-              false
-            );
-            
-            let node;
-            while ((node = treeWalker.nextNode())) {
-              textNodes.push(node);
-            }
-            
-            // Process each text node
-            textNodes.forEach(textNode => {
-              if (!textNode.nodeValue || textNode.nodeValue.trim() === '') return;
-              
-              // Check for each token pattern
-              tokenPatterns.forEach(pattern => {
-                let matches;
-                const text = textNode.nodeValue;
-                const regex = pattern.regex;
-                
-                // Reset regex lastIndex
-                regex.lastIndex = 0;
-                
-                // Find all matches in this text node
-                while ((matches = regex.exec(text)) !== null) {
-                  // Get the full token and the field name
-                  const fullToken = matches[0];
-                  const fieldName = matches[1].trim();
-                  
-                  // Check if this token is in our binding list
-                  const binding = bindings.find(b => 
-                    b.placeholder === fullToken || 
-                    b.placeholder.includes(fieldName)
-                  );
-                  
-                  // Replace this token with a span
-                  replaceTokenInNode(textNode, fullToken, fieldName, binding);
-                }
-              });
-            });
-          }
-          
-          // Replace a token in a text node with an interactive span
-          function replaceTokenInNode(textNode, fullToken, fieldName, binding) {
-            const text = textNode.nodeValue;
-            if (!text) return;
-            
-            // Check if binding exists
-            const isMapped = binding && binding.selector && binding.selector.trim() !== '';
-            
-            // Split text around the token
-            const parts = text.split(fullToken);
-            if (parts.length < 2) return;
-            
-            // Create fragment to replace the text node
-            const fragment = document.createDocumentFragment();
-            
-            // First part of text
-            fragment.appendChild(document.createTextNode(parts[0]));
-            
-            // Create the token span
-            for (let i = 0; i < parts.length - 1; i++) {
-              if (i > 0) {
-                fragment.appendChild(document.createTextNode(parts[i]));
-              }
-              
-              // Create token element
-              const span = document.createElement('span');
-              span.className = 'template-token' + (isMapped ? ' token-mapped' : ' token-unmapped');
-              span.setAttribute('data-token', fullToken);
-              span.setAttribute('data-field', fieldName);
-              
-              // Create the display inside the token
-              const tokenDisplay = document.createElement('span');
-              tokenDisplay.className = 'token-display';
-              
-              // Create the token wrapper and badge
-              if (isMapped) {
-                // Mapped token
-                tokenDisplay.innerHTML = \`
-                  <span class="token-name">\${fieldName}</span>
-                  <span class="token-badge mapped">✓</span>
-                \`;
-              } else {
-                // Unmapped token
-                tokenDisplay.innerHTML = \`
-                  <span class="token-name">\${fieldName}</span>
-                  <span class="token-badge unmapped">Map</span>
-                \`;
-              }
-              
-              span.appendChild(tokenDisplay);
-              
-              // Style the token
-              span.style.backgroundColor = isMapped ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
-              span.style.border = isMapped ? '1px solid rgba(16, 185, 129, 0.5)' : '1px dashed rgba(239, 68, 68, 0.5)';
-              span.style.borderRadius = '4px';
-              span.style.padding = '2px 6px';
-              span.style.margin = '0 2px';
-              span.style.cursor = 'pointer';
-              span.style.display = 'inline-flex';
-              span.style.alignItems = 'center';
-              span.style.justifyContent = 'center';
-              span.style.position = 'relative';
-              span.style.whiteSpace = 'nowrap';
-              
-              // Style internal elements
-              tokenDisplay.style.display = 'flex';
-              tokenDisplay.style.alignItems = 'center';
-              tokenDisplay.style.gap = '4px';
-              
-              // Add event listener for interaction
-              span.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // Highlight this token
-                span.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.5)';
-                span.style.zIndex = '10';
-                
-                // Send message to parent window
-                window.parent.postMessage({
-                  type: 'tokenClick',
-                  token: fullToken,
-                  field: fieldName,
-                  x: e.clientX + window.scrollX,
-                  y: e.clientY + window.scrollY
-                }, '*');
-              });
-              
-              fragment.appendChild(span);
-            }
-            
-            // Last part of text
-            fragment.appendChild(document.createTextNode(parts[parts.length - 1]));
-            
-            // Replace the text node with our processed fragment
-            textNode.parentNode.replaceChild(fragment, textNode);
-          }
-          
-          // Add CSS for token styling
-          function addTokenStyles() {
-            const style = document.createElement('style');
-            style.textContent = \`
-              body { 
-                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
-                line-height: 1.4;
-                color: #333;
-              }
-              
-              .template-token {
-                transition: all 0.2s ease;
-                font-size: 0.9em;
-              }
-              
-              .template-token:hover {
-                transform: translateY(-1px);
-              }
-              
-              .token-name {
-                font-family: monospace;
-                font-size: 0.9em;
-              }
-              
-              .token-badge {
-                font-size: 0.7em;
-                padding: 1px 4px;
-                border-radius: 3px;
-                font-weight: bold;
-              }
-              
-              .token-badge.mapped {
-                background-color: rgba(16, 185, 129, 0.2);
-                color: rgb(4, 120, 87);
-              }
-              
-              .token-badge.unmapped {
-                background-color: rgba(239, 68, 68, 0.2);
-                color: rgb(185, 28, 28);
-              }
-            \`;
-            document.head.appendChild(style);
-          }
-          
-          // Initialize the token highlighting
-          addTokenStyles();
-          findTemplateTokens();
-          
-          console.log('Enhanced token highlighting complete');
-        }
-        
-        // Run the highlighter with a small delay to ensure DOM is fully loaded
-        setTimeout(highlightTokens, 100);
-      })();
-    `;
-    
-    // Inject the script
-    try {
-      if (iframeRef.current && iframeRef.current.contentWindow) {
-        const iframeDoc = iframeRef.current.contentDocument || 
-                         (iframeRef.current.contentWindow as any).document;
-        
-        // Create a script element instead of using eval
-        const scriptEl = iframeDoc.createElement('script');
-        scriptEl.textContent = script;
-        iframeDoc.head.appendChild(scriptEl);
-      }
-    } catch (error) {
-      console.error('Failed to inject highlighting script:', error);
-    }
-  };
-  
-  // Set up interactivity for the template preview iframe
-  const setupTemplatePreviewInteractivity = (iframe: HTMLIFrameElement | null) => {
-    if (!iframe) return;
-    
-    // Store iframe locally - we won't use iframeRef directly but will update it in a component effect
-    const currentIframe = iframe;
-    
-    // Use an effect to update the iframe ref instead of direct assignment
-    useEffect(() => {
-      // Only run this effect when we have a valid iframe
-      if (currentIframe) {
-        // This is allowed within the effect
-        iframeRef.current = currentIframe;
-      }
-      
-      // Cleanup function
-      return () => {
-        // Nothing to do on cleanup
-      };
-    }, [currentIframe]);
-    
-    // Add message event listener to catch clicks from the iframe
-    const handleIframeMessage = (event: MessageEvent) => {
-      // Skip messages from other sources
-      if (!iframe.contentWindow || event.source !== iframe.contentWindow) return;
-      
-      // Handle token click events
-      if (event.data.type === 'tokenClick') {
-        const token = event.data.token;
-        const fieldName = event.data.field || token.replace(/[{{\[\]}}]/g, '').trim();
-        
-        console.log('Token clicked:', token, 'field:', fieldName);
-        
-        // Find binding for this token
-        const binding = bindings.find(b => 
-          b.placeholder === token ||
-          b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
-          b.placeholder.replace(/{{|}}/g, '').trim() === token.replace(/{{|}}/g, '').trim()
-        );
-        
-        // Calculate position for the field selector (adjust for iframe)
-        const iframeRect = iframe.getBoundingClientRect();
-        const adjustedPosition = {
-          x: iframeRect.left + event.data.x,
-          y: iframeRect.top + event.data.y
-        };
-        
-        // Show the field selector at the clicked position
-        setPreviewClickedToken(token);
-        setFieldSelectorPosition(adjustedPosition);
-        setShowFieldSelector(true);
-        
-        if (binding) {
-          // Set as active binding
-          setSelectedBinding(binding);
-          
-          // Highlight this as the active token
-          setActiveToken(token);
-          
-          // Log the current mapping status
-          console.log('Existing binding found:', binding);
-        } else {
-          // Create a new binding for this token
-          const newBinding: Binding = {
-            id: 0, // Will be assigned by server
-            templateId: parseInt(templateId),
-            placeholder: token,
-            selector: '',
-            description: `Maps template field ${fieldName}`,
-          };
-          
-          // Add to bindings - will be saved when a field is selected
-          setBindings(prev => [...prev, newBinding]);
-          setSelectedBinding(newBinding);
-          
-          toast({
-            title: "New binding detected",
-            description: `Creating a new binding for ${fieldName}. Click a field to map it.`
-          });
-        }
-      }
-    };
-    
-    // Add event listener
-    window.addEventListener('message', handleIframeMessage);
-    
-    // Return clean-up function
-    return () => {
-      window.removeEventListener('message', handleIframeMessage);
-    };
   };
 
   return (
@@ -1310,7 +1294,7 @@ export default function TemplateBindingsPage() {
                   <iframe 
                     srcDoc={templateHtml}
                     className="w-full h-full border-0"
-                    ref={iframe => setupTemplatePreviewInteractivity(iframe)}
+                    ref={setIframeElement}
                     onLoad={() => highlightPreviewPlaceholders()}
                   />
                 </div>
