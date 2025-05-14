@@ -1,326 +1,173 @@
-import { db } from "@db";
+import express from 'express';
+import { db } from '@db';
+import { eq } from 'drizzle-orm';
 import { 
-  templateBindings, 
-  templateBindingSchema, 
-  resumeTemplates 
-} from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
-import { Router } from "express";
+  templateBindings as bindingsTable, 
+  resumeTemplates as templatesTable 
+} from '@shared/schema';
 
-const router = Router();
+// Utility functions
+import { 
+  extractTemplateTokens, 
+  analyzeTokenContext, 
+  suggestBindings 
+} from '../utils/binding-bot';
 
-/**
- * Utility function to detect placeholders in template content
- */
-function detectPlaceholders(content: string): string[] {
-  if (!content) return [];
-  
-  const placeholders = new Set<string>();
-  
-  // Match Handlebars style {{ variable }}
-  const handlebarRegex = /{{\s*([^{}]+)\s*}}/g;
-  let match;
-  
-  while ((match = handlebarRegex.exec(content)) !== null) {
-    placeholders.add(match[0]);
-  }
-  
-  // Match bracket style [[VARIABLE]]
-  const bracketRegex = /\[\[([^\[\]]+)\]\]/g;
-  while ((match = bracketRegex.exec(content)) !== null) {
-    placeholders.add(match[0]);
-  }
+const router = express.Router();
 
-  // Match data-field attributes
-  const dataFieldRegex = /data-field=["']([^"']+)["']/g;
-  while ((match = dataFieldRegex.exec(content)) !== null) {
-    placeholders.add(`data-field="${match[1]}"`);
-  }
-  
-  // Convert Set to Array safely for all TypeScript versions
-  const placeholdersArray: string[] = [];
-  placeholders.forEach(placeholder => placeholdersArray.push(placeholder));
-  
-  return placeholdersArray;
-}
-
-/**
- * GET /api/templates/:id/placeholders
- * Detect placeholders in a template's content
- */
-router.get("/templates/:id/placeholders", async (req, res) => {
+// Get all bindings for a template
+router.get('/templates/:templateId/bindings', async (req, res) => {
   try {
-    const templateId = parseInt(req.params.id);
+    const { templateId } = req.params;
     
-    if (isNaN(templateId)) {
-      return res.status(400).json({ error: "Invalid template ID" });
-    }
-    
-    const template = await db.query.resumeTemplates.findFirst({
-      where: eq(resumeTemplates.id, templateId)
-    });
-    
-    if (!template) {
-      return res.status(404).json({ error: "Template not found" });
-    }
-    
-    // Detect placeholders in all template content types
-    const svgPlaceholders = detectPlaceholders(template.svgContent);
-    const htmlPlaceholders = detectPlaceholders(template.htmlContent || "");
-    const cssPlaceholders = detectPlaceholders(template.cssContent || "");
-    const jsPlaceholders = detectPlaceholders(template.jsContent || "");
-    
-    // Combine all unique placeholders
-    const placeholdersSet = new Set();
-    
-    // Add all placeholders to the set
-    svgPlaceholders.forEach(p => placeholdersSet.add(p));
-    htmlPlaceholders.forEach(p => placeholdersSet.add(p));
-    cssPlaceholders.forEach(p => placeholdersSet.add(p));
-    jsPlaceholders.forEach(p => placeholdersSet.add(p));
-    
-    // Convert set to array
-    const allPlaceholders = Array.from(placeholdersSet);
-    
-    return res.status(200).json({ 
-      placeholders: allPlaceholders,
-      counts: {
-        svg: svgPlaceholders.length,
-        html: htmlPlaceholders.length,
-        css: cssPlaceholders.length,
-        js: jsPlaceholders.length,
-        total: allPlaceholders.length
-      } 
-    });
-  } catch (error) {
-    console.error("Error detecting placeholders:", error);
-    return res.status(500).json({ error: "Failed to detect placeholders" });
-  }
-});
-
-/**
- * GET /api/templates/:id/bindings
- * Get all bindings for a template
- */
-router.get("/templates/:id/bindings", async (req, res) => {
-  try {
-    const templateId = parseInt(req.params.id);
-    
-    if (isNaN(templateId)) {
-      return res.status(400).json({ error: "Invalid template ID" });
+    if (!templateId || isNaN(Number(templateId))) {
+      return res.status(400).json({ error: 'Invalid template ID' });
     }
     
     const bindings = await db.query.templateBindings.findMany({
-      where: eq(templateBindings.templateId, templateId)
+      where: eq(bindingsTable.templateId, Number(templateId)),
     });
     
-    return res.status(200).json(bindings);
+    return res.json(bindings);
   } catch (error) {
-    console.error("Error fetching template bindings:", error);
-    return res.status(500).json({ error: "Failed to fetch template bindings" });
+    console.error('Error fetching template bindings:', error);
+    return res.status(500).json({ error: 'Failed to fetch template bindings' });
   }
 });
 
-/**
- * POST /api/templates/:id/bindings
- * Create a new binding for a template
- */
-router.post("/templates/:id/bindings", async (req, res) => {
+// Create a new binding
+router.post('/templates/:templateId/bindings', async (req, res) => {
   try {
-    const templateId = parseInt(req.params.id);
+    const { templateId } = req.params;
+    const { placeholderToken, dataField } = req.body;
     
-    if (isNaN(templateId)) {
-      return res.status(400).json({ error: "Invalid template ID" });
+    if (!templateId || isNaN(Number(templateId))) {
+      return res.status(400).json({ error: 'Invalid template ID' });
     }
     
-    // Check if template exists
-    const template = await db.query.resumeTemplates.findFirst({
-      where: eq(resumeTemplates.id, templateId)
-    });
-    
-    if (!template) {
-      return res.status(404).json({ error: "Template not found" });
+    if (!placeholderToken) {
+      return res.status(400).json({ error: 'Placeholder token is required' });
     }
-    
-    // Validate request body
-    const validatedData = templateBindingSchema.parse({
-      ...req.body,
-      templateId
-    });
     
     // Check if binding already exists
     const existingBinding = await db.query.templateBindings.findFirst({
-      where: sql`${templateBindings.templateId} = ${templateId} AND ${templateBindings.placeholderToken} = ${validatedData.placeholderToken}`
+      where: (fields, operators) => 
+        operators.and(
+          eq(bindingsTable.templateId, Number(templateId)),
+          eq(bindingsTable.placeholderToken, placeholderToken)
+        ),
     });
     
     if (existingBinding) {
-      // Update existing binding
-      const [updatedBinding] = await db
-        .update(templateBindings)
-        .set({
-          dataField: validatedData.dataField,
-          description: validatedData.description,
-          updatedAt: new Date()
-        })
-        .where(eq(templateBindings.id, existingBinding.id))
-        .returning();
-      
-      return res.status(200).json(updatedBinding);
+      return res.status(409).json({ 
+        error: 'Binding already exists', 
+        binding: existingBinding 
+      });
     }
     
     // Create new binding
-    const [newBinding] = await db
-      .insert(templateBindings)
-      .values(validatedData)
-      .returning();
+    const [newBinding] = await db.insert(bindingsTable).values({
+      templateId: Number(templateId),
+      placeholderToken,
+      dataField: dataField || '',
+    }).returning();
     
     return res.status(201).json(newBinding);
   } catch (error) {
-    console.error("Error creating template binding:", error);
-    return res.status(500).json({ error: "Failed to create template binding" });
+    console.error('Error creating template binding:', error);
+    return res.status(500).json({ error: 'Failed to create template binding' });
   }
 });
 
-/**
- * PUT /api/templates/:templateId/bindings/:bindingId
- * Update a template binding
- */
-router.put("/templates/:templateId/bindings/:bindingId", async (req, res) => {
+// Update a binding
+router.patch('/templates/:templateId/bindings/:bindingId', async (req, res) => {
   try {
-    const templateId = parseInt(req.params.templateId);
-    const bindingId = parseInt(req.params.bindingId);
+    const { templateId, bindingId } = req.params;
+    const { dataField } = req.body;
     
-    if (isNaN(templateId) || isNaN(bindingId)) {
-      return res.status(400).json({ error: "Invalid template or binding ID" });
+    if (!templateId || isNaN(Number(templateId)) || !bindingId || isNaN(Number(bindingId))) {
+      return res.status(400).json({ error: 'Invalid template or binding ID' });
     }
-    
-    // Check if binding exists and belongs to the template
-    const existingBinding = await db.query.templateBindings.findFirst({
-      where: sql`${templateBindings.id} = ${bindingId} AND ${templateBindings.templateId} = ${templateId}`
-    });
-    
-    if (!existingBinding) {
-      return res.status(404).json({ error: "Binding not found or doesn't belong to this template" });
-    }
-    
-    // Validate request body
-    const validatedData = templateBindingSchema.parse({
-      ...req.body,
-      templateId
-    });
     
     // Update binding
-    const [updatedBinding] = await db
-      .update(templateBindings)
-      .set({
-        dataField: validatedData.dataField,
-        description: validatedData.description,
-        updatedAt: new Date()
-      })
-      .where(eq(templateBindings.id, bindingId))
+    const [updatedBinding] = await db.update(bindingsTable)
+      .set({ dataField })
+      .where(
+        eq(bindingsTable.id, Number(bindingId))
+      )
       .returning();
     
-    return res.status(200).json(updatedBinding);
+    if (!updatedBinding) {
+      return res.status(404).json({ error: 'Binding not found' });
+    }
+    
+    return res.json(updatedBinding);
   } catch (error) {
-    console.error("Error updating template binding:", error);
-    return res.status(500).json({ error: "Failed to update template binding" });
+    console.error('Error updating template binding:', error);
+    return res.status(500).json({ error: 'Failed to update template binding' });
   }
 });
 
-/**
- * PATCH /api/templates/:templateId/bindings/:bindingId
- * Partial update of a template binding
- */
-router.patch("/templates/:templateId/bindings/:bindingId", async (req, res) => {
+// Delete a binding
+router.delete('/templates/:templateId/bindings/:bindingId', async (req, res) => {
   try {
-    const templateId = parseInt(req.params.templateId);
-    const bindingId = parseInt(req.params.bindingId);
+    const { templateId, bindingId } = req.params;
     
-    if (isNaN(templateId) || isNaN(bindingId)) {
-      return res.status(400).json({ error: "Invalid template or binding ID" });
-    }
-    
-    // Check if binding exists and belongs to the template
-    const existingBinding = await db.query.templateBindings.findFirst({
-      where: sql`${templateBindings.id} = ${bindingId} AND ${templateBindings.templateId} = ${templateId}`
-    });
-    
-    if (!existingBinding) {
-      return res.status(404).json({ error: "Binding not found or doesn't belong to this template" });
-    }
-    
-    // Create update object with only the fields that were provided
-    const updateData: Record<string, any> = {};
-    if (req.body.selector !== undefined) updateData.selector = req.body.selector;
-    if (req.body.dataField !== undefined) updateData.dataField = req.body.dataField;
-    if (req.body.description !== undefined) updateData.description = req.body.description;
-    updateData.updatedAt = new Date();
-    
-    // Update binding
-    const [updatedBinding] = await db
-      .update(templateBindings)
-      .set(updateData)
-      .where(eq(templateBindings.id, bindingId))
-      .returning();
-    
-    return res.status(200).json(updatedBinding);
-  } catch (error) {
-    console.error("Error updating template binding:", error);
-    return res.status(500).json({ error: "Failed to update template binding" });
-  }
-});
-
-/**
- * DELETE /api/templates/:templateId/bindings/:bindingId
- * Delete a template binding
- */
-router.delete("/templates/:templateId/bindings/:bindingId", async (req, res) => {
-  try {
-    const templateId = parseInt(req.params.templateId);
-    const bindingId = parseInt(req.params.bindingId);
-    
-    if (isNaN(templateId) || isNaN(bindingId)) {
-      return res.status(400).json({ error: "Invalid template or binding ID" });
-    }
-    
-    // Check if binding exists and belongs to the template
-    const existingBinding = await db.query.templateBindings.findFirst({
-      where: sql`${templateBindings.id} = ${bindingId} AND ${templateBindings.templateId} = ${templateId}`
-    });
-    
-    if (!existingBinding) {
-      return res.status(404).json({ error: "Binding not found or doesn't belong to this template" });
+    if (!templateId || isNaN(Number(templateId)) || !bindingId || isNaN(Number(bindingId))) {
+      return res.status(400).json({ error: 'Invalid template or binding ID' });
     }
     
     // Delete binding
-    await db.delete(templateBindings).where(eq(templateBindings.id, bindingId));
+    await db.delete(bindingsTable)
+      .where(
+        eq(bindingsTable.id, Number(bindingId))
+      );
     
     return res.status(204).send();
   } catch (error) {
-    console.error("Error deleting template binding:", error);
-    return res.status(500).json({ error: "Failed to delete template binding" });
+    console.error('Error deleting template binding:', error);
+    return res.status(500).json({ error: 'Failed to delete template binding' });
   }
 });
 
-/**
- * DELETE /api/templates/:id/bindings
- * Delete all bindings for a template
- */
-router.delete("/templates/:id/bindings", async (req, res) => {
+// AI-powered binding suggestions
+router.post('/templates/:templateId/suggest-bindings', async (req, res) => {
   try {
-    const templateId = parseInt(req.params.id);
+    const { templateId } = req.params;
+    const { resumeSchema } = req.body;
     
-    if (isNaN(templateId)) {
-      return res.status(400).json({ error: "Invalid template ID" });
+    if (!templateId || isNaN(Number(templateId))) {
+      return res.status(400).json({ error: 'Invalid template ID' });
     }
     
-    // Delete all bindings for the template
-    await db.delete(templateBindings).where(eq(templateBindings.templateId, templateId));
+    if (!resumeSchema) {
+      return res.status(400).json({ error: 'Resume schema is required' });
+    }
     
-    return res.status(204).send();
+    // Get template
+    const template = await db.query.resumeTemplates.findFirst({
+      where: eq(templatesTable.id, Number(templateId)),
+    });
+    
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    // Get existing bindings
+    const existingBindings = await db.query.templateBindings.findMany({
+      where: eq(bindingsTable.templateId, Number(templateId)),
+    });
+    
+    // Extract tokens from template HTML
+    const tokens = extractTemplateTokens(template.htmlContent || '');
+    
+    // Generate suggestions
+    const suggestions = suggestBindings(tokens, resumeSchema, template.htmlContent || '', existingBindings);
+    
+    return res.json(suggestions);
   } catch (error) {
-    console.error("Error deleting template bindings:", error);
-    return res.status(500).json({ error: "Failed to delete template bindings" });
+    console.error('Error generating binding suggestions:', error);
+    return res.status(500).json({ error: 'Failed to generate binding suggestions' });
   }
 });
 

@@ -1,186 +1,235 @@
-import { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Check, X, Lightbulb, Bot } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Loader2, Check, X, Bot, AlertTriangle, ThumbsUp } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export interface Binding {
-  id: number;
-  templateId: number;
-  placeholder: string;
-  selector: string;
-  isMapped?: boolean;
+export interface SuggestionItem {
+  fieldPath: string;
+  fieldName?: string;
+  confidence: number;
+  reasoning?: string;
 }
 
 export interface BindingSuggestion {
-  binding: Binding;
-  suggestedField: string;
-  confidence: number;
+  bindingId: number;
+  token: string;
+  suggestions: SuggestionItem[];
 }
 
 interface BindingSuggestionsProps {
   suggestions: BindingSuggestion[];
-  onAccept: (binding: Binding) => void;
-  onAcceptAll: () => void;
-  onDismiss: (bindingId: number) => void;
+  onAccept: (bindingId: number, fieldPath: string) => void;
+  onAcceptAll: (suggestions: BindingSuggestion[]) => void;
+  onDismiss: () => void;
   isLoading?: boolean;
 }
 
-export function BindingSuggestions({
+// Helper to format confidence score as percentage
+const formatConfidence = (confidence: number) => {
+  return `${Math.round(confidence * 100)}%`;
+};
+
+// Helper to get color based on confidence
+const getConfidenceColor = (confidence: number) => {
+  if (confidence >= 0.8) return 'text-green-600 bg-green-50 border-green-200';
+  if (confidence >= 0.5) return 'text-amber-600 bg-amber-50 border-amber-200';
+  return 'text-red-600 bg-red-50 border-red-200';
+};
+
+// Helper to get icon based on confidence
+const getConfidenceIcon = (confidence: number) => {
+  if (confidence >= 0.8) return <ThumbsUp className="h-4 w-4 text-green-600" />;
+  if (confidence >= 0.5) return <Check className="h-4 w-4 text-amber-600" />;
+  return <AlertTriangle className="h-4 w-4 text-red-600" />;
+};
+
+export const BindingSuggestions: React.FC<BindingSuggestionsProps> = ({
   suggestions,
   onAccept,
   onAcceptAll,
   onDismiss,
   isLoading = false
-}: BindingSuggestionsProps) {
-  const [acceptedCount, setAcceptedCount] = useState(0);
-  const [progress, setProgress] = useState(0);
-  
-  useEffect(() => {
-    if (suggestions.length > 0) {
-      setProgress((acceptedCount / suggestions.length) * 100);
-    } else {
-      setProgress(0);
-    }
-  }, [acceptedCount, suggestions.length]);
-  
-  const handleAccept = (suggestion: BindingSuggestion) => {
-    onAccept({
-      ...suggestion.binding,
-      selector: suggestion.suggestedField,
-      isMapped: true
-    });
-    setAcceptedCount(prev => prev + 1);
-  };
-  
-  const handleDismiss = (bindingId: number) => {
-    onDismiss(bindingId);
-  };
-  
-  const handleAcceptAll = () => {
-    onAcceptAll();
-    setAcceptedCount(suggestions.length);
-  };
-  
-  if (isLoading) {
-    return (
-      <div className="p-8 text-center">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-        <p className="text-lg font-medium text-muted-foreground">AI engine analyzing your template...</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Processing template tokens and finding the best field matches
-        </p>
-      </div>
-    );
-  }
-  
-  if (suggestions.length === 0) {
-    return (
-      <div className="p-8 text-center">
-        <Bot className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <p className="text-lg font-medium">No suggestions available</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          All fields are already mapped or our binding bot couldn't find confident matches
-        </p>
-      </div>
-    );
-  }
-  
+}) => {
+  // Filter high-confidence suggestions for "Accept All" functionality
+  const highConfidenceSuggestions = suggestions.filter(
+    suggestion => suggestion.suggestions.length > 0 && suggestion.suggestions[0].confidence >= 0.5
+  );
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-medium text-lg flex items-center">
-            <Bot className="h-5 w-5 mr-2 text-primary" />
-            AI Binding Suggestions
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {suggestions.length} potential field matches found
+    <div className="py-4">
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+          <h3 className="text-lg font-medium">Analyzing Template...</h3>
+          <p className="text-sm text-muted-foreground mt-2">
+            Our AI is examining your template structure and generating intelligent binding suggestions.
           </p>
         </div>
-        
-        <Button 
-          onClick={handleAcceptAll}
-          className="gap-2"
-        >
-          <Check className="h-4 w-4" />
-          Accept All
-        </Button>
-      </div>
-      
-      <div className="mb-4">
-        <div className="flex items-center justify-between text-sm mb-1">
-          <span>Progress</span>
-          <span>{Math.round(progress)}%</span>
+      ) : suggestions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <AlertTriangle className="h-10 w-10 text-amber-500 mb-4" />
+          <h3 className="text-lg font-medium">No Suggestions Available</h3>
+          <p className="text-sm text-muted-foreground mt-2">
+            We couldn't generate any binding suggestions for your template. 
+            Try modifying your template to include clear placeholder markers.
+          </p>
         </div>
-        <Progress value={progress} className="h-2" />
-      </div>
-      
-      <ScrollArea className="h-[320px] pr-4">
-        <div className="space-y-3">
-          {suggestions.map((suggestion) => (
-            <Card key={suggestion.binding.id} className="p-4 relative">
-              <div className="grid grid-cols-[1fr,auto] gap-4">
-                <div>
-                  <div className="mb-1 flex items-center gap-2">
-                    <Badge 
-                      variant="outline" 
-                      className="font-mono text-xs"
-                    >
-                      {suggestion.binding.placeholder.substring(0, 30)}
-                      {suggestion.binding.placeholder.length > 30 ? '...' : ''}
-                    </Badge>
-                    
-                    <Badge 
-                      className={
-                        suggestion.confidence > 0.8 ? 'bg-green-100 text-green-800 border-green-200' :
-                        suggestion.confidence > 0.6 ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                        'bg-amber-100 text-amber-800 border-amber-200'
-                      }
-                    >
-                      {Math.round(suggestion.confidence * 100)}% match
-                    </Badge>
-                  </div>
-                  
-                  <div className="mt-2">
-                    <div className="flex items-center text-sm font-medium">
-                      <span>Suggested field:</span>
-                      <Badge variant="secondary" className="ml-2 bg-blue-50 text-blue-700">
-                        {suggestion.suggestedField}
-                      </Badge>
+      ) : (
+        <>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-lg font-medium">AI Binding Suggestions</h3>
+              <p className="text-sm text-muted-foreground">
+                {suggestions.length} token{suggestions.length !== 1 ? 's' : ''} analyzed
+              </p>
+            </div>
+            <div className="space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onDismiss}
+              >
+                <X className="h-4 w-4 mr-1.5" />
+                Dismiss
+              </Button>
+              
+              <Button 
+                size="sm"
+                onClick={() => onAcceptAll(suggestions)}
+                disabled={highConfidenceSuggestions.length === 0}
+              >
+                <Check className="h-4 w-4 mr-1.5" />
+                Accept All High Confidence
+                {highConfidenceSuggestions.length > 0 && ` (${highConfidenceSuggestions.length})`}
+              </Button>
+            </div>
+          </div>
+          
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-4">
+              {suggestions.map((suggestion) => (
+                <Card key={suggestion.bindingId} className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-medium flex items-center">
+                        <Bot className="h-4 w-4 mr-1.5 text-primary" />
+                        Template Token
+                      </h4>
+                      <code className="text-sm bg-muted px-1.5 py-0.5 rounded mt-1 font-mono">
+                        {suggestion.token}
+                      </code>
                     </div>
+                    
+                    {suggestion.suggestions.length > 0 && (
+                      <Badge 
+                        variant="outline" 
+                        className={getConfidenceColor(suggestion.suggestions[0].confidence)}
+                      >
+                        <span className="mr-1.5">{formatConfidence(suggestion.suggestions[0].confidence)}</span>
+                        {getConfidenceIcon(suggestion.suggestions[0].confidence)}
+                      </Badge>
+                    )}
                   </div>
-                </div>
-                
-                <div className="flex flex-col space-y-2">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="w-24"
-                    onClick={() => handleAccept(suggestion)}
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Accept
-                  </Button>
                   
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-24"
-                    onClick={() => handleDismiss(suggestion.binding.id)}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Dismiss
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </ScrollArea>
+                  {suggestion.suggestions.length > 0 ? (
+                    <Tabs defaultValue="top">
+                      <TabsList className="mb-2">
+                        <TabsTrigger value="top">Top Suggestions</TabsTrigger>
+                        <TabsTrigger value="all">All Matches</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="top" className="space-y-2">
+                        <div className="bg-blue-50 rounded-md p-3 border border-blue-100">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h5 className="font-medium text-blue-800">Recommended Binding</h5>
+                              <code className="text-sm font-mono bg-blue-100 px-1.5 py-0.5 rounded text-blue-800 mt-1">
+                                {suggestion.suggestions[0].fieldPath}
+                              </code>
+                              {suggestion.suggestions[0].reasoning && (
+                                <p className="text-xs text-blue-700 mt-1">
+                                  {suggestion.suggestions[0].reasoning}
+                                </p>
+                              )}
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="secondary"
+                              onClick={() => onAccept(suggestion.bindingId, suggestion.suggestions[0].fieldPath)}
+                            >
+                              Apply
+                            </Button>
+                          </div>
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="all">
+                        <div className="space-y-2">
+                          {suggestion.suggestions.map((item, index) => (
+                            <div 
+                              key={item.fieldPath}
+                              className={`rounded-md p-3 border flex justify-between items-start ${
+                                index === 0 
+                                  ? 'bg-blue-50 border-blue-100' 
+                                  : 'bg-gray-50 border-gray-100'
+                              }`}
+                            >
+                              <div>
+                                <h5 className={`font-medium ${
+                                  index === 0 ? 'text-blue-800' : 'text-gray-800'
+                                }`}>
+                                  {index === 0 ? 'Best Match' : `Alternative ${index}`}
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`ml-2 ${getConfidenceColor(item.confidence)}`}
+                                  >
+                                    {formatConfidence(item.confidence)}
+                                  </Badge>
+                                </h5>
+                                <code className={`text-sm font-mono px-1.5 py-0.5 rounded mt-1 ${
+                                  index === 0 
+                                    ? 'bg-blue-100 text-blue-800' 
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {item.fieldPath}
+                                </code>
+                                {item.reasoning && (
+                                  <p className={`text-xs mt-1 ${
+                                    index === 0 ? 'text-blue-700' : 'text-gray-600'
+                                  }`}>
+                                    {item.reasoning}
+                                  </p>
+                                )}
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant={index === 0 ? "secondary" : "outline"}
+                                onClick={() => onAccept(suggestion.bindingId, item.fieldPath)}
+                              >
+                                Apply
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    <div className="bg-gray-50 rounded-md p-3 border border-gray-200">
+                      <div className="flex items-center text-gray-700">
+                        <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
+                        <p className="text-sm">No matching fields found for this token.</p>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+        </>
+      )}
     </div>
   );
-}
+};

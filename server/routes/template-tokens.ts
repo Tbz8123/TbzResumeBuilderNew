@@ -1,118 +1,43 @@
-import { db } from "../../db";
-import { resumeTemplates as templatesTable } from "@shared/schema";
-import { eq } from "drizzle-orm";
-import { Express, Request, Response } from "express";
+import express from 'express';
+import { db } from '@db';
+import { eq } from 'drizzle-orm';
+import { resumeTemplates as templatesTable } from '@shared/schema';
+import { extractTemplateTokens, analyzeTokenContext } from '../utils/binding-bot';
 
-interface Token {
-  id: string;
-  text: string;
-  type: "field" | "loop" | "conditional" | "raw";
-}
+const router = express.Router();
 
-export const setupTemplateTokensRoutes = (app: Express) => {
-  // Get all tokens from a template's HTML content
-  app.get("/api/templates/:id/tokens", async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params;
-      
-      // Fetch template HTML content
-      const template = await db.query.resumeTemplates.findFirst({
-        where: eq(templatesTable.id, parseInt(id, 10)),
-      });
-      
-      if (!template) {
-        return res.status(404).json({ error: "Template not found" });
-      }
-      
-      // Parse HTML content to extract tokens
-      const tokens = extractTokensFromHtml(template.htmlContent || "");
-      
-      return res.status(200).json(tokens);
-    } catch (error) {
-      console.error("Error extracting template tokens:", error);
-      return res.status(500).json({ error: "Failed to extract template tokens" });
+// Get template tokens
+router.get('/templates/:templateId/tokens', async (req, res) => {
+  try {
+    const { templateId } = req.params;
+    
+    if (!templateId || isNaN(Number(templateId))) {
+      return res.status(400).json({ error: 'Invalid template ID' });
     }
-  });
-};
+    
+    // Get template
+    const template = await db.query.resumeTemplates.findFirst({
+      where: eq(templatesTable.id, Number(templateId)),
+    });
+    
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    // Extract tokens from template HTML
+    const tokens = extractTemplateTokens(template.htmlContent || '');
+    
+    // Get context for each token
+    const tokensWithContext = tokens.map(token => ({
+      token,
+      context: analyzeTokenContext(token, template.htmlContent || '')
+    }));
+    
+    return res.json(tokensWithContext);
+  } catch (error) {
+    console.error('Error extracting template tokens:', error);
+    return res.status(500).json({ error: 'Failed to extract template tokens' });
+  }
+});
 
-/**
- * Extract tokens from HTML content
- * This handles multiple template syntax formats:
- * - Handlebars style: {{ field }} and {{#each items}}...{{/each}}
- * - Custom brackets: [[FIELD:name]] and [[LOOP:items]]...[[/LOOP]]
- */
-function extractTokensFromHtml(html: string): Token[] {
-  if (!html) return [];
-  
-  const tokens: Token[] = [];
-  let tokenId = 0;
-  
-  // Match handlebars-style simple fields: {{ field }}
-  const handlebarFieldRegex = /{{([^#\/][^}]*?)}}/g;
-  let match;
-  
-  while ((match = handlebarFieldRegex.exec(html)) !== null) {
-    tokens.push({
-      id: `token-${tokenId++}`,
-      text: match[0],
-      type: "field"
-    });
-  }
-  
-  // Match handlebars-style loops: {{#each items}}
-  const handlebarLoopRegex = /{{#each ([^}]*?)}}/g;
-  
-  while ((match = handlebarLoopRegex.exec(html)) !== null) {
-    tokens.push({
-      id: `token-${tokenId++}`,
-      text: match[0],
-      type: "loop"
-    });
-  }
-  
-  // Match handlebars-style conditionals: {{#if condition}}
-  const handlebarConditionalRegex = /{{#if ([^}]*?)}}/g;
-  
-  while ((match = handlebarConditionalRegex.exec(html)) !== null) {
-    tokens.push({
-      id: `token-${tokenId++}`,
-      text: match[0],
-      type: "conditional"
-    });
-  }
-  
-  // Match bracket-style fields: [[FIELD:name]]
-  const bracketFieldRegex = /\[\[FIELD:([^\]]*?)\]\]/g;
-  
-  while ((match = bracketFieldRegex.exec(html)) !== null) {
-    tokens.push({
-      id: `token-${tokenId++}`,
-      text: match[0],
-      type: "field"
-    });
-  }
-  
-  // Match bracket-style loops: [[LOOP:items]]
-  const bracketLoopRegex = /\[\[LOOP:([^\]]*?)\]\]/g;
-  
-  while ((match = bracketLoopRegex.exec(html)) !== null) {
-    tokens.push({
-      id: `token-${tokenId++}`,
-      text: match[0],
-      type: "loop"
-    });
-  }
-  
-  // Match bracket-style conditionals: [[IF:condition]]
-  const bracketConditionalRegex = /\[\[IF:([^\]]*?)\]\]/g;
-  
-  while ((match = bracketConditionalRegex.exec(html)) !== null) {
-    tokens.push({
-      id: `token-${tokenId++}`,
-      text: match[0],
-      type: "conditional"
-    });
-  }
-  
-  return tokens;
-}
+export default router;
