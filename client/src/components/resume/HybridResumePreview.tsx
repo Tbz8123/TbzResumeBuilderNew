@@ -24,26 +24,23 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   const [templateKey, setTemplateKey] = useState<number>(0); // Force re-renders with a key
   const templateHtmlRef = useRef<string>('');
   
-  // Special debug function to check additionalInfo and visibility
+  // Special debug function to check additionalFields
   const hasAdditionalInfo = (key: string): boolean => {
-    const hasInfo = resumeData.additionalInfo && key in resumeData.additionalInfo;
-    const isVisible = resumeData.additionalInfoVisibility && 
-                      key in resumeData.additionalInfoVisibility && 
-                      resumeData.additionalInfoVisibility[key] === true;
+    const field = resumeData.additionalFields?.[key];
+    const hasInfo = Boolean(field?.value);
+    const isVisible = Boolean(field?.visible);
     
-    console.log(`hasAdditionalInfo('${key}'):`, {
+    console.log(`[PREVIEW] hasAdditionalInfo('${key}'):`, {
       hasInfo,
       isVisible,
-      infoValue: resumeData.additionalInfo?.[key],
-      visibilityValue: resumeData.additionalInfoVisibility?.[key]
+      field
     });
     
-    return hasInfo;
+    return hasInfo && isVisible;
   };
   
   // Debug logging for rendering
-  console.log("RENDER DEBUG - additionalInfo:", resumeData.additionalInfo);
-  console.log("RENDER DEBUG - additionalInfoVisibility:", resumeData.additionalInfoVisibility);
+  console.log("[PREVIEW] RENDER DEBUG - additionalFields:", resumeData.additionalFields);
   
   // Get template ID from localStorage if needed
   useEffect(() => {
@@ -127,7 +124,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       country: resumeData.country,
       postalCode: resumeData.postalCode,
       summaryLength: resumeData.summary?.length || 0,
-      additionalInfo: resumeData.additionalInfo, // Log the full additionalInfo object
+      additionalFields: resumeData.additionalFields, // Log the full additionalFields object
       updateTimestamp: new Date().toISOString() // Track when updates happen
     });
     
@@ -152,10 +149,13 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     resumeData.summary,
     resumeData.photo,
     
-    // Include fields from additionalInfo
-    resumeData.additionalInfo?.linkedin,
-    resumeData.additionalInfo?.website,
-    resumeData.additionalInfo?.drivingLicense,
+    // Include fields from additionalFields
+    resumeData.additionalFields?.linkedin?.value,
+    resumeData.additionalFields?.linkedin?.visible,
+    resumeData.additionalFields?.website?.value,
+    resumeData.additionalFields?.website?.visible,
+    resumeData.additionalFields?.drivingLicense?.value,
+    resumeData.additionalFields?.drivingLicense?.visible,
     
     // Include the memoized callback
     processHtmlWithData
@@ -203,60 +203,51 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                   </div>
                 )}
                 
-                {/* Render each additional info field independently with debug info */}
+                {/* Render each additional info field independently with the new structure */}
                 {(() => {
                   // Debug info for LinkedIn
-                  const hasLinkedIn = Boolean(resumeData.additionalInfo?.linkedin);
-                  const isLinkedInVisible = Boolean(resumeData.additionalInfoVisibility?.linkedin);
-                  console.log("LinkedIn render check:", { 
-                    hasValue: hasLinkedIn, 
-                    isVisible: isLinkedInVisible,
-                    value: resumeData.additionalInfo?.linkedin,
-                    visibilityValue: resumeData.additionalInfoVisibility?.linkedin
-                  });
+                  const linkedInField = resumeData.additionalFields?.linkedin;
+                  const shouldRenderLinkedIn = Boolean(linkedInField?.value) && linkedInField?.visible;
                   
-                  return hasLinkedIn && isLinkedInVisible ? (
+                  console.log("[PREVIEW] LinkedIn field:", linkedInField);
+                  console.log("[PREVIEW] Should render LinkedIn:", shouldRenderLinkedIn);
+                  
+                  return shouldRenderLinkedIn ? (
                     <div>
                       <span className="font-medium">LinkedIn: </span>
-                      {resumeData.additionalInfo.linkedin}
+                      {linkedInField.value}
                     </div>
                   ) : null;
                 })()}
                 
                 {(() => {
                   // Debug info for Website
-                  const hasWebsite = Boolean(resumeData.additionalInfo?.website);
-                  const isWebsiteVisible = Boolean(resumeData.additionalInfoVisibility?.website);
-                  console.log("Website render check:", { 
-                    hasValue: hasWebsite, 
-                    isVisible: isWebsiteVisible,
-                    value: resumeData.additionalInfo?.website,
-                    visibilityValue: resumeData.additionalInfoVisibility?.website
-                  });
+                  const websiteField = resumeData.additionalFields?.website;
+                  const shouldRenderWebsite = Boolean(websiteField?.value) && websiteField?.visible;
                   
-                  return hasWebsite && isWebsiteVisible ? (
+                  console.log("[PREVIEW] Website field:", websiteField);
+                  console.log("[PREVIEW] Should render Website:", shouldRenderWebsite);
+                  
+                  return shouldRenderWebsite ? (
                     <div>
                       <span className="font-medium">Website: </span>
-                      {resumeData.additionalInfo.website}
+                      {websiteField.value}
                     </div>
                   ) : null;
                 })()}
                 
                 {(() => {
                   // Debug info for Driving License
-                  const hasDrivingLicense = Boolean(resumeData.additionalInfo?.drivingLicense);
-                  const isDrivingLicenseVisible = Boolean(resumeData.additionalInfoVisibility?.drivingLicense);
-                  console.log("Driving License render check:", { 
-                    hasValue: hasDrivingLicense, 
-                    isVisible: isDrivingLicenseVisible,
-                    value: resumeData.additionalInfo?.drivingLicense,
-                    visibilityValue: resumeData.additionalInfoVisibility?.drivingLicense
-                  });
+                  const drivingLicenseField = resumeData.additionalFields?.drivingLicense;
+                  const shouldRenderDrivingLicense = Boolean(drivingLicenseField?.value) && drivingLicenseField?.visible;
                   
-                  return hasDrivingLicense && isDrivingLicenseVisible ? (
+                  console.log("[PREVIEW] Driving License field:", drivingLicenseField);
+                  console.log("[PREVIEW] Should render Driving License:", shouldRenderDrivingLicense);
+                  
+                  return shouldRenderDrivingLicense ? (
                     <div>
                       <span className="font-medium">License: </span>
-                      {resumeData.additionalInfo.drivingLicense}
+                      {drivingLicenseField.value}
                     </div>
                   ) : null;
                 })()}

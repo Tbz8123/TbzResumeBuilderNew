@@ -141,20 +141,20 @@ const PersonalInformationPage = () => {
   const handleInfoChange = (type: string, value: string) => {
     // Value changes maintain visibility
     updateAdditionalInfo(type, value);
-    console.log(`Changed info field ${type} to: ${value}`);
+    console.log(`[PERSONAL_INFO] Changed info field ${type} to: ${value}`);
   };
   
   // Check if specific additional info exists
   const hasAdditionalInfo = (type: string) => {
-    const hasInfo = resumeData.additionalInfo && type in resumeData.additionalInfo;
-    console.log(`Checking info field ${type}: ${hasInfo}`);
+    const hasInfo = Boolean(resumeData.additionalFields?.[type]);
+    console.log(`[PERSONAL_INFO] Checking info field ${type} exists: ${hasInfo}`);
     return hasInfo;
   };
   
   // Get additional info value
   const getAdditionalInfoValue = (type: string) => {
-    const value = resumeData.additionalInfo?.[type] || '';
-    console.log(`Getting info field ${type}: ${value}`);
+    const value = resumeData.additionalFields?.[type]?.value || '';
+    console.log(`[PERSONAL_INFO] Getting info field ${type} value: ${value}`);
     return value;
   };
 
@@ -400,8 +400,8 @@ const PersonalInformationPage = () => {
                   {/* LinkedIn with enhanced logging */}
                   {(() => {
                     console.log('[PERSONAL_INFO] Checking LinkedIn visibility in render');
-                    console.log('[PERSONAL_INFO] additionalInfo:', resumeData.additionalInfo);
-                    console.log('[PERSONAL_INFO] additionalInfoVisibility:', resumeData.additionalInfoVisibility);
+                    console.log('[PERSONAL_INFO] additionalFields:', resumeData.additionalFields);
+                    console.log('[PERSONAL_INFO] linkedInField:', resumeData.additionalFields?.linkedin);
                     console.log('[PERSONAL_INFO] hasAdditionalInfo("linkedin"):', hasAdditionalInfo('linkedin'));
                     
                     if (hasAdditionalInfo('linkedin')) {
