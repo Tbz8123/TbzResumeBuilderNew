@@ -3,6 +3,14 @@
  */
 
 /**
+ * Safely checks if an object has a property and it's not empty
+ */
+export function hasProperty(obj: any, prop: string): boolean {
+  if (!obj) return false;
+  return prop in obj && obj[prop] !== undefined && obj[prop] !== null && obj[prop] !== '';
+}
+
+/**
  * Processes HTML content by replacing placeholders with actual resume data
  * This function handles a wider variety of placeholder formats and commonly used template text
  */
@@ -89,17 +97,18 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '{{skillsList}}': resumeData.skills && resumeData.skills.length > 0 ? resumeData.skills.map((skill: { name: string }) => skill.name).join(', ') : '',
     '{{skills_list}}': resumeData.skills && resumeData.skills.length > 0 ? resumeData.skills.map((skill: { name: string }) => skill.name).join(', ') : '',
     
-    // Website & social media - only include if explicitly added by user, replace with empty string to completely remove from template
-    '{{website}}': 'website' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
-    '{{personal_website}}': 'website' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
-    '{{linkedin}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
-    '{{linkedinUrl}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
-    '{{linkedin_url}}': 'linkedin' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
+    // Website & social media - only include if explicitly added by user, replace with removal marker to completely remove from template
+    '{{website}}': hasProperty(resumeData.additionalInfo, 'website') ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
+    '{{personal_website}}': hasProperty(resumeData.additionalInfo, 'website') ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
+    '{{website_url}}': hasProperty(resumeData.additionalInfo, 'website') ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
+    '{{linkedin}}': hasProperty(resumeData.additionalInfo, 'linkedin') ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
+    '{{linkedinUrl}}': hasProperty(resumeData.additionalInfo, 'linkedin') ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
+    '{{linkedin_url}}': hasProperty(resumeData.additionalInfo, 'linkedin') ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
     
-    // Additional info - only include if explicitly added by user, replace with empty string to completely remove from template
-    '{{drivingLicense}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
-    '{{driving_license}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
-    '{{license}}': 'drivingLicense' in (resumeData.additionalInfo || {}) ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
+    // Additional info - only include if explicitly added by user, replace with removal marker to completely remove from template
+    '{{drivingLicense}}': hasProperty(resumeData.additionalInfo, 'drivingLicense') ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
+    '{{driving_license}}': hasProperty(resumeData.additionalInfo, 'drivingLicense') ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
+    '{{license}}': hasProperty(resumeData.additionalInfo, 'drivingLicense') ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
     
     // Common template text patterns
     'SAHIB KHAN': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim().toUpperCase(),
@@ -139,8 +148,8 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '📍 address, city, st zip code': [resumeData.city, resumeData.country].filter(Boolean).length > 0 ? 
       `📍 ${[resumeData.city, resumeData.country].filter(Boolean).join(', ')}` : 
       '📍 address, city, st zip code',
-    '🔗 website': 'website' in (resumeData.additionalInfo || {}) ? `🔗 ${resumeData.additionalInfo.website}` : '##REMOVE_THIS##',
-    '💼 linkedin': 'linkedin' in (resumeData.additionalInfo || {}) ? `💼 ${resumeData.additionalInfo.linkedin}` : '##REMOVE_THIS##',
+    '🔗 website': hasProperty(resumeData.additionalInfo, 'website') ? `🔗 ${resumeData.additionalInfo.website}` : '##REMOVE_THIS##',
+    '💼 linkedin': hasProperty(resumeData.additionalInfo, 'linkedin') ? `💼 ${resumeData.additionalInfo.linkedin}` : '##REMOVE_THIS##',
       
     // Professional template patterns and placeholders
     'moahmed': resumeData.firstName || 'moahmed',
@@ -191,31 +200,53 @@ export function processTemplateHtml(html: string, resumeData: any): string {
   // This will remove entire elements (like list items, div elements, etc.) that contain the marker
   let count = 0;
   
+  // First, try to remove entire sections or elements that contain our removal marker
+  // This regex matches any HTML tag containing our marker (more comprehensive than previous approach)
+  const htmlTagRegex = /<([a-z][a-z0-9]*)[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/\1>/gi;
+  
+  // Remove elements with the marker (this will catch any HTML tag, not just specific ones)
+  processedHtml = processedHtml.replace(htmlTagRegex, (match, tagName) => {
+    count++;
+    console.log(`Removing ${tagName} element: ${match.substring(0, 50)}...`);
+    return '';
+  });
+  
+  // Attempt more aggressive removal for nested structures
+  // This looks for parent elements with children that contain the marker
+  const nestedElementRegex = /<([a-z][a-z0-9]*)[^>]*>([^<]*<[^>]*>[^<]*##REMOVE_THIS##[^<]*<\/[^>]*>[^<]*)<\/\1>/gi;
+  
+  processedHtml = processedHtml.replace(nestedElementRegex, (match, tagName) => {
+    count++;
+    console.log(`Removing nested ${tagName} element: ${match.substring(0, 50)}...`);
+    return '';
+  });
+  
+  // Also remove specific common elements explicitly
   // Replace list items
   processedHtml = processedHtml.replace(/<li[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/li>/gi, (match) => {
     count++;
-    console.log(`Removing list item: ${match}`);
+    console.log(`Removing list item: ${match.substring(0, 50)}...`);
     return '';
   });
   
   // Replace div elements
   processedHtml = processedHtml.replace(/<div[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/div>/gi, (match) => {
     count++;
-    console.log(`Removing div: ${match}`);
+    console.log(`Removing div: ${match.substring(0, 50)}...`);
     return '';
   });
   
   // Replace paragraphs
   processedHtml = processedHtml.replace(/<p[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/p>/gi, (match) => {
     count++;
-    console.log(`Removing paragraph: ${match}`);
+    console.log(`Removing paragraph: ${match.substring(0, 50)}...`);
     return '';
   });
   
   // Replace spans
   processedHtml = processedHtml.replace(/<span[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/span>/gi, (match) => {
     count++;
-    console.log(`Removing span: ${match}`);
+    console.log(`Removing span: ${match.substring(0, 50)}...`);
     return '';
   });
   

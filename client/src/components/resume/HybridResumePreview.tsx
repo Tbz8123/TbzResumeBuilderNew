@@ -190,30 +190,28 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                 )}
               </div>
 
-               {/* Only show the additional info section if at least one field is added */}
-               {(hasAdditionalInfo('linkedin') || 
-                 hasAdditionalInfo('website') || 
-                 hasAdditionalInfo('drivingLicense')) && (
+               {/* Additional info section - only render container if at least one field exists */}
+               {(Object.keys(resumeData.additionalInfo || {}).length > 0) && (
                  <div className="text-xs space-y-1 text-gray-600 mt-4">
-                   {/* Only show LinkedIn if user has explicitly added it */}
-                   {hasAdditionalInfo('linkedin') && (
+                   {/* LinkedIn - only render if field exists in additionalInfo */}
+                   {resumeData.additionalInfo && 'linkedin' in resumeData.additionalInfo && (
                      <div>
                        <span className="font-medium">LinkedIn: </span>
-                       {resumeData.additionalInfo?.linkedin}
+                       {resumeData.additionalInfo.linkedin}
                      </div>
                    )}
-                   {/* Only show Website if user has explicitly added it */}
-                   {hasAdditionalInfo('website') && (
+                   {/* Website - only render if field exists in additionalInfo */}
+                   {resumeData.additionalInfo && 'website' in resumeData.additionalInfo && (
                      <div>
                        <span className="font-medium">Website: </span>
-                       {resumeData.additionalInfo?.website}
+                       {resumeData.additionalInfo.website}
                      </div>
                    )}
-                   {/* Only show Driving License if user has explicitly added it */}
-                   {hasAdditionalInfo('drivingLicense') && (
+                   {/* Driving License - only render if field exists in additionalInfo */}
+                   {resumeData.additionalInfo && 'drivingLicense' in resumeData.additionalInfo && (
                      <div>
                        <span className="font-medium">License: </span>
-                       {resumeData.additionalInfo?.drivingLicense}
+                       {resumeData.additionalInfo.drivingLicense}
                      </div>
                    )}
                  </div>
