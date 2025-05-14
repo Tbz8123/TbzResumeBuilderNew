@@ -26,6 +26,11 @@ export interface Skill {
   level: number; // 1-5 for skill level
 }
 
+export interface AdditionalInfoItem {
+  value: string;
+  visible: boolean;
+}
+
 export interface ResumeData {
   firstName: string;
   surname: string;
@@ -42,17 +47,13 @@ export interface ResumeData {
   skills: Skill[];
   workExperience: WorkExperience[];
   education: Education[];
-  additionalInfo: {
-    linkedin?: string;
-    website?: string;
-    drivingLicense?: string;
-    [key: string]: string | undefined;
-  };
-  additionalInfoVisibility: {
-    linkedin?: boolean;
-    website?: boolean;
-    drivingLicense?: boolean;
-    [key: string]: boolean | undefined;
+  
+  // Simplified approach - store each additional field as an object with value and visibility
+  additionalFields: {
+    linkedin?: AdditionalInfoItem;
+    website?: AdditionalInfoItem;
+    drivingLicense?: AdditionalInfoItem;
+    [key: string]: AdditionalInfoItem | undefined;
   };
 }
 
@@ -73,8 +74,7 @@ const initialResumeData: ResumeData = {
   skills: [],
   workExperience: [],
   education: [],
-  additionalInfo: {},
-  additionalInfoVisibility: {}
+  additionalFields: {}
 };
 
 // Define context type
@@ -134,48 +134,55 @@ export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
 
-  // Add or update additional info
+  // Add or update additional field
   const updateAdditionalInfo = (key: string, value: string) => {
-    console.log(`Adding/updating additionalInfo field: "${key}" with value: "${value}"`);
+    console.log(`[CONTEXT] Adding/updating additional field: "${key}" with value: "${value}"`);
+    
+    // Log the current state before update for debugging
+    console.log(`[CONTEXT] Before update - additionalFields:`, resumeData.additionalFields);
+    
     setResumeData(prev => {
       const updatedData = {
         ...prev,
-        additionalInfo: {
-          ...prev.additionalInfo,
-          [key]: value
-        },
-        // Also set the visibility to true when adding/updating a field
-        additionalInfoVisibility: {
-          ...prev.additionalInfoVisibility,
-          [key]: true
+        additionalFields: {
+          ...prev.additionalFields,
+          [key]: {
+            value: value,
+            visible: true
+          }
         }
       };
-      console.log("Updated additionalInfo:", updatedData.additionalInfo);
-      console.log("Updated additionalInfoVisibility:", updatedData.additionalInfoVisibility);
+      
+      // Debug the after state
+      console.log(`[CONTEXT] After update - additionalFields:`, updatedData.additionalFields);
+      
       return updatedData;
     });
   };
 
-  // Remove additional info
+  // Remove additional field
   const removeAdditionalInfo = (key: string) => {
-    console.log(`Removing additionalInfo field: "${key}"`);
+    console.log(`[CONTEXT] Removing additional field: "${key}"`);
+    
+    // Log the current state before removal for debugging
+    console.log(`[CONTEXT] Before removal - additionalFields:`, resumeData.additionalFields);
+    
     setResumeData(prev => {
-      // Create new objects to avoid mutating state
-      const newAdditionalInfo = { ...prev.additionalInfo };
-      const newAdditionalInfoVisibility = { ...prev.additionalInfoVisibility };
+      // Create a new object to avoid mutating state
+      const newAdditionalFields = { ...prev.additionalFields };
       
-      // Remove both the value and visibility flag
-      delete newAdditionalInfo[key];
-      delete newAdditionalInfoVisibility[key];
+      // Remove the field
+      delete newAdditionalFields[key];
       
-      console.log("Updated additionalInfo after removal:", newAdditionalInfo);
-      console.log("Updated additionalInfoVisibility after removal:", newAdditionalInfoVisibility);
-      
-      return {
+      const updatedData = {
         ...prev,
-        additionalInfo: newAdditionalInfo,
-        additionalInfoVisibility: newAdditionalInfoVisibility
+        additionalFields: newAdditionalFields
       };
+      
+      // Debug the after state  
+      console.log(`[CONTEXT] After removal - additionalFields:`, updatedData.additionalFields);
+      
+      return updatedData;
     });
   };
 

@@ -203,27 +203,63 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                   </div>
                 )}
                 
-                {/* Render each additional info field independently */}
-                {resumeData.additionalInfo?.linkedin && resumeData.additionalInfoVisibility?.linkedin && (
-                  <div>
-                    <span className="font-medium">LinkedIn: </span>
-                    {resumeData.additionalInfo.linkedin}
-                  </div>
-                )}
+                {/* Render each additional info field independently with debug info */}
+                {(() => {
+                  // Debug info for LinkedIn
+                  const hasLinkedIn = Boolean(resumeData.additionalInfo?.linkedin);
+                  const isLinkedInVisible = Boolean(resumeData.additionalInfoVisibility?.linkedin);
+                  console.log("LinkedIn render check:", { 
+                    hasValue: hasLinkedIn, 
+                    isVisible: isLinkedInVisible,
+                    value: resumeData.additionalInfo?.linkedin,
+                    visibilityValue: resumeData.additionalInfoVisibility?.linkedin
+                  });
+                  
+                  return hasLinkedIn && isLinkedInVisible ? (
+                    <div>
+                      <span className="font-medium">LinkedIn: </span>
+                      {resumeData.additionalInfo.linkedin}
+                    </div>
+                  ) : null;
+                })()}
                 
-                {resumeData.additionalInfo?.website && resumeData.additionalInfoVisibility?.website && (
-                  <div>
-                    <span className="font-medium">Website: </span>
-                    {resumeData.additionalInfo.website}
-                  </div>
-                )}
+                {(() => {
+                  // Debug info for Website
+                  const hasWebsite = Boolean(resumeData.additionalInfo?.website);
+                  const isWebsiteVisible = Boolean(resumeData.additionalInfoVisibility?.website);
+                  console.log("Website render check:", { 
+                    hasValue: hasWebsite, 
+                    isVisible: isWebsiteVisible,
+                    value: resumeData.additionalInfo?.website,
+                    visibilityValue: resumeData.additionalInfoVisibility?.website
+                  });
+                  
+                  return hasWebsite && isWebsiteVisible ? (
+                    <div>
+                      <span className="font-medium">Website: </span>
+                      {resumeData.additionalInfo.website}
+                    </div>
+                  ) : null;
+                })()}
                 
-                {resumeData.additionalInfo?.drivingLicense && resumeData.additionalInfoVisibility?.drivingLicense && (
-                  <div>
-                    <span className="font-medium">License: </span>
-                    {resumeData.additionalInfo.drivingLicense}
-                  </div>
-                )}
+                {(() => {
+                  // Debug info for Driving License
+                  const hasDrivingLicense = Boolean(resumeData.additionalInfo?.drivingLicense);
+                  const isDrivingLicenseVisible = Boolean(resumeData.additionalInfoVisibility?.drivingLicense);
+                  console.log("Driving License render check:", { 
+                    hasValue: hasDrivingLicense, 
+                    isVisible: isDrivingLicenseVisible,
+                    value: resumeData.additionalInfo?.drivingLicense,
+                    visibilityValue: resumeData.additionalInfoVisibility?.drivingLicense
+                  });
+                  
+                  return hasDrivingLicense && isDrivingLicenseVisible ? (
+                    <div>
+                      <span className="font-medium">License: </span>
+                      {resumeData.additionalInfo.drivingLicense}
+                    </div>
+                  ) : null;
+                })()}
               </div>
               </section>
           

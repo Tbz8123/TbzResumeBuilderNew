@@ -397,33 +397,53 @@ const PersonalInformationPage = () => {
                 </div>
                 
                 <div className="flex flex-wrap gap-3 mb-8">
-                  {/* LinkedIn */}
-                  {hasAdditionalInfo('linkedin') ? (
-                    <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
-                      <label className="text-sm text-gray-700 whitespace-nowrap">LinkedIn:</label>
-                      <input
-                        type="text"
-                        value={getAdditionalInfoValue('linkedin')}
-                        onChange={(e) => handleInfoChange('linkedin', e.target.value)}
-                        placeholder="Your LinkedIn URL"
-                        className="border border-gray-200 p-1 text-sm rounded flex-1"
-                      />
-                      <button
-                        onClick={() => handleRemoveInfo('linkedin')}
-                        className="p-1 text-red-500 hover:text-red-700 rounded-full"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                      onClick={() => handleAddInfo('linkedin')}
-                    >
-                      LinkedIn
-                      <span className="ml-2 font-bold">+</span>
-                    </button>
-                  )}
+                  {/* LinkedIn with enhanced logging */}
+                  {(() => {
+                    console.log('[PERSONAL_INFO] Checking LinkedIn visibility in render');
+                    console.log('[PERSONAL_INFO] additionalInfo:', resumeData.additionalInfo);
+                    console.log('[PERSONAL_INFO] additionalInfoVisibility:', resumeData.additionalInfoVisibility);
+                    console.log('[PERSONAL_INFO] hasAdditionalInfo("linkedin"):', hasAdditionalInfo('linkedin'));
+                    
+                    if (hasAdditionalInfo('linkedin')) {
+                      return (
+                        <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
+                          <label className="text-sm text-gray-700 whitespace-nowrap">LinkedIn:</label>
+                          <input
+                            type="text"
+                            value={getAdditionalInfoValue('linkedin')}
+                            onChange={(e) => {
+                              console.log('[PERSONAL_INFO] LinkedIn value changed to:', e.target.value);
+                              handleInfoChange('linkedin', e.target.value);
+                            }}
+                            placeholder="Your LinkedIn URL"
+                            className="border border-gray-200 p-1 text-sm rounded flex-1"
+                          />
+                          <button
+                            onClick={() => {
+                              console.log('[PERSONAL_INFO] Removing LinkedIn field');
+                              handleRemoveInfo('linkedin');
+                            }}
+                            className="p-1 text-red-500 hover:text-red-700 rounded-full"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <button
+                          className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                          onClick={() => {
+                            console.log('[PERSONAL_INFO] Adding LinkedIn field');
+                            handleAddInfo('linkedin');
+                          }}
+                        >
+                          LinkedIn
+                          <span className="ml-2 font-bold">+</span>
+                        </button>
+                      );
+                    }
+                  })()}
                   
                   {/* Website */}
                   {hasAdditionalInfo('website') ? (
