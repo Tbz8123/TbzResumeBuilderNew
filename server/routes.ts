@@ -13,6 +13,7 @@ import { professionalSummaryImportRouter } from "./routes/professional-summary-i
 import templateBindingsRouter from "./routes/template-bindings";
 import resumeSchemaRouter from "./routes/resume-schema";
 import { registerAchievementRoutes } from "./routes/achievements";
+import { setupTemplateTokensRoutes } from "./routes/template-tokens";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -29,6 +30,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/skills", skillsRouter);
   app.use("/api/professional-summary", professionalSummaryRouter);
   app.use("/api/professional-summary", professionalSummaryImportRouter);
+  
+  // Register template token extraction route
+  setupTemplateTokensRoutes(app);
   
   // Register achievement routes
   registerAchievementRoutes(app);

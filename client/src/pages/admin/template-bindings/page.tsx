@@ -324,10 +324,74 @@ export default function TemplateBindingsPage() {
     }, 500);
   };
 
-  // Auto-suggest bindings based on naming patterns
+  // Auto-suggest bindings based on the intelligent binding bot
   const autoSuggestBindings = () => {
     if (!bindings.length || !dataFields.length) return;
     
+    // Import the binding bot dynamically to avoid blocking render
+    import('@/services/intelligent-binding-bot').then(({ IntelligentBindingBot }) => {
+      // Create a new instance of the binding bot with our data fields
+      const bindingBot = new IntelligentBindingBot(dataFields, 0.4);
+      
+      // Get all placeholder strings
+      const placeholders = bindings
+        .filter(b => !b.selector || b.selector.trim() === '') // Only consider unmapped bindings
+        .map(b => b.placeholder);
+      
+      // Process placeholders with the binding bot
+      const results = bindingBot.processPlaceholders(placeholders);
+      
+      // Update bindings with the bot's suggestions
+      if (results.length > 0) {
+        const updatedBindings = [...bindings];
+        let madeChanges = false;
+        
+        results.forEach(result => {
+          const bindingIndex = updatedBindings.findIndex(b => b.placeholder === result.placeholder);
+          if (bindingIndex !== -1) {
+            updatedBindings[bindingIndex] = {
+              ...updatedBindings[bindingIndex],
+              selector: result.field,
+              isMapped: true
+            };
+            madeChanges = true;
+          }
+        });
+        
+        if (madeChanges) {
+          setBindings(updatedBindings);
+          toast({
+            title: "AI-powered binding suggestions",
+            description: `Successfully mapped ${results.length} template fields automatically`,
+          });
+          updateCompletionPercentage();
+        } else {
+          toast({
+            title: "No new bindings found",
+            description: "All template fields are already mapped or no matches were found",
+          });
+        }
+      } else {
+        toast({
+          title: "No matches found",
+          description: "The bot couldn't find any confident matches for unmapped fields",
+        });
+      }
+    }).catch(error => {
+      console.error("Error using binding bot:", error);
+      toast({
+        title: "Auto-suggestion failed",
+        description: "There was an error processing the template fields. Using basic matching instead.",
+        variant: "destructive",
+      });
+      
+      // Fallback to basic matching
+      performBasicMatching();
+    });
+  };
+  
+  // Basic matching as fallback
+  const performBasicMatching = () => {
     const updatedBindings = [...bindings];
     let madeChanges = false;
     
