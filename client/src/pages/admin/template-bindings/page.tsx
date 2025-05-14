@@ -1306,10 +1306,10 @@ export default function TemplateBindingsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* Two-column layout for Data Fields and Template Placeholders */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left column: Data Fields */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left side: Fields and Placeholders */}
+          <div className="w-full lg:w-1/3 flex flex-col gap-6">
+            {/* Web-App Fields */}
             <Card className="overflow-hidden">
               <div className="px-4 py-3 border-b bg-blue-50 dark:bg-blue-950">
                 <h2 className="font-semibold text-blue-900 dark:text-blue-200">Your Web-App Fields</h2>
@@ -1326,13 +1326,13 @@ export default function TemplateBindingsPage() {
                     className="border-0 p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
-                <ScrollArea className="h-[520px] pr-2">
+                <ScrollArea className="h-[300px] pr-2">
                   {renderDataFields(dataFields)}
                 </ScrollArea>
               </div>
             </Card>
             
-            {/* Right column: Template Placeholders */}
+            {/* Template Placeholders */}
             <Card className="overflow-hidden">
               <div className="px-4 py-3 border-b bg-purple-50 dark:bg-purple-950">
                 <h2 className="font-semibold text-purple-900 dark:text-purple-200">Template Placeholders</h2>
@@ -1357,7 +1357,7 @@ export default function TemplateBindingsPage() {
                     }}
                   />
                 </div>
-                <ScrollArea className="h-[520px] pr-2">
+                <ScrollArea className="h-[300px] pr-2">
                   <div className="space-y-3">
                     {bindings.map(binding => {
                       const token = highlightedTokens.find(t => t.text === binding.placeholder);
@@ -1475,151 +1475,153 @@ export default function TemplateBindingsPage() {
             </Card>
           </div>
 
-          {/* Live Preview Section */}
-          <Card>
-            <div className="px-4 py-3 border-b bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="font-semibold">Live Preview</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">Interactive preview with drag & drop or click to bind</p>
-                </div>
-                <div className="flex space-x-2">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="sm" className="text-xs" onClick={() => setPreviewKey(prev => prev + 1)}>
-                          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                          Refresh
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Refresh the preview</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+          {/* Right side: Live Preview */}
+          <div className="w-full lg:w-2/3">
+            <Card className="h-full">
+              <div className="px-4 py-3 border-b bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="font-semibold">Live Preview</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Interactive preview with drag & drop or click to bind</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-xs" onClick={() => setPreviewKey(prev => prev + 1)}>
+                            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                            Refresh
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Refresh the preview</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="p-4">
-              <div 
-                className="border rounded-md h-[500px] bg-white dark:bg-slate-900 flex flex-col"
-                ref={previewRef}
-              >
-                {template?.htmlContent ? (
-                  <div className="flex flex-col h-full">
-                    {/* Template visualization with tokens */}
-                    <div className="bg-gray-50 dark:bg-gray-900 border-b p-4 flex-shrink-0">
-                      <div className="font-medium text-sm mb-2">Template Structure Visualization</div>
-                      <div className="relative h-[150px] bg-white dark:bg-gray-800 rounded border overflow-hidden p-3">
-                        {highlightedTokens.map(token => {
-                          // Get binding for this token
-                          const binding = bindings.find(b => 
-                            b.placeholder === token.text ||
-                            b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.text.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
-                            b.placeholder.replace(/{{|}}/g, '').trim() === token.text.replace(/{{|}}/g, '').trim()
-                          );
-                          
-                          const isMapped = binding && binding.selector && binding.selector.trim() !== '';
-                          const isActive = activeToken === token.id;
-                          
-                          // Set color based on mapping status and activity
-                          let borderColor = 'rgba(59, 130, 246, 0.5)';
-                          let bgColor = 'rgba(59, 130, 246, 0.1)';
-                          
-                          if (isMapped) {
-                            borderColor = 'rgba(16, 185, 129, 0.5)';
-                            bgColor = 'rgba(16, 185, 129, 0.1)';
-                          } else {
-                            borderColor = 'rgba(239, 68, 68, 0.5)';
-                            bgColor = 'rgba(239, 68, 68, 0.1)';
-                          }
-                          
-                          if (isActive) {
-                            borderColor = 'rgba(59, 130, 246, 0.8)';
-                            bgColor = 'rgba(59, 130, 246, 0.2)';
-                          }
-                          
-                          // Display token name, stripped of syntax markers
-                          const displayText = token.text
-                            .replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '')
-                            .replace(/{{(?:#(?:each|if))?|}}/g, '')
-                            .trim();
-                          
-                          return (
-                            <div
-                              key={token.id}
-                              className={`absolute rounded-sm border-2 cursor-pointer transition-all duration-150 ${
-                                isActive ? 'shadow-md' : ''
-                              }`}
-                              style={{
-                                left: `${token.position.x}px`,
-                                top: `${token.position.y}px`,
-                                width: `${token.position.width}px`,
-                                height: `${token.position.height}px`,
-                                borderColor,
-                                backgroundColor: bgColor,
-                                zIndex: isActive ? 20 : 10,
-                                pointerEvents: 'auto'
-                              }}
-                              onClick={() => {
-                                setActiveToken(token.id);
-                                if (binding) {
-                                  setSelectedBinding(binding);
-                                }
-                              }}
-                            >
-                              {/* Token label */}
-                              <div className={`absolute top-0 left-0 transform -translate-y-full px-2 py-0.5 text-xs rounded ${
-                                isMapped ? 'bg-green-50 text-green-700 border border-green-200' : 
-                                'bg-red-50 text-red-700 border border-red-200'
-                              }`}>
-                                {isMapped ? '✓ ' : '! '}
-                                {displayText}
+              <div className="p-4 h-[calc(100%-56px)]">
+                <div 
+                  className="border rounded-md h-full bg-white dark:bg-slate-900 flex flex-col"
+                  ref={previewRef}
+                >
+                  {template?.htmlContent ? (
+                    <div className="flex flex-col h-full">
+                      {/* Template visualization with tokens (smaller at the top) */}
+                      <div className="bg-gray-50 dark:bg-gray-900 border-b p-3 flex-shrink-0">
+                        <div className="font-medium text-sm mb-2">Template Structure Visualization</div>
+                        <div className="relative h-[120px] bg-white dark:bg-gray-800 rounded border overflow-hidden p-3">
+                          {highlightedTokens.map(token => {
+                            // Get binding for this token
+                            const binding = bindings.find(b => 
+                              b.placeholder === token.text ||
+                              b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.text.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
+                              b.placeholder.replace(/{{|}}/g, '').trim() === token.text.replace(/{{|}}/g, '').trim()
+                            );
+                            
+                            const isMapped = binding && binding.selector && binding.selector.trim() !== '';
+                            const isActive = activeToken === token.id;
+                            
+                            // Set color based on mapping status and activity
+                            let borderColor = 'rgba(59, 130, 246, 0.5)';
+                            let bgColor = 'rgba(59, 130, 246, 0.1)';
+                            
+                            if (isMapped) {
+                              borderColor = 'rgba(16, 185, 129, 0.5)';
+                              bgColor = 'rgba(16, 185, 129, 0.1)';
+                            } else {
+                              borderColor = 'rgba(239, 68, 68, 0.5)';
+                              bgColor = 'rgba(239, 68, 68, 0.1)';
+                            }
+                            
+                            if (isActive) {
+                              borderColor = 'rgba(59, 130, 246, 0.8)';
+                              bgColor = 'rgba(59, 130, 246, 0.2)';
+                            }
+                            
+                            // Display token name, stripped of syntax markers
+                            const displayText = token.text
+                              .replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '')
+                              .replace(/{{(?:#(?:each|if))?|}}/g, '')
+                              .trim();
+                            
+                            return (
+                              <div
+                                key={token.id}
+                                className={`absolute rounded-sm border-2 cursor-pointer transition-all duration-150 ${
+                                  isActive ? 'shadow-md' : ''
+                                }`}
+                                style={{
+                                  left: `${token.position.x}px`,
+                                  top: `${token.position.y}px`,
+                                  width: `${token.position.width}px`,
+                                  height: `${token.position.height}px`,
+                                  borderColor,
+                                  backgroundColor: bgColor,
+                                  zIndex: isActive ? 20 : 10,
+                                  pointerEvents: 'auto'
+                                }}
+                                onClick={() => {
+                                  setActiveToken(token.id);
+                                  if (binding) {
+                                    setSelectedBinding(binding);
+                                  }
+                                }}
+                              >
+                                {/* Token label */}
+                                <div className={`absolute top-0 left-0 transform -translate-y-full px-2 py-0.5 text-xs rounded ${
+                                  isMapped ? 'bg-green-50 text-green-700 border border-green-200' : 
+                                  'bg-red-50 text-red-700 border border-red-200'
+                                }`}>
+                                  {isMapped ? '✓ ' : '! '}
+                                  {displayText}
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
+                      {/* Template HTML preview using iframe (takes most of the space) */}
+                      <div className="flex-grow overflow-auto p-4">
+                        <div className="relative h-full w-full">
+                          <iframe
+                            key={`preview-${previewKey}`}
+                            className="w-full h-full border rounded"
+                            srcDoc={getTemplateIframeContent()}
+                            title="Template Preview"
+                            sandbox="allow-same-origin"
+                            ref={setupTemplatePreviewInteractivity}
+                            onLoad={highlightPreviewPlaceholders}
+                          />
+                        </div>
                       </div>
                     </div>
-                    
-                    {/* Template HTML preview using iframe */}
-                    <div className="flex-grow overflow-auto p-4">
-                      <div className="relative h-full w-full">
-                        <iframe
-                          key={`preview-${previewKey}`}
-                          className="w-full h-full border rounded"
-                          srcDoc={getTemplateIframeContent()}
-                          title="Template Preview"
-                          sandbox="allow-same-origin"
-                          ref={setupTemplatePreviewInteractivity}
-                          onLoad={highlightPreviewPlaceholders}
-                        />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-center p-10">
+                      <div>
+                        <AlertTriangle className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium mb-2">Template Content Not Available</h3>
+                        <p className="text-sm text-muted-foreground max-w-md">
+                          No HTML content found for this template. Please make sure the template has HTML content.
+                        </p>
+                        <Button 
+                          className="mt-4" 
+                          size="sm" 
+                          variant="outline"
+                          onClick={refreshTokenHighlights}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Refresh Template
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-center p-10">
-                    <div>
-                      <AlertTriangle className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Template Content Not Available</h3>
-                      <p className="text-sm text-muted-foreground max-w-md">
-                        No HTML content found for this template. Please make sure the template has HTML content.
-                      </p>
-                      <Button 
-                        className="mt-4" 
-                        size="sm" 
-                        variant="outline"
-                        onClick={refreshTokenHighlights}
-                      >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Refresh Template
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
         </div>
       )}
     </div>
