@@ -162,7 +162,7 @@ export default function TemplateBindingsPage() {
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [`/api/templates/${templateId}/bindings`] });
       toast({
         title: "Binding created",
@@ -542,12 +542,12 @@ export default function TemplateBindingsPage() {
     
     // Handle selecting a field
     const handleFieldSelect = (field: DataField) => {
-      if (binding) {
-        // Update binding with selected field
+      if (binding && binding.id !== 0) {
+        // Update existing binding with selected field
         const updatedBinding = { ...binding, selector: field.path };
         setBindings(prev => prev.map(b => b.id === binding.id ? updatedBinding : b));
         
-        // Save the binding
+        // Save the binding to the server
         updateBindingMutation.mutate(updatedBinding);
         
         // Show success toast
@@ -556,25 +556,39 @@ export default function TemplateBindingsPage() {
           description: `"${tokenName}" mapped to "${field.name}"`
         });
       } else {
-        // Create new binding if one doesn't exist yet
+        // Create new binding if one doesn't exist yet or has a temporary ID
         const newBinding: Binding = {
-          id: 0, // Will be assigned by server
+          id: 0, // Temporary ID, will be assigned by server
           templateId: parseInt(templateId),
           placeholder: previewClickedToken || '',
           selector: field.path,
           description: `Maps template field ${tokenName} to ${field.name}`,
         };
         
-        // Add to bindings
-        setBindings(prev => [...prev, newBinding]);
+        // Create binding on server first - don't try to update a binding with id=0
+        saveBindingMutation.mutate(newBinding, {
+          onSuccess: (data) => {
+            // Add the server-created binding to our list
+            if (data && data.id) {
+              setBindings(prev => [
+                ...prev.filter(b => !(b.id === 0 && b.placeholder === previewClickedToken)),
+                {
+                  id: data.id,
+                  templateId: data.templateId,
+                  placeholder: data.placeholderToken,
+                  selector: data.dataField,
+                  description: data.description || '',
+                  isMapped: true
+                }
+              ]);
+            }
+          }
+        });
         
-        // Create binding on server
-        saveBindingMutation.mutate(newBinding);
-        
-        // Show success toast
+        // Show immediate feedback toast
         toast({
-          title: "New binding created",
-          description: `Created binding for "${tokenName}" to "${field.name}"`
+          title: "Creating binding...",
+          description: `Mapping "${tokenName}" to "${field.name}"`
         });
       }
       
@@ -907,8 +921,15 @@ export default function TemplateBindingsPage() {
     
     // Inject the script
     try {
-      const iframeWindow = iframeRef.current.contentWindow;
-      iframeWindow.eval(script);
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        const iframeDoc = iframeRef.current.contentDocument || 
+                         (iframeRef.current.contentWindow as any).document;
+        
+        // Create a script element instead of using eval
+        const scriptEl = iframeDoc.createElement('script');
+        scriptEl.textContent = script;
+        iframeDoc.head.appendChild(scriptEl);
+      }
     } catch (error) {
       console.error('Failed to inject highlighting script:', error);
     }
@@ -918,10 +939,22 @@ export default function TemplateBindingsPage() {
   const setupTemplatePreviewInteractivity = (iframe: HTMLIFrameElement | null) => {
     if (!iframe) return;
     
-    // Store the iframe ref
-    if (iframeRef) {
-      iframeRef.current = iframe;
-    }
+    // Store iframe locally - we won't use iframeRef directly but will update it in a component effect
+    const currentIframe = iframe;
+    
+    // Use an effect to update the iframe ref instead of direct assignment
+    useEffect(() => {
+      // Only run this effect when we have a valid iframe
+      if (currentIframe) {
+        // This is allowed within the effect
+        iframeRef.current = currentIframe;
+      }
+      
+      // Cleanup function
+      return () => {
+        // Nothing to do on cleanup
+      };
+    }, [currentIframe]);
     
     // Add message event listener to catch clicks from the iframe
     const handleIframeMessage = (event: MessageEvent) => {
