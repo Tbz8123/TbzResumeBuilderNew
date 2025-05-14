@@ -967,7 +967,7 @@ export default function TemplateBindingsPage() {
               <TooltipTrigger asChild>
                 <Button 
                   variant="outline" 
-                  onClick={performBasicMatching} // Use direct matching
+                  onClick={performBasicMatching}
                   size="sm"
                   className="gap-1"
                 >
@@ -976,7 +976,26 @@ export default function TemplateBindingsPage() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Use AI to intelligently map template fields to data fields</p>
+                <p>Automatically match template fields to data fields by name</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  onClick={autoSuggestBindings}
+                  size="sm"
+                  className="gap-1 border-purple-200 bg-purple-50 hover:bg-purple-100 hover:text-purple-900 text-purple-700"
+                >
+                  <Bot className="h-4 w-4" />
+                  AI Suggest
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Use AI to intelligently suggest field matches with confidence scores</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
