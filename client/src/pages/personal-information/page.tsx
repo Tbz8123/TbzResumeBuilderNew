@@ -24,6 +24,17 @@ const PersonalInformationPage = () => {
   const { data: templates } = useTemplates();
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   
+  // Local state for additional fields visibility - the key here is that we maintain our own local state
+  // This will help us isolate if the issue is with state update or with rendering
+  const [showLinkedIn, setShowLinkedIn] = useState(false);
+  const [showWebsite, setShowWebsite] = useState(false);
+  const [showDrivingLicense, setShowDrivingLicense] = useState(false);
+  
+  // Local state for field values
+  const [linkedInValue, setLinkedInValue] = useState('');
+  const [websiteValue, setWebsiteValue] = useState('');
+  const [drivingLicenseValue, setDrivingLicenseValue] = useState('');
+  
   // Find the selected template
   const selectedTemplate = Array.isArray(templates) 
     ? templates.find((template: ResumeTemplate) => template.id === selectedTemplateId) 
@@ -125,60 +136,66 @@ const PersonalInformationPage = () => {
     setPreviewModalOpen(true);
   };
   
-  // Handle additional information
-  const handleAddInfo = (type: string) => {
-    // When adding a field, set both the value and visibility
-    console.log(`[PERSONAL_INFO] Adding info field: ${type} (before)`, resumeData.additionalFields);
-    updateAdditionalInfo(type, '');
-    
-    // The update is asynchronous, so we need to wait for the next render to see the change
-    setTimeout(() => {
-      console.log(`[PERSONAL_INFO] Added info field: ${type} (after)`, resumeData.additionalFields);
-    }, 100);
+  // New simplified direct-state handlers for additional fields
+  
+  // Add field handlers
+  const handleAddLinkedIn = () => {
+    setShowLinkedIn(true);
+    console.log('[DIRECT] Added LinkedIn field');
+    updateAdditionalInfo('linkedin', linkedInValue);
   };
   
-  const handleRemoveInfo = (type: string) => {
-    // When removing, clear both value and visibility
-    console.log(`[PERSONAL_INFO] Removing info field: ${type} (before)`, resumeData.additionalFields);
-    removeAdditionalInfo(type);
-    
-    // The update is asynchronous, so we need to wait for the next render to see the change
-    setTimeout(() => {
-      console.log(`[PERSONAL_INFO] Removed info field: ${type} (after)`, resumeData.additionalFields);
-    }, 100);
+  const handleAddWebsite = () => {
+    setShowWebsite(true);
+    console.log('[DIRECT] Added Website field');
+    updateAdditionalInfo('website', websiteValue);
   };
   
-  const handleInfoChange = (type: string, value: string) => {
-    // Value changes maintain visibility
-    updateAdditionalInfo(type, value);
-    console.log(`[PERSONAL_INFO] Changed info field ${type} to: ${value}`);
+  const handleAddDrivingLicense = () => {
+    setShowDrivingLicense(true);
+    console.log('[DIRECT] Added Driving License field');
+    updateAdditionalInfo('drivingLicense', drivingLicenseValue);
   };
   
-  // Check if specific additional info exists
-  const hasAdditionalInfo = (type: string) => {
-    const field = resumeData.additionalFields?.[type];
-    const hasField = field !== undefined;
-    
-    console.log(`[PERSONAL_INFO] Checking if ${type} exists:`, {
-      field,
-      hasField,
-      resumeData
-    });
-    
-    return hasField;
+  // Remove field handlers
+  const handleRemoveLinkedIn = () => {
+    setShowLinkedIn(false);
+    setLinkedInValue('');
+    console.log('[DIRECT] Removed LinkedIn field');
+    removeAdditionalInfo('linkedin');
   };
   
-  // Get additional info value
-  const getAdditionalInfoValue = (type: string) => {
-    const field = resumeData.additionalFields?.[type];
-    const value = field?.value || '';
-    
-    console.log(`[PERSONAL_INFO] Getting ${type} value:`, {
-      field,
-      value
-    });
-    
-    return value;
+  const handleRemoveWebsite = () => {
+    setShowWebsite(false);
+    setWebsiteValue('');
+    console.log('[DIRECT] Removed Website field');
+    removeAdditionalInfo('website');
+  };
+  
+  const handleRemoveDrivingLicense = () => {
+    setShowDrivingLicense(false);
+    setDrivingLicenseValue('');
+    console.log('[DIRECT] Removed Driving License field');
+    removeAdditionalInfo('drivingLicense');
+  };
+  
+  // Change handlers
+  const handleLinkedInChange = (value: string) => {
+    setLinkedInValue(value);
+    console.log('[DIRECT] Changed LinkedIn value to:', value);
+    updateAdditionalInfo('linkedin', value);
+  };
+  
+  const handleWebsiteChange = (value: string) => {
+    setWebsiteValue(value);
+    console.log('[DIRECT] Changed Website value to:', value);
+    updateAdditionalInfo('website', value);
+  };
+  
+  const handleDrivingLicenseChange = (value: string) => {
+    setDrivingLicenseValue(value);
+    console.log('[DIRECT] Changed Driving License value to:', value);
+    updateAdditionalInfo('drivingLicense', value);
   };
 
   return (
@@ -420,67 +437,19 @@ const PersonalInformationPage = () => {
                 </div>
                 
                 <div className="flex flex-wrap gap-3 mb-8">
-                  {/* LinkedIn with enhanced logging */}
-                  {(() => {
-                    console.log('[PERSONAL_INFO] Checking LinkedIn visibility in render');
-                    console.log('[PERSONAL_INFO] additionalFields:', resumeData.additionalFields);
-                    console.log('[PERSONAL_INFO] linkedInField:', resumeData.additionalFields?.linkedin);
-                    console.log('[PERSONAL_INFO] hasAdditionalInfo("linkedin"):', hasAdditionalInfo('linkedin'));
-                    
-                    if (hasAdditionalInfo('linkedin')) {
-                      return (
-                        <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
-                          <label className="text-sm text-gray-700 whitespace-nowrap">LinkedIn:</label>
-                          <input
-                            type="text"
-                            value={getAdditionalInfoValue('linkedin')}
-                            onChange={(e) => {
-                              console.log('[PERSONAL_INFO] LinkedIn value changed to:', e.target.value);
-                              handleInfoChange('linkedin', e.target.value);
-                            }}
-                            placeholder="Your LinkedIn URL"
-                            className="border border-gray-200 p-1 text-sm rounded flex-1"
-                          />
-                          <button
-                            onClick={() => {
-                              console.log('[PERSONAL_INFO] Removing LinkedIn field');
-                              handleRemoveInfo('linkedin');
-                            }}
-                            className="p-1 text-red-500 hover:text-red-700 rounded-full"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <button
-                          className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                          onClick={() => {
-                            console.log('[PERSONAL_INFO] Adding LinkedIn field');
-                            handleAddInfo('linkedin');
-                          }}
-                        >
-                          LinkedIn
-                          <span className="ml-2 font-bold">+</span>
-                        </button>
-                      );
-                    }
-                  })()}
-                  
-                  {/* Website */}
-                  {hasAdditionalInfo('website') ? (
+                  {/* LinkedIn with direct local state */}
+                  {showLinkedIn ? (
                     <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
-                      <label className="text-sm text-gray-700 whitespace-nowrap">Website:</label>
+                      <label className="text-sm text-gray-700 whitespace-nowrap">LinkedIn:</label>
                       <input
                         type="text"
-                        value={getAdditionalInfoValue('website')}
-                        onChange={(e) => handleInfoChange('website', e.target.value)}
-                        placeholder="Your website URL"
+                        value={linkedInValue}
+                        onChange={(e) => handleLinkedInChange(e.target.value)}
+                        placeholder="Your LinkedIn URL"
                         className="border border-gray-200 p-1 text-sm rounded flex-1"
                       />
                       <button
-                        onClick={() => handleRemoveInfo('website')}
+                        onClick={handleRemoveLinkedIn}
                         className="p-1 text-red-500 hover:text-red-700 rounded-full"
                       >
                         ×
@@ -489,26 +458,54 @@ const PersonalInformationPage = () => {
                   ) : (
                     <button
                       className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                      onClick={() => handleAddInfo('website')}
+                      onClick={handleAddLinkedIn}
+                    >
+                      LinkedIn
+                      <span className="ml-2 font-bold">+</span>
+                    </button>
+                  )}
+                  
+                  {/* Website with direct local state */}
+                  {showWebsite ? (
+                    <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
+                      <label className="text-sm text-gray-700 whitespace-nowrap">Website:</label>
+                      <input
+                        type="text"
+                        value={websiteValue}
+                        onChange={(e) => handleWebsiteChange(e.target.value)}
+                        placeholder="Your website URL"
+                        className="border border-gray-200 p-1 text-sm rounded flex-1"
+                      />
+                      <button
+                        onClick={handleRemoveWebsite}
+                        className="p-1 text-red-500 hover:text-red-700 rounded-full"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
+                      onClick={handleAddWebsite}
                     >
                       Website
                       <span className="ml-2 font-bold">+</span>
                     </button>
                   )}
                   
-                  {/* Driving License */}
-                  {hasAdditionalInfo('drivingLicense') ? (
+                  {/* Driving License with direct local state */}
+                  {showDrivingLicense ? (
                     <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
                       <label className="text-sm text-gray-700 whitespace-nowrap">Driving License:</label>
                       <input
                         type="text"
-                        value={getAdditionalInfoValue('drivingLicense')}
-                        onChange={(e) => handleInfoChange('drivingLicense', e.target.value)}
+                        value={drivingLicenseValue}
+                        onChange={(e) => handleDrivingLicenseChange(e.target.value)}
                         placeholder="Your license details"
                         className="border border-gray-200 p-1 text-sm rounded flex-1"
                       />
                       <button
-                        onClick={() => handleRemoveInfo('drivingLicense')}
+                        onClick={handleRemoveDrivingLicense}
                         className="p-1 text-red-500 hover:text-red-700 rounded-full"
                       >
                         ×
@@ -517,7 +514,7 @@ const PersonalInformationPage = () => {
                   ) : (
                     <button
                       className="border border-[#450da5] text-[#450da5] px-4 py-1.5 rounded-full text-sm font-normal flex items-center"
-                      onClick={() => handleAddInfo('drivingLicense')}
+                      onClick={handleAddDrivingLicense}
                     >
                       Driving licence
                       <span className="ml-2 font-bold">+</span>
