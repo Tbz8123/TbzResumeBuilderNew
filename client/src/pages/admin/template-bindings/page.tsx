@@ -611,8 +611,15 @@ export default function TemplateBindingsPage() {
   
   // Basic matching as fallback
   const performBasicMatching = () => {
+    // Show loading state
+    toast({
+      title: "Auto-matching in progress",
+      description: "Finding and mapping fields based on names...",
+    });
+    
     const updatedBindings = [...bindings];
     let madeChanges = false;
+    let matchCount = 0;
     
     // Flatten data fields for easier matching
     const flatDataFields = flattenDataFields(dataFields);
@@ -621,18 +628,32 @@ export default function TemplateBindingsPage() {
       // Skip already mapped bindings
       if (binding.selector && binding.selector.trim() !== '') return;
       
-      // Extract the field name from placeholder - assumes format like [[FIELD:name]]
+      // Extract the field name from placeholder - handle multiple formats
       if (!binding.placeholder || typeof binding.placeholder !== 'string') return;
       
-      const fieldMatch = binding.placeholder.match(/\[\[(?:FIELD|LOOP|IF):([^\]]+)\]\]/);
-      if (!fieldMatch) return;
+      let fieldName = "";
       
-      const fieldName = fieldMatch[1];
+      // Handle bracket syntax [[FIELD:name]]
+      const fieldMatchBracket = binding.placeholder.match(/\[\[(?:FIELD|LOOP|IF):([^\]]+)\]\]/);
+      if (fieldMatchBracket) {
+        fieldName = fieldMatchBracket[1];
+      } 
+      // Handle Handlebars syntax {{ name }}
+      else {
+        const fieldMatchHandlebars = binding.placeholder.match(/{{\s*([^#\/{}]+)\s*}}/);
+        if (fieldMatchHandlebars) {
+          fieldName = fieldMatchHandlebars[1].trim();
+        } else {
+          return; // Skip if no pattern matches
+        }
+      }
       
       // Look for exact matches first
       const exactMatch = flatDataFields.find(field => 
         field.path === fieldName || 
-        field.name.toLowerCase() === fieldName.toLowerCase()
+        field.name.toLowerCase() === fieldName.toLowerCase() ||
+        field.path.toLowerCase().endsWith(`.${fieldName.toLowerCase()}`) ||
+        field.path.toLowerCase().endsWith(`[0].${fieldName.toLowerCase()}`)
       );
       
       if (exactMatch) {
@@ -642,14 +663,23 @@ export default function TemplateBindingsPage() {
           isMapped: true
         };
         madeChanges = true;
+        matchCount++;
+        
+        // Save this binding immediately
+        updateBindingMutation.mutate({
+          ...binding,
+          selector: exactMatch.path
+        });
       }
       // Try fuzzy matching
       else {
         const fuzzyMatches = flatDataFields.filter(field =>
-          field.path.includes(fieldName) ||
-          fieldName.includes(field.path) ||
-          field.path.replace(/\./g, '').includes(fieldName) ||
-          fieldName.includes(field.path.replace(/\./g, ''))
+          field.path.toLowerCase().includes(fieldName.toLowerCase()) ||
+          fieldName.toLowerCase().includes(field.path.toLowerCase()) ||
+          field.name.toLowerCase().includes(fieldName.toLowerCase()) ||
+          fieldName.toLowerCase().includes(field.name.toLowerCase()) ||
+          field.path.replace(/\./g, '').toLowerCase().includes(fieldName.toLowerCase()) ||
+          fieldName.toLowerCase().includes(field.path.replace(/\./g, '').toLowerCase())
         );
         
         if (fuzzyMatches.length === 1) {
@@ -659,17 +689,31 @@ export default function TemplateBindingsPage() {
             isMapped: true
           };
           madeChanges = true;
+          matchCount++;
+          
+          // Save this binding immediately
+          updateBindingMutation.mutate({
+            ...binding,
+            selector: fuzzyMatches[0].path
+          });
         }
       }
     });
     
     if (madeChanges) {
       setBindings(updatedBindings);
-      toast({
-        title: "Auto-suggested bindings",
-        description: "Some bindings were automatically suggested based on field names",
-      });
       updateCompletionPercentage();
+      
+      toast({
+        title: "Auto-matching complete",
+        description: `Successfully mapped ${matchCount} fields automatically.`,
+      });
+    } else {
+      toast({
+        title: "No matches found",
+        description: "Could not find any automatic matches. Try using the AI suggestions instead.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -1036,9 +1080,9 @@ export default function TemplateBindingsPage() {
             
             {/* Right column: Template Placeholders */}
             <Card className="overflow-hidden">
-              <div className="px-4 py-3 border-b bg-purple-50">
-                <h2 className="font-semibold text-purple-900">Template Placeholders</h2>
-                <p className="text-xs text-purple-600 mt-0.5">Detected in your HTML</p>
+              <div className="px-4 py-3 border-b bg-purple-50 dark:bg-purple-950">
+                <h2 className="font-semibold text-purple-900 dark:text-purple-200">Template Placeholders</h2>
+                <p className="text-xs text-purple-600 dark:text-purple-400 mt-0.5">Detected in your HTML</p>
               </div>
               <div className="p-4">
                 <div className="flex items-center px-3 py-2 rounded-md border mb-3">
@@ -1179,9 +1223,26 @@ export default function TemplateBindingsPage() {
 
           {/* Live Preview Section */}
           <Card>
-            <div className="px-4 py-3 border-b bg-gradient-to-r from-slate-50 to-slate-100">
-              <h2 className="font-semibold">Live Preview</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Interactive preview with drag & drop or click to bind</p>
+            <div className="px-4 py-3 border-b bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="font-semibold">Live Preview</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Interactive preview with drag & drop or click to bind</p>
+                </div>
+                <div className="flex space-x-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-xs" onClick={() => setPreviewKey(prev => prev + 1)}>
+                        <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                        Refresh
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Refresh the preview</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
             </div>
             <div className="p-4">
               <div 
