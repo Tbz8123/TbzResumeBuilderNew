@@ -13,16 +13,13 @@ import {
   Type, ListOrdered, SplitSquareVertical, Hash, Box,
   ToggleLeft, CircleDot, Calendar as CalendarIcon, X
 } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { BindingSuggestions } from '@/components/templates/BindingSuggestions';
 
 // Types
-// Client-side binding model
 interface Template {
   id: number;
   name: string;
@@ -73,13 +70,6 @@ interface TemplateToken {
   isMapped?: boolean;
 }
 
-// Define a simpler interface for the binding suggestions
-interface BindingSuggestion {
-  bindingId: number;
-  placeholder: string;
-  suggestions: { fieldPath: string; confidence: number }[];
-}
-
 export default function TemplateBindingsPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const { toast } = useToast();
@@ -89,24 +79,16 @@ export default function TemplateBindingsPage() {
   const [templateName, setTemplateName] = useState<string>('');
   const [previewKey, setPreviewKey] = useState<number>(0);
   const [activeToken, setActiveToken] = useState<string | null>(null);
-  const [wizardMode, setWizardMode] = useState<boolean>(false);
-  const [wizardStep, setWizardStep] = useState<number>(0);
   const [highlightedTokens, setHighlightedTokens] = useState<TemplateToken[]>([]);
   const [templateHtml, setTemplateHtml] = useState<string>('');
   const [filterText, setFilterText] = useState<string>('');
   const [dataFields, setDataFields] = useState<DataField[]>([]);
   const [completionPercentage, setCompletionPercentage] = useState<number>(0);
   const [selectedBinding, setSelectedBinding] = useState<Binding | null>(null);
-  const [autoSuggestMade, setAutoSuggestMade] = useState<boolean>(false);
   const [previewClickedToken, setPreviewClickedToken] = useState<string | null>(null);
   const [showFieldSelector, setShowFieldSelector] = useState<boolean>(false);
   const [fieldSelectorPosition, setFieldSelectorPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
   
-  // AI binding suggestions state
-  const [showSuggestionsDialog, setShowSuggestionsDialog] = useState<boolean>(false);
-  const [bindingSuggestions, setBindingSuggestions] = useState<BindingSuggestion[]>([]);
-  const [isProcessingBindings, setIsProcessingBindings] = useState<boolean>(false);
-
   // Helper colors for token highlighting
   const tokenColors = [
     'rgba(59, 130, 246, 0.2)', // blue
@@ -131,12 +113,6 @@ export default function TemplateBindingsPage() {
   // Fetch resume schema
   const { data: resumeSchema } = useQuery<Record<string, any>>({
     queryKey: ['/api/resume/schema'],
-  });
-
-  // Fetch template schema (what fields it expects)
-  const { data: templateSchema } = useQuery<Record<string, any>>({
-    queryKey: [`/api/templates/${templateId}/schema`],
-    enabled: !!templateId,
   });
 
   // Update binding mutation
@@ -435,167 +411,6 @@ export default function TemplateBindingsPage() {
         });
       });
     }, 300);
-  };
-
-  // Auto-suggest bindings based on template field names
-  const autoSuggestBindings = () => {
-    try {
-      // Start processing
-      setIsProcessingBindings(true);
-      
-      // Get all unmapped bindings
-      const unmappedBindings = bindings.filter(b => !b.selector || b.selector.trim() === '');
-      
-      if (unmappedBindings.length === 0) {
-        toast({
-          title: "No unmapped fields",
-          description: "All template fields are already mapped to data fields",
-        });
-        setIsProcessingBindings(false);
-        return;
-      }
-      
-      // Flatten data fields for easier matching
-      const flatFields = flattenDataFields(dataFields);
-      
-      // Create suggestions
-      const suggestions: BindingSuggestion[] = [];
-      
-      // Process each unmapped binding
-      for (const binding of unmappedBindings) {
-        // Extract field name from placeholder (handles multiple formats)
-        let fieldName = binding.placeholder
-          .replace(/\[\[FIELD:|\]\]/g, '')
-          .replace(/{{|}}/g, '')
-          .trim();
-        
-        // Create a suggestion object for this binding
-        const suggestionItem: BindingSuggestion = {
-          bindingId: binding.id,
-          placeholder: binding.placeholder,
-          suggestions: []
-        };
-        
-        // Try exact match first
-        for (const field of flatFields) {
-          // Check for exact path match
-          if (field.path === fieldName) {
-            suggestionItem.suggestions.push({
-              fieldPath: field.path,
-              confidence: 1.0
-            });
-            continue;
-          }
-          
-          // Check for name match
-          if (field.name.toLowerCase() === fieldName.toLowerCase()) {
-            suggestionItem.suggestions.push({
-              fieldPath: field.path,
-              confidence: 0.9
-            });
-            continue;
-          }
-          
-          // Check for partial matches
-          if (field.path.toLowerCase().includes(fieldName.toLowerCase()) ||
-              fieldName.toLowerCase().includes(field.path.toLowerCase())) {
-            suggestionItem.suggestions.push({
-              fieldPath: field.path,
-              confidence: 0.7
-            });
-          }
-        }
-        
-        // Sort suggestions by confidence
-        suggestionItem.suggestions.sort((a, b) => b.confidence - a.confidence);
-        
-        // Take top 5 suggestions
-        suggestionItem.suggestions = suggestionItem.suggestions.slice(0, 5);
-        
-        // Add to suggestions if we have any
-        if (suggestionItem.suggestions.length > 0) {
-          suggestions.push(suggestionItem);
-        }
-      }
-      
-      // Set the suggestions and show the dialog
-      setBindingSuggestions(suggestions);
-      setShowSuggestionsDialog(true);
-      
-      // Set flag to remember we've made suggestions
-      setAutoSuggestMade(true);
-      
-      // Finish processing
-      setIsProcessingBindings(false);
-      
-      // If no suggestions, show a toast
-      if (suggestions.length === 0) {
-        toast({
-          title: "No suggestions found",
-          description: "Could not find any suitable field matches",
-        });
-      }
-    } catch (err) {
-      console.error("Error generating binding suggestions:", err);
-      setIsProcessingBindings(false);
-      toast({
-        title: "Error generating suggestions",
-        description: "An error occurred while analyzing template fields",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Apply suggestions
-  const applySuggestions = (acceptedBindings: BindingSuggestion[]) => {
-    if (acceptedBindings.length === 0) {
-      setShowSuggestionsDialog(false);
-      return;
-    }
-    
-    // Update bindings with accepted suggestions
-    const updatedBindings = [...bindings];
-    let updateCount = 0;
-    
-    for (const suggestion of acceptedBindings) {
-      if (suggestion.suggestions.length === 0) continue;
-      
-      // Find binding to update
-      const bindingIndex = updatedBindings.findIndex(b => b.id === suggestion.bindingId);
-      if (bindingIndex === -1) continue;
-      
-      // Get best suggestion
-      const bestSuggestion = suggestion.suggestions[0];
-      
-      // Update binding
-      updatedBindings[bindingIndex] = {
-        ...updatedBindings[bindingIndex],
-        selector: bestSuggestion.fieldPath,
-        isMapped: true
-      };
-      
-      updateCount++;
-    }
-    
-    // Update state
-    if (updateCount > 0) {
-      setBindings(updatedBindings);
-      
-      // Save updates to server
-      updatedBindings
-        .filter(b => b.selector && b.selector.trim() !== '')
-        .forEach(b => {
-          updateBindingMutation.mutate(b);
-        });
-      
-      toast({
-        title: "Applied suggestions",
-        description: `Updated ${updateCount} bindings with suggested fields`,
-      });
-    }
-    
-    // Close dialog
-    setShowSuggestionsDialog(false);
   };
 
   // Analyze the completion percentage
@@ -1072,403 +887,231 @@ export default function TemplateBindingsPage() {
   };
 
   return (
-    <div className="container py-6">
+    <div className="max-w-full p-0 bg-gray-50">
       {/* Field selector popup for interactive preview */}
       <FieldSelectorPopup />
       
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Template Bindings</h1>
-          <p className="text-gray-500 mt-1">
-            Connect data fields to template placeholders for{' '}
-            <span className="font-medium text-primary">{templateName}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={performBasicMatching}
-                >
-                  <WandSparkles className="h-4 w-4 mr-2" />
-                  Auto Match
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Automatically match template fields to data fields based on names</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={autoSuggestBindings}
-                  disabled={isProcessingBindings}
-                >
-                  {isProcessingBindings ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Lightbulb className="h-4 w-4 mr-2" />
-                  )}
-                  AI Suggest
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Get AI-powered suggestions for template field mappings</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <Button variant="secondary" size="sm" asChild>
-            <Link href="/admin/templates">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Templates
-            </Link>
-          </Button>
-        </div>
-      </div>
-      
-      {/* Binding completion progress */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-1.5">
-          <div className="text-sm text-muted-foreground">Mapping completion</div>
-          <div className="text-sm font-medium">{completionPercentage}%</div>
-        </div>
-        <Progress value={completionPercentage} />
-      </div>
-      
-      {/* AI Suggestions Dialog */}
-      <Dialog open={showSuggestionsDialog} onOpenChange={setShowSuggestionsDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Binding Suggestions</DialogTitle>
-          </DialogHeader>
-          
-          <ScrollArea className="flex-grow">
-            <div className="py-2">
-              <BindingSuggestions
-                suggestions={bindingSuggestions}
-              />
+      <div className="p-4 pb-0">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-xl font-semibold">Template Bindings</h1>
+            <p className="text-gray-500 text-sm">
+              Connect data fields to template placeholders for{' '}
+              <span className="font-medium text-primary">{templateName}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="flex items-center">
+              <button 
+                onClick={performBasicMatching}
+                className="flex items-center px-2 py-1 text-sm mr-3 text-gray-600"
+              >
+                <svg className="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
+                  <path d="M.5 11.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1H1a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1H1a.5.5 0 0 1-.5-.5z" />
+                </svg>
+                Auto Match
+              </button>
+              <button 
+                className="flex items-center px-2 py-1 text-sm mr-3 text-gray-600"
+              >
+                <svg className="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 0 0 .95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 0 0-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 0 0-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 0 0-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 0 0 .951-.69l1.07-3.292z" />
+                </svg>
+                AI Suggest
+              </button>
+              <Button 
+                size="sm"
+                className="bg-amber-400 hover:bg-amber-500 text-black border-0 text-xs h-7"
+                asChild
+              >
+                <Link href="/admin/templates">
+                  <ArrowLeft className="h-3 w-3 mr-1.5" />
+                  Back to Templates
+                </Link>
+              </Button>
             </div>
-          </ScrollArea>
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowSuggestionsDialog(false)}
-            >
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+        
+        {/* Binding completion progress */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-1 text-xs">
+            <div className="text-gray-500">Mapping completion</div>
+            <div className="font-medium">{completionPercentage}%</div>
+          </div>
+          <Progress value={completionPercentage} className="h-1 bg-gray-100" />
+        </div>
+      </div>
 
       {isLoadingTemplate || isLoadingBindings ? (
         <div className="flex items-center justify-center h-96">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left column: Web-App Fields */}
-          <Card className="overflow-hidden">
-            <div className="px-4 py-3 border-b bg-blue-50 dark:bg-blue-950">
-              <h2 className="font-semibold text-blue-900 dark:text-blue-200">Your Web-App Fields</h2>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">resumeData Schema</p>
-            </div>
-            <div className="p-4">
-              <div className="flex items-center px-3 py-2 rounded-md border mb-3">
-                <Search className="h-4 w-4 mr-2 text-muted-foreground" />
-                <Input 
-                  type="text"
-                  placeholder="Search fields..."
-                  value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
-                  className="border-0 p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
+        <div className="px-4 pb-4">
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            {/* Left column: Web-App Fields */}
+            <Card className="bg-white border rounded-md overflow-hidden">
+              <div className="px-4 py-2 bg-blue-50 border-b">
+                <h2 className="font-semibold text-blue-900">Your Web-App Fields</h2>
+                <p className="text-xs text-blue-600">resumeData Schema</p>
               </div>
-              <ScrollArea className="h-[400px] pr-2">
-                {renderDataFields(dataFields)}
-              </ScrollArea>
-            </div>
-          </Card>
-          
-          {/* Middle column: Template Placeholders */}
-          <Card className="overflow-hidden">
-            <div className="px-4 py-3 border-b bg-purple-50 dark:bg-purple-950">
-              <h2 className="font-semibold text-purple-900 dark:text-purple-200">Template Placeholders</h2>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-0.5">Detected in your HTML</p>
-            </div>
-            <div className="p-4">
-              <div className="flex items-center px-3 py-2 rounded-md border mb-3">
-                <Search className="h-4 w-4 mr-2 text-muted-foreground" />
-                <Input 
-                  type="text"
-                  placeholder="Search tokens..."
-                  className="border-0 p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
-                  onChange={(e) => {
-                    // Filter tokens based on input
-                    const filterValue = e.target.value.toLowerCase();
-                    const filtered = highlightedTokens.filter(token => 
-                      token.text.toLowerCase().includes(filterValue)
-                    );
-                    if (filtered.length > 0 && filterValue.trim() !== '') {
-                      setActiveToken(filtered[0].id);
-                    }
-                  }}
-                />
+              <div className="p-4">
+                <div className="flex items-center rounded-md border px-2 py-1 mb-3">
+                  <Search className="h-3 w-3 mr-2 text-gray-400" />
+                  <Input 
+                    type="text"
+                    placeholder="Search fields..."
+                    value={filterText}
+                    onChange={(e) => setFilterText(e.target.value)}
+                    className="border-0 p-0 h-6 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                  />
+                </div>
+                <ScrollArea className="h-[390px]">
+                  <div className="pr-2">
+                    {renderDataFields(dataFields)}
+                  </div>
+                </ScrollArea>
               </div>
-              <ScrollArea className="h-[400px] pr-2">
-                <div className="space-y-3">
-                  {bindings.map(binding => {
-                    const token = highlightedTokens.find(t => t.text === binding.placeholder);
-                    const isSelected = selectedBinding?.id === binding.id;
-                    const isActive = token && activeToken === token.id;
-                    const isMapped = binding.selector && binding.selector.trim() !== '';
-                    
-                    return (
-                      <div 
-                        key={binding.id}
-                        id={`binding-${binding.id}`}
-                        className={`border rounded-md p-3 relative ${
-                          isSelected ? 'border-primary bg-primary/5' : 
-                          isMapped ? 'border-green-200 bg-green-50' : 
-                          'hover:border-primary/50'
-                        }`}
-                        onClick={() => handleBindingSelection(binding, token?.id)}
-                      >
-                        <div className="flex items-start">
-                          <div className="flex-1">
-                            <div className={`inline-flex items-center px-2 py-1 rounded text-sm ${
-                              binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('FIELD:') || binding.placeholder.includes('{{') && !binding.placeholder.includes('{{#')) ? 'bg-blue-100 text-blue-800' : 
-                              binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('LOOP:') || binding.placeholder.includes('{{#each')) ? 'bg-amber-100 text-amber-800' : 
-                              binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('IF:') || binding.placeholder.includes('{{#if')) ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('FIELD:') || binding.placeholder.includes('{{') && !binding.placeholder.includes('{{#')) ? (
-                                <Type className="h-3.5 w-3.5 mr-1.5" />
-                              ) : binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('LOOP:') || binding.placeholder.includes('{{#each')) ? (
-                                <ListOrdered className="h-3.5 w-3.5 mr-1.5" />
-                              ) : binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('IF:') || binding.placeholder.includes('{{#if')) ? (
-                                <SplitSquareVertical className="h-3.5 w-3.5 mr-1.5" />
-                              ) : (
-                                <Hash className="h-3.5 w-3.5 mr-1.5" />
-                              )}
-                              {binding.placeholder && typeof binding.placeholder === 'string' 
-                                ? binding.placeholder.replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '')
-                                                     .replace(/{{([#\/]?(each|if))?|\s?}}/g, '')
-                                                     .trim()
-                                : 'Unknown token'}
-                            </div>
-                            
-                            {isMapped && (
-                              <div className="mt-2">
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                  {binding.selector}
-                                </Badge>
+            </Card>
+            
+            {/* Right column: Template Placeholders */}
+            <Card className="bg-white border rounded-md overflow-hidden">
+              <div className="px-4 py-2 bg-purple-50 border-b">
+                <h2 className="font-semibold text-purple-900">Template Placeholders</h2>
+                <p className="text-xs text-purple-600">Detected in your HTML</p>
+              </div>
+              <div className="p-4">
+                <div className="flex items-center rounded-md border px-2 py-1 mb-3">
+                  <Search className="h-3 w-3 mr-2 text-gray-400" />
+                  <Input 
+                    type="text"
+                    placeholder="Search tokens..."
+                    className="border-0 p-0 h-6 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                    onChange={(e) => {
+                      // Filter tokens based on input
+                      const filterValue = e.target.value.toLowerCase();
+                      const filtered = highlightedTokens.filter(token => 
+                        token.text.toLowerCase().includes(filterValue)
+                      );
+                      if (filtered.length > 0 && filterValue.trim() !== '') {
+                        setActiveToken(filtered[0].id);
+                      }
+                    }}
+                  />
+                </div>
+                <ScrollArea className="h-[390px]">
+                  <div className="space-y-2 pr-2">
+                    {bindings.map(binding => {
+                      const token = highlightedTokens.find(t => t.text === binding.placeholder);
+                      const isSelected = selectedBinding?.id === binding.id;
+                      const isMapped = binding.selector && binding.selector.trim() !== '';
+                      
+                      return (
+                        <div 
+                          key={binding.id}
+                          id={`binding-${binding.id}`}
+                          className={`border rounded-md p-3 relative ${
+                            isSelected ? 'border-primary bg-primary/5' : 
+                            isMapped ? 'border-green-200 bg-green-50' : 
+                            'hover:border-primary/50'
+                          }`}
+                          onClick={() => handleBindingSelection(binding, token?.id)}
+                        >
+                          <div className="flex items-start">
+                            <div className="flex-1">
+                              <div className={`inline-flex items-center px-2 py-1 rounded text-sm ${
+                                binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('FIELD:') || binding.placeholder.includes('{{') && !binding.placeholder.includes('{{#')) ? 'bg-blue-100 text-blue-800' : 
+                                binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('LOOP:') || binding.placeholder.includes('{{#each')) ? 'bg-amber-100 text-amber-800' : 
+                                binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('IF:') || binding.placeholder.includes('{{#if')) ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                <span className="font-mono text-xs">
+                                  {binding.placeholder && typeof binding.placeholder === 'string' 
+                                    ? binding.placeholder.replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '')
+                                                       .replace(/{{([#\/]?(each|if))?|\s?}}/g, '')
+                                                       .trim()
+                                    : 'Unknown token'
+                                  }
+                                </span>
                               </div>
-                            )}
-
-                            {isSelected && !isMapped && (
-                              <div className="mt-2 space-y-2">
-                                <p className="text-xs text-muted-foreground">Select a data field from the left panel</p>
-                                <Input
-                                  value={binding.selector || ''}
-                                  onChange={(e) => handleSelectorChange(binding.id, e.target.value)}
-                                  placeholder="Or type a data field path..."
-                                  className="h-8 text-sm mt-1"
-                                />
-                                <Button 
-                                  size="sm" 
-                                  className="w-full mt-1"
-                                  disabled={!binding.selector}
-                                  onClick={() => handleSaveBinding(binding)}
-                                >
-                                  {updateBindingMutation.isPending && selectedBinding?.id === binding.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin mr-2" />
-                                  ) : (
-                                    <Save className="h-3 w-3 mr-2" />
-                                  )}
-                                  Save Binding
-                                </Button>
-                              </div>
-                            )}
-
-                            {isSelected && isMapped && (
-                              <div className="mt-2 space-y-2">
-                                <div className="flex items-center">
-                                  <Input
-                                    value={binding.selector || ''}
-                                    onChange={(e) => handleSelectorChange(binding.id, e.target.value)}
-                                    className="h-8 text-sm"
-                                  />
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost"
-                                    className="ml-2"
-                                    onClick={() => handleSaveBinding(binding)}
-                                  >
-                                    {updateBindingMutation.isPending && selectedBinding?.id === binding.id ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : (
-                                      <Save className="h-3 w-3" />
-                                    )}
-                                  </Button>
+                              
+                              {isMapped && (
+                                <div className="mt-2">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Mapped
+                                  </span>
+                                  <span className="ml-2 text-xs text-gray-500 font-mono">
+                                    {binding.selector}
+                                  </span>
                                 </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         </div>
-                        
-                        {isMapped && (
-                          <Badge 
-                            variant="secondary"
-                            className="absolute top-2 right-2 text-xs bg-green-100 text-green-800 border-green-200"
-                          >
-                            Mapped
-                          </Badge>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </div>
-          </Card>
-
-          {/* Right column: Live Preview */}
-          <Card>
-            <div className="px-4 py-3 border-b bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="font-semibold">Live Preview</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">Interactive preview with drag & drop or click to bind</p>
-                </div>
-                <div className="flex space-x-2">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="sm" className="text-xs" onClick={() => setPreviewKey(prev => prev + 1)}>
-                          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                          Refresh
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Refresh the preview</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
               </div>
-            </div>
-            <div className="p-4 h-[calc(100%-56px)]">
-              <div 
-                className="border rounded-md h-full bg-white dark:bg-slate-900 flex flex-col"
-                ref={previewRef}
+            </Card>
+          </div>
+
+          {/* Live Preview - Below both columns */}
+          <Card className="bg-white border rounded-md overflow-hidden">
+            <div className="px-4 py-2 border-b bg-gray-50 flex justify-between items-center">
+              <div>
+                <h2 className="font-semibold">Live Preview</h2>
+                <p className="text-xs text-gray-500">Interactive preview with drag & drop or click to bind</p>
+              </div>
+              <Button 
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setPreviewKey(prev => prev + 1)}
               >
+                <RefreshCw className="h-3 w-3 mr-1.5" />
+                Refresh
+              </Button>
+            </div>
+            <div className="p-4">
+              <div className="relative bg-white border rounded-md h-[600px]">
                 {template?.htmlContent || template?.html ? (
-                  <div className="flex flex-col h-full">
-                    {/* Template visualization with tokens (smaller at the top) */}
-                    <div className="bg-gray-50 dark:bg-gray-900 border-b p-3 flex-shrink-0">
-                      <div className="font-medium text-sm mb-2">Template Structure Visualization</div>
-                      <div className="relative h-[120px] bg-white dark:bg-gray-800 rounded border overflow-hidden p-3">
-                        {highlightedTokens.map(token => {
-                          // Get binding for this token
-                          const binding = bindings.find(b => 
-                            b.placeholder === token.text ||
-                            b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.text.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
-                            b.placeholder.replace(/{{|}}/g, '').trim() === token.text.replace(/{{|}}/g, '').trim()
-                          );
-                          
-                          const isMapped = binding && binding.selector && binding.selector.trim() !== '';
-                          const isActive = activeToken === token.id;
-                          
-                          // Set color based on mapping status and activity
-                          let borderColor = 'rgba(59, 130, 246, 0.5)';
-                          let bgColor = 'rgba(59, 130, 246, 0.1)';
-                          
-                          if (isMapped) {
-                            borderColor = 'rgba(16, 185, 129, 0.5)';
-                            bgColor = 'rgba(16, 185, 129, 0.1)';
-                          } else {
-                            borderColor = 'rgba(239, 68, 68, 0.5)';
-                            bgColor = 'rgba(239, 68, 68, 0.1)';
-                          }
-                          
-                          if (isActive) {
-                            borderColor = 'rgba(59, 130, 246, 0.8)';
-                            bgColor = 'rgba(59, 130, 246, 0.2)';
-                          }
-                          
-                          // Display token name, stripped of syntax markers
-                          const displayText = token.text
-                            .replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '')
-                            .replace(/{{(?:#(?:each|if))?|}}/g, '')
-                            .trim();
-                          
-                          return (
-                            <div
-                              key={token.id}
-                              className={`absolute rounded-sm border-2 cursor-pointer transition-all duration-150 ${
-                                isActive ? 'shadow-md' : ''
-                              }`}
-                              style={{
-                                left: `${token.position.x}px`,
-                                top: `${token.position.y}px`,
-                                width: `${token.position.width}px`,
-                                height: `${token.position.height}px`,
-                                borderColor,
-                                backgroundColor: bgColor,
-                                zIndex: isActive ? 20 : 10,
-                                pointerEvents: 'auto'
-                              }}
-                              onClick={() => {
-                                setActiveToken(token.id);
-                                if (binding) {
-                                  setSelectedBinding(binding);
-                                }
-                              }}
-                            >
-                              {/* Token label */}
-                              <div className={`absolute top-0 left-0 transform -translate-y-full px-2 py-0.5 text-xs rounded ${
-                                isMapped ? 'bg-green-50 text-green-700 border border-green-200' : 
-                                'bg-red-50 text-red-700 border border-red-200'
-                              }`}>
-                                {isMapped ? '✓ ' : '! '}
-                                {displayText}
-                              </div>
-                            </div>
-                          );
-                        })}
+                  <div className="h-full flex flex-col">
+                    {/* Template structure visualization - small section at top */}
+                    <div className="p-3 border-b bg-gray-50">
+                      <h3 className="text-sm font-medium mb-1">Template Structure Visualization</h3>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-pink-50 rounded p-2 border border-pink-100">
+                          <div className="text-xs text-gray-500 mb-1">{{ name }}</div>
+                          <div className="border border-pink-300 rounded-sm p-1 bg-white"></div>
+                        </div>
+                        <div className="bg-pink-50 rounded p-2 border border-pink-100">
+                          <div className="text-xs text-gray-500 mb-1">{{ email }}</div>
+                          <div className="border border-pink-300 rounded-sm p-1 bg-white"></div>
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Template HTML preview using iframe (takes most of the space) */}
-                    <div className="flex-grow overflow-auto p-4">
-                      <div className="relative h-full w-full">
-                        <iframe
-                          key={`preview-${previewKey}`}
-                          className="w-full h-full border rounded"
-                          srcDoc={getTemplateIframeContent()}
-                          title="Template Preview"
-                          sandbox="allow-same-origin"
-                          ref={setupTemplatePreviewInteractivity}
-                          onLoad={highlightPreviewPlaceholders}
-                        />
-                      </div>
+                    {/* Template HTML preview using iframe */}
+                    <div className="flex-grow overflow-auto">
+                      <iframe
+                        key={`preview-${previewKey}`}
+                        className="w-full h-full border-0"
+                        srcDoc={getTemplateIframeContent()}
+                        title="Template Preview"
+                        sandbox="allow-same-origin"
+                        ref={setupTemplatePreviewInteractivity}
+                        onLoad={highlightPreviewPlaceholders}
+                      />
                     </div>
                   </div>
                 ) : (
                   <div className="h-full flex items-center justify-center text-center p-10">
                     <div>
-                      <AlertTriangle className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                      <AlertTriangle className="h-10 w-10 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">Template Content Not Available</h3>
-                      <p className="text-sm text-muted-foreground max-w-md">
+                      <p className="text-sm text-gray-500 max-w-md">
                         No HTML content found for this template. Please make sure the template has HTML content.
                       </p>
                       <Button 
