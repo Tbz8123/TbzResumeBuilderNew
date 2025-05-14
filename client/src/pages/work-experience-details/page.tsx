@@ -2,19 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useResume } from '@/contexts/ResumeContext';
 import Logo from '@/components/Logo';
-import { ArrowLeft, HelpCircle, Search, X } from 'lucide-react';
+import { ArrowLeft, HelpCircle, Search } from 'lucide-react';
 import { getJobTitleSuggestions } from '@/utils/jobTitlesData';
 import { apiRequest } from '@/lib/queryClient';
-import { JobTitle, ResumeTemplate } from '@shared/schema';
-import HybridResumePreview from '@/components/resume/HybridResumePreview';
+import { JobTitle } from '@shared/schema';
 import { useTemplates } from '@/hooks/use-templates';
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogClose
-} from '@/components/ui/dialog';
+import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
 import { 
   Select,
   SelectContent,
@@ -506,30 +499,16 @@ const WorkExperienceDetailsPage = () => {
         </div>
       </main>
       
-      {/* Resume Preview Modal */}
-      <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle className="flex justify-between items-center">
-              <span>Resume Preview</span>
-              <DialogClose asChild>
-                <button className="h-6 w-6 p-0 rounded-full inline-flex items-center justify-center text-gray-500 hover:text-gray-700">
-                  <X className="h-4 w-4" />
-                </button>
-              </DialogClose>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="mt-4">
-            <HybridResumePreview 
-              resumeData={resumeData}
-              selectedTemplateId={selectedTemplateId}
-              setSelectedTemplateId={setSelectedTemplateId}
-              templates={templates || []}
-              isModal={true}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Use the centralized Resume Preview Modal component */}
+      <ResumePreviewModal
+        open={previewModalOpen}
+        onOpenChange={setPreviewModalOpen}
+        resumeData={resumeData}
+        selectedTemplateId={selectedTemplateId}
+        setSelectedTemplateId={setSelectedTemplateId}
+        templates={templates || []}
+        hideSkills={true}
+      />
     </div>
   );
 };

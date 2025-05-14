@@ -1,22 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, Link } from 'wouter';
-import { ArrowLeft, Info, X } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogClose
-} from '@/components/ui/dialog';
 import { useResume } from '@/contexts/ResumeContext';
-import HybridResumePreview from '@/components/resume/HybridResumePreview';
 import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
+import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
 
 const PersonalInformationPage = () => {
   const [, setLocation] = useLocation();
@@ -625,31 +618,18 @@ const PersonalInformationPage = () => {
         onOpenChange={setTemplateModalOpen} 
       />
       
-      {/* Resume Preview Modal */}
-      <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
-          <DialogHeader className="flex flex-row items-center justify-between">
-            <DialogTitle>Resume Preview</DialogTitle>
-            <DialogClose className="h-6 w-6 rounded-full opacity-70 ring-offset-background transition-opacity hover:opacity-100">
-              <X className="h-4 w-4" />
-            </DialogClose>
-          </DialogHeader>
-          
-          <div className="flex justify-center p-4 bg-gray-50 rounded-md">
-            <HybridResumePreview 
-              width={794} 
-              height={1123} 
-              className="border shadow-lg"
-              scaleContent={false}
-            />
-          </div>
-          
-          <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={() => setPreviewModalOpen(false)}>Close</Button>
-            <Button variant="default" onClick={handleNext}>Continue to Next Step</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Use the centralized Resume Preview Modal component */}
+      <ResumePreviewModal
+        open={previewModalOpen}
+        onOpenChange={setPreviewModalOpen}
+        resumeData={resumeData}
+        selectedTemplateId={selectedTemplateId}
+        setSelectedTemplateId={setSelectedTemplateId}
+        templates={templates || []}
+        hideSkills={true}
+      />
+      
+      {/* Template selection modal */}
     </div>
   );
 };
