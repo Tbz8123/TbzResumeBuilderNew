@@ -441,6 +441,9 @@ export default function TemplateBindingsPage() {
       // Handle token click events
       if (event.data.type === 'tokenClick') {
         const token = event.data.token;
+        const fieldName = event.data.field || token.replace(/[{{\[\]}}]/g, '').trim();
+        
+        console.log('Token clicked:', token, 'field:', fieldName);
         
         // Find binding for this token
         const binding = bindings.find(b => 
@@ -449,25 +452,44 @@ export default function TemplateBindingsPage() {
           b.placeholder.replace(/{{|}}/g, '').trim() === token.replace(/{{|}}/g, '').trim()
         );
         
+        // Calculate position for the field selector (adjust for iframe)
+        const iframeRect = iframe.getBoundingClientRect();
+        const adjustedPosition = {
+          x: iframeRect.left + event.data.x,
+          y: iframeRect.top + event.data.y
+        };
+        
+        // Show the field selector at the clicked position
+        setPreviewClickedToken(token);
+        setFieldSelectorPosition(adjustedPosition);
+        setShowFieldSelector(true);
+        
         if (binding) {
           // Set as active binding
           setSelectedBinding(binding);
           
-          // Show the field selector at the clicked position
-          setPreviewClickedToken(token);
-          setFieldSelectorPosition({
-            x: event.data.x,
-            y: event.data.y
-          });
-          setShowFieldSelector(true);
+          // Highlight this as the active token
+          setActiveToken(token);
+          
+          // Log the current mapping status
+          console.log('Existing binding found:', binding);
         } else {
-          // If no binding exists, we may want to create one
-          // This would depend on how you want to handle new bindings
-          console.log('No binding found for token:', token);
+          // Create a new binding for this token
+          const newBinding: Binding = {
+            id: 0, // Will be assigned by server
+            templateId: parseInt(templateId),
+            placeholder: token,
+            selector: '',
+            description: `Maps template field ${fieldName}`,
+          };
+          
+          // Add to bindings - will be saved when a field is selected
+          setBindings(prev => [...prev, newBinding]);
+          setSelectedBinding(newBinding);
+          
           toast({
-            title: "No binding record",
-            description: "This token doesn't have a binding record. Create one to link it to a data field.",
-            variant: "destructive",
+            title: "New binding detected",
+            description: `Creating a new binding for ${fieldName}. Click a field to map it.`,
           });
         }
       }
@@ -489,7 +511,7 @@ export default function TemplateBindingsPage() {
     // Get all bindings text for highlighting
     const placeholders = bindings.map(b => b.placeholder);
     
-    // Simple detection of placeholder patterns for highlighting
+    // Enhanced detection of placeholder patterns for highlighting
     const script = `
       (function() {
         // Find and highlight template placeholders
@@ -502,11 +524,20 @@ export default function TemplateBindingsPage() {
             return text.includes(placeholder);
           }
           
-          // Find all text nodes
-          function findTextNodes(element) {
+          // Find template tokens in the document
+          function findTemplateTokens() {
+            // Define token patterns to search for 
+            const tokenPatterns = [
+              { regex: /\\{\\{\\s*([^\\}\\{#\\/]+?)\\s*\\}\\}/g, type: 'handlebars' },  // {{ fieldName }}
+              { regex: /\\[\\[FIELD:([^\\]]+)\\]\\]/g, type: 'bracket' },              // [[FIELD:fieldName]]
+              { regex: /\\{field:([^\\}]+)\\}/g, type: 'brace' },                      // {field:fieldName}
+              { regex: /\\$\\{([^\\}]+)\\}/g, type: 'template-literal' }               // \${fieldName}
+            ];
+            
+            // Find all text nodes
             const textNodes = [];
             const treeWalker = document.createTreeWalker(
-              element,
+              document.body,
               NodeFilter.SHOW_TEXT,
               { acceptNode: node => NodeFilter.FILTER_ACCEPT },
               false
@@ -517,108 +548,189 @@ export default function TemplateBindingsPage() {
               textNodes.push(node);
             }
             
-            return textNodes;
+            // Process each text node
+            textNodes.forEach(textNode => {
+              if (!textNode.nodeValue || textNode.nodeValue.trim() === '') return;
+              
+              // Check for each token pattern
+              tokenPatterns.forEach(pattern => {
+                let matches;
+                const text = textNode.nodeValue;
+                const regex = pattern.regex;
+                
+                // Reset regex lastIndex
+                regex.lastIndex = 0;
+                
+                // Find all matches in this text node
+                while ((matches = regex.exec(text)) !== null) {
+                  // Get the full token and the field name
+                  const fullToken = matches[0];
+                  const fieldName = matches[1].trim();
+                  
+                  // Check if this token is in our binding list
+                  const binding = bindings.find(b => 
+                    b.placeholder === fullToken || 
+                    b.placeholder.includes(fieldName)
+                  );
+                  
+                  // Replace this token with a span
+                  replaceTokenInNode(textNode, fullToken, fieldName, binding);
+                }
+              });
+            });
           }
           
-          // Highlight a token in a text node
-          function highlightToken(textNode, token) {
+          // Replace a token in a text node with an interactive span
+          function replaceTokenInNode(textNode, fullToken, fieldName, binding) {
             const text = textNode.nodeValue;
-            if (!text || !containsPlaceholder(text, token)) return false;
+            if (!text) return;
             
-            // Replace the token with a highlighted span
-            const binding = bindings.find(b => b.placeholder === token);
+            // Check if binding exists
             const isMapped = binding && binding.selector && binding.selector.trim() !== '';
             
-            const parts = text.split(token);
-            if (parts.length < 2) return false;
+            // Split text around the token
+            const parts = text.split(fullToken);
+            if (parts.length < 2) return;
             
-            const span = document.createElement('span');
-            span.setAttribute('data-token', token);
-            span.textContent = token;
-            span.style.backgroundColor = isMapped ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
-            span.style.border = isMapped ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(239, 68, 68, 0.5)';
-            span.style.borderRadius = '3px';
-            span.style.padding = '1px 3px';
-            span.style.cursor = 'pointer';
-            span.style.display = 'inline-block';
-            
-            // Add event listener for interaction
-            span.addEventListener('click', function(e) {
-              e.preventDefault();
-              e.stopPropagation();
-              
-              // Send message to parent window
-              window.parent.postMessage({
-                type: 'tokenClick',
-                token: token,
-                x: e.clientX + window.scrollX,
-                y: e.clientY + window.scrollY
-              }, '*');
-            });
-            
+            // Create fragment to replace the text node
             const fragment = document.createDocumentFragment();
-            fragment.appendChild(document.createTextNode(parts[0]));
-            fragment.appendChild(span);
             
-            if (parts.length > 2) {
-              for (let i = 1; i < parts.length - 1; i++) {
-                const nestedSpan = span.cloneNode(true);
-                nestedSpan.textContent = token;
-                nestedSpan.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  
-                  window.parent.postMessage({
-                    type: 'tokenClick',
-                    token: token,
-                    x: e.clientX + window.scrollX,
-                    y: e.clientY + window.scrollY
-                  }, '*');
-                });
-                
-                fragment.appendChild(nestedSpan);
+            // First part of text
+            fragment.appendChild(document.createTextNode(parts[0]));
+            
+            // Create the token span
+            for (let i = 0; i < parts.length - 1; i++) {
+              if (i > 0) {
                 fragment.appendChild(document.createTextNode(parts[i]));
               }
+              
+              // Create token element
+              const span = document.createElement('span');
+              span.className = 'template-token' + (isMapped ? ' token-mapped' : ' token-unmapped');
+              span.setAttribute('data-token', fullToken);
+              span.setAttribute('data-field', fieldName);
+              
+              // Create the display inside the token
+              const tokenDisplay = document.createElement('span');
+              tokenDisplay.className = 'token-display';
+              
+              // Create the token wrapper and badge
+              if (isMapped) {
+                // Mapped token
+                tokenDisplay.innerHTML = \`
+                  <span class="token-name">\${fieldName}</span>
+                  <span class="token-badge mapped">✓</span>
+                \`;
+              } else {
+                // Unmapped token
+                tokenDisplay.innerHTML = \`
+                  <span class="token-name">\${fieldName}</span>
+                  <span class="token-badge unmapped">Map</span>
+                \`;
+              }
+              
+              span.appendChild(tokenDisplay);
+              
+              // Style the token
+              span.style.backgroundColor = isMapped ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+              span.style.border = isMapped ? '1px solid rgba(16, 185, 129, 0.5)' : '1px dashed rgba(239, 68, 68, 0.5)';
+              span.style.borderRadius = '4px';
+              span.style.padding = '2px 6px';
+              span.style.margin = '0 2px';
+              span.style.cursor = 'pointer';
+              span.style.display = 'inline-flex';
+              span.style.alignItems = 'center';
+              span.style.justifyContent = 'center';
+              span.style.position = 'relative';
+              span.style.whiteSpace = 'nowrap';
+              
+              // Style internal elements
+              tokenDisplay.style.display = 'flex';
+              tokenDisplay.style.alignItems = 'center';
+              tokenDisplay.style.gap = '4px';
+              
+              // Add event listener for interaction
+              span.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Highlight this token
+                span.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.5)';
+                span.style.zIndex = '10';
+                
+                // Send message to parent window
+                window.parent.postMessage({
+                  type: 'tokenClick',
+                  token: fullToken,
+                  field: fieldName,
+                  x: e.clientX + window.scrollX,
+                  y: e.clientY + window.scrollY
+                }, '*');
+              });
+              
+              fragment.appendChild(span);
             }
             
+            // Last part of text
             fragment.appendChild(document.createTextNode(parts[parts.length - 1]));
             
             // Replace the text node with our processed fragment
             textNode.parentNode.replaceChild(fragment, textNode);
-            return true;
           }
           
-          // Process all text nodes in the body
-          const textNodes = findTextNodes(document.body);
-          
-          // First pass - simple tokens (exact matches)
-          for (const node of textNodes) {
-            for (const placeholder of placeholders) {
-              if (containsPlaceholder(node.nodeValue || '', placeholder)) {
-                if (highlightToken(node, placeholder)) {
-                  // If this node was processed, we need to re-find text nodes as DOM has changed
-                  break;
-                }
+          // Add CSS for token styling
+          function addTokenStyles() {
+            const style = document.createElement('style');
+            style.textContent = \`
+              body { 
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
+                line-height: 1.4;
+                color: #333;
               }
-            }
+              
+              .template-token {
+                transition: all 0.2s ease;
+                font-size: 0.9em;
+              }
+              
+              .template-token:hover {
+                transform: translateY(-1px);
+              }
+              
+              .token-name {
+                font-family: monospace;
+                font-size: 0.9em;
+              }
+              
+              .token-badge {
+                font-size: 0.7em;
+                padding: 1px 4px;
+                border-radius: 3px;
+                font-weight: bold;
+              }
+              
+              .token-badge.mapped {
+                background-color: rgba(16, 185, 129, 0.2);
+                color: rgb(4, 120, 87);
+              }
+              
+              .token-badge.unmapped {
+                background-color: rgba(239, 68, 68, 0.2);
+                color: rgb(185, 28, 28);
+              }
+            \`;
+            document.head.appendChild(style);
           }
           
-          console.log('Highlighted tokens in template preview');
+          // Initialize the token highlighting
+          addTokenStyles();
+          findTemplateTokens();
+          
+          console.log('Enhanced token highlighting complete');
         }
         
-        // Run the highlighter
-        highlightTokens();
-        
-        // Add CSS for better rendering
-        const style = document.createElement('style');
-        style.textContent = \`
-          body { 
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
-            line-height: 1.4;
-            color: #333;
-          }
-        \`;
-        document.head.appendChild(style);
+        // Run the highlighter with a small delay to ensure DOM is fully loaded
+        setTimeout(highlightTokens, 100);
       })();
     `;
     
