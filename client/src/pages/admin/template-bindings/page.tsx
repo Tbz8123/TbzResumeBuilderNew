@@ -100,319 +100,260 @@ export default function TemplateBindingsPage() {
     id: number;
     name: string;
     description: string;
-    category: string;
-    isActive: boolean;
-    htmlContent: string;
+    html: string;
+    css: string;
   }>({
     queryKey: [`/api/templates/${templateId}`],
     enabled: !!templateId,
   });
 
   // Fetch template bindings
-  const { data: bindingsData, isLoading: isLoadingBindings } = useQuery<ServerBinding[]>({
+  const { data: serverBindings, isLoading: isLoadingBindings } = useQuery<ServerBinding[]>({
     queryKey: [`/api/templates/${templateId}/bindings`],
     enabled: !!templateId,
   });
-  
+
   // Fetch resume schema
-  const { data: resumeSchema, isLoading: isLoadingSchema } = useQuery<Record<string, any>>({
+  const { data: resumeSchema } = useQuery<Record<string, any>>({
+    queryKey: ['/api/resume/schema'],
+  });
+
+  // Fetch template schema (what fields it expects)
+  const { data: templateSchema } = useQuery<Record<string, any>>({
     queryKey: [`/api/templates/${templateId}/schema`],
     enabled: !!templateId,
   });
-  
-  // Fetch general resume schema as fallback
-  const { data: generalResumeSchema, isLoading: isLoadingGeneralSchema } = useQuery<Record<string, any>>({
-    queryKey: ['/api/resume/schema'],
-    enabled: !!templateId,
-  });
 
-  // Update template bindings mutation
+  // Update binding mutation
   const updateBindingMutation = useMutation({
     mutationFn: async (binding: Binding) => {
-      // Convert from client model to server model
       const response = await fetch(`/api/templates/${templateId}/bindings/${binding.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          // Map client field names to server field names
           dataField: binding.selector,
-          placeholderToken: binding.placeholder,
-          description: binding.description
         }),
       });
-
+      
       if (!response.ok) {
         throw new Error('Failed to update binding');
       }
-
+      
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/templates/${templateId}/bindings`] });
-      // Force preview refresh
-      setPreviewKey(prev => prev + 1);
-      refreshTokenHighlights();
-      updateCompletionPercentage();
-      
       toast({
-        title: 'Success',
-        description: 'Template binding updated',
+        title: "Binding updated",
+        description: "The template binding has been updated successfully",
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
-        title: 'Error',
-        description: 'Failed to update template binding',
-        variant: 'destructive',
+        title: "Error updating binding",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
 
-  // Initialize data on component mount
-  useEffect(() => {
-    if (bindingsData && Array.isArray(bindingsData)) {
-      // Map from server model to client model
-      const mappedBindings = bindingsData.map(binding => ({
-        id: binding.id,
-        templateId: binding.templateId,
-        placeholder: binding.placeholderToken || "",  // Use server's placeholderToken for client's placeholder
-        selector: binding.dataField || "",            // Use server's dataField for client's selector
-        description: binding.description,
-        createdAt: binding.createdAt,
-        updatedAt: binding.updatedAt,
-        isMapped: !!binding.dataField && binding.dataField.trim() !== ""
-      }));
-      
-      setBindings(mappedBindings);
-      console.log("Mapped bindings from server:", mappedBindings);
-      
-      // Calculate completion percentage
-      updateCompletionPercentage();
-    }
-  }, [bindingsData]);
+  // Handle changes to the selected binding's selector
+  const handleSelectorChange = (bindingId: number, value: string) => {
+    setBindings(prev => prev.map(binding => 
+      binding.id === bindingId ? { ...binding, selector: value } : binding
+    ));
+  };
 
-  useEffect(() => {
-    if (template) {
-      if (typeof template === 'object' && 'name' in template) {
-        setTemplateName(template.name as string);
-      }
-      
-      if (template.htmlContent) {
-        setTemplateHtml(template.htmlContent);
-        extractTemplateTokens(template.htmlContent);
-      }
-    }
-  }, [template]);
+  // Handle saving a binding
+  const handleSaveBinding = (binding: Binding) => {
+    setSelectedBinding(binding);
+    updateBindingMutation.mutate(binding);
+  };
 
-  // Auto-suggest bindings when template and bindings are loaded
-  useEffect(() => {
-    if (template && bindings && bindings.length > 0 && !autoSuggestMade) {
-      autoSuggestBindings();
-      setAutoSuggestMade(true);
+  // Handle selecting a binding
+  const handleBindingSelection = (binding: Binding, tokenId?: string | null) => {
+    setSelectedBinding(binding);
+    if (tokenId) {
+      setActiveToken(tokenId);
     }
-  }, [template, bindings]);
+  };
 
-  // Parse resume schema into data fields
-  useEffect(() => {
-    // Use template-specific schema or fall back to general schema
-    const schema = resumeSchema || generalResumeSchema;
+  // Handle selecting a data field to bind to the selected binding
+  const handleDataFieldSelect = (field: DataField) => {
+    if (!selectedBinding) return;
     
-    if (!schema) {
-      console.log('No schema available, loading default fields');
-      // Default fields as fallback if both schemas are unavailable
-      const defaultFields: DataField[] = [
-        {
-          id: 'firstName',
-          name: 'First Name',
-          path: 'firstName',
-          type: 'string',
-          description: 'First name'
-        },
-        {
-          id: 'surname',
-          name: 'Last Name',
-          path: 'surname',
-          type: 'string', 
-          description: 'Last name'
-        },
-        {
-          id: 'email',
-          name: 'Email',
-          path: 'email',
-          type: 'string',
-          description: 'Email address'
-        },
-        {
-          id: 'professionalSummary',
-          name: 'Professional Summary',
-          path: 'professionalSummary',
-          type: 'string',
-          description: 'Professional summary'
+    const updatedBinding = { ...selectedBinding, selector: field.path };
+    setBindings(prev => prev.map(b => 
+      b.id === updatedBinding.id ? updatedBinding : b
+    ));
+    
+    // Save binding if auto-save is enabled
+    handleSaveBinding(updatedBinding);
+  };
+
+  // Convert server bindings to client bindings
+  const mapBindings = (serverBindings: ServerBinding[]): Binding[] => {
+    return serverBindings.map(b => ({
+      id: b.id,
+      templateId: b.templateId,
+      placeholder: b.placeholderToken,
+      selector: b.dataField,
+      description: b.description,
+      updatedAt: b.updatedAt,
+      createdAt: b.createdAt,
+      isMapped: !!b.dataField && b.dataField.trim() !== ''
+    }));
+  };
+
+  // Flatten nested data fields for easier searching
+  const flattenDataFields = (fields: DataField[]): DataField[] => {
+    let result: DataField[] = [];
+    
+    for (const field of fields) {
+      result.push(field);
+      if (field.children && field.children.length > 0) {
+        result = [...result, ...flattenDataFields(field.children)];
+      }
+    }
+    
+    return result;
+  };
+
+  // Filter data fields based on search text
+  const filterDataFields = (fields: DataField[], filter: string): DataField[] => {
+    if (!filter.trim()) return fields;
+    
+    const filtered: DataField[] = [];
+    const lowerFilter = filter.toLowerCase();
+    
+    for (const field of fields) {
+      const nameMatch = field.name.toLowerCase().includes(lowerFilter);
+      const pathMatch = field.path.toLowerCase().includes(lowerFilter);
+      const descMatch = field.description?.toLowerCase().includes(lowerFilter);
+      
+      // Include this field if it matches
+      if (nameMatch || pathMatch || descMatch) {
+        filtered.push(field);
+      }
+      
+      // Check children too
+      if (field.children && field.children.length > 0) {
+        const filteredChildren = filterDataFields(field.children, filter);
+        if (filteredChildren.length > 0) {
+          filtered.push({
+            ...field,
+            children: filteredChildren
+          });
         }
-      ];
-      setDataFields(defaultFields);
+      }
+    }
+    
+    return filtered;
+  };
+
+  // Auto-match fields based on names and paths
+  const performBasicMatching = () => {
+    // Get all unmapped bindings
+    const unmappedBindings = bindings.filter(b => !b.selector || b.selector.trim() === '');
+    
+    if (unmappedBindings.length === 0) {
+      toast({
+        title: "No unmapped fields",
+        description: "All template fields are already mapped to data fields",
+      });
       return;
     }
     
-    // Convert schema to data fields format
-    const convertedFields: DataField[] = [];
+    // Flatten data fields for easier matching
+    const flatFields = flattenDataFields(dataFields);
     
-    // Helper function to format field names from camelCase
-    const formatFieldName = (name: string) => {
-      return name
-        .replace(/([A-Z])/g, ' $1') // Add space before capital letters
-        .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
-    };
+    // Track updates
+    const updatedBindings: Binding[] = [...bindings];
+    let updateCount = 0;
     
-    // Process each top-level property
-    Object.entries(schema).forEach(([key, fieldSchema]: [string, any]) => {
-      if (typeof fieldSchema === 'object' && fieldSchema !== null) {
-        const field: DataField = {
-          id: key,
-          name: fieldSchema.description || formatFieldName(key),
-          path: key,
-          type: fieldSchema.type as any,
-          description: fieldSchema.description || ''
-        };
-        
-        // Handle arrays with items
-        if (fieldSchema.type === 'array' && fieldSchema.items) {
-          // For arrays like workExperience
-          if (fieldSchema.items.type === 'object' && fieldSchema.items.properties) {
-            field.children = [];
-            
-            // Add child fields for each property in the array items
-            Object.entries(fieldSchema.items.properties).forEach(([childKey, childValue]: [string, any]) => {
-              field.children?.push({
-                id: `${key}[0].${childKey}`,
-                name: childValue.description || formatFieldName(childKey),
-                path: `${key}[0].${childKey}`,
-                type: childValue.type as any,
-                description: childValue.description || ''
-              });
-            });
-          } else {
-            // Simple array of primitive values
-            field.children = [{
-              id: `${key}[0]`,
-              name: `${formatFieldName(key)} Item`,
-              path: `${key}[0]`,
-              type: fieldSchema.items.type as any,
-              description: `Individual ${key} item`
-            }];
-          }
+    // Try to match each unmapped binding
+    for (const binding of unmappedBindings) {
+      // Extract field name from placeholder (handles multiple formats)
+      let fieldName = binding.placeholder
+        .replace(/\[\[FIELD:|\]\]/g, '')
+        .replace(/{{|}}/g, '')
+        .trim()
+        .toLowerCase();
+      
+      // Find exact match first
+      const exactMatch = flatFields.find(f => 
+        f.path.toLowerCase() === fieldName || 
+        f.name.toLowerCase() === fieldName
+      );
+      
+      if (exactMatch) {
+        // Update the binding
+        const index = updatedBindings.findIndex(b => b.id === binding.id);
+        if (index !== -1) {
+          updatedBindings[index] = { 
+            ...binding, 
+            selector: exactMatch.path,
+            isMapped: true
+          };
+          updateCount++;
         }
-        
-        convertedFields.push(field);
       }
-    });
+    }
     
-    console.log('Generated data fields from schema:', convertedFields);
-    setDataFields(convertedFields);
-  }, [resumeSchema, generalResumeSchema]);
+    // Update state with new bindings
+    if (updateCount > 0) {
+      setBindings(updatedBindings);
+      
+      // Save updated bindings
+      updatedBindings
+        .filter(b => b.selector && b.selector.trim() !== '')
+        .forEach(b => {
+          updateBindingMutation.mutate(b);
+        });
+      
+      toast({
+        title: "Auto-match complete",
+        description: `Matched ${updateCount} fields based on names`,
+      });
+    } else {
+      toast({
+        title: "No matches found",
+        description: "Could not find any automatic matches for unmapped fields",
+      });
+    }
+  };
 
-  // Extract tokens from template HTML
-  const extractTemplateTokens = (html: string) => {
-    if (!html) return;
-    
+  // Extract template tokens from HTML content
+  const refreshTokenHighlights = () => {
+    // Generate a new template preview - in a real app this would
+    // extract tokens from the HTML and mark their positions
     const tokens: TemplateToken[] = [];
-    let id = 0;
     
-    // Log for debugging
-    console.log("Extracting tokens from HTML:", html.substring(0, 200) + "...");
-    
-    // Match all pattern types
-    
-    // 1. Handlebars-style simple fields: {{ field }}
-    const handlebarFieldRegex = /{{([^#\/][^}]*?)}}/g;
-    let match;
-    
-    while ((match = handlebarFieldRegex.exec(html)) !== null) {
-      tokens.push({
-        id: `token-${id++}`,
-        text: match[0],
-        type: "field",
-        position: generateMockPosition(),
-        color: tokenColors[id % tokenColors.length],
-        isMapped: false
-      });
+    if (template?.html) {
+      // Placeholder extraction logic (simplified)
+      const fieldRegex = /\[\[FIELD:(.*?)\]\]|{{([^#/][^}]*)}}/g;
+      let match;
+      
+      // Process template HTML to extract fields
+      const html = template.html;
+      let id = 0;
+      
+      while ((match = fieldRegex.exec(html)) !== null) {
+        const token = match[0];
+        tokens.push({
+          id: `token-${id++}`,
+          text: token,
+          type: "field",
+          position: generateMockPosition(),
+          color: tokenColors[id % tokenColors.length],
+          isMapped: false
+        });
+      }
     }
     
-    // 2. Handlebars-style loops: {{#each items}}
-    const handlebarLoopRegex = /{{#each ([^}]*?)}}/g;
-    
-    while ((match = handlebarLoopRegex.exec(html)) !== null) {
-      tokens.push({
-        id: `token-${id++}`,
-        text: match[0],
-        type: "loop",
-        position: generateMockPosition(),
-        color: tokenColors[id % tokenColors.length],
-        isMapped: false
-      });
-    }
-    
-    // 3. Handlebars-style conditionals: {{#if condition}}
-    const handlebarConditionalRegex = /{{#if ([^}]*?)}}/g;
-    
-    while ((match = handlebarConditionalRegex.exec(html)) !== null) {
-      tokens.push({
-        id: `token-${id++}`,
-        text: match[0],
-        type: "conditional",
-        position: generateMockPosition(),
-        color: tokenColors[id % tokenColors.length],
-        isMapped: false
-      });
-    }
-    
-    // 4. Bracket-style fields: [[FIELD:name]]
-    const bracketFieldRegex = /\[\[FIELD:([^\]]*?)\]\]/g;
-    
-    while ((match = bracketFieldRegex.exec(html)) !== null) {
-      tokens.push({
-        id: `token-${id++}`,
-        text: match[0],
-        type: "field",
-        position: generateMockPosition(),
-        color: tokenColors[id % tokenColors.length],
-        isMapped: false
-      });
-    }
-    
-    // 5. Bracket-style loops: [[LOOP:items]]
-    const bracketLoopRegex = /\[\[LOOP:([^\]]*?)\]\]/g;
-    
-    while ((match = bracketLoopRegex.exec(html)) !== null) {
-      tokens.push({
-        id: `token-${id++}`,
-        text: match[0],
-        type: "loop",
-        position: generateMockPosition(),
-        color: tokenColors[id % tokenColors.length],
-        isMapped: false
-      });
-    }
-    
-    // 6. Bracket-style conditionals: [[IF:condition]]
-    const bracketConditionalRegex = /\[\[IF:([^\]]*?)\]\]/g;
-    
-    while ((match = bracketConditionalRegex.exec(html)) !== null) {
-      tokens.push({
-        id: `token-${id++}`,
-        text: match[0],
-        type: "conditional",
-        position: generateMockPosition(),
-        color: tokenColors[id % tokenColors.length],
-        isMapped: false
-      });
-    }
-    
-    console.log("Extracted tokens:", tokens);
-    
-    // If no tokens found with our patterns, add a placeholder token to not have an empty UI
+    // If no tokens were found, add some mocks for demonstration
     if (tokens.length === 0) {
       tokens.push({
         id: "placeholder-token-1",
@@ -436,26 +377,49 @@ export default function TemplateBindingsPage() {
     simulateTokenPositions();
   };
   
-  // In a real app, this would come from the preview iframe
+  // Generate more structured positions for token visualization
   const generateMockPosition = () => {
+    // Get current count of tokens for ordered positioning
+    const currentTokenCount = highlightedTokens.length;
+    
+    // Create a structured grid layout
+    const row = Math.floor(currentTokenCount / 3);
+    const col = currentTokenCount % 3;
+    
     return {
-      x: Math.floor(Math.random() * 400) + 50,
-      y: Math.floor(Math.random() * 500) + 50,
-      width: Math.floor(Math.random() * 100) + 100,
-      height: Math.floor(Math.random() * 30) + 20
+      x: 50 + (col * 160),
+      y: 50 + (row * 50),
+      width: 140, 
+      height: 30
     };
   };
   
   // Simulate getting token positions from the rendered template
   const simulateTokenPositions = () => {
-    // In a real implementation, we would inject JavaScript into the iframe
-    // that reports back the positions of all tokens in the document
+    // In a real implementation, this would get positions from the actual DOM
     setTimeout(() => {
-      setHighlightedTokens(prev => prev.map(token => ({
-        ...token,
-        position: generateMockPosition()
-      })));
-    }, 500);
+      setHighlightedTokens(prev => {
+        // Create structured layout based on token type
+        return prev.map((token, index) => {
+          // Organize tokens by their type 
+          const row = Math.floor(index / 3);
+          const col = index % 3;
+          
+          // Basic position grid
+          const position = {
+            x: 50 + (col * 180),
+            y: 50 + (row * 60),
+            width: 160,
+            height: 35
+          };
+          
+          return {
+            ...token,
+            position
+          };
+        });
+      });
+    }, 300);
   };
 
   // Auto-suggest bindings based on template field names
@@ -521,362 +485,242 @@ export default function TemplateBindingsPage() {
           }
         }
         
-        // Add to suggestions if we found a match
-        if (bestMatch && bestScore > 0.4) {
+        // For demonstration purposes, also add some other relevant suggestions
+        const additionalSuggestions: {field: DataField, score: number}[] = [];
+        
+        for (const field of flatFields) {
+          // Skip already selected best match
+          if (bestMatch && field.path === bestMatch.path) continue;
+          
+          // Generate relevance score based on field type and name similarity
+          let score = 0;
+          
+          // Type-based scoring (prefer strings for most fields)
+          if (field.type === 'string') score += 0.2;
+          
+          // Name-based scoring
+          const nameSimilarity = calculateStringSimilarity(fieldName.toLowerCase(), field.name.toLowerCase());
+          score += nameSimilarity * 0.5;
+          
+          // Path-based scoring
+          const pathSimilarity = calculateStringSimilarity(fieldName.toLowerCase(), field.path.toLowerCase());
+          score += pathSimilarity * 0.3;
+          
+          // Add if score is good enough
+          if (score > 0.3) {
+            additionalSuggestions.push({field, score});
+          }
+        }
+        
+        // Sort additional suggestions by score
+        additionalSuggestions.sort((a, b) => b.score - a.score);
+        
+        // Keep top 3 additional suggestions
+        const topAdditionalSuggestions = additionalSuggestions.slice(0, 3);
+        
+        // Add the suggestions
+        if (bestMatch) {
           suggestions.push({
-            binding,
-            suggestedField: bestMatch.path,
-            confidence: bestScore
+            bindingId: binding.id,
+            token: binding.placeholder,
+            suggestions: [
+              { fieldPath: bestMatch.path, fieldName: bestMatch.name, confidence: bestScore },
+              ...topAdditionalSuggestions.map(s => ({
+                fieldPath: s.field.path,
+                fieldName: s.field.name,
+                confidence: s.score
+              }))
+            ]
           });
         }
       }
       
-      // Update UI with suggestions
+      // Show suggestions dialog if we have any
       if (suggestions.length > 0) {
-        // Sort by confidence
-        suggestions.sort((a, b) => b.confidence - a.confidence);
-        
-        // Show suggestions dialog
         setBindingSuggestions(suggestions);
         setShowSuggestionsDialog(true);
+        setAutoSuggestMade(true);
       } else {
-        // Use basic matching as fallback
-        performBasicMatching();
+        toast({
+          title: "No suggestions",
+          description: "Could not generate any suggestions for the unmapped fields",
+        });
       }
     } catch (error) {
-      console.error("Error in auto-suggest bindings:", error);
+      console.error("Error generating suggestions:", error);
       toast({
-        title: "Auto-suggestion failed",
-        description: "There was an error processing the template fields. Using basic matching instead.",
+        title: "Error generating suggestions",
+        description: "An error occurred while analyzing the template fields",
         variant: "destructive",
       });
-      
-      // Fallback to basic matching
-      performBasicMatching();
     } finally {
       setIsProcessingBindings(false);
     }
   };
-  
-  // Handle accepting a single binding suggestion
-  const handleAcceptSuggestion = (binding: Binding) => {
-    // Update binding in state
-    setBindings(prevBindings => 
-      prevBindings.map(b => b.id === binding.id ? binding : b)
-    );
+
+  // Simple string similarity calculation
+  const calculateStringSimilarity = (str1: string, str2: string): number => {
+    if (!str1.length && !str2.length) return 1.0;
+    if (!str1.length || !str2.length) return 0.0;
     
-    // Save to backend
-    updateBindingMutation.mutate(binding);
-  };
-  
-  // Handle accepting all binding suggestions
-  const handleAcceptAllSuggestions = () => {
-    const updatedBindings = [...bindings];
-    let madeChanges = false;
+    // Count matching characters
+    let matches = 0;
+    const maxLen = Math.max(str1.length, str2.length);
     
-    bindingSuggestions.forEach(suggestion => {
-      const bindingIndex = updatedBindings.findIndex(b => b.id === suggestion.binding.id);
-      if (bindingIndex !== -1) {
-        updatedBindings[bindingIndex] = {
-          ...updatedBindings[bindingIndex],
-          selector: suggestion.suggestedField,
-          isMapped: true
-        };
-        madeChanges = true;
-        
-        // Save each binding to backend
-        updateBindingMutation.mutate({
-          ...updatedBindings[bindingIndex],
-          selector: suggestion.suggestedField
-        });
-      }
-    });
-    
-    if (madeChanges) {
-      setBindings(updatedBindings);
-      toast({
-        title: "AI-powered binding suggestions applied",
-        description: `Successfully mapped ${bindingSuggestions.length} template fields automatically`,
-      });
-      updateCompletionPercentage();
-      setShowSuggestionsDialog(false);
+    for (let i = 0; i < str1.length && i < str2.length; i++) {
+      if (str1[i] === str2[i]) matches++;
     }
-  };
-  
-  // Handle dismissing a binding suggestion
-  const handleDismissSuggestion = (bindingId: number) => {
-    setBindingSuggestions(prevSuggestions => 
-      prevSuggestions.filter(s => s.binding.id !== bindingId)
-    );
-  };
-  
-  // Basic matching as fallback
-  const performBasicMatching = () => {
-    // Show loading state
-    toast({
-      title: "Auto-matching in progress",
-      description: "Finding and mapping fields based on names...",
-    });
     
-    const updatedBindings = [...bindings];
-    let madeChanges = false;
-    let matchCount = 0;
-    
-    // Flatten data fields for easier matching
-    const flatDataFields = flattenDataFields(dataFields);
-    
-    updatedBindings.forEach((binding, index) => {
-      // Skip already mapped bindings
-      if (binding.selector && binding.selector.trim() !== '') return;
-      
-      // Extract the field name from placeholder - handle multiple formats
-      if (!binding.placeholder || typeof binding.placeholder !== 'string') return;
-      
-      let fieldName = "";
-      
-      // Handle bracket syntax [[FIELD:name]]
-      const fieldMatchBracket = binding.placeholder.match(/\[\[(?:FIELD|LOOP|IF):([^\]]+)\]\]/);
-      if (fieldMatchBracket) {
-        fieldName = fieldMatchBracket[1];
-      } 
-      // Handle Handlebars syntax {{ name }}
-      else {
-        const fieldMatchHandlebars = binding.placeholder.match(/{{\s*([^#\/{}]+)\s*}}/);
-        if (fieldMatchHandlebars) {
-          fieldName = fieldMatchHandlebars[1].trim();
-        } else {
-          return; // Skip if no pattern matches
-        }
-      }
-      
-      // Look for exact matches first
-      const exactMatch = flatDataFields.find(field => 
-        field.path === fieldName || 
-        field.name.toLowerCase() === fieldName.toLowerCase() ||
-        field.path.toLowerCase().endsWith(`.${fieldName.toLowerCase()}`) ||
-        field.path.toLowerCase().endsWith(`[0].${fieldName.toLowerCase()}`)
-      );
-      
-      if (exactMatch) {
-        updatedBindings[index] = {
-          ...binding,
-          selector: exactMatch.path,
-          isMapped: true
-        };
-        madeChanges = true;
-        matchCount++;
-        
-        // Save this binding immediately
-        updateBindingMutation.mutate({
-          ...binding,
-          selector: exactMatch.path
-        });
-      }
-      // Try fuzzy matching
-      else {
-        const fuzzyMatches = flatDataFields.filter(field =>
-          field.path.toLowerCase().includes(fieldName.toLowerCase()) ||
-          fieldName.toLowerCase().includes(field.path.toLowerCase()) ||
-          field.name.toLowerCase().includes(fieldName.toLowerCase()) ||
-          fieldName.toLowerCase().includes(field.name.toLowerCase()) ||
-          field.path.replace(/\./g, '').toLowerCase().includes(fieldName.toLowerCase()) ||
-          fieldName.toLowerCase().includes(field.path.replace(/\./g, '').toLowerCase())
-        );
-        
-        if (fuzzyMatches.length === 1) {
-          updatedBindings[index] = {
-            ...binding,
-            selector: fuzzyMatches[0].path,
-            isMapped: true
-          };
-          madeChanges = true;
-          matchCount++;
-          
-          // Save this binding immediately
-          updateBindingMutation.mutate({
-            ...binding,
-            selector: fuzzyMatches[0].path
-          });
-        }
-      }
-    });
-    
-    if (madeChanges) {
-      setBindings(updatedBindings);
-      updateCompletionPercentage();
-      
-      toast({
-        title: "Auto-matching complete",
-        description: `Successfully mapped ${matchCount} fields automatically.`,
-      });
-    } else {
-      toast({
-        title: "No matches found",
-        description: "Could not find any automatic matches. Try using the AI suggestions instead.",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  // Helper to flatten nested data fields for easier searching
-  const flattenDataFields = (fields: DataField[]): DataField[] => {
-    let result: DataField[] = [];
-    
-    fields.forEach(field => {
-      result.push(field);
-      if (field.children && field.children.length > 0) {
-        result = [...result, ...flattenDataFields(field.children)];
-      }
-    });
-    
-    return result;
+    return matches / maxLen;
   };
 
-  // Filter data fields based on search text
-  const filterDataFields = (fields: DataField[], searchText: string): DataField[] => {
-    if (!searchText) return fields;
+  // Handle accepting an AI suggestion
+  const handleAcceptSuggestion = (bindingId: number, fieldPath: string) => {
+    const binding = bindings.find(b => b.id === bindingId);
+    if (!binding) return;
     
-    return fields.filter(field => {
-      const matchesSearch = 
-        field.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        field.path.toLowerCase().includes(searchText.toLowerCase()) ||
-        (field.description && field.description.toLowerCase().includes(searchText.toLowerCase()));
-      
-      const hasMatchingChildren = field.children && 
-        filterDataFields(field.children, searchText).length > 0;
-      
-      return matchesSearch || hasMatchingChildren;
-    }).map(field => {
-      if (field.children) {
-        return {
-          ...field,
-          children: filterDataFields(field.children, searchText)
-        };
-      }
-      return field;
-    });
-  };
-
-  // Update completion percentage
-  const updateCompletionPercentage = () => {
-    if (!bindings.length) return;
-    
-    const mappedBindings = bindings.filter(binding => 
-      binding.selector && binding.selector.trim() !== ''
-    );
-    
-    const percentage = Math.round((mappedBindings.length / bindings.length) * 100);
-    setCompletionPercentage(percentage);
-  };
-
-  // Refresh the token highlights in the preview
-  const refreshTokenHighlights = () => {
-    // In a real implementation, this would communicate with the preview iframe
-    // to synchronize the token highlights with the current bindings
-    setPreviewKey(prev => prev + 1);
-    simulateTokenPositions();
-  };
-
-  // Handle binding selection and update
-  const handleSelectorChange = (bindingId: number, newSelector: string) => {
-    setBindings(prevBindings =>
-      prevBindings.map(binding =>
-        binding.id === bindingId ? { ...binding, selector: newSelector, isMapped: newSelector !== '' } : binding
-      )
-    );
-  };
-
-  const handleSaveBinding = (binding: Binding) => {
-    updateBindingMutation.mutate(binding);
-  };
-
-  // Handle binding selection for data field mapping
-  const handleBindingSelection = (binding: Binding, tokenId?: string) => {
-    setSelectedBinding(binding);
-    if (tokenId) {
-      setActiveToken(tokenId);
-    }
-  };
-
-  // Start wizard mode
-  const startWizard = () => {
-    setWizardMode(true);
-    
-    // Find the first unmapped binding
-    const unmappedBindings = bindings.filter(b => !b.selector || b.selector.trim() === '');
-    if (unmappedBindings.length > 0) {
-      setSelectedBinding(unmappedBindings[0]);
-      
-      // Find the token that corresponds to this binding
-      const token = highlightedTokens.find(t => t.text === unmappedBindings[0].placeholder);
-      if (token) {
-        setActiveToken(token.id);
-      }
-      
-      setWizardStep(0);
-    } else {
-      toast({
-        title: "All bindings mapped",
-        description: "All tokens have been mapped to data fields",
-      });
-    }
-  };
-
-  // Navigate to the next binding in wizard mode
-  const goToNextBinding = () => {
-    const unmappedBindings = bindings.filter(b => !b.selector || b.selector.trim() === '');
-    if (wizardStep < unmappedBindings.length - 1) {
-      setWizardStep(prev => prev + 1);
-      setSelectedBinding(unmappedBindings[wizardStep + 1]);
-      
-      // Find the token that corresponds to this binding
-      const token = highlightedTokens.find(t => t.text === unmappedBindings[wizardStep + 1].placeholder);
-      if (token) {
-        setActiveToken(token.id);
-      }
-    } else {
-      setWizardMode(false);
-      toast({
-        title: "Wizard completed",
-        description: "You've gone through all unmapped bindings",
-      });
-    }
-  };
-
-  // Handle data field selection for binding
-  const handleDataFieldSelect = (field: DataField) => {
-    if (!selectedBinding) return;
-    
-    // Update the binding with the selected field
-    const updatedBindings = bindings.map(binding => 
-      binding.id === selectedBinding.id 
-        ? { ...binding, selector: field.path, isMapped: true } 
-        : binding
-    );
-    
-    setBindings(updatedBindings);
-    
-    // Update the selected binding
-    setSelectedBinding({ ...selectedBinding, selector: field.path, isMapped: true });
+    const updatedBinding = { ...binding, selector: fieldPath, isMapped: true };
+    setBindings(prev => prev.map(b => b.id === bindingId ? updatedBinding : b));
     
     // Save the binding
-    handleSaveBinding({ ...selectedBinding, selector: field.path });
-    
-    // If in wizard mode, go to the next binding
-    if (wizardMode) {
-      goToNextBinding();
-    }
+    updateBindingMutation.mutate(updatedBinding);
   };
 
-  // Render a single data field
-  const renderDataField = (field: DataField, level = 0) => {
-    const isMapped = bindings.some(binding => binding.selector === field.path);
-    const usedByBindingIds = bindings
-      .filter(binding => binding.selector === field.path)
-      .map(binding => binding.id);
+  // Handle accepting all AI suggestions at once
+  const handleAcceptAllSuggestions = (suggestions: BindingSuggestion[]) => {
+    // Update bindings with top suggestions
+    const updatedBindings = [...bindings];
     
-    // Get colors and icons based on type
-    let typeColor, typeBg, typeBorder, typeIcon;
+    for (const suggestion of suggestions) {
+      const topSuggestion = suggestion.suggestions[0];
+      if (topSuggestion && topSuggestion.confidence >= 0.5) {
+        const index = updatedBindings.findIndex(b => b.id === suggestion.bindingId);
+        if (index !== -1) {
+          updatedBindings[index] = {
+            ...updatedBindings[index],
+            selector: topSuggestion.fieldPath,
+            isMapped: true
+          };
+          
+          // Save the binding
+          updateBindingMutation.mutate(updatedBindings[index]);
+        }
+      }
+    }
+    
+    setBindings(updatedBindings);
+    setShowSuggestionsDialog(false);
+  };
+
+  // Handle dismissing the AI suggestions
+  const handleDismissSuggestion = () => {
+    setShowSuggestionsDialog(false);
+  };
+
+  // Load initial data
+  useEffect(() => {
+    if (template) {
+      setTemplateHtml(template.html);
+      setTemplateName(template.name);
+    }
+  }, [template]);
+
+  // Process server bindings into client bindings
+  useEffect(() => {
+    if (serverBindings) {
+      setBindings(mapBindings(serverBindings));
+    }
+  }, [serverBindings]);
+
+  // Process schema into flat data fields
+  useEffect(() => {
+    if (resumeSchema) {
+      // Convert the schema to a list of DataField objects
+      const fields: DataField[] = [];
+      
+      for (const [key, value] of Object.entries(resumeSchema)) {
+        fields.push({
+          id: key,
+          name: value.title || key,
+          path: key,
+          description: value.description,
+          type: value.type as any,
+          children: processSchemaChildren(value, key)
+        });
+      }
+      
+      setDataFields(fields);
+    }
+  }, [resumeSchema]);
+
+  // Helper function to process nested schema properties
+  const processSchemaChildren = (schema: any, parentPath: string): DataField[] | undefined => {
+    if (schema.type === 'object' && schema.properties) {
+      const children: DataField[] = [];
+      
+      for (const [key, value] of Object.entries(schema.properties)) {
+        children.push({
+          id: `${parentPath}.${key}`,
+          name: (value as any).title || key,
+          path: `${parentPath}.${key}`,
+          description: (value as any).description,
+          type: (value as any).type as any,
+          children: processSchemaChildren(value, `${parentPath}.${key}`)
+        });
+      }
+      
+      return children;
+    } else if (schema.type === 'array' && schema.items) {
+      return [
+        {
+          id: `${parentPath}[0]`,
+          name: 'Array Item',
+          path: `${parentPath}[0]`,
+          description: 'First item in the array',
+          type: (schema.items as any).type as any,
+          children: processSchemaChildren(schema.items, `${parentPath}[0]`)
+        }
+      ];
+    }
+    
+    return undefined;
+  };
+
+  // Generate token highlights
+  useEffect(() => {
+    if (template?.html) {
+      refreshTokenHighlights();
+    }
+  }, [template?.html]);
+
+  // Calculate completion percentage
+  useEffect(() => {
+    if (bindings.length > 0) {
+      const mappedCount = bindings.filter(b => b.selector && b.selector.trim() !== '').length;
+      const percentage = Math.round((mappedCount / bindings.length) * 100);
+      setCompletionPercentage(percentage);
+    }
+  }, [bindings]);
+
+  // Reset selected binding when bindings change
+  useEffect(() => {
+    setSelectedBinding(null);
+  }, [templateId]);
+
+  // Render a data field (recursive)
+  const renderDataField = (field: DataField, level = 0) => {
+    // Check if this field is used by any bindings
+    const usedByBindingIds = bindings
+      .filter(b => b.selector === field.path)
+      .map(b => b.id);
+    
+    const isMapped = usedByBindingIds.length > 0;
+    
+    // Determine display based on field type
+    let typeIcon;
+    let typeColor;
+    let typeBg;
+    let typeBorder;
     
     switch (field.type) {
       case 'string':
@@ -892,10 +736,10 @@ export default function TemplateBindingsPage() {
         typeIcon = <ListOrdered className="h-4 w-4 text-amber-600" />;
         break;
       case 'object':
-        typeColor = 'text-indigo-700';
-        typeBg = 'bg-indigo-50';
-        typeBorder = 'border-indigo-200';
-        typeIcon = <Box className="h-4 w-4 text-indigo-600" />;
+        typeColor = 'text-slate-700';
+        typeBg = 'bg-slate-50';
+        typeBorder = 'border-slate-200';
+        typeIcon = <Box className="h-4 w-4 text-slate-600" />;
         break;
       case 'number':
         typeColor = 'text-purple-700';
@@ -1057,13 +901,13 @@ export default function TemplateBindingsPage() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
-                  variant={wizardMode ? "default" : "outline"}
+                  variant="outline" 
+                  onClick={() => setWizardMode(!wizardMode)}
                   size="sm"
-                  onClick={startWizard}
-                  className="gap-1"
+                  className={`gap-1 ${wizardMode ? 'bg-blue-50 text-blue-700 border-blue-200' : ''}`}
                 >
                   <WandSparkles className="h-4 w-4" />
-                  Wizard
+                  Wizard Mode
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -1073,7 +917,11 @@ export default function TemplateBindingsPage() {
           </TooltipProvider>
           
           <Link href="/admin/templates">
-            <Button variant="ghost" size="sm" className="gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="gap-1"
+            >
               <ArrowLeft className="h-4 w-4" />
               Back to Templates
             </Button>
@@ -1081,9 +929,8 @@ export default function TemplateBindingsPage() {
         </div>
       </div>
       
-      {/* Progress bar */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
           <div className="text-sm font-medium">Binding Progress</div>
           <div className="text-sm text-muted-foreground">{completionPercentage}% Complete</div>
         </div>
@@ -1320,84 +1167,93 @@ export default function TemplateBindingsPage() {
             </div>
             <div className="p-4">
               <div 
-                className="border rounded-md h-[500px] bg-white dark:bg-slate-900"
+                className="border rounded-md h-[500px] bg-white dark:bg-slate-900 flex flex-col"
                 ref={previewRef}
               >
                 {templateHtml ? (
-                  <div className="h-full overflow-auto p-6">
-                    <div
-                      className="template-preview relative" 
-                      dangerouslySetInnerHTML={{ __html: templateHtml }}
-                    />
-                    {/* Token highlight overlays */}
-                    {highlightedTokens.map(token => {
-                      // Get binding for this token
-                      const binding = bindings.find(b => 
-                        b.placeholder === token.text ||
-                        b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.text.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
-                        b.placeholder.replace(/{{|}}/g, '').trim() === token.text.replace(/{{|}}/g, '').trim()
-                      );
-                      
-                      const isMapped = binding && binding.selector && binding.selector.trim() !== '';
-                      const isActive = activeToken === token.id;
-                      
-                      // Set color based on mapping status and activity
-                      let borderColor = 'rgba(59, 130, 246, 0.5)';
-                      let bgColor = 'rgba(59, 130, 246, 0.1)';
-                      
-                      if (isMapped) {
-                        borderColor = 'rgba(16, 185, 129, 0.5)';
-                        bgColor = 'rgba(16, 185, 129, 0.1)';
-                      } else {
-                        borderColor = 'rgba(239, 68, 68, 0.5)';
-                        bgColor = 'rgba(239, 68, 68, 0.1)';
-                      }
-                      
-                      if (isActive) {
-                        borderColor = 'rgba(59, 130, 246, 0.8)';
-                        bgColor = 'rgba(59, 130, 246, 0.2)';
-                      }
-                      
-                      // Display token name, stripped of syntax markers
-                      const displayText = token.text
-                        .replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '')
-                        .replace(/{{(?:#(?:each|if))?|}}/g, '')
-                        .trim();
-                      
-                      return (
-                        <div
-                          key={token.id}
-                          className={`absolute rounded-sm border-2 cursor-pointer transition-all duration-150 ${
-                            isActive ? 'shadow-md' : ''
-                          }`}
-                          style={{
-                            left: `${token.position.x}px`,
-                            top: `${token.position.y}px`,
-                            width: `${token.position.width}px`,
-                            height: `${token.position.height}px`,
-                            borderColor,
-                            backgroundColor: bgColor,
-                            zIndex: isActive ? 20 : 10,
-                            pointerEvents: 'auto'
-                          }}
-                          onClick={() => {
-                            setActiveToken(token.id);
-                            if (binding) {
-                              setSelectedBinding(binding);
-                            }
-                          }}
-                        >
-                          {/* Token label */}
-                          <div className={`absolute top-0 left-0 transform -translate-y-full px-2 py-0.5 text-xs rounded ${
-                            isMapped ? 'bg-green-50 text-green-700 border border-green-200' : 
-                            'bg-red-50 text-red-700 border border-red-200'
-                          }`}>
-                            {isMapped ? '✓ ' : '! '}
-                            {displayText}
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="flex flex-col h-full">
+                    {/* Template visualization with tokens */}
+                    <div className="bg-gray-50 dark:bg-gray-900 border-b p-4 flex-shrink-0">
+                      <div className="font-medium text-sm mb-2">Template Structure Visualization</div>
+                      <div className="relative h-[150px] bg-white dark:bg-gray-800 rounded border overflow-hidden p-3">
+                        {highlightedTokens.map(token => {
+                          // Get binding for this token
+                          const binding = bindings.find(b => 
+                            b.placeholder === token.text ||
+                            b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.text.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
+                            b.placeholder.replace(/{{|}}/g, '').trim() === token.text.replace(/{{|}}/g, '').trim()
+                          );
+                          
+                          const isMapped = binding && binding.selector && binding.selector.trim() !== '';
+                          const isActive = activeToken === token.id;
+                          
+                          // Set color based on mapping status and activity
+                          let borderColor = 'rgba(59, 130, 246, 0.5)';
+                          let bgColor = 'rgba(59, 130, 246, 0.1)';
+                          
+                          if (isMapped) {
+                            borderColor = 'rgba(16, 185, 129, 0.5)';
+                            bgColor = 'rgba(16, 185, 129, 0.1)';
+                          } else {
+                            borderColor = 'rgba(239, 68, 68, 0.5)';
+                            bgColor = 'rgba(239, 68, 68, 0.1)';
+                          }
+                          
+                          if (isActive) {
+                            borderColor = 'rgba(59, 130, 246, 0.8)';
+                            bgColor = 'rgba(59, 130, 246, 0.2)';
+                          }
+                          
+                          // Display token name, stripped of syntax markers
+                          const displayText = token.text
+                            .replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '')
+                            .replace(/{{(?:#(?:each|if))?|}}/g, '')
+                            .trim();
+                          
+                          return (
+                            <div
+                              key={token.id}
+                              className={`absolute rounded-sm border-2 cursor-pointer transition-all duration-150 ${
+                                isActive ? 'shadow-md' : ''
+                              }`}
+                              style={{
+                                left: `${token.position.x}px`,
+                                top: `${token.position.y}px`,
+                                width: `${token.position.width}px`,
+                                height: `${token.position.height}px`,
+                                borderColor,
+                                backgroundColor: bgColor,
+                                zIndex: isActive ? 20 : 10,
+                                pointerEvents: 'auto'
+                              }}
+                              onClick={() => {
+                                setActiveToken(token.id);
+                                if (binding) {
+                                  setSelectedBinding(binding);
+                                }
+                              }}
+                            >
+                              {/* Token label */}
+                              <div className={`absolute top-0 left-0 transform -translate-y-full px-2 py-0.5 text-xs rounded ${
+                                isMapped ? 'bg-green-50 text-green-700 border border-green-200' : 
+                                'bg-red-50 text-red-700 border border-red-200'
+                              }`}>
+                                {isMapped ? '✓ ' : '! '}
+                                {displayText}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Template HTML preview */}
+                    <div className="flex-grow overflow-auto p-4">
+                      <div 
+                        className="template-preview relative" 
+                        dangerouslySetInnerHTML={{ __html: templateHtml }}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="h-full flex items-center justify-center text-center p-10">
