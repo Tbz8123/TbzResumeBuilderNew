@@ -3,12 +3,12 @@ import { X } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
-  DialogTitle,
   DialogClose
 } from '@/components/ui/dialog';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
 import { ResumeData } from '@/contexts/ResumeContext';
 import { ResumeTemplate } from '@shared/schema';
+import { Button } from '@/components/ui/button';
 
 interface ResumePreviewModalProps {
   open: boolean;
@@ -18,6 +18,7 @@ interface ResumePreviewModalProps {
   setSelectedTemplateId: (id: number | null) => void;
   templates: ResumeTemplate[];
   hideSkills?: boolean;
+  onNextStep?: () => void;
 }
 
 const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
@@ -27,32 +28,40 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   selectedTemplateId,
   setSelectedTemplateId,
   templates,
-  hideSkills = true
+  hideSkills = true,
+  onNextStep
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[calc(100vh-150px)] p-0 overflow-hidden">
-        <div className="flex justify-between items-center p-4 border-b">
-          <DialogTitle className="text-xl font-semibold text-gray-800">Resume Preview</DialogTitle>
-          <DialogClose asChild>
-            <button className="h-6 w-6 p-0 rounded-full inline-flex items-center justify-center text-gray-500 hover:text-gray-700">
-              <X className="h-4 w-4" />
-            </button>
+      <DialogContent className="max-w-5xl overflow-visible">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Resume Preview</h2>
+          <DialogClose className="rounded-full w-6 h-6 flex items-center justify-center">
+            <X className="h-4 w-4" />
           </DialogClose>
         </div>
-        <div className="p-6 overflow-auto h-[calc(100%-60px)]">
-          <div className="bg-white">
-            <HybridResumePreview 
-              resumeData={resumeData}
-              selectedTemplateId={selectedTemplateId}
-              setSelectedTemplateId={setSelectedTemplateId}
-              templates={templates}
-              isModal={true}
-              hideSkills={hideSkills}
-              showTemplateControls={true}
-            />
-          </div>
+        
+        <div className="flex justify-center p-4 bg-gray-50 rounded-md">
+          <HybridResumePreview 
+            width={794} 
+            height={1123}
+            className="border shadow-lg"
+            scaleContent={false}
+            resumeData={resumeData}
+            selectedTemplateId={selectedTemplateId}
+            setSelectedTemplateId={setSelectedTemplateId}
+            templates={templates}
+            isModal={true}
+            hideSkills={hideSkills}
+          />
         </div>
+        
+        {onNextStep && (
+          <div className="flex justify-end gap-2 mt-4">
+            <Button onClick={() => onOpenChange(false)}>Close</Button>
+            <Button variant="default" onClick={onNextStep}>Continue to Next Step</Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

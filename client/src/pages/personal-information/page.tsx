@@ -628,6 +628,7 @@ const PersonalInformationPage = () => {
         setSelectedTemplateId={setSelectedTemplateId}
         templates={templates || []}
         hideSkills={true}
+        onNextStep={handleNext}
       />
       
       {/* Template selection modal */}
