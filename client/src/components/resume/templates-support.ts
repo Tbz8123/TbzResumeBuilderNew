@@ -238,12 +238,43 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     }
   });
   
+  // Add explicit support for Handlebars syntax in the template for additional fields
+  const handlebarsFieldsMap: Record<string, string> = {
+    // Create direct mappings for the Handlebars syntax
+    '{{linkedin}}': hasAdditionalField(resumeData, 'linkedin') ? getAdditionalFieldValue(resumeData, 'linkedin') : '##REMOVE_THIS##',
+    '{{website}}': hasAdditionalField(resumeData, 'website') ? getAdditionalFieldValue(resumeData, 'website') : '##REMOVE_THIS##',
+    '{{drivingLicense}}': hasAdditionalField(resumeData, 'drivingLicense') ? getAdditionalFieldValue(resumeData, 'drivingLicense') : '##REMOVE_THIS##',
+  };
+  
+  // Apply the Handlebars specific mappings
+  Object.entries(handlebarsFieldsMap).forEach(([pattern, replacement]) => {
+    if (replacement) {
+      // Handle the exact Handlebars pattern with literal syntax
+      processedHtml = processedHtml.replace(pattern, replacement);
+    }
+  });
+  
+  // Debug the replacements for additional fields
+  console.log("[TEMPLATES] Applied special Handlebars replacements for additional fields:", {
+    linkedin: hasAdditionalField(resumeData, 'linkedin') ? getAdditionalFieldValue(resumeData, 'linkedin') : '##REMOVE_THIS##',
+    website: hasAdditionalField(resumeData, 'website') ? getAdditionalFieldValue(resumeData, 'website') : '##REMOVE_THIS##',
+    drivingLicense: hasAdditionalField(resumeData, 'drivingLicense') ? getAdditionalFieldValue(resumeData, 'drivingLicense') : '##REMOVE_THIS##'
+  });
+  
   console.log("Starting post-processing to remove elements with ##REMOVE_THIS## marker");
   console.log("HTML before post-processing:", processedHtml.substring(0, 500) + "...");
   
   // Post-processing to completely remove any DOM elements containing our removal marker
   // This will remove entire elements (like list items, div elements, etc.) that contain the marker
   let count = 0;
+  
+  // First, check specifically for the optional-info div pattern from the template
+  const optionalInfoRegex = /<div\s+class=["']optional-info["'][^>]*>[\s\S]*?##REMOVE_THIS##[\s\S]*?<\/div>/gi;
+  processedHtml = processedHtml.replace(optionalInfoRegex, (match) => {
+    count++;
+    console.log(`Removing optional-info div: ${match.substring(0, 100)}...`);
+    return '';
+  });
   
   // First, try to remove entire sections or elements that contain our removal marker
   // This regex matches any HTML tag containing our marker (more comprehensive than previous approach)
@@ -274,10 +305,10 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     return '';
   });
   
-  // Replace div elements
-  processedHtml = processedHtml.replace(/<div[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/div>/gi, (match) => {
+  // Replace div elements containing the marker - more aggressive version that matches across multiple lines
+  processedHtml = processedHtml.replace(/<div[^>]*>[\s\S]*?##REMOVE_THIS##[\s\S]*?<\/div>/gi, (match) => {
     count++;
-    console.log(`Removing div: ${match.substring(0, 50)}...`);
+    console.log(`Removing div with nested content: ${match.substring(0, 100)}...`);
     return '';
   });
   

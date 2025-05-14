@@ -24,16 +24,16 @@ const PersonalInformationPage = () => {
   const { data: templates } = useTemplates();
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   
-  // Local state for additional fields visibility - the key here is that we maintain our own local state
-  // This will help us isolate if the issue is with state update or with rendering
-  const [showLinkedIn, setShowLinkedIn] = useState(false);
-  const [showWebsite, setShowWebsite] = useState(false);
-  const [showDrivingLicense, setShowDrivingLicense] = useState(false);
+  // Initialize local state from the resumeData context
+  // This ensures our UI state reflects what's stored in the context
+  const [showLinkedIn, setShowLinkedIn] = useState(Boolean(resumeData.additionalFields?.linkedin));
+  const [showWebsite, setShowWebsite] = useState(Boolean(resumeData.additionalFields?.website));
+  const [showDrivingLicense, setShowDrivingLicense] = useState(Boolean(resumeData.additionalFields?.drivingLicense));
   
-  // Local state for field values
-  const [linkedInValue, setLinkedInValue] = useState('');
-  const [websiteValue, setWebsiteValue] = useState('');
-  const [drivingLicenseValue, setDrivingLicenseValue] = useState('');
+  // Initialize field values from the resumeData context
+  const [linkedInValue, setLinkedInValue] = useState(resumeData.additionalFields?.linkedin?.value || '');
+  const [websiteValue, setWebsiteValue] = useState(resumeData.additionalFields?.website?.value || '');
+  const [drivingLicenseValue, setDrivingLicenseValue] = useState(resumeData.additionalFields?.drivingLicense?.value || '');
   
   // Find the selected template
   const selectedTemplate = Array.isArray(templates) 
