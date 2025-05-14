@@ -333,38 +333,121 @@ export default function TemplateBindingsPage() {
 
   // Auto-suggest bindings based on the intelligent binding bot
   const autoSuggestBindings = () => {
-    if (!bindings.length || !dataFields.length) return;
+    if (!bindings.length || !dataFields.length) {
+      console.log("No bindings or data fields available", { bindingsLength: bindings.length, dataFieldsLength: dataFields.length });
+      toast({
+        title: "Cannot process bindings",
+        description: "No template bindings or resume data fields available",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsProcessingBindings(true);
+    console.log("Starting auto-suggest with data fields:", dataFields);
     
-    // Import the binding bot dynamically to avoid blocking render
-    import('@/services/intelligent-binding-bot').then(({ IntelligentBindingBot }) => {
-      // Create a new instance of the binding bot with our data fields
-      const bindingBot = new IntelligentBindingBot(dataFields, 0.4);
-      
-      // Get all placeholder strings
+    try {
+      // Simpler, more robust implementation that doesn't rely on dynamic imports
+      // Process unmapped bindings
       const unmappedBindings = bindings.filter(b => !b.selector || b.selector.trim() === '');
-      const placeholders = unmappedBindings.map(b => b.placeholder);
+      console.log("Unmapped bindings:", unmappedBindings);
       
-      // Process placeholders with the binding bot
-      const results = bindingBot.processPlaceholders(placeholders);
+      if (unmappedBindings.length === 0) {
+        toast({
+          title: "No unmapped fields",
+          description: "All template fields are already mapped to data fields",
+        });
+        setIsProcessingBindings(false);
+        return;
+      }
       
-      // Update bindings with the bot's suggestions
-      if (results.length > 0) {
-        // Convert results to BindingSuggestion format
-        const suggestions: BindingSuggestion[] = results.map(result => {
-          const binding = unmappedBindings.find(b => b.placeholder === result.placeholder);
-          if (!binding) {
-            throw new Error(`Binding not found for placeholder: ${result.placeholder}`);
+      // Function to clean placeholder text for better matching
+      const cleanPlaceholder = (placeholder: string): string => {
+        return placeholder
+          .replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '')  // Remove [[FIELD:...]] syntax
+          .replace(/{{[#/]?(each|if)\s+|}}/g, '')     // Remove {{#each ...}} syntax
+          .replace(/{{|}}/g, '')                      // Remove {{ }}
+          .replace(/\./g, ' ')                        // Replace dots with spaces
+          .replace(/\s+/g, ' ')                       // Normalize whitespace
+          .trim();
+      };
+      
+      // Basic string comparison function
+      const compareStrings = (str1: string, str2: string): number => {
+        if (!str1 || !str2) return 0;
+        
+        const str1Lower = str1.toLowerCase();
+        const str2Lower = str2.toLowerCase();
+        
+        // Direct match
+        if (str1Lower === str2Lower) return 1;
+        
+        // Find common characters
+        let matches = 0;
+        let position = 0;
+        
+        for (let i = 0; i < str1Lower.length; i++) {
+          const char = str1Lower[i];
+          const pos = str2Lower.indexOf(char, position);
+          
+          if (pos >= 0) {
+            matches++;
+            position = pos + 1;
+          }
+        }
+        
+        // Calculate similarity score (0-1)
+        return matches * 2 / (str1Lower.length + str2Lower.length);
+      };
+      
+      // Process bindings and find suggestions
+      const suggestions: BindingSuggestion[] = [];
+      const confidenceThreshold = 0.4;
+      
+      for (const binding of unmappedBindings) {
+        const cleanedPlaceholder = cleanPlaceholder(binding.placeholder);
+        console.log(`Processing placeholder: "${binding.placeholder}" -> "${cleanedPlaceholder}"`);
+        
+        let bestScore = 0;
+        let bestField = '';
+        
+        // Try matching with each data field
+        for (const field of dataFields) {
+          // Compare with field path
+          const pathScore = compareStrings(cleanedPlaceholder, field.path);
+          
+          // Compare with field name
+          const nameScore = compareStrings(cleanedPlaceholder, field.name);
+          
+          // Compare with description if available
+          let descScore = 0;
+          if (field.description) {
+            descScore = compareStrings(cleanedPlaceholder, field.description) * 0.7; // Weight description matches less
           }
           
-          return {
-            binding,
-            suggestedField: result.field,
-            confidence: result.confidence
-          };
-        });
+          // Take the best score
+          const score = Math.max(pathScore, nameScore, descScore);
+          
+          if (score > bestScore) {
+            bestScore = score;
+            bestField = field.path;
+          }
+        }
         
+        // If we found a good match above the threshold
+        if (bestScore >= confidenceThreshold) {
+          suggestions.push({
+            binding,
+            suggestedField: bestField,
+            confidence: bestScore
+          });
+        }
+      }
+      
+      console.log("Generated suggestions:", suggestions);
+      
+      // Update UI with suggestions
+      if (suggestions.length > 0) {
         // Sort suggestions by confidence score (highest first)
         suggestions.sort((a, b) => b.confidence - a.confidence);
         
@@ -378,8 +461,8 @@ export default function TemplateBindingsPage() {
       }
       
       setIsProcessingBindings(false);
-    }).catch(error => {
-      console.error("Error using binding bot:", error);
+    } catch (error) {
+      console.error("Error in auto-suggest bindings:", error);
       toast({
         title: "Auto-suggestion failed",
         description: "There was an error processing the template fields. Using basic matching instead.",
@@ -389,7 +472,7 @@ export default function TemplateBindingsPage() {
       // Fallback to basic matching
       performBasicMatching();
       setIsProcessingBindings(false);
-    });
+    }
   };
   
   // Handle accepting a single binding suggestion
