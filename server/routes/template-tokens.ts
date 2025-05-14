@@ -16,7 +16,7 @@ export const setupTemplateTokensRoutes = (app: Express) => {
       const { id } = req.params;
       
       // Fetch template HTML content
-      const template = await db.query.templates.findFirst({
+      const template = await db.query.resumeTemplates.findFirst({
         where: eq(templatesTable.id, parseInt(id, 10)),
       });
       

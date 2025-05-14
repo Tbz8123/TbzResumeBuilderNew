@@ -9,13 +9,15 @@ import { Button } from '@/components/ui/button';
 import { 
   Loader2, Save, ArrowLeft, Search, ChevronRight, 
   ChevronLeft, Code, AlertTriangle, Settings, Check, 
-  Filter, WandSparkles, Lightbulb, RefreshCw 
+  Filter, WandSparkles, Lightbulb, RefreshCw, Bot
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { BindingSuggestions, BindingSuggestion } from '@/components/templates/BindingSuggestions';
 
 // Types
 interface Binding {
@@ -61,6 +63,11 @@ export default function TemplateBindingsPage() {
   const [completionPercentage, setCompletionPercentage] = useState<number>(0);
   const [selectedBinding, setSelectedBinding] = useState<Binding | null>(null);
   const [autoSuggestMade, setAutoSuggestMade] = useState<boolean>(false);
+  
+  // AI binding suggestions state
+  const [showSuggestionsDialog, setShowSuggestionsDialog] = useState<boolean>(false);
+  const [bindingSuggestions, setBindingSuggestions] = useState<BindingSuggestion[]>([]);
+  const [isProcessingBindings, setIsProcessingBindings] = useState<boolean>(false);
 
   // Helper colors for token highlighting
   const tokenColors = [
@@ -328,55 +335,49 @@ export default function TemplateBindingsPage() {
   const autoSuggestBindings = () => {
     if (!bindings.length || !dataFields.length) return;
     
+    setIsProcessingBindings(true);
+    
     // Import the binding bot dynamically to avoid blocking render
     import('@/services/intelligent-binding-bot').then(({ IntelligentBindingBot }) => {
       // Create a new instance of the binding bot with our data fields
       const bindingBot = new IntelligentBindingBot(dataFields, 0.4);
       
       // Get all placeholder strings
-      const placeholders = bindings
-        .filter(b => !b.selector || b.selector.trim() === '') // Only consider unmapped bindings
-        .map(b => b.placeholder);
+      const unmappedBindings = bindings.filter(b => !b.selector || b.selector.trim() === '');
+      const placeholders = unmappedBindings.map(b => b.placeholder);
       
       // Process placeholders with the binding bot
       const results = bindingBot.processPlaceholders(placeholders);
       
       // Update bindings with the bot's suggestions
       if (results.length > 0) {
-        const updatedBindings = [...bindings];
-        let madeChanges = false;
-        
-        results.forEach(result => {
-          const bindingIndex = updatedBindings.findIndex(b => b.placeholder === result.placeholder);
-          if (bindingIndex !== -1) {
-            updatedBindings[bindingIndex] = {
-              ...updatedBindings[bindingIndex],
-              selector: result.field,
-              isMapped: true
-            };
-            madeChanges = true;
+        // Convert results to BindingSuggestion format
+        const suggestions: BindingSuggestion[] = results.map(result => {
+          const binding = unmappedBindings.find(b => b.placeholder === result.placeholder);
+          if (!binding) {
+            throw new Error(`Binding not found for placeholder: ${result.placeholder}`);
           }
+          
+          return {
+            binding,
+            suggestedField: result.field,
+            confidence: result.confidence
+          };
         });
         
-        if (madeChanges) {
-          setBindings(updatedBindings);
-          toast({
-            title: "AI-powered binding suggestions",
-            description: `Successfully mapped ${results.length} template fields automatically`,
-          });
-          updateCompletionPercentage();
-        } else {
-          toast({
-            title: "No new bindings found",
-            description: "All template fields are already mapped or no matches were found",
-          });
-        }
+        // Sort suggestions by confidence score (highest first)
+        suggestions.sort((a, b) => b.confidence - a.confidence);
+        
+        setBindingSuggestions(suggestions);
+        setShowSuggestionsDialog(true);
       } else {
         toast({
           title: "No matches found",
           description: "The bot couldn't find any confident matches for unmapped fields",
         });
       }
+      
+      setIsProcessingBindings(false);
     }).catch(error => {
       console.error("Error using binding bot:", error);
       toast({
@@ -387,7 +388,60 @@ export default function TemplateBindingsPage() {
       
       // Fallback to basic matching
       performBasicMatching();
+      setIsProcessingBindings(false);
     });
+  };
+  
+  // Handle accepting a single binding suggestion
+  const handleAcceptSuggestion = (binding: Binding) => {
+    // Update binding in state
+    setBindings(prevBindings => 
+      prevBindings.map(b => b.id === binding.id ? binding : b)
+    );
+    
+    // Save to backend
+    updateBindingMutation.mutate(binding);
+  };
+  
+  // Handle accepting all binding suggestions
+  const handleAcceptAllSuggestions = () => {
+    const updatedBindings = [...bindings];
+    let madeChanges = false;
+    
+    bindingSuggestions.forEach(suggestion => {
+      const bindingIndex = updatedBindings.findIndex(b => b.id === suggestion.binding.id);
+      if (bindingIndex !== -1) {
+        updatedBindings[bindingIndex] = {
+          ...updatedBindings[bindingIndex],
+          selector: suggestion.suggestedField,
+          isMapped: true
+        };
+        madeChanges = true;
+        
+        // Save each binding to backend
+        updateBindingMutation.mutate({
+          ...updatedBindings[bindingIndex],
+          selector: suggestion.suggestedField
+        });
+      }
+    });
+    
+    if (madeChanges) {
+      setBindings(updatedBindings);
+      toast({
+        title: "AI-powered binding suggestions applied",
+        description: `Successfully mapped ${bindingSuggestions.length} template fields automatically`,
+      });
+      updateCompletionPercentage();
+      setShowSuggestionsDialog(false);
+    }
+  };
+  
+  // Handle dismissing a binding suggestion
+  const handleDismissSuggestion = (bindingId: number) => {
+    setBindingSuggestions(prevSuggestions => 
+      prevSuggestions.filter(s => s.binding.id !== bindingId)
+    );
   };
   
   // Basic matching as fallback
@@ -707,13 +761,23 @@ export default function TemplateBindingsPage() {
                   onClick={autoSuggestBindings}
                   size="sm"
                   className="gap-1"
+                  disabled={isProcessingBindings}
                 >
-                  <Lightbulb className="h-4 w-4" />
-                  Auto-suggest
+                  {isProcessingBindings ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Processing
+                    </>
+                  ) : (
+                    <>
+                      <Bot className="h-4 w-4" />
+                      AI Binding
+                    </>
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Automatically suggest bindings based on field names</p>
+                <p>Use AI to intelligently map template fields to data fields</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -755,6 +819,35 @@ export default function TemplateBindingsPage() {
         <Progress value={completionPercentage} className="h-2" />
       </div>
       
+      {/* AI Binding Suggestions Dialog */}
+      <Dialog open={showSuggestionsDialog} onOpenChange={setShowSuggestionsDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              AI-Powered Template Binding Suggestions
+            </DialogTitle>
+          </DialogHeader>
+          
+          <BindingSuggestions 
+            suggestions={bindingSuggestions}
+            onAccept={handleAcceptSuggestion}
+            onAcceptAll={handleAcceptAllSuggestions}
+            onDismiss={handleDismissSuggestion}
+            isLoading={isProcessingBindings}
+          />
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSuggestionsDialog(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {isLoadingTemplate || isLoadingBindings ? (
         <div className="flex items-center justify-center h-96">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
