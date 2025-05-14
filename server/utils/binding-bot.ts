@@ -46,7 +46,7 @@ export function extractTemplateTokens(html: string): string[] {
   }
   
   // Filter out duplicates
-  return [...new Set(tokens)];
+  return Array.from(new Set(tokens));
 }
 
 /**
@@ -58,7 +58,11 @@ export function analyzeTokenContext(token: string, html: string): {
   isInRepeatedBlock: boolean;
 } {
   // Default result
-  const result = {
+  const result: { 
+    context: string; 
+    section?: string;
+    isInRepeatedBlock: boolean;
+  } = {
     context: '',
     isInRepeatedBlock: false
   };

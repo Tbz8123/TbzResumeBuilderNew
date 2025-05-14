@@ -78,7 +78,7 @@ const PersonalInformationPage = () => {
     return () => clearTimeout(timeoutId);
   }, [formState, updateResumeData]);
   
-  // Handle input changes with debounced updates
+  // Handle input changes with improved immediate feedback
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     
@@ -87,6 +87,16 @@ const PersonalInformationPage = () => {
       ...prev,
       [name]: value
     }));
+    
+    // For critical fields, also trigger immediate update to resume data
+    // This ensures the preview updates more quickly for better user experience
+    if (['firstName', 'surname', 'profession', 'email', 'phone'].includes(name)) {
+      // Directly update the specific field in resumeData for faster feedback
+      updateResumeData(prevData => ({
+        ...prevData,
+        [name]: value
+      }));
+    }
     
     // Log update for debugging
     console.log(`Field changed ${name} to:`, value);
@@ -356,11 +366,21 @@ const PersonalInformationPage = () => {
                   name="summary"
                   value={formState.summary}
                   onChange={(e) => {
+                    const newValue = e.target.value;
+                    
+                    // Update local state
                     setFormState(prev => ({
                       ...prev,
-                      summary: e.target.value
+                      summary: newValue
                     }));
-                    console.log('Summary updated:', e.target.value.substring(0, 20) + '...');
+                    
+                    // Also update resume data immediately for faster feedback
+                    updateResumeData(prevData => ({
+                      ...prevData,
+                      summary: newValue
+                    }));
+                    
+                    console.log('Summary updated:', newValue.substring(0, 20) + '...');
                   }}
                   rows={5}
                   className="w-full p-2 border border-gray-300 rounded-md"

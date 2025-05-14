@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useResume } from '@/contexts/ResumeContext';
 import { useTemplates } from '@/hooks/use-templates';
 import { processTemplateHtml, extractAndEnhanceStyles } from './templates-support';
