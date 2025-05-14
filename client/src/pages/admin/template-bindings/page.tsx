@@ -1302,17 +1302,19 @@ export default function TemplateBindingsPage() {
                   <p className="text-xs text-muted-foreground mt-0.5">Interactive preview with drag & drop or click to bind</p>
                 </div>
                 <div className="flex space-x-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="sm" className="text-xs" onClick={() => setPreviewKey(prev => prev + 1)}>
-                        <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                        Refresh
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Refresh the preview</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-xs" onClick={() => setPreviewKey(prev => prev + 1)}>
+                          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                          Refresh
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Refresh the preview</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             </div>
