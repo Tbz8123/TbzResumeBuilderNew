@@ -89,15 +89,6 @@ export default function TemplateBindingsPage() {
   const [showFieldSelector, setShowFieldSelector] = useState<boolean>(false);
   const [fieldSelectorPosition, setFieldSelectorPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
   
-  // Helper colors for token highlighting
-  const tokenColors = [
-    'rgba(59, 130, 246, 0.2)', // blue
-    'rgba(239, 68, 68, 0.2)',  // red
-    'rgba(16, 185, 129, 0.2)', // green
-    'rgba(245, 158, 11, 0.2)', // amber
-    'rgba(139, 92, 246, 0.2)',  // purple
-  ];
-
   // Fetch template data
   const { data: template, isLoading: isLoadingTemplate } = useQuery<Template>({
     queryKey: [`/api/templates/${templateId}`],
@@ -149,40 +140,43 @@ export default function TemplateBindingsPage() {
       });
     },
   });
-
-  // Handle changes to the selected binding's selector
-  const handleSelectorChange = (bindingId: number, value: string) => {
-    setBindings(prev => prev.map(binding => 
-      binding.id === bindingId ? { ...binding, selector: value } : binding
-    ));
-  };
-
-  // Handle saving a binding
-  const handleSaveBinding = (binding: Binding) => {
-    setSelectedBinding(binding);
-    updateBindingMutation.mutate(binding);
-  };
-
-  // Handle selecting a binding
-  const handleBindingSelection = (binding: Binding, tokenId?: string | null) => {
-    setSelectedBinding(binding);
-    if (tokenId) {
-      setActiveToken(tokenId);
-    }
-  };
-
-  // Handle selecting a data field to bind to the selected binding
-  const handleDataFieldSelect = (field: DataField) => {
-    if (!selectedBinding) return;
-    
-    const updatedBinding = { ...selectedBinding, selector: field.path };
-    setBindings(prev => prev.map(b => 
-      b.id === updatedBinding.id ? updatedBinding : b
-    ));
-    
-    // Save binding if auto-save is enabled
-    handleSaveBinding(updatedBinding);
-  };
+  
+  // Create new binding mutation
+  const saveBindingMutation = useMutation({
+    mutationFn: async (binding: Binding) => {
+      const response = await fetch(`/api/templates/${templateId}/bindings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          placeholderToken: binding.placeholder,
+          dataField: binding.selector,
+          description: binding.description,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create binding');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/templates/${templateId}/bindings`] });
+      toast({
+        title: "Binding created",
+        description: "The template binding has been created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error creating binding",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Convert server bindings to client bindings
   const mapBindings = (serverBindings: ServerBinding[]): Binding[] => {
@@ -244,7 +238,93 @@ export default function TemplateBindingsPage() {
     return filtered;
   };
 
-  // Auto-match fields based on names and paths
+  // Helper function to calculate match confidence between token and field
+  const calculateMatchConfidence = (tokenName: string, field: DataField): number => {
+    const fieldName = field.name.toLowerCase();
+    const fieldPath = field.path.toLowerCase().replace(/\[\]\./g, '.'); // Simplify array paths
+    const token = tokenName.toLowerCase();
+    
+    let score = 0;
+    
+    // Exact matches get highest score
+    if (fieldName === token) {
+      score += 100;
+    } 
+    // Partial matches
+    else if (fieldName.includes(token) || token.includes(fieldName)) {
+      score += 70;
+    }
+    
+    // Path matches
+    if (fieldPath.includes(token)) {
+      score += 50;
+    }
+    
+    // Common patterns
+    if (token === 'name' && fieldPath.includes('firstName')) score += 30;
+    if (token === 'email' && fieldPath.includes('contact.email')) score += 40;
+    if (token === 'phone' && fieldPath.includes('contact.phone')) score += 40;
+    if (token === 'address' && fieldPath.includes('location')) score += 30;
+    if (token === 'title' && fieldPath.includes('jobTitle')) score += 40;
+    
+    return score;
+  };
+
+  // Intelligent matching with similarity calculations
+  const performIntelligentMatching = (unmappedBindings: Binding[], flatFields: DataField[]): number => {
+    // Track updates
+    const updatedBindings: Binding[] = [...bindings];
+    let updateCount = 0;
+    
+    // Try to match each unmapped binding
+    for (const binding of unmappedBindings) {
+      // Extract field name from placeholder
+      const tokenName = binding.placeholder
+        .replace(/\[\[FIELD:|\]\]/g, '')
+        .replace(/{{|}}/g, '')
+        .trim();
+      
+      // Calculate confidence for all fields
+      const matches = flatFields.map(field => ({
+        field,
+        confidence: calculateMatchConfidence(tokenName, field)
+      }))
+      .filter(m => m.confidence > 30) // Only consider reasonable matches
+      .sort((a, b) => b.confidence - a.confidence);
+      
+      // Take the best match if confidence is high enough
+      if (matches.length > 0 && matches[0].confidence >= 70) {
+        const bestMatch = matches[0].field;
+        
+        // Update the binding
+        const index = updatedBindings.findIndex(b => b.id === binding.id);
+        if (index !== -1) {
+          updatedBindings[index] = { 
+            ...binding, 
+            selector: bestMatch.path,
+            isMapped: true
+          };
+          updateCount++;
+        }
+      }
+    }
+    
+    // Update state with new bindings
+    if (updateCount > 0) {
+      setBindings(updatedBindings);
+      
+      // Save updated bindings
+      updatedBindings
+        .filter(b => b.selector && b.selector.trim() !== '')
+        .forEach(b => {
+          updateBindingMutation.mutate(b);
+        });
+    }
+    
+    return updateCount;
+  };
+
+  // Basic auto-match fields based on names and paths
   const performBasicMatching = () => {
     // Get all unmapped bindings
     const unmappedBindings = bindings.filter(b => !b.selector || b.selector.trim() === '');
@@ -316,103 +396,6 @@ export default function TemplateBindingsPage() {
     }
   };
 
-  // Extract template tokens from HTML content
-  const refreshTokenHighlights = () => {
-    // Generate a new template preview - in a real app this would
-    // extract tokens from the HTML and mark their positions
-    const tokens: TemplateToken[] = [];
-    
-    if (template?.html) {
-      // Placeholder extraction logic (simplified)
-      const fieldRegex = /\[\[FIELD:(.*?)\]\]|{{([^#/][^}]*)}}/g;
-      let match;
-      
-      // Process template HTML to extract fields
-      const html = template.html;
-      let id = 0;
-      
-      while ((match = fieldRegex.exec(html)) !== null) {
-        const token = match[0];
-        tokens.push({
-          id: `token-${id++}`,
-          text: token,
-          type: "field",
-          position: generateMockPosition(),
-          color: tokenColors[id % tokenColors.length],
-          isMapped: false
-        });
-      }
-    }
-    
-    // If no tokens were found, add some mocks for demonstration
-    if (tokens.length === 0) {
-      tokens.push({
-        id: "placeholder-token-1",
-        text: "[[FIELD:name]]",
-        type: "field",
-        position: generateMockPosition(),
-        color: tokenColors[0],
-        isMapped: false
-      });
-      tokens.push({
-        id: "placeholder-token-2",
-        text: "[[FIELD:email]]",
-        type: "field",
-        position: generateMockPosition(),
-        color: tokenColors[1],
-        isMapped: false
-      });
-    }
-    
-    setHighlightedTokens(tokens);
-    simulateTokenPositions();
-  };
-  
-  // Generate more structured positions for token visualization
-  const generateMockPosition = () => {
-    // Get current count of tokens for ordered positioning
-    const currentTokenCount = highlightedTokens.length;
-    
-    // Create a structured grid layout
-    const row = Math.floor(currentTokenCount / 3);
-    const col = currentTokenCount % 3;
-    
-    return {
-      x: 50 + (col * 160),
-      y: 50 + (row * 50),
-      width: 140, 
-      height: 30
-    };
-  };
-  
-  // Simulate getting token positions from the rendered template
-  const simulateTokenPositions = () => {
-    // In a real implementation, this would get positions from the actual DOM
-    setTimeout(() => {
-      setHighlightedTokens(prev => {
-        // Create structured layout based on token type
-        return prev.map((token, index) => {
-          // Organize tokens by their type 
-          const row = Math.floor(index / 3);
-          const col = index % 3;
-          
-          // Basic position grid
-          const position = {
-            x: 50 + (col * 180),
-            y: 50 + (row * 60),
-            width: 160,
-            height: 35
-          };
-          
-          return {
-            ...token,
-            position
-          };
-        });
-      });
-    }, 300);
-  };
-
   // Analyze the completion percentage
   const analyzeCompletion = () => {
     if (bindings.length === 0) return 0;
@@ -422,86 +405,279 @@ export default function TemplateBindingsPage() {
     
     return percentage;
   };
-
-  // Set up interactivity for the template preview iframe
-  const setupTemplatePreviewInteractivity = (iframe: HTMLIFrameElement | null) => {
-    if (!iframe) return;
-    
-    // Store the iframe ref (only if the ref is mutable)
-    if (iframeRef) {
-      // Using type assertion to handle readonly property
-      (iframeRef as { current: HTMLIFrameElement | null }).current = iframe;
+  
+  // Helper function to get icon based on field type
+  const getFieldTypeIcon = (type: string) => {
+    switch (type) {
+      case 'string': return <Type className="h-3 w-3 text-blue-600" />;
+      case 'array': return <ListOrdered className="h-3 w-3 text-amber-600" />;
+      case 'object': return <Box className="h-3 w-3 text-slate-600" />;
+      case 'number': return <Hash className="h-3 w-3 text-purple-600" />;
+      case 'boolean': return <ToggleLeft className="h-3 w-3 text-green-600" />;
+      case 'date': return <CalendarIcon className="h-3 w-3 text-pink-600" />;
+      default: return <CircleDot className="h-3 w-3 text-gray-600" />;
+    }
+  };
+  
+  // Set up when template or bindings change
+  useEffect(() => {
+    if (template) {
+      setTemplateName(template.name);
+      setTemplateHtml(template.htmlContent || template.html || '');
     }
     
-    // Add message event listener to catch clicks from the iframe
-    const handleIframeMessage = (event: MessageEvent) => {
-      // Skip messages from other sources
-      if (!iframe.contentWindow || event.source !== iframe.contentWindow) return;
+    if (serverBindings) {
+      const mappedBindings = mapBindings(serverBindings);
+      setBindings(mappedBindings);
+    }
+    
+    // Create data fields from resume schema
+    if (resumeSchema) {
+      // Simplified schema representation for the binding UI
+      const fields: DataField[] = [
+        {
+          id: 'personal',
+          name: 'Personal Info',
+          path: 'personal',
+          type: 'object',
+          children: [
+            { id: 'firstName', name: 'First Name', path: 'personal.firstName', type: 'string' },
+            { id: 'lastName', name: 'Last Name', path: 'personal.lastName', type: 'string' },
+            { id: 'email', name: 'Email', path: 'personal.email', type: 'string' },
+            { id: 'phone', name: 'Phone', path: 'personal.phone', type: 'string' },
+          ]
+        },
+        {
+          id: 'work',
+          name: 'Work Experience',
+          path: 'work',
+          type: 'array',
+          children: [
+            { id: 'title', name: 'Job Title', path: 'work[].title', type: 'string' },
+            { id: 'company', name: 'Company', path: 'work[].company', type: 'string' },
+            { id: 'startDate', name: 'Start Date', path: 'work[].startDate', type: 'date' },
+            { id: 'endDate', name: 'End Date', path: 'work[].endDate', type: 'date' },
+            { id: 'description', name: 'Description', path: 'work[].description', type: 'string' },
+          ]
+        },
+        {
+          id: 'education',
+          name: 'Education',
+          path: 'education',
+          type: 'array',
+          children: [
+            { id: 'institution', name: 'Institution', path: 'education[].institution', type: 'string' },
+            { id: 'degree', name: 'Degree', path: 'education[].degree', type: 'string' },
+            { id: 'startDate', name: 'Start Date', path: 'education[].startDate', type: 'date' },
+            { id: 'endDate', name: 'End Date', path: 'education[].endDate', type: 'date' },
+          ]
+        },
+        {
+          id: 'skills',
+          name: 'Skills',
+          path: 'skills',
+          type: 'array',
+          children: [
+            { id: 'name', name: 'Skill Name', path: 'skills[].name', type: 'string' },
+            { id: 'level', name: 'Skill Level', path: 'skills[].level', type: 'number' },
+          ]
+        },
+        {
+          id: 'summary',
+          name: 'Professional Summary',
+          path: 'summary',
+          type: 'string',
+        },
+      ];
       
-      // Handle token click events
-      if (event.data.type === 'tokenClick') {
-        const token = event.data.token;
-        const fieldName = event.data.field || token.replace(/[{{\[\]}}]/g, '').trim();
+      setDataFields(fields);
+    }
+    
+    // Calculate completion percentage
+    const percentage = analyzeCompletion();
+    setCompletionPercentage(percentage);
+  }, [template, serverBindings, resumeSchema]);
+
+  // Field selector popup component
+  const FieldSelectorPopup = () => {
+    if (!showFieldSelector || !previewClickedToken) return null;
+    
+    // Local state for search filtering
+    const [searchTerm, setSearchTerm] = useState("");
+    
+    // Extract token name for suggestions
+    const tokenName = previewClickedToken
+      ?.replace(/\[\[FIELD:|\]\]/g, '')
+      ?.replace(/{{|}}/g, '')
+      ?.trim() || '';
+    
+    // Get flat list of fields for the selector
+    const flatFields = flattenDataFields(dataFields);
+    
+    // Filter fields based on search term
+    const filteredFields = searchTerm 
+      ? flatFields.filter(field => 
+          field.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          field.path.toLowerCase().includes(searchTerm.toLowerCase()))
+      : flatFields;
+    
+    // Generate suggestions based on token name similarity
+    const suggestedFields = flatFields.filter(field => {
+      const fieldName = field.name.toLowerCase();
+      const fieldPath = field.path.toLowerCase();
+      const token = tokenName.toLowerCase();
+      
+      return fieldName === token || 
+        fieldName.includes(token) || 
+        fieldPath.includes(token) ||
+        token.includes(fieldName);
+    });
+    
+    // Find binding for the clicked token
+    const binding = bindings.find(b => 
+      b.placeholder === previewClickedToken ||
+      b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === tokenName ||
+      b.placeholder.replace(/{{|}}/g, '').trim() === tokenName
+    );
+    
+    // Handle selecting a field
+    const handleFieldSelect = (field: DataField) => {
+      if (binding) {
+        // Update binding with selected field
+        const updatedBinding = { ...binding, selector: field.path };
+        setBindings(prev => prev.map(b => b.id === binding.id ? updatedBinding : b));
         
-        console.log('Token clicked:', token, 'field:', fieldName);
+        // Save the binding
+        updateBindingMutation.mutate(updatedBinding);
         
-        // Find binding for this token
-        const binding = bindings.find(b => 
-          b.placeholder === token ||
-          b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
-          b.placeholder.replace(/{{|}}/g, '').trim() === token.replace(/{{|}}/g, '').trim()
-        );
-        
-        // Calculate position for the field selector (adjust for iframe)
-        const iframeRect = iframe.getBoundingClientRect();
-        const adjustedPosition = {
-          x: iframeRect.left + event.data.x,
-          y: iframeRect.top + event.data.y
+        // Show success toast
+        toast({
+          title: "Field mapped",
+          description: `"${tokenName}" mapped to "${field.name}"`
+        });
+      } else {
+        // Create new binding if one doesn't exist yet
+        const newBinding: Binding = {
+          id: 0, // Will be assigned by server
+          templateId: parseInt(templateId),
+          placeholder: previewClickedToken || '',
+          selector: field.path,
+          description: `Maps template field ${tokenName} to ${field.name}`,
         };
         
-        // Show the field selector at the clicked position
-        setPreviewClickedToken(token);
-        setFieldSelectorPosition(adjustedPosition);
-        setShowFieldSelector(true);
+        // Add to bindings
+        setBindings(prev => [...prev, newBinding]);
         
-        if (binding) {
-          // Set as active binding
-          setSelectedBinding(binding);
-          
-          // Highlight this as the active token
-          setActiveToken(token);
-          
-          // Log the current mapping status
-          console.log('Existing binding found:', binding);
-        } else {
-          // Create a new binding for this token
-          const newBinding: Binding = {
-            id: 0, // Will be assigned by server
-            templateId: parseInt(templateId),
-            placeholder: token,
-            selector: '',
-            description: `Maps template field ${fieldName}`,
-          };
-          
-          // Add to bindings - will be saved when a field is selected
-          setBindings(prev => [...prev, newBinding]);
-          setSelectedBinding(newBinding);
-          
-          toast({
-            title: "New binding detected",
-            description: `Creating a new binding for ${fieldName}. Click a field to map it.`,
-          });
-        }
+        // Create binding on server
+        saveBindingMutation.mutate(newBinding);
+        
+        // Show success toast
+        toast({
+          title: "New binding created",
+          description: `Created binding for "${tokenName}" to "${field.name}"`
+        });
       }
+      
+      // Close field selector
+      setShowFieldSelector(false);
     };
     
-    // Add event listener
-    window.addEventListener('message', handleIframeMessage);
-    
-    // Return clean-up function
-    return () => {
-      window.removeEventListener('message', handleIframeMessage);
-    };
+    return (
+      <div
+        className="fixed z-50 bg-white rounded-md border shadow-lg w-80"
+        style={{
+          top: `${fieldSelectorPosition.y}px`,
+          left: `${fieldSelectorPosition.x - 160}px`, // Center it
+          maxHeight: '400px',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div className="flex justify-between items-center p-3 border-b bg-gray-50">
+          <div>
+            <h3 className="text-sm font-medium">Map Token</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              <code className="bg-blue-50 text-blue-700 px-1 py-0.5 rounded font-mono">{tokenName}</code>
+            </p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-7 w-7" 
+            onClick={() => setShowFieldSelector(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <div className="p-2 border-b">
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search fields..."
+              className="pl-8 h-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+        
+        {suggestedFields.length > 0 && !searchTerm && (
+          <div className="px-2 py-2 border-b">
+            <div className="flex items-center mb-1">
+              <Lightbulb className="h-3.5 w-3.5 text-amber-500 mr-1" />
+              <span className="text-xs font-medium text-gray-500">Suggested Matches</span>
+            </div>
+            <div className="space-y-1 mt-1">
+              {suggestedFields.slice(0, 3).map(field => (
+                <div
+                  key={`suggestion-${field.path}`}
+                  className="px-2 py-1.5 text-sm rounded-sm bg-blue-50 hover:bg-blue-100 
+                    cursor-pointer flex items-center border border-blue-100"
+                  onClick={() => handleFieldSelect(field)}
+                >
+                  <span className="mr-1.5 h-3.5 w-3.5 flex-shrink-0">
+                    {getFieldTypeIcon(field.type)}
+                  </span>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="font-medium text-sm truncate">{field.name}</div>
+                    <div className="font-mono text-xs text-blue-700 truncate">{field.path}</div>
+                  </div>
+                  <Check className="h-3.5 w-3.5 text-blue-600 ml-1" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        <div className="overflow-y-auto" style={{ maxHeight: "250px" }}>
+          <div className="p-2 space-y-1">
+            {filteredFields.length > 0 ? (
+              filteredFields.map(field => (
+                <div
+                  key={field.path}
+                  className="px-2 py-1.5 text-sm rounded-sm hover:bg-gray-100 
+                    cursor-pointer flex items-center"
+                  onClick={() => handleFieldSelect(field)}
+                >
+                  <span className="mr-1.5 h-3.5 w-3.5 flex-shrink-0">
+                    {getFieldTypeIcon(field.type)}
+                  </span>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="font-medium text-sm truncate">{field.name}</div>
+                    <div className="font-mono text-xs text-gray-500 truncate">{field.path}</div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                No matching fields found
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Inject highlighting and interaction code into the iframe
@@ -518,11 +694,6 @@ export default function TemplateBindingsPage() {
         function highlightTokens() {
           const placeholders = ${JSON.stringify(placeholders)};
           const bindings = ${JSON.stringify(bindings)};
-          
-          // Helper to check if a string contains a placeholder
-          function containsPlaceholder(text, placeholder) {
-            return text.includes(placeholder);
-          }
           
           // Find template tokens in the document
           function findTemplateTokens() {
@@ -737,265 +908,90 @@ export default function TemplateBindingsPage() {
     // Inject the script
     try {
       const iframeWindow = iframeRef.current.contentWindow;
-      const scriptElement = iframeWindow.document.createElement('script');
-      scriptElement.textContent = script;
-      iframeWindow.document.body.appendChild(scriptElement);
-    } catch (err) {
-      console.error('Error injecting script into iframe:', err);
+      iframeWindow.eval(script);
+    } catch (error) {
+      console.error('Failed to inject highlighting script:', error);
     }
   };
-
-  // Generate HTML for the template preview iframe
-  const getTemplateIframeContent = () => {
-    if (!template) return '';
+  
+  // Set up interactivity for the template preview iframe
+  const setupTemplatePreviewInteractivity = (iframe: HTMLIFrameElement | null) => {
+    if (!iframe) return;
     
-    const html = template.html || template.htmlContent || '';
-    const css = template.css || template.cssContent || '';
-    
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            ${css}
-            /* Additional styling for preview */
-            body {
-              padding: 1rem;
-              font-family: system-ui, -apple-system, sans-serif;
-            }
-          </style>
-        </head>
-        <body>
-          ${html}
-        </body>
-      </html>
-    `;
-  };
-
-  // Render a nested data field tree
-  const renderDataFields = (fields: DataField[] = []) => {
-    // Filter fields based on search text
-    const filteredFields = filterText 
-      ? filterDataFields(fields, filterText)
-      : fields;
-    
-    if (filteredFields.length === 0) {
-      return (
-        <div className="px-4 py-8 text-center text-muted-foreground">
-          {filterText ? (
-            <>
-              <Search className="h-5 w-5 mx-auto mb-2 text-muted-foreground/50" />
-              <p>No fields matching "{filterText}"</p>
-              <Button 
-                variant="link" 
-                className="mt-1 h-auto p-0" 
-                onClick={() => setFilterText('')}
-              >
-                Clear search
-              </Button>
-            </>
-          ) : (
-            <>
-              <p>No schema fields available</p>
-            </>
-          )}
-        </div>
-      );
+    // Store the iframe ref
+    if (iframeRef) {
+      iframeRef.current = iframe;
     }
     
-    const renderField = (field: DataField, level = 0) => {
-      const isObject = field.type === 'object';
-      const isArray = field.type === 'array';
-      const hasChildren = isObject || isArray;
+    // Add message event listener to catch clicks from the iframe
+    const handleIframeMessage = (event: MessageEvent) => {
+      // Skip messages from other sources
+      if (!iframe.contentWindow || event.source !== iframe.contentWindow) return;
       
-      return (
-        <div key={field.path} className={level === 0 ? 'mb-3' : 'ml-3 mt-1'}>
-          <div 
-            className={`flex items-center px-2 py-1.5 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer ${
-              selectedBinding?.selector === field.path ? 'bg-blue-50 dark:bg-blue-900' : ''
-            }`}
-            onClick={() => handleDataFieldSelect(field)}
-          >
-            <div className="flex-1 flex items-center">
-              {hasChildren ? (
-                <ChevronRight className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-              ) : (
-                <span className="h-3.5 w-3.5 mr-1 flex-shrink-0">
-                  {field.type === 'string' && <Type className="h-3.5 w-3.5 text-blue-600" />}
-                  {field.type === 'number' && <Hash className="h-3.5 w-3.5 text-purple-600" />}
-                  {field.type === 'boolean' && <ToggleLeft className="h-3.5 w-3.5 text-green-600" />}
-                  {field.type === 'date' && <CalendarIcon className="h-3.5 w-3.5 text-amber-600" />}
-                </span>
-              )}
-              <span className="text-sm font-medium">{field.name}</span>
-            </div>
-            <div className="text-xs font-mono text-muted-foreground truncate">{field.path}</div>
-          </div>
+      // Handle token click events
+      if (event.data.type === 'tokenClick') {
+        const token = event.data.token;
+        const fieldName = event.data.field || token.replace(/[{{\[\]}}]/g, '').trim();
+        
+        console.log('Token clicked:', token, 'field:', fieldName);
+        
+        // Find binding for this token
+        const binding = bindings.find(b => 
+          b.placeholder === token ||
+          b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
+          b.placeholder.replace(/{{|}}/g, '').trim() === token.replace(/{{|}}/g, '').trim()
+        );
+        
+        // Calculate position for the field selector (adjust for iframe)
+        const iframeRect = iframe.getBoundingClientRect();
+        const adjustedPosition = {
+          x: iframeRect.left + event.data.x,
+          y: iframeRect.top + event.data.y
+        };
+        
+        // Show the field selector at the clicked position
+        setPreviewClickedToken(token);
+        setFieldSelectorPosition(adjustedPosition);
+        setShowFieldSelector(true);
+        
+        if (binding) {
+          // Set as active binding
+          setSelectedBinding(binding);
           
-          {hasChildren && field.children && field.children.length > 0 && (
-            <div className="mt-1">
-              {field.children.map(child => renderField(child, level + 1))}
-            </div>
-          )}
-        </div>
-      );
+          // Highlight this as the active token
+          setActiveToken(token);
+          
+          // Log the current mapping status
+          console.log('Existing binding found:', binding);
+        } else {
+          // Create a new binding for this token
+          const newBinding: Binding = {
+            id: 0, // Will be assigned by server
+            templateId: parseInt(templateId),
+            placeholder: token,
+            selector: '',
+            description: `Maps template field ${fieldName}`,
+          };
+          
+          // Add to bindings - will be saved when a field is selected
+          setBindings(prev => [...prev, newBinding]);
+          setSelectedBinding(newBinding);
+          
+          toast({
+            title: "New binding detected",
+            description: `Creating a new binding for ${fieldName}. Click a field to map it.`
+          });
+        }
+      }
     };
     
-    return filteredFields.map(field => renderField(field));
-  };
-
-  // Initialize on mount and when dependencies change
-  useEffect(() => {
-    // Set template name for UI display
-    if (template) {
-      setTemplateName(template.name);
-      setTemplateHtml(template.html || template.htmlContent || '');
-    }
+    // Add event listener
+    window.addEventListener('message', handleIframeMessage);
     
-    // Initialize bindings
-    if (serverBindings) {
-      setBindings(mapBindings(serverBindings));
-    }
-    
-    // Initialize data fields from schema
-    if (resumeSchema) {
-      // Convert schema to field structure
-      const fields: DataField[] = [
-        {
-          id: 'personal',
-          name: 'Personal Information',
-          path: 'personal',
-          type: 'object',
-          children: [
-            { id: 'name', name: 'Full Name', path: 'personal.fullName', type: 'string' },
-            { id: 'email', name: 'Email', path: 'personal.email', type: 'string' },
-            { id: 'phone', name: 'Phone', path: 'personal.phone', type: 'string' },
-            { id: 'address', name: 'Address', path: 'personal.address', type: 'string' },
-          ]
-        },
-        {
-          id: 'workHistory',
-          name: 'Work History',
-          path: 'workHistory',
-          type: 'array',
-          children: [
-            { id: 'jobTitle', name: 'Job Title', path: 'workHistory[].jobTitle', type: 'string' },
-            { id: 'company', name: 'Company', path: 'workHistory[].company', type: 'string' },
-            { id: 'startDate', name: 'Start Date', path: 'workHistory[].startDate', type: 'date' },
-            { id: 'endDate', name: 'End Date', path: 'workHistory[].endDate', type: 'date' },
-            { id: 'description', name: 'Description', path: 'workHistory[].description', type: 'string' },
-          ]
-        },
-        {
-          id: 'education',
-          name: 'Education',
-          path: 'education',
-          type: 'array',
-          children: [
-            { id: 'degree', name: 'Degree', path: 'education[].degree', type: 'string' },
-            { id: 'school', name: 'School', path: 'education[].school', type: 'string' },
-            { id: 'startDate', name: 'Start Date', path: 'education[].startDate', type: 'date' },
-            { id: 'endDate', name: 'End Date', path: 'education[].endDate', type: 'date' },
-            { id: 'description', name: 'Description', path: 'education[].description', type: 'string' },
-          ]
-        },
-        {
-          id: 'skills',
-          name: 'Skills',
-          path: 'skills',
-          type: 'array',
-          children: [
-            { id: 'name', name: 'Skill Name', path: 'skills[].name', type: 'string' },
-            { id: 'level', name: 'Skill Level', path: 'skills[].level', type: 'number' },
-          ]
-        },
-        {
-          id: 'summary',
-          name: 'Professional Summary',
-          path: 'summary',
-          type: 'string',
-        },
-      ];
-      
-      setDataFields(fields);
-    }
-    
-    // Initialize highlighted tokens
-    refreshTokenHighlights();
-    
-    // Calculate completion percentage
-    const percentage = analyzeCompletion();
-    setCompletionPercentage(percentage);
-  }, [template, serverBindings, resumeSchema]);
-
-  // Field selector popup component
-  const FieldSelectorPopup = () => {
-    if (!showFieldSelector || !previewClickedToken) return null;
-    
-    // Get flat list of fields for the selector
-    const flatFields = flattenDataFields(dataFields);
-    
-    return (
-      <div
-        className="fixed z-50 bg-white dark:bg-gray-800 rounded-md border shadow-lg p-2 w-64 max-h-72 overflow-y-auto"
-        style={{
-          top: `${fieldSelectorPosition.y}px`,
-          left: `${fieldSelectorPosition.x - 128}px`, // Center it by offsetting half width
-        }}
-      >
-        <div className="flex justify-between items-center mb-2 pb-2 border-b">
-          <h3 className="text-sm font-medium">Select Field</h3>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-5 w-5 p-0" 
-            onClick={() => setShowFieldSelector(false)}
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
-        
-        <div className="space-y-1">
-          {flatFields.map(field => (
-            <div
-              key={field.path}
-              className="px-2 py-1.5 text-sm rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center"
-              onClick={() => {
-                // Find binding for the clicked token
-                const binding = bindings.find(b => 
-                  b.placeholder === previewClickedToken ||
-                  b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === previewClickedToken?.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
-                  b.placeholder.replace(/{{|}}/g, '').trim() === previewClickedToken?.replace(/{{|}}/g, '').trim()
-                );
-                
-                if (binding) {
-                  // Update binding with selected field
-                  const updatedBinding = { ...binding, selector: field.path };
-                  setBindings(prev => prev.map(b => b.id === binding.id ? updatedBinding : b));
-                  
-                  // Save the binding
-                  updateBindingMutation.mutate(updatedBinding);
-                  
-                  // Close field selector
-                  setShowFieldSelector(false);
-                  
-                  // Highlight the field in the preview
-                  setTimeout(highlightPreviewPlaceholders, 100);
-                }
-              }}
-            >
-              <span className="mr-1.5 h-3 w-3 flex-shrink-0">
-                {field.type === 'string' && <Type className="h-3 w-3 text-blue-600" />}
-                {field.type === 'array' && <ListOrdered className="h-3 w-3 text-amber-600" />}
-                {field.type === 'object' && <Box className="h-3 w-3 text-slate-600" />}
-                {field.type === 'number' && <Hash className="h-3 w-3 text-purple-600" />}
-              </span>
-              <span className="flex-1 truncate font-mono text-xs">{field.path}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    // Return clean-up function
+    return () => {
+      window.removeEventListener('message', handleIframeMessage);
+    };
   };
 
   return (
@@ -1012,47 +1008,100 @@ export default function TemplateBindingsPage() {
               <span className="font-medium text-primary">{templateName}</span>
             </p>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="flex items-center">
-              <button 
-                onClick={performBasicMatching}
-                className="flex items-center px-2 py-1 text-sm mr-3 text-gray-600"
-              >
-                <svg className="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
-                  <path d="M.5 11.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1H1a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1H1a.5.5 0 0 1-.5-.5z" />
-                </svg>
-                Auto Match
-              </button>
-              <button 
-                className="flex items-center px-2 py-1 text-sm mr-3 text-gray-600"
-              >
-                <svg className="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 0 0 .95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 0 0-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 0 0-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 0 0-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 0 0 .951-.69l1.07-3.292z" />
-                </svg>
-                AI Suggest
-              </button>
-              <Button 
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={performBasicMatching}
+              className="flex items-center"
+              variant="outline"
+              size="sm"
+            >
+              <WandSparkles className="w-4 h-4 mr-1.5" />
+              Auto Match
+            </Button>
+              
+            <Button
+              onClick={() => {
+                // Show loading state
+                toast({
+                  title: "AI Binding Analysis",
+                  description: "Analyzing template tokens and suggesting field matches..."
+                });
+                
+                // Simulate AI analysis with enhanced matching using similarity algorithms
+                setTimeout(() => {
+                  // Get unmapped bindings
+                  const unmappedBindings = bindings.filter(b => !b.selector || b.selector.trim() === '');
+                  
+                  if (unmappedBindings.length === 0) {
+                    toast({
+                      title: "No unmapped tokens found",
+                      description: "All template tokens have been mapped to data fields."
+                    });
+                    return;
+                  }
+                  
+                  // Find best matches for each unmapped binding
+                  const flatFields = flattenDataFields(dataFields);
+                  const mappedCount = performIntelligentMatching(unmappedBindings, flatFields);
+                  
+                  // Show success message
+                  toast({
+                    title: "AI Suggestion Complete",
+                    description: `Matched ${mappedCount} fields with high confidence.`
+                  });
+                  
+                  // Refresh preview with new mappings
+                  setTimeout(highlightPreviewPlaceholders, 100);
+                }, 1000);
+              }}
+              className="flex items-center"
+              variant="secondary"
+              size="sm"
+            >
+              <Bot className="w-4 h-4 mr-1.5" />
+              AI Suggest
+            </Button>
+              
+            <Link href="/admin/templates">
+              <Button
+                variant="ghost"
                 size="sm"
-                className="bg-amber-400 hover:bg-amber-500 text-black border-0 text-xs h-7"
-                asChild
+                className="flex items-center"
               >
-                <Link href="/admin/templates">
-                  <ArrowLeft className="h-3 w-3 mr-1.5" />
-                  Back to Templates
-                </Link>
+                <ArrowLeft className="h-4 w-4 mr-1.5" />
+                Back to Templates
               </Button>
-            </div>
+            </Link>
           </div>
         </div>
         
-        {/* Binding completion progress */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1 text-xs">
-            <div className="text-gray-500">Mapping completion</div>
-            <div className="font-medium">{completionPercentage}%</div>
+        <div className="bg-white p-2 rounded-md border">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-500">
+              <span className="font-medium">{bindings.length}</span> template fields found
+              <span className="mx-1">•</span>
+              <span className="font-medium">
+                {bindings.filter(b => b.selector && b.selector.trim() !== '').length}
+              </span> mapped
+            </div>
+            <div className="flex items-center space-x-2 text-xs">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full mr-1.5 opacity-70"></div>
+                <span>Mapped</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-red-500 rounded-full mr-1.5 opacity-70"></div>
+                <span>Unmapped</span>
+              </div>
+            </div>
           </div>
-          <Progress value={completionPercentage} className="h-1 bg-gray-100" />
+          <div className="mt-2 mb-1">
+            <div className="flex justify-between text-xs">
+              <div className="text-gray-500">Mapping completion</div>
+              <div className="font-medium">{completionPercentage}%</div>
+            </div>
+            <Progress value={completionPercentage} className="h-1 bg-gray-100" />
+          </div>
         </div>
       </div>
 
@@ -1065,130 +1114,89 @@ export default function TemplateBindingsPage() {
           <div className="grid grid-cols-2 gap-4 mb-4">
             {/* Left column: Web-App Fields */}
             <Card className="bg-white border rounded-md overflow-hidden">
-              <div className="px-4 py-2 bg-blue-50 border-b">
-                <h2 className="font-semibold text-blue-900">Your Web-App Fields</h2>
-                <p className="text-xs text-blue-600">resumeData Schema</p>
-              </div>
-              <div className="p-4">
-                <div className="flex items-center rounded-md border px-2 py-1 mb-3">
-                  <Search className="h-3 w-3 mr-2 text-gray-400" />
-                  <Input 
-                    type="text"
-                    placeholder="Search fields..."
+              <div className="px-4 py-2 border-b bg-gray-50 flex justify-between items-center">
+                <h2 className="font-medium">Web-App Fields</h2>
+                <div className="relative">
+                  <Search className="h-4 w-4 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input
+                    placeholder="Filter fields..."
+                    className="w-56 h-8 pl-8 text-sm"
                     value={filterText}
-                    onChange={(e) => setFilterText(e.target.value)}
-                    className="border-0 p-0 h-6 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                    onChange={e => setFilterText(e.target.value)}
                   />
                 </div>
-                <ScrollArea className="h-[390px]">
-                  <div className="pr-2">
-                    {renderDataFields(dataFields)}
-                  </div>
-                </ScrollArea>
               </div>
+              
+              <ScrollArea className="h-72 overflow-auto">
+                <div className="p-3">
+                  {filterDataFields(dataFields, filterText).map(field => (
+                    <div key={field.id} className="mb-3">
+                      <div className="flex items-center text-sm font-medium mb-1">
+                        {getFieldTypeIcon(field.type)}
+                        <span className="ml-1.5">{field.name}</span>
+                      </div>
+                      
+                      {field.children && field.children.length > 0 && (
+                        <div className="pl-5 space-y-1.5">
+                          {field.children.map(child => (
+                            <div 
+                              key={child.id}
+                              className={`
+                                rounded text-xs p-1.5 bg-blue-50 flex items-center cursor-pointer
+                                border border-blue-100 hover:bg-blue-100
+                                ${selectedBinding && selectedBinding.selector === child.path ? 'border-blue-400 ring-1 ring-blue-400' : ''}
+                              `}
+                              onClick={() => {
+                                if (selectedBinding) {
+                                  const updatedBinding = { ...selectedBinding, selector: child.path };
+                                  setBindings(prev => prev.map(b => b.id === selectedBinding.id ? updatedBinding : b));
+                                  updateBindingMutation.mutate(updatedBinding);
+                                }
+                              }}
+                            >
+                              <div className="mr-1.5">
+                                {getFieldTypeIcon(child.type)}
+                              </div>
+                              <div className="flex-grow">
+                                <div className="font-medium">{child.name}</div>
+                                <div className="text-gray-500 text-xs font-mono truncate" style={{ fontSize: '0.7rem' }}>
+                                  {child.path}
+                                </div>
+                              </div>
+                              {bindings.some(b => b.selector === child.path) && (
+                                <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700 text-xs ml-1">
+                                  <Check className="h-3 w-3 mr-0.5" />
+                                  Mapped
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
             </Card>
             
             {/* Right column: Template Placeholders */}
             <Card className="bg-white border rounded-md overflow-hidden">
-              <div className="px-4 py-2 bg-purple-50 border-b">
-                <h2 className="font-semibold text-purple-900">Template Placeholders</h2>
-                <p className="text-xs text-purple-600">Detected in your HTML</p>
+              <div className="px-4 py-2 border-b bg-gray-50 flex justify-between items-center">
+                <h2 className="font-medium">Template Placeholders</h2>
+                
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={highlightPreviewPlaceholders}
+                >
+                  <RefreshCw className="h-3 w-3 mr-1.5" />
+                  Refresh Tokens
+                </Button>
               </div>
-              <div className="p-4">
-                <div className="flex items-center rounded-md border px-2 py-1 mb-3">
-                  <Search className="h-3 w-3 mr-2 text-gray-400" />
-                  <Input 
-                    type="text"
-                    placeholder="Search tokens..."
-                    className="border-0 p-0 h-6 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
-                    onChange={(e) => {
-                      // Filter tokens based on input
-                      const filterValue = e.target.value.toLowerCase();
-                      const filtered = highlightedTokens.filter(token => 
-                        token.text.toLowerCase().includes(filterValue)
-                      );
-                      if (filtered.length > 0 && filterValue.trim() !== '') {
-                        setActiveToken(filtered[0].id);
-                      }
-                    }}
-                  />
-                </div>
-                <ScrollArea className="h-[390px]">
-                  <div className="space-y-2 pr-2">
-                    {bindings.map(binding => {
-                      const token = highlightedTokens.find(t => t.text === binding.placeholder);
-                      const isSelected = selectedBinding?.id === binding.id;
-                      const isMapped = binding.selector && binding.selector.trim() !== '';
-                      
-                      return (
-                        <div 
-                          key={binding.id}
-                          id={`binding-${binding.id}`}
-                          className={`border rounded-md p-3 relative ${
-                            isSelected ? 'border-primary bg-primary/5' : 
-                            isMapped ? 'border-green-200 bg-green-50' : 
-                            'hover:border-primary/50'
-                          }`}
-                          onClick={() => handleBindingSelection(binding, token?.id)}
-                        >
-                          <div className="flex items-start">
-                            <div className="flex-1">
-                              <div className={`inline-flex items-center px-2 py-1 rounded text-sm ${
-                                binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('FIELD:') || binding.placeholder.includes('{{') && !binding.placeholder.includes('{{#')) ? 'bg-blue-100 text-blue-800' : 
-                                binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('LOOP:') || binding.placeholder.includes('{{#each')) ? 'bg-amber-100 text-amber-800' : 
-                                binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('IF:') || binding.placeholder.includes('{{#if')) ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                <span className="font-mono text-xs">
-                                  {binding.placeholder && typeof binding.placeholder === 'string' 
-                                    ? binding.placeholder.replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '')
-                                                       .replace(/{{([#\/]?(each|if))?|\s?}}/g, '')
-                                                       .trim()
-                                    : 'Unknown token'
-                                  }
-                                </span>
-                              </div>
-                              
-                              {isMapped && (
-                                <div className="mt-2">
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Mapped
-                                  </span>
-                                  <span className="ml-2 text-xs text-gray-500 font-mono">
-                                    {binding.selector}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-              </div>
-            </Card>
-          </div>
-
-          {/* Live Preview - Below both columns */}
-          <Card className="bg-white border rounded-md overflow-hidden">
-            <div className="px-4 py-2 border-b bg-gray-50 flex justify-between items-center">
-              <div>
-                <h2 className="font-semibold">Live Preview</h2>
-                <p className="text-xs text-gray-500">Interactive preview with drag & drop or click to bind</p>
-              </div>
-              <Button 
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setPreviewKey(prev => prev + 1)}
-              >
-                <RefreshCw className="h-3 w-3 mr-1.5" />
-                Refresh
-              </Button>
-            </div>
-            <div className="p-4">
-              <div className="relative bg-white border rounded-md h-[600px]">
-                {template?.htmlContent || template?.html ? (
+              
+              <div className="h-72 flex flex-col">
+                <div className="flex-grow overflow-hidden">
                   <div className="h-full flex flex-col">
                     {/* Template structure visualization - small section at top */}
                     <div className="p-3 border-b bg-gray-50">
@@ -1205,40 +1213,92 @@ export default function TemplateBindingsPage() {
                       </div>
                     </div>
                     
-                    {/* Template HTML preview using iframe */}
-                    <div className="flex-grow overflow-auto">
-                      <iframe
-                        key={`preview-${previewKey}`}
-                        className="w-full h-full border-0"
-                        srcDoc={getTemplateIframeContent()}
-                        title="Template Preview"
-                        sandbox="allow-same-origin"
-                        ref={setupTemplatePreviewInteractivity}
-                        onLoad={highlightPreviewPlaceholders}
-                      />
-                    </div>
+                    {/* Template placeholder list */}
+                    <ScrollArea className="flex-grow overflow-auto">
+                      <div className="p-3 space-y-1">
+                        {bindings.map(binding => (
+                          <div 
+                            key={binding.id}
+                            className={`
+                              rounded border p-2 flex cursor-pointer
+                              ${binding.selector ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} 
+                              ${selectedBinding && selectedBinding.id === binding.id ? 'ring-2 ring-blue-500' : ''}
+                              hover:bg-opacity-70
+                            `}
+                            onClick={() => setSelectedBinding(binding)}
+                          >
+                            <div className="flex-grow">
+                              <div className="font-mono text-xs">
+                                {binding.placeholder}
+                              </div>
+                              {binding.selector && (
+                                <div className="mt-1 flex items-center">
+                                  <span className="flex items-center text-xs text-green-700">
+                                    <Check className="h-3 w-3 mr-1" />
+                                    Mapped
+                                  </span>
+                                  <span className="ml-2 text-xs text-gray-500 font-mono">
+                                    {binding.selector}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   </div>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-center p-10">
-                    <div>
-                      <AlertTriangle className="h-10 w-10 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Template Content Not Available</h3>
-                      <p className="text-sm text-gray-500 max-w-md">
-                        No HTML content found for this template. Please make sure the template has HTML content.
-                      </p>
-                      <Button 
-                        className="mt-4" 
-                        size="sm" 
-                        variant="outline"
-                        onClick={refreshTokenHighlights}
-                      >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Refresh Template
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
+            </Card>
+          </div>
+
+          {/* Live Preview - Below both columns */}
+          <Card className="bg-white border rounded-md overflow-hidden">
+            <div className="px-4 py-2 border-b bg-gray-50 flex justify-between items-center">
+              <h2 className="font-medium">Live Preview</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPreviewKey(prev => prev + 1)}
+              >
+                <RefreshCw className="h-4 w-4 mr-1.5" />
+                Refresh Preview
+              </Button>
+            </div>
+            
+            <div className="h-96 overflow-auto">
+              {templateHtml ? (
+                <div 
+                  key={previewKey}
+                  ref={previewRef}
+                  className="preview-container h-full"
+                >
+                  <iframe 
+                    srcDoc={templateHtml}
+                    className="w-full h-full border-0"
+                    ref={iframe => setupTemplatePreviewInteractivity(iframe)}
+                    onLoad={() => highlightPreviewPlaceholders()}
+                  />
+                </div>
+              ) : (
+                <div className="h-full flex items-center justify-center flex-col p-4 text-center">
+                  <AlertTriangle className="h-10 w-10 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Template Content Not Available</h3>
+                  <p className="text-sm text-gray-500 max-w-md">
+                    No HTML content found for this template. Please make sure the template has HTML content.
+                  </p>
+                  <Button 
+                    className="mt-4" 
+                    size="sm" 
+                    variant="outline"
+                    onClick={highlightPreviewPlaceholders}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh Template
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
         </div>
