@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useResume } from '@/contexts/ResumeContext';
 import { useTemplates } from '@/hooks/use-templates';
 import { processTemplateHtml, extractAndEnhanceStyles } from './templates-support';
+import { Loader2 } from 'lucide-react';
 
 interface HybridResumePreviewProps {
   width?: number;
@@ -22,6 +23,9 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   const [templateStyles, setTemplateStyles] = useState<string>('');
   const [templateHtml, setTemplateHtml] = useState<string>('');
   const templateHtmlRef = useRef<string>('');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [previewKey, setPreviewKey] = useState(0); // Key to force iframe re-render
   
   // Get template ID from localStorage if needed
   useEffect(() => {
@@ -88,30 +92,71 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     setTemplateHtml(processedHtml);
   }, [resumeData]); // Include resumeData in dependencies
   
-  // Watch for resume data changes with detailed logging and immediate reprocessing
+  // New function to directly update iframe content with current data
+  const updateIframeContent = useCallback(() => {
+    if (!iframeRef.current || !iframeRef.current.contentWindow || !templateHtmlRef.current) {
+      return;
+    }
+    
+    // Process template with current data
+    const processedHtml = processTemplateHtml(templateHtmlRef.current, resumeData);
+    
+    // Get the iframe's document
+    const iframeDoc = iframeRef.current.contentWindow.document;
+    
+    // Write the processed HTML and styles to the iframe
+    iframeDoc.open();
+    iframeDoc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>${templateStyles}</style>
+        </head>
+        <body>
+          ${processedHtml}
+        </body>
+      </html>
+    `);
+    iframeDoc.close();
+    
+    // Mark as loaded
+    setIsLoading(false);
+    
+    console.log("Iframe content updated with latest data", {
+      firstName: resumeData.firstName,
+      surname: resumeData.surname,
+      profession: resumeData.profession,
+      email: resumeData.email,
+      updateTime: new Date().toISOString()
+    });
+  }, [resumeData, templateStyles]);
+  
+  // Watch for initial template load
   useEffect(() => {
-    console.log("HybridResumePreview - Resume data changed:", {
+    if (templateHtmlRef.current) {
+      // Force a reload of the iframe
+      setPreviewKey(prev => prev + 1);
+    }
+  }, [templateHtmlRef.current, templateStyles]);
+  
+  // Watch for resume data changes with enhanced immediate updates
+  useEffect(() => {
+    console.log("Resume data changed - updating preview:", {
       firstName: resumeData.firstName,
       surname: resumeData.surname,
       profession: resumeData.profession,
       email: resumeData.email,
       phone: resumeData.phone,
-      city: resumeData.city,
-      country: resumeData.country,
-      postalCode: resumeData.postalCode,
-      summaryLength: resumeData.summary?.length || 0,
-      professionalSummaryLength: resumeData.professionalSummary?.length || 0,
-      photoPresent: resumeData.photo ? 'yes' : 'no',
-      additionalInfoKeys: Object.keys(resumeData.additionalInfo || {}),
-      workExperienceCount: resumeData.workExperience?.length || 0,
-      educationCount: resumeData.education?.length || 0,
-      skillsCount: resumeData.skills?.length || 0,
-      updateTimestamp: new Date().toISOString() // Track when updates happen
+      updateTimestamp: new Date().toISOString()
     });
     
-    // Process the HTML with the updated data
-    // Use immediate processing for fields changed in the personal information page
-    processHtmlWithData();
+    // Immediately update the iframe content
+    if (iframeRef.current) {
+      updateIframeContent();
+    } else {
+      // Force a reload of the iframe if it's not yet available
+      setPreviewKey(prev => prev + 1);
+    }
   }, [
     resumeData.firstName,
     resumeData.surname,
@@ -123,7 +168,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     resumeData.postalCode,
     resumeData.summary,
     resumeData.photo,
-    processHtmlWithData  // Include the memoized callback
+    updateIframeContent
   ]);
   
   // Fallback direct template if template processing fails
@@ -276,29 +321,35 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
           {renderDirectTemplate()}
         </div>
       ) : (
-        // Template-based preview
-        templateHtml ? (
-          <div className="absolute inset-0 flex items-start justify-start overflow-hidden">
-            {/* Resume content with proper scaling */}
-            <div className="relative">
-              <style dangerouslySetInnerHTML={{ __html: templateStyles }} />
-              <div 
-                dangerouslySetInnerHTML={{ __html: templateHtml }} 
-                style={{ 
-                  transform: `scale(${scaleFactor})`,
-                  transformOrigin: 'top left',
-                  width: '794px', // A4 width
-                  height: '1123px', // A4 height
-                }}
-              />
+        // Enhanced iframe-based preview for better real-time updates
+        <div className="absolute inset-0 flex items-start justify-start overflow-hidden">
+          {/* Loading indicator */}
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
             </div>
+          )}
+          
+          {/* Resume iframe with dedicated content handling */}
+          <div className="relative w-full h-full">
+            <iframe
+              key={previewKey} // Force re-render when key changes
+              ref={iframeRef}
+              className="w-full h-full border-none"
+              onLoad={() => {
+                console.log("Iframe loaded, updating content");
+                updateIframeContent();
+              }}
+              title="Resume Preview"
+              style={{
+                transform: `scale(${scaleFactor})`,
+                transformOrigin: 'top left',
+                width: '100%',
+                height: '100%',
+              }}
+            />
           </div>
-        ) : (
-          // Fallback if no template is available
-          <div className="h-full w-full">
-            {renderDirectTemplate()}
-          </div>
-        )
+        </div>
       )}
     </div>
   );
