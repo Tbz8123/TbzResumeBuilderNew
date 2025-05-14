@@ -181,7 +181,37 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                   </div>
                 )}
               </div>
-            </section>
+
+               {/* Only show additional info section if user has added any information */}
+               {(resumeData.additionalInfo?.linkedin ||
+                  resumeData.additionalInfo?.website ||
+                  resumeData.additionalInfo?.drivingLicense) && (
+                  <div className="text-xs space-y-1 text-gray-600 mt-4">
+                    {/* Only show LinkedIn if user has added it */}
+                    {resumeData.additionalInfo?.linkedin && (
+                      <div>
+                        <span className="font-medium">LinkedIn: </span>
+                        {resumeData.additionalInfo.linkedin}
+                      </div>
+                    )}
+                    {/* Only show Website if user has added it */}
+                    {resumeData.additionalInfo?.website && (
+                      <div>
+                        <span className="font-medium">Website: </span>
+                        {resumeData.additionalInfo.website}
+                      </div>
+                    )}
+                    {/* Only show Driving License if user has added it */}
+                    {resumeData.additionalInfo?.drivingLicense && (
+                      <div>
+                        <span className="font-medium">License: </span>
+                        {resumeData.additionalInfo.drivingLicense}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+          
             
             <section>
               <h2 className="font-semibold text-gray-800 text-sm border-b border-gray-300 pb-1 mb-2">
