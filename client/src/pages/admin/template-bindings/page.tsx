@@ -128,12 +128,21 @@ export default function TemplateBindingsPage() {
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [`/api/templates/${templateId}/bindings`] });
       toast({
         title: "Binding updated",
         description: "The template binding has been updated successfully",
       });
+      
+      // Force refresh of the preview to show updated bindings
+      setTimeout(() => {
+        // Increment the key to force iframe reload
+        setPreviewKey(prev => prev + 1);
+        // Also call highlightPreviewPlaceholders after a brief delay to ensure
+        // the iframe has had time to reload
+        setTimeout(highlightPreviewPlaceholders, 300);
+      }, 500);
     },
     onError: (error) => {
       toast({
@@ -166,11 +175,23 @@ export default function TemplateBindingsPage() {
       return response.json();
     },
     onSuccess: (data) => {
+      // Invalidate the query to fetch fresh data
       queryClient.invalidateQueries({ queryKey: [`/api/templates/${templateId}/bindings`] });
+      
       toast({
         title: "Binding created",
         description: "The template binding has been created successfully",
       });
+      
+      // Force refresh of the preview to show updated bindings
+      setTimeout(() => {
+        // Increment the key to force iframe reload
+        setPreviewKey(prev => prev + 1);
+        // Also call highlightPreviewPlaceholders after a brief delay to ensure
+        // the iframe has had time to reload
+        setTimeout(highlightPreviewPlaceholders, 300);
+      }, 500);
+      
       return data;
     },
     onError: (error) => {
@@ -323,6 +344,15 @@ export default function TemplateBindingsPage() {
         .forEach(b => {
           updateBindingMutation.mutate(b);
         });
+      
+      // Force refresh of the preview to show updated bindings
+      setTimeout(() => {
+        // Increment the key to force iframe reload
+        setPreviewKey(prev => prev + 1);
+        // Also call highlightPreviewPlaceholders after a brief delay to ensure
+        // the iframe has had time to reload
+        setTimeout(highlightPreviewPlaceholders, 300);
+      }, 500);
     }
     
     return updateCount;
@@ -387,6 +417,15 @@ export default function TemplateBindingsPage() {
         .forEach(b => {
           updateBindingMutation.mutate(b);
         });
+        
+      // Force refresh of the preview to show updated bindings
+      setTimeout(() => {
+        // Increment the key to force iframe reload
+        setPreviewKey(prev => prev + 1);
+        // Also call highlightPreviewPlaceholders after a brief delay to ensure
+        // the iframe has had time to reload
+        setTimeout(highlightPreviewPlaceholders, 300);
+      }, 500);
       
       toast({
         title: "Auto-match complete",
@@ -1067,8 +1106,14 @@ export default function TemplateBindingsPage() {
                     description: `Matched ${mappedCount} fields with high confidence.`
                   });
                   
-                  // Refresh preview with new mappings
-                  setTimeout(highlightPreviewPlaceholders, 100);
+                  // Force a complete refresh of the preview
+                  setTimeout(() => {
+                    // Increment the key to force iframe reload
+                    setPreviewKey(prev => prev + 1);
+                    // Also call highlightPreviewPlaceholders after a brief delay to ensure
+                    // the iframe has had time to reload
+                    setTimeout(highlightPreviewPlaceholders, 300);
+                  }, 500);
                 }, 1000);
               }}
               className="flex items-center"
