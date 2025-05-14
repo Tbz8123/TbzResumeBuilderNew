@@ -78,7 +78,7 @@ const PersonalInformationPage = () => {
     return () => clearTimeout(timeoutId);
   }, [formState, updateResumeData]);
   
-  // Handle input changes with improved immediate feedback
+  // Handle input changes with enhanced real-time feedback and immediate updates
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     
@@ -88,14 +88,21 @@ const PersonalInformationPage = () => {
       [name]: value
     }));
     
-    // For critical fields, also trigger immediate update to resume data
-    // This ensures the preview updates more quickly for better user experience
-    if (['firstName', 'surname', 'profession', 'email', 'phone'].includes(name)) {
-      // Directly update the specific field in resumeData for faster feedback
-      updateResumeData(prevData => ({
-        ...prevData,
-        [name]: value
-      }));
+    // Directly update ALL personal info fields in resumeData for immediate feedback
+    // This ensures the preview updates instantly for better user experience
+    updateResumeData(prevData => ({
+      ...prevData,
+      [name]: value
+    }));
+    
+    // For special fields like name, also update the document title to show real-time changes
+    if (name === 'firstName' || name === 'surname') {
+      const firstName = name === 'firstName' ? value : formState.firstName;
+      const surname = name === 'surname' ? value : formState.surname;
+      const fullName = `${firstName || ''} ${surname || ''}`.trim();
+      if (fullName) {
+        document.title = `${fullName}'s Resume | TbzResumeBuilder`;
+      }
     }
     
     // Log update for debugging

@@ -21,6 +21,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   const [showDirectPreview, setShowDirectPreview] = useState(false);
   const [templateStyles, setTemplateStyles] = useState<string>('');
   const [templateHtml, setTemplateHtml] = useState<string>('');
+  const [templateKey, setTemplateKey] = useState<number>(0); // Force re-renders with a key
   const templateHtmlRef = useRef<string>('');
   
   // Get template ID from localStorage if needed
@@ -62,7 +63,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     }
   }, [selectedTemplate]);
   
-  // Process HTML whenever resume data changes with improved logging
+  // Process HTML whenever resume data changes with improved reactivity and logging
   const processHtmlWithData = useCallback(() => {
     if (!templateHtmlRef.current) {
       console.log("No template HTML available to process");
@@ -74,6 +75,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       surname: resumeData.surname,
       profession: resumeData.profession,
       email: resumeData.email,
+      phone: resumeData.phone,
       city: resumeData.city,
       country: resumeData.country,
       dataUpdateTimestamp: new Date().toISOString() // For tracking update timing
@@ -84,11 +86,14 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     
     console.log("HTML processed with data", processedHtml.substring(0, 200) + "...");
     
-    // Update the state
+    // Update the templateKey to force a re-render even if the processed HTML looks the same
+    setTemplateKey(prev => prev + 1);
+    
+    // Update the HTML state
     setTemplateHtml(processedHtml);
   }, [resumeData]); // Include resumeData in dependencies
   
-  // Watch for resume data changes with detailed logging and immediate reprocessing
+  // Watch for resume data changes with detailed logging and significantly improved reactivity
   useEffect(() => {
     console.log("HybridResumePreview - Resume data changed:", {
       firstName: resumeData.firstName,
@@ -100,19 +105,19 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       country: resumeData.country,
       postalCode: resumeData.postalCode,
       summaryLength: resumeData.summary?.length || 0,
-      professionalSummaryLength: resumeData.professionalSummary?.length || 0,
-      photoPresent: resumeData.photo ? 'yes' : 'no',
-      additionalInfoKeys: Object.keys(resumeData.additionalInfo || {}),
-      workExperienceCount: resumeData.workExperience?.length || 0,
-      educationCount: resumeData.education?.length || 0,
-      skillsCount: resumeData.skills?.length || 0,
       updateTimestamp: new Date().toISOString() // Track when updates happen
     });
     
-    // Process the HTML with the updated data
-    // Use immediate processing for fields changed in the personal information page
+    // Process the HTML with the updated data immediately for each change
+    // This ensures real-time updates in the preview
     processHtmlWithData();
+    
+    // Additional safety: Force a template key update
+    // This guarantees re-rendering even if React misses some changes
+    setTemplateKey(prevKey => prevKey + 1);
+    
   }, [
+    // Watch individual fields to ensure faster, more granular updates
     resumeData.firstName,
     resumeData.surname,
     resumeData.profession,
@@ -123,7 +128,14 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     resumeData.postalCode,
     resumeData.summary,
     resumeData.photo,
-    processHtmlWithData  // Include the memoized callback
+    
+    // Include fields from additionalInfo
+    resumeData.additionalInfo?.linkedin,
+    resumeData.additionalInfo?.website,
+    resumeData.additionalInfo?.drivingLicense,
+    
+    // Include the memoized callback
+    processHtmlWithData
   ]);
   
   // Fallback direct template if template processing fails
@@ -283,6 +295,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
             <div className="relative">
               <style dangerouslySetInnerHTML={{ __html: templateStyles }} />
               <div 
+                key={`template-${templateKey}`} // Use key to force re-render on updates
                 dangerouslySetInnerHTML={{ __html: templateHtml }} 
                 style={{ 
                   transform: `scale(${scaleFactor})`,
