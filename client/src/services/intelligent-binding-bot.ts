@@ -1,4 +1,32 @@
-import { compareTwoStrings } from 'string-similarity';
+// Define a string similarity comparison function
+// This is a simple implementation that doesn't rely on external libraries
+function compareStrings(str1: string, str2: string): number {
+  // If either string is empty, the similarity is 0
+  if (!str1 || !str2) return 0;
+  
+  const str1Lower = str1.toLowerCase();
+  const str2Lower = str2.toLowerCase();
+  
+  // Direct match
+  if (str1Lower === str2Lower) return 1;
+  
+  // Find matching characters
+  let matches = 0;
+  let position = 0;
+  
+  for (let i = 0; i < str1Lower.length; i++) {
+    const char = str1Lower[i];
+    const pos = str2Lower.indexOf(char, position);
+    
+    if (pos >= 0) {
+      matches++;
+      position = pos + 1;
+    }
+  }
+  
+  // Calculate similarity score
+  return matches * 2 / (str1Lower.length + str2Lower.length);
+}
 
 interface BindingResult {
   placeholder: string;
@@ -70,13 +98,13 @@ export class IntelligentBindingBot {
     // Try matching with field paths
     for (const field of this.flattenedFields) {
       // Compare with path
-      const pathScore = compareTwoStrings(
+      const pathScore = stringSimilarity.compareTwoStrings(
         cleanPlaceholder.toLowerCase(),
         field.path.toLowerCase()
       );
       
       // Compare with name
-      const nameScore = compareTwoStrings(
+      const nameScore = stringSimilarity.compareTwoStrings(
         cleanPlaceholder.toLowerCase(),
         field.name.toLowerCase()
       );
@@ -84,7 +112,7 @@ export class IntelligentBindingBot {
       // Compare with description if available
       let descScore = 0;
       if (field.description) {
-        descScore = compareTwoStrings(
+        descScore = stringSimilarity.compareTwoStrings(
           cleanPlaceholder.toLowerCase(),
           field.description.toLowerCase()
         ) * 0.7; // Weight description matches less
@@ -106,7 +134,7 @@ export class IntelligentBindingBot {
       for (const field of arrayFields) {
         // Extract array name from path like "education[]"
         const arrayName = field.path.split('[')[0];
-        const score = compareTwoStrings(
+        const score = stringSimilarity.compareTwoStrings(
           cleanPlaceholder.toLowerCase(),
           arrayName.toLowerCase()
         );
