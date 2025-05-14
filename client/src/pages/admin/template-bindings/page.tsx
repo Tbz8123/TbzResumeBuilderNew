@@ -283,24 +283,117 @@ export default function TemplateBindingsPage() {
   const extractTemplateTokens = (html: string) => {
     if (!html) return;
     
-    // This is a simplified version - in a real application, 
-    // we would inject JavaScript into the preview that reports back token positions
-    const tokenRegex = /\[\[(FIELD|LOOP|IF):(.*?)\]\]/g;
-    let match;
     const tokens: TemplateToken[] = [];
     let id = 0;
     
-    while ((match = tokenRegex.exec(html)) !== null) {
-      const type = match[1].toLowerCase() as 'field' | 'loop' | 'conditional';
-      const text = match[0];
-      const fieldName = match[2];
-      
+    // Log for debugging
+    console.log("Extracting tokens from HTML:", html.substring(0, 200) + "...");
+    
+    // Match all pattern types
+    
+    // 1. Handlebars-style simple fields: {{ field }}
+    const handlebarFieldRegex = /{{([^#\/][^}]*?)}}/g;
+    let match;
+    
+    while ((match = handlebarFieldRegex.exec(html)) !== null) {
       tokens.push({
         id: `token-${id++}`,
-        text,
-        type,
+        text: match[0],
+        type: "field",
         position: generateMockPosition(),
         color: tokenColors[id % tokenColors.length],
+        isMapped: false
+      });
+    }
+    
+    // 2. Handlebars-style loops: {{#each items}}
+    const handlebarLoopRegex = /{{#each ([^}]*?)}}/g;
+    
+    while ((match = handlebarLoopRegex.exec(html)) !== null) {
+      tokens.push({
+        id: `token-${id++}`,
+        text: match[0],
+        type: "loop",
+        position: generateMockPosition(),
+        color: tokenColors[id % tokenColors.length],
+        isMapped: false
+      });
+    }
+    
+    // 3. Handlebars-style conditionals: {{#if condition}}
+    const handlebarConditionalRegex = /{{#if ([^}]*?)}}/g;
+    
+    while ((match = handlebarConditionalRegex.exec(html)) !== null) {
+      tokens.push({
+        id: `token-${id++}`,
+        text: match[0],
+        type: "conditional",
+        position: generateMockPosition(),
+        color: tokenColors[id % tokenColors.length],
+        isMapped: false
+      });
+    }
+    
+    // 4. Bracket-style fields: [[FIELD:name]]
+    const bracketFieldRegex = /\[\[FIELD:([^\]]*?)\]\]/g;
+    
+    while ((match = bracketFieldRegex.exec(html)) !== null) {
+      tokens.push({
+        id: `token-${id++}`,
+        text: match[0],
+        type: "field",
+        position: generateMockPosition(),
+        color: tokenColors[id % tokenColors.length],
+        isMapped: false
+      });
+    }
+    
+    // 5. Bracket-style loops: [[LOOP:items]]
+    const bracketLoopRegex = /\[\[LOOP:([^\]]*?)\]\]/g;
+    
+    while ((match = bracketLoopRegex.exec(html)) !== null) {
+      tokens.push({
+        id: `token-${id++}`,
+        text: match[0],
+        type: "loop",
+        position: generateMockPosition(),
+        color: tokenColors[id % tokenColors.length],
+        isMapped: false
+      });
+    }
+    
+    // 6. Bracket-style conditionals: [[IF:condition]]
+    const bracketConditionalRegex = /\[\[IF:([^\]]*?)\]\]/g;
+    
+    while ((match = bracketConditionalRegex.exec(html)) !== null) {
+      tokens.push({
+        id: `token-${id++}`,
+        text: match[0],
+        type: "conditional",
+        position: generateMockPosition(),
+        color: tokenColors[id % tokenColors.length],
+        isMapped: false
+      });
+    }
+    
+    console.log("Extracted tokens:", tokens);
+    
+    // If no tokens found with our patterns, add a placeholder token to not have an empty UI
+    if (tokens.length === 0) {
+      tokens.push({
+        id: "placeholder-token-1",
+        text: "[[FIELD:name]]",
+        type: "field",
+        position: generateMockPosition(),
+        color: tokenColors[0],
+        isMapped: false
+      });
+      tokens.push({
+        id: "placeholder-token-2",
+        text: "[[FIELD:email]]",
+        type: "field",
+        position: generateMockPosition(),
+        color: tokenColors[1],
         isMapped: false
       });
     }
@@ -961,7 +1054,9 @@ export default function TemplateBindingsPage() {
                               }`}>
                                 <Code className="h-3.5 w-3.5 mr-1.5" />
                                 {binding.placeholder && typeof binding.placeholder === 'string' 
-                                  ? binding.placeholder.replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '') 
+                                  ? binding.placeholder.replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '')
+                                                       .replace(/{{([#\/]?(each|if))?|\s?}}/g, '')
+                                                       .trim()
                                   : 'Unknown token'}
                               </div>
                               
