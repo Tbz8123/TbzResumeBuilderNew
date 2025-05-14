@@ -23,9 +23,12 @@ import { BindingSuggestions, BindingSuggestion } from '@/components/templates/Bi
 interface Binding {
   id: number;
   templateId: number;
-  placeholder: string;
-  selector: string;
+  placeholder: string; // Maps to placeholderToken in the DB
+  selector: string;    // Maps to dataField in the DB
+  description?: string;
   isMapped?: boolean;
+  updatedAt?: Date;
+  createdAt?: Date;
 }
 
 interface DataField {
@@ -1048,9 +1051,9 @@ export default function TemplateBindingsPage() {
                           <div className="flex items-start">
                             <div className="flex-1">
                               <div className={`inline-flex items-center px-2 py-1 rounded text-sm ${
-                                binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.includes('FIELD:') ? 'bg-blue-100 text-blue-800' : 
-                                binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.includes('LOOP:') ? 'bg-amber-100 text-amber-800' : 
-                                binding.placeholder && typeof binding.placeholder === 'string' && binding.placeholder.includes('IF:') ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                                binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('FIELD:') || binding.placeholder.includes('{{') && !binding.placeholder.includes('{{#')) ? 'bg-blue-100 text-blue-800' : 
+                                binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('LOOP:') || binding.placeholder.includes('{{#each')) ? 'bg-amber-100 text-amber-800' : 
+                                binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('IF:') || binding.placeholder.includes('{{#if')) ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
                               }`}>
                                 <Code className="h-3.5 w-3.5 mr-1.5" />
                                 {binding.placeholder && typeof binding.placeholder === 'string' 
@@ -1147,16 +1150,22 @@ export default function TemplateBindingsPage() {
                 className="border rounded-md h-[400px] bg-white"
                 ref={previewRef}
               >
-                <div className="h-full flex items-center justify-center text-center p-10">
-                  <div>
-                    <AlertTriangle className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Preview Not Available</h3>
-                    <p className="text-sm text-muted-foreground max-w-md">
-                      Live preview will be enabled once the feature is fully implemented. For now, please use the
-                      two-column interface above to bind your data fields to the template placeholders.
-                    </p>
+                {templateHtml ? (
+                  <div 
+                    className="h-full overflow-auto p-6" 
+                    dangerouslySetInnerHTML={{ __html: templateHtml }}
+                  ></div>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-center p-10">
+                    <div>
+                      <AlertTriangle className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Template Content Not Available</h3>
+                      <p className="text-sm text-muted-foreground max-w-md">
+                        No HTML content found for this template. Please make sure the template has HTML content.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </Card>
