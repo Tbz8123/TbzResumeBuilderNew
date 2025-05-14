@@ -24,6 +24,13 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   const [templateKey, setTemplateKey] = useState<number>(0); // Force re-renders with a key
   const templateHtmlRef = useRef<string>('');
   
+  // Special debug function to check additionalInfo
+  const hasAdditionalInfo = (key: string): boolean => {
+    const result = resumeData.additionalInfo && key in resumeData.additionalInfo;
+    console.log(`hasAdditionalInfo('${key}'): ${result}`, resumeData.additionalInfo);
+    return result;
+  };
+  
   // Get template ID from localStorage if needed
   useEffect(() => {
     const storedTemplateId = localStorage.getItem('selectedTemplateId');
@@ -184,26 +191,26 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
               </div>
 
                {/* Only show the additional info section if at least one field is added */}
-               {('linkedin' in (resumeData.additionalInfo || {}) || 
-                 'website' in (resumeData.additionalInfo || {}) || 
-                 'drivingLicense' in (resumeData.additionalInfo || {})) && (
+               {(hasAdditionalInfo('linkedin') || 
+                 hasAdditionalInfo('website') || 
+                 hasAdditionalInfo('drivingLicense')) && (
                  <div className="text-xs space-y-1 text-gray-600 mt-4">
                    {/* Only show LinkedIn if user has explicitly added it */}
-                   {'linkedin' in (resumeData.additionalInfo || {}) && (
+                   {hasAdditionalInfo('linkedin') && (
                      <div>
                        <span className="font-medium">LinkedIn: </span>
                        {resumeData.additionalInfo?.linkedin}
                      </div>
                    )}
                    {/* Only show Website if user has explicitly added it */}
-                   {'website' in (resumeData.additionalInfo || {}) && (
+                   {hasAdditionalInfo('website') && (
                      <div>
                        <span className="font-medium">Website: </span>
                        {resumeData.additionalInfo?.website}
                      </div>
                    )}
                    {/* Only show Driving License if user has explicitly added it */}
-                   {'drivingLicense' in (resumeData.additionalInfo || {}) && (
+                   {hasAdditionalInfo('drivingLicense') && (
                      <div>
                        <span className="font-medium">License: </span>
                        {resumeData.additionalInfo?.drivingLicense}
