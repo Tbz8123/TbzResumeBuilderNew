@@ -331,26 +331,14 @@ export default function TemplateBindingsPage() {
     }, 500);
   };
 
-  // Auto-suggest bindings based on the intelligent binding bot
+  // Auto-suggest bindings based on template field names
   const autoSuggestBindings = () => {
-    if (!bindings.length || !dataFields.length) {
-      console.log("No bindings or data fields available", { bindingsLength: bindings.length, dataFieldsLength: dataFields.length });
-      toast({
-        title: "Cannot process bindings",
-        description: "No template bindings or resume data fields available",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsProcessingBindings(true);
-    console.log("Starting auto-suggest with data fields:", dataFields);
-    
     try {
-      // Simpler, more robust implementation that doesn't rely on dynamic imports
-      // Process unmapped bindings
+      // Start processing
+      setIsProcessingBindings(true);
+      
+      // Get all unmapped bindings
       const unmappedBindings = bindings.filter(b => !b.selector || b.selector.trim() === '');
-      console.log("Unmapped bindings:", unmappedBindings);
       
       if (unmappedBindings.length === 0) {
         toast({
@@ -361,106 +349,73 @@ export default function TemplateBindingsPage() {
         return;
       }
       
-      // Function to clean placeholder text for better matching
-      const cleanPlaceholder = (placeholder: string): string => {
-        return placeholder
-          .replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '')  // Remove [[FIELD:...]] syntax
-          .replace(/{{[#/]?(each|if)\s+|}}/g, '')     // Remove {{#each ...}} syntax
-          .replace(/{{|}}/g, '')                      // Remove {{ }}
-          .replace(/\./g, ' ')                        // Replace dots with spaces
-          .replace(/\s+/g, ' ')                       // Normalize whitespace
-          .trim();
-      };
+      // Flatten data fields for easier matching
+      const flatFields = flattenDataFields(dataFields);
       
-      // Basic string comparison function
-      const compareStrings = (str1: string, str2: string): number => {
-        if (!str1 || !str2) return 0;
-        
-        const str1Lower = str1.toLowerCase();
-        const str2Lower = str2.toLowerCase();
-        
-        // Direct match
-        if (str1Lower === str2Lower) return 1;
-        
-        // Find common characters
-        let matches = 0;
-        let position = 0;
-        
-        for (let i = 0; i < str1Lower.length; i++) {
-          const char = str1Lower[i];
-          const pos = str2Lower.indexOf(char, position);
-          
-          if (pos >= 0) {
-            matches++;
-            position = pos + 1;
-          }
-        }
-        
-        // Calculate similarity score (0-1)
-        return matches * 2 / (str1Lower.length + str2Lower.length);
-      };
-      
-      // Process bindings and find suggestions
+      // Create suggestions
       const suggestions: BindingSuggestion[] = [];
-      const confidenceThreshold = 0.4;
       
+      // Process each unmapped binding
       for (const binding of unmappedBindings) {
-        const cleanedPlaceholder = cleanPlaceholder(binding.placeholder);
-        console.log(`Processing placeholder: "${binding.placeholder}" -> "${cleanedPlaceholder}"`);
+        // Extract field name from placeholder (handles multiple formats)
+        let fieldName = binding.placeholder
+          .replace(/\[\[FIELD:|\]\]/g, '')
+          .replace(/{{|}}/g, '')
+          .trim();
         
+        // Find exact or close matches
+        let bestMatch = null;
         let bestScore = 0;
-        let bestField = '';
         
-        // Try matching with each data field
-        for (const field of dataFields) {
-          // Compare with field path
-          const pathScore = compareStrings(cleanedPlaceholder, field.path);
-          
-          // Compare with field name
-          const nameScore = compareStrings(cleanedPlaceholder, field.name);
-          
-          // Compare with description if available
-          let descScore = 0;
-          if (field.description) {
-            descScore = compareStrings(cleanedPlaceholder, field.description) * 0.7; // Weight description matches less
+        // Try exact match first
+        for (const field of flatFields) {
+          // Check for exact path match
+          if (field.path === fieldName) {
+            bestMatch = field;
+            bestScore = 1.0;
+            break;
           }
           
-          // Take the best score
-          const score = Math.max(pathScore, nameScore, descScore);
+          // Check for name match
+          if (field.name.toLowerCase() === fieldName.toLowerCase()) {
+            bestMatch = field;
+            bestScore = 0.9;
+            break;
+          }
           
-          if (score > bestScore) {
-            bestScore = score;
-            bestField = field.path;
+          // Check for partial matches
+          if (field.path.toLowerCase().includes(fieldName.toLowerCase()) ||
+              fieldName.toLowerCase().includes(field.path.toLowerCase())) {
+            const score = 0.7;
+            if (score > bestScore) {
+              bestMatch = field;
+              bestScore = score;
+            }
           }
         }
         
-        // If we found a good match above the threshold
-        if (bestScore >= confidenceThreshold) {
+        // Add to suggestions if we found a match
+        if (bestMatch && bestScore > 0.4) {
           suggestions.push({
             binding,
-            suggestedField: bestField,
+            suggestedField: bestMatch.path,
             confidence: bestScore
           });
         }
       }
       
-      console.log("Generated suggestions:", suggestions);
-      
       // Update UI with suggestions
       if (suggestions.length > 0) {
-        // Sort suggestions by confidence score (highest first)
+        // Sort by confidence
         suggestions.sort((a, b) => b.confidence - a.confidence);
         
+        // Show suggestions dialog
         setBindingSuggestions(suggestions);
         setShowSuggestionsDialog(true);
       } else {
-        toast({
-          title: "No matches found",
-          description: "The bot couldn't find any confident matches for unmapped fields",
-        });
+        // Use basic matching as fallback
+        performBasicMatching();
       }
-      
-      setIsProcessingBindings(false);
     } catch (error) {
       console.error("Error in auto-suggest bindings:", error);
       toast({
@@ -471,6 +426,7 @@ export default function TemplateBindingsPage() {
       
       // Fallback to basic matching
       performBasicMatching();
+    } finally {
       setIsProcessingBindings(false);
     }
   };
@@ -841,22 +797,12 @@ export default function TemplateBindingsPage() {
               <TooltipTrigger asChild>
                 <Button 
                   variant="outline" 
-                  onClick={autoSuggestBindings}
+                  onClick={performBasicMatching} // Use direct matching
                   size="sm"
                   className="gap-1"
-                  disabled={isProcessingBindings}
                 >
-                  {isProcessingBindings ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Processing
-                    </>
-                  ) : (
-                    <>
-                      <Bot className="h-4 w-4" />
-                      AI Binding
-                    </>
-                  )}
+                  <Lightbulb className="h-4 w-4" />
+                  Auto Match
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
