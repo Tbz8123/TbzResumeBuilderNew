@@ -203,75 +203,44 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                   </div>
                 )}
                 
-                {/* Render each additional info field independently with the new structure */}
+                {/* Cast resumeData to any to work with both old and new structures */}
+                {/* Render LinkedIn if it exists in either structure */}
                 {(() => {
-                  // Debug info for LinkedIn
-                  const linkedInField = resumeData.additionalFields?.linkedin;
-                  
-                  // For debugging: log the entire field and the additionalFields object
-                  console.log("[PREVIEW] LinkedIn render details:", { 
-                    linkedInField,
-                    additionalFields: resumeData.additionalFields,
-                    resumeData
-                  });
-                  
-                  // Should render if the field exists and has a value
-                  if (linkedInField) {
-                    return (
-                      <div>
-                        <span className="font-medium">LinkedIn: </span>
-                        {linkedInField.value || '(No value provided)'}
-                      </div>
-                    );
-                  }
-                  
-                  return null;
+                  const data = resumeData as any;
+                  return (data.additionalInfo?.linkedin || data.additionalFields?.linkedin) && (
+                    <div>
+                      <span className="font-medium">LinkedIn: </span>
+                      {data.additionalFields?.linkedin?.value || 
+                       data.additionalInfo?.linkedin || 
+                       '(No value provided)'}
+                    </div>
+                  );
                 })()}
                 
+                {/* Render Website if it exists in either structure */}
                 {(() => {
-                  // Debug info for Website
-                  const websiteField = resumeData.additionalFields?.website;
-                  
-                  // For debugging: log the entire field
-                  console.log("[PREVIEW] Website render details:", { 
-                    websiteField,
-                    additionalFields: resumeData.additionalFields
-                  });
-                  
-                  // Should render if the field exists
-                  if (websiteField) {
-                    return (
-                      <div>
-                        <span className="font-medium">Website: </span>
-                        {websiteField.value || '(No value provided)'}
-                      </div>
-                    );
-                  }
-                  
-                  return null;
+                  const data = resumeData as any;
+                  return (data.additionalInfo?.website || data.additionalFields?.website) && (
+                    <div>
+                      <span className="font-medium">Website: </span>
+                      {data.additionalFields?.website?.value || 
+                       data.additionalInfo?.website || 
+                       '(No value provided)'}
+                    </div>
+                  );
                 })()}
                 
+                {/* Render Driving License if it exists in either structure */}
                 {(() => {
-                  // Debug info for Driving License
-                  const drivingLicenseField = resumeData.additionalFields?.drivingLicense;
-                  
-                  // For debugging: log the entire field
-                  console.log("[PREVIEW] Driving License render details:", { 
-                    drivingLicenseField,
-                    additionalFields: resumeData.additionalFields
-                  });
-                  
-                  // Should render if the field exists
-                  if (drivingLicenseField) {
-                    return (
-                      <div>
-                        <span className="font-medium">License: </span>
-                        {drivingLicenseField.value || '(No value provided)'}
-                      </div>
-                    );
-                  }
-                  
-                  return null;
+                  const data = resumeData as any;
+                  return (data.additionalInfo?.drivingLicense || data.additionalFields?.drivingLicense) && (
+                    <div>
+                      <span className="font-medium">License: </span>
+                      {data.additionalFields?.drivingLicense?.value || 
+                       data.additionalInfo?.drivingLicense || 
+                       '(No value provided)'}
+                    </div>
+                  );
                 })()}
               </div>
               </section>

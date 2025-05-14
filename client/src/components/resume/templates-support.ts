@@ -6,17 +6,45 @@
  * Safely checks if an additionalField exists, has a value, and is set to visible
  */
 export function hasAdditionalField(resumeData: any, fieldName: string): boolean {
-  if (!resumeData?.additionalFields) return false;
-  const field = resumeData.additionalFields[fieldName];
-  return Boolean(field?.value) && field.visible === true;
+  // First check for the new additionalFields structure
+  if (resumeData?.additionalFields && resumeData.additionalFields[fieldName]) {
+    const field = resumeData.additionalFields[fieldName];
+    if (field.value && field.visible) {
+      return true;
+    }
+  }
+  
+  // If not found or not valid, check the legacy structure
+  if (resumeData?.additionalInfo && resumeData?.additionalInfoVisibility) {
+    const hasValue = fieldName in resumeData.additionalInfo && 
+                     resumeData.additionalInfo[fieldName];
+    const isVisible = fieldName in resumeData.additionalInfoVisibility && 
+                      resumeData.additionalInfoVisibility[fieldName] === true;
+    
+    return hasValue && isVisible;
+  }
+  
+  return false;
 }
 
 /**
- * Gets the value of an additionalField if it exists and is visible
+ * Gets the value of an additionalField from either structure
  */
 export function getAdditionalFieldValue(resumeData: any, fieldName: string): string {
-  if (!hasAdditionalField(resumeData, fieldName)) return '';
-  return resumeData.additionalFields[fieldName].value;
+  // First try the new structure
+  if (resumeData?.additionalFields && 
+      resumeData.additionalFields[fieldName] && 
+      resumeData.additionalFields[fieldName].value) {
+    return resumeData.additionalFields[fieldName].value;
+  }
+  
+  // Then try the legacy structure
+  if (resumeData?.additionalInfo && 
+      resumeData.additionalInfo[fieldName]) {
+    return resumeData.additionalInfo[fieldName];
+  }
+  
+  return '';
 }
 
 /**
