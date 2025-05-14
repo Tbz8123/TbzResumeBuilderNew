@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { 
   Loader2, Save, ArrowLeft, Search, ChevronRight, 
   ChevronLeft, Code, AlertTriangle, Settings, Check, 
-  Filter, WandSparkles, Lightbulb, RefreshCw, Bot
+  Filter, WandSparkles, Lightbulb, RefreshCw, Bot,
+  Type, ListOrdered, SplitSquareVertical, Hash
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,6 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { BindingSuggestions, BindingSuggestion } from '@/components/templates/BindingSuggestions';
 
 // Types
+// Client-side binding model
 interface Binding {
   id: number;
   templateId: number;
@@ -27,8 +29,19 @@ interface Binding {
   selector: string;    // Maps to dataField in the DB
   description?: string;
   isMapped?: boolean;
-  updatedAt?: Date;
-  createdAt?: Date;
+  updatedAt?: string | Date;
+  createdAt?: string | Date;
+}
+
+// Server-side binding model (as it comes from the API)
+interface ServerBinding {
+  id: number;
+  templateId: number;
+  placeholderToken: string;
+  dataField: string;
+  description?: string;
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 interface DataField {
@@ -95,7 +108,7 @@ export default function TemplateBindingsPage() {
   });
 
   // Fetch template bindings
-  const { data: bindingsData, isLoading: isLoadingBindings } = useQuery<Binding[]>({
+  const { data: bindingsData, isLoading: isLoadingBindings } = useQuery<ServerBinding[]>({
     queryKey: [`/api/templates/${templateId}/bindings`],
     enabled: !!templateId,
   });
@@ -1000,9 +1013,9 @@ export default function TemplateBindingsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left column: Data Fields */}
             <Card className="overflow-hidden">
-              <div className="px-4 py-3 border-b bg-blue-50">
-                <h2 className="font-semibold text-blue-900">Your Web-App Fields</h2>
-                <p className="text-xs text-blue-600 mt-0.5">resumeData Schema</p>
+              <div className="px-4 py-3 border-b bg-blue-50 dark:bg-blue-950">
+                <h2 className="font-semibold text-blue-900 dark:text-blue-200">Your Web-App Fields</h2>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">resumeData Schema</p>
               </div>
               <div className="p-4">
                 <div className="flex items-center px-3 py-2 rounded-md border mb-3">
@@ -1072,7 +1085,15 @@ export default function TemplateBindingsPage() {
                                 binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('LOOP:') || binding.placeholder.includes('{{#each')) ? 'bg-amber-100 text-amber-800' : 
                                 binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('IF:') || binding.placeholder.includes('{{#if')) ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
                               }`}>
-                                <Code className="h-3.5 w-3.5 mr-1.5" />
+                                {binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('FIELD:') || binding.placeholder.includes('{{') && !binding.placeholder.includes('{{#')) ? (
+                                  <Type className="h-3.5 w-3.5 mr-1.5" />
+                                ) : binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('LOOP:') || binding.placeholder.includes('{{#each')) ? (
+                                  <ListOrdered className="h-3.5 w-3.5 mr-1.5" />
+                                ) : binding.placeholder && typeof binding.placeholder === 'string' && (binding.placeholder.includes('IF:') || binding.placeholder.includes('{{#if')) ? (
+                                  <SplitSquareVertical className="h-3.5 w-3.5 mr-1.5" />
+                                ) : (
+                                  <Hash className="h-3.5 w-3.5 mr-1.5" />
+                                )}
                                 {binding.placeholder && typeof binding.placeholder === 'string' 
                                   ? binding.placeholder.replace(/\[\[(FIELD|LOOP|IF):|\]\]/g, '')
                                                        .replace(/{{([#\/]?(each|if))?|\s?}}/g, '')
@@ -1168,10 +1189,28 @@ export default function TemplateBindingsPage() {
                 ref={previewRef}
               >
                 {templateHtml ? (
-                  <div 
-                    className="h-full overflow-auto p-6" 
-                    dangerouslySetInnerHTML={{ __html: templateHtml }}
-                  ></div>
+                  <div className="h-full overflow-auto p-6">
+                    <div
+                      className="template-preview relative" 
+                      dangerouslySetInnerHTML={{ __html: templateHtml }}
+                    />
+                    {/* Token highlight overlays */}
+                    {highlightedTokens.map(token => (
+                      <div
+                        key={token.id}
+                        className="absolute pointer-events-none rounded-sm border-2"
+                        style={{
+                          left: `${token.position.x}px`,
+                          top: `${token.position.y}px`,
+                          width: `${token.position.width}px`,
+                          height: `${token.position.height}px`,
+                          borderColor: token.color || 'rgba(59, 130, 246, 0.5)',
+                          backgroundColor: token.color || 'rgba(59, 130, 246, 0.1)',
+                          zIndex: activeToken === token.id ? 20 : 10
+                        }}
+                      />
+                    ))}
+                  </div>
                 ) : (
                   <div className="h-full flex items-center justify-center text-center p-10">
                     <div>
