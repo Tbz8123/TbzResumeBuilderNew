@@ -11,7 +11,7 @@ import {
   ChevronLeft, Code, AlertTriangle, Settings, Check, 
   Filter, WandSparkles, Lightbulb, RefreshCw, Bot,
   Type, ListOrdered, SplitSquareVertical, Hash, Box,
-  ToggleLeft, CircleDot, Calendar as CalendarIcon
+  ToggleLeft, CircleDot, Calendar as CalendarIcon, X
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,6 +23,16 @@ import { BindingSuggestions, BindingSuggestion } from '@/components/templates/Bi
 
 // Types
 // Client-side binding model
+interface Template {
+  id: number;
+  name: string;
+  description: string;
+  html?: string;
+  css?: string;
+  htmlContent?: string;
+  cssContent?: string;
+}
+
 interface Binding {
   id: number;
   templateId: number;
@@ -67,6 +77,7 @@ export default function TemplateBindingsPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const { toast } = useToast();
   const previewRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [bindings, setBindings] = useState<Binding[]>([]);
   const [templateName, setTemplateName] = useState<string>('');
   const [previewKey, setPreviewKey] = useState<number>(0);
@@ -80,6 +91,9 @@ export default function TemplateBindingsPage() {
   const [completionPercentage, setCompletionPercentage] = useState<number>(0);
   const [selectedBinding, setSelectedBinding] = useState<Binding | null>(null);
   const [autoSuggestMade, setAutoSuggestMade] = useState<boolean>(false);
+  const [previewClickedToken, setPreviewClickedToken] = useState<string | null>(null);
+  const [showFieldSelector, setShowFieldSelector] = useState<boolean>(false);
+  const [fieldSelectorPosition, setFieldSelectorPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
   
   // AI binding suggestions state
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState<boolean>(false);
@@ -96,13 +110,7 @@ export default function TemplateBindingsPage() {
   ];
 
   // Fetch template data
-  const { data: template, isLoading: isLoadingTemplate } = useQuery<{
-    id: number;
-    name: string;
-    description: string;
-    html: string;
-    css: string;
-  }>({
+  const { data: template, isLoading: isLoadingTemplate } = useQuery<Template>({
     queryKey: [`/api/templates/${templateId}`],
     enabled: !!templateId,
   });
@@ -617,10 +625,264 @@ export default function TemplateBindingsPage() {
     setShowSuggestionsDialog(false);
   };
 
+  // Helper function to prepare iframe content with HTML and CSS
+  const getTemplateIframeContent = () => {
+    if (!template) return '';
+
+    // Prepare a full HTML document with the template content and CSS
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Template Preview</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+              color: #333;
+              line-height: 1.5;
+              margin: 0;
+              padding: 10px;
+            }
+            
+            /* Template placeholder highlighting */
+            .template-token {
+              background-color: rgba(59, 130, 246, 0.1);
+              border: 2px solid rgba(59, 130, 246, 0.5);
+              border-radius: 3px;
+              cursor: pointer;
+              position: relative;
+              padding: 0 3px;
+              margin: 0 2px;
+              display: inline-block;
+            }
+            
+            .template-token.mapped {
+              background-color: rgba(16, 185, 129, 0.1);
+              border-color: rgba(16, 185, 129, 0.5);
+            }
+            
+            .template-token.active {
+              background-color: rgba(59, 130, 246, 0.2);
+              border-color: rgba(59, 130, 246, 0.8);
+              box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+            }
+            
+            .field-selector {
+              position: absolute;
+              background: white;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+              z-index: 1000;
+              max-height: 300px;
+              overflow-y: auto;
+              width: 250px;
+            }
+            
+            .field-selector-item {
+              padding: 8px 12px;
+              border-bottom: 1px solid #eee;
+              cursor: pointer;
+            }
+            
+            .field-selector-item:hover {
+              background-color: #f5f5f5;
+            }
+            
+            /* Template CSS */
+            ${template.css || ''}
+          </style>
+        </head>
+        <body>
+          ${template.htmlContent || 'No HTML content available for this template.'}
+          
+          <script>
+            // This script will be executed in the iframe to handle click events
+            // and communicate with the parent window
+            document.addEventListener('DOMContentLoaded', function() {
+              // Find all placeholders in the template
+              const placeholderRegexes = [
+                /\\[\\[FIELD:(.*?)\\]\\]/g,
+                /{{([^#/][^}]*)}}/g,
+                /{{#each\\s+(.*?)}}/g,
+                /{{#if\\s+(.*?)}}/g
+              ];
+              
+              // Function to process text nodes and wrap placeholders
+              function processTextNodes(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                  let content = node.textContent;
+                  let hasMatch = false;
+                  
+                  // Check each placeholder pattern
+                  placeholderRegexes.forEach(regex => {
+                    if (content.match(regex)) {
+                      hasMatch = true;
+                    }
+                  });
+                  
+                  if (hasMatch) {
+                    const span = document.createElement('span');
+                    span.innerHTML = content;
+                    node.parentNode.replaceChild(span, node);
+                    
+                    // Now apply the regex replacement to the span's innerHTML
+                    placeholderRegexes.forEach(regex => {
+                      span.innerHTML = span.innerHTML.replace(regex, (match) => {
+                        return \`<span class="template-token" data-token="\${match}">\${match}</span>\`;
+                      });
+                    });
+                  }
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                  // Skip script tags
+                  if (node.tagName === 'SCRIPT') return;
+                  
+                  // Process child nodes
+                  Array.from(node.childNodes).forEach(child => {
+                    processTextNodes(child);
+                  });
+                }
+              }
+              
+              // Process the entire document
+              processTextNodes(document.body);
+              
+              // Add click event listeners to all tokens
+              document.querySelectorAll('.template-token').forEach(token => {
+                token.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  // Send message to parent window
+                  window.parent.postMessage({
+                    type: 'TOKEN_CLICKED',
+                    token: this.dataset.token,
+                    rect: this.getBoundingClientRect()
+                  }, '*');
+                  
+                  // Remove active class from all tokens
+                  document.querySelectorAll('.template-token.active').forEach(t => {
+                    t.classList.remove('active');
+                  });
+                  
+                  // Add active class to this token
+                  this.classList.add('active');
+                });
+              });
+              
+              // Listen for messages from parent window
+              window.addEventListener('message', function(event) {
+                if (event.data.type === 'UPDATE_TOKEN_MAPPING') {
+                  const { token, isMapped } = event.data;
+                  
+                  // Find all matching tokens
+                  document.querySelectorAll(\`.template-token[data-token="\${token}"]\`).forEach(el => {
+                    if (isMapped) {
+                      el.classList.add('mapped');
+                    } else {
+                      el.classList.remove('mapped');
+                    }
+                  });
+                }
+              });
+            });
+          </script>
+        </body>
+      </html>
+    `;
+  };
+  
+  // Set up interactivity for the template preview iframe
+  const setupTemplatePreviewInteractivity = (iframe: HTMLIFrameElement | null) => {
+    if (!iframe) return;
+    
+    // Store the iframe ref (only if the ref is mutable)
+    if (iframeRef) {
+      // Using type assertion to handle readonly property
+      (iframeRef as { current: HTMLIFrameElement | null }).current = iframe;
+    }
+    
+    // Add message event listener to catch clicks from the iframe
+    const handleIframeMessage = (event: MessageEvent) => {
+      // Skip messages from other sources
+      if (!iframe.contentWindow || event.source !== iframe.contentWindow) {
+        return;
+      }
+      
+      // Handle token click events
+      if (event.data.type === 'TOKEN_CLICKED') {
+        const { token, rect } = event.data;
+        
+        // Find the binding for this token
+        const binding = bindings.find(b => 
+          b.placeholder === token ||
+          b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === token.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
+          b.placeholder.replace(/{{|}}/g, '').trim() === token.replace(/{{|}}/g, '').trim()
+        );
+        
+        if (binding) {
+          // Select the binding in the UI
+          setSelectedBinding(binding);
+          
+          // Position field selector if needed
+          const iframeRect = iframe.getBoundingClientRect();
+          setFieldSelectorPosition({
+            x: iframeRect.left + rect.left + rect.width / 2,
+            y: iframeRect.top + rect.top + rect.height
+          });
+          
+          // Store the clicked token
+          setPreviewClickedToken(token);
+          
+          // Open the field selector
+          setShowFieldSelector(true);
+        } else {
+          // If no binding exists, we may want to create one
+          // This would depend on how you want to handle new bindings
+          console.log('No binding found for token:', token);
+          toast({
+            title: "No binding record",
+            description: "This token doesn't have a binding record. Create one to link it to a data field.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+    
+    // Add the event listener
+    window.addEventListener('message', handleIframeMessage);
+    
+    // Clean up the event listener when component unmounts
+    return () => {
+      window.removeEventListener('message', handleIframeMessage);
+    };
+  };
+  
+  // Highlight placeholders in the preview after iframe loads
+  const highlightPreviewPlaceholders = () => {
+    // Wait for iframe to load completely
+    if (!iframeRef.current || !iframeRef.current.contentWindow) return;
+    
+    // Update token mappings in the iframe
+    bindings.forEach(binding => {
+      iframeRef.current?.contentWindow?.postMessage({
+        type: 'UPDATE_TOKEN_MAPPING',
+        token: binding.placeholder,
+        isMapped: binding.selector && binding.selector.trim() !== '',
+      }, '*');
+    });
+  };
+
   // Load initial data
   useEffect(() => {
     if (template) {
-      setTemplateHtml(template.html);
+      if (template.html) {
+        setTemplateHtml(template.html);
+      } else if (template.htmlContent) {
+        setTemplateHtml(template.htmlContent);
+      }
       setTemplateName(template.name);
     }
   }, [template]);
@@ -829,8 +1091,81 @@ export default function TemplateBindingsPage() {
     );
   };
 
+  // Field selector popup component
+  const FieldSelectorPopup = () => {
+    if (!showFieldSelector || !previewClickedToken) return null;
+    
+    // Get flat list of fields for the selector
+    const flatFields = flattenDataFields(dataFields);
+    
+    return (
+      <div
+        className="fixed z-50 bg-white dark:bg-gray-800 rounded-md border shadow-lg p-2 w-64 max-h-72 overflow-y-auto"
+        style={{
+          top: `${fieldSelectorPosition.y}px`,
+          left: `${fieldSelectorPosition.x - 128}px`, // Center it by offsetting half width
+        }}
+      >
+        <div className="flex justify-between items-center mb-2 pb-2 border-b">
+          <h3 className="text-sm font-medium">Select Field</h3>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-5 w-5 p-0" 
+            onClick={() => setShowFieldSelector(false)}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+        
+        <div className="space-y-1">
+          {flatFields.map(field => (
+            <div
+              key={field.path}
+              className="px-2 py-1.5 text-sm rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center"
+              onClick={() => {
+                // Find binding for the clicked token
+                const binding = bindings.find(b => 
+                  b.placeholder === previewClickedToken ||
+                  b.placeholder.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() === previewClickedToken?.replace(/\[\[(?:FIELD|LOOP|IF):|\]\]/g, '').trim() ||
+                  b.placeholder.replace(/{{|}}/g, '').trim() === previewClickedToken?.replace(/{{|}}/g, '').trim()
+                );
+                
+                if (binding) {
+                  // Update binding with selected field
+                  const updatedBinding = { ...binding, selector: field.path };
+                  setBindings(prev => prev.map(b => b.id === binding.id ? updatedBinding : b));
+                  
+                  // Save the binding
+                  updateBindingMutation.mutate(updatedBinding);
+                  
+                  // Close field selector
+                  setShowFieldSelector(false);
+                  
+                  // Highlight the field in the preview
+                  setTimeout(highlightPreviewPlaceholders, 100);
+                }
+              }}
+            >
+              <span className="mr-1.5 h-3 w-3 flex-shrink-0">
+                {field.type === 'string' && <Type className="h-3 w-3 text-blue-600" />}
+                {field.type === 'array' && <ListOrdered className="h-3 w-3 text-amber-600" />}
+                {field.type === 'object' && <Box className="h-3 w-3 text-slate-600" />}
+                {field.type === 'number' && <Hash className="h-3 w-3 text-purple-600" />}
+              </span>
+              <span className="flex-1 truncate font-mono text-xs">{field.path}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="container py-6">
+      {/* Field selector popup for interactive preview */}
+      <FieldSelectorPopup />
+      
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Template Bindings</h1>
@@ -1170,7 +1505,7 @@ export default function TemplateBindingsPage() {
                 className="border rounded-md h-[500px] bg-white dark:bg-slate-900 flex flex-col"
                 ref={previewRef}
               >
-                {templateHtml ? (
+                {template?.htmlContent ? (
                   <div className="flex flex-col h-full">
                     {/* Template visualization with tokens */}
                     <div className="bg-gray-50 dark:bg-gray-900 border-b p-4 flex-shrink-0">
@@ -1247,12 +1582,19 @@ export default function TemplateBindingsPage() {
                       </div>
                     </div>
                     
-                    {/* Template HTML preview */}
+                    {/* Template HTML preview using iframe */}
                     <div className="flex-grow overflow-auto p-4">
-                      <div 
-                        className="template-preview relative" 
-                        dangerouslySetInnerHTML={{ __html: templateHtml }}
-                      />
+                      <div className="relative h-full w-full">
+                        <iframe
+                          key={`preview-${previewKey}`}
+                          className="w-full h-full border rounded"
+                          srcDoc={getTemplateIframeContent()}
+                          title="Template Preview"
+                          sandbox="allow-same-origin"
+                          ref={setupTemplatePreviewInteractivity}
+                          onLoad={highlightPreviewPlaceholders}
+                        />
+                      </div>
                     </div>
                   </div>
                 ) : (
