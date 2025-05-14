@@ -1083,11 +1083,11 @@ export default function TemplateBindingsPage() {
                       <h3 className="text-sm font-medium mb-1">Template Structure Visualization</h3>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="bg-pink-50 rounded p-2 border border-pink-100">
-                          <div className="text-xs text-gray-500 mb-1">{{ name }}</div>
+                          <div className="text-xs text-gray-500 mb-1">&#123; name &#125;</div>
                           <div className="border border-pink-300 rounded-sm p-1 bg-white"></div>
                         </div>
                         <div className="bg-pink-50 rounded p-2 border border-pink-100">
-                          <div className="text-xs text-gray-500 mb-1">{{ email }}</div>
+                          <div className="text-xs text-gray-500 mb-1">&#123; email &#125;</div>
                           <div className="border border-pink-300 rounded-sm p-1 bg-white"></div>
                         </div>
                       </div>
