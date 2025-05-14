@@ -62,9 +62,12 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     }
   }, [selectedTemplate]);
   
-  // Process HTML whenever resume data changes
-  const processHtmlWithData = () => {
-    if (!templateHtmlRef.current) return;
+  // Process HTML whenever resume data changes with improved logging
+  const processHtmlWithData = useCallback(() => {
+    if (!templateHtmlRef.current) {
+      console.log("No template HTML available to process");
+      return;
+    }
     
     console.log("Processing HTML with data", {
       firstName: resumeData.firstName,
@@ -72,7 +75,8 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       profession: resumeData.profession,
       email: resumeData.email,
       city: resumeData.city,
-      country: resumeData.country
+      country: resumeData.country,
+      dataUpdateTimestamp: new Date().toISOString() // For tracking update timing
     });
     
     // Use the enhanced template processor with more robust placeholder handling
@@ -82,9 +86,9 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     
     // Update the state
     setTemplateHtml(processedHtml);
-  };
+  }, [resumeData]); // Include resumeData in dependencies
   
-  // Watch for resume data changes with detailed logging
+  // Watch for resume data changes with detailed logging and immediate reprocessing
   useEffect(() => {
     console.log("HybridResumePreview - Resume data changed:", {
       firstName: resumeData.firstName,
@@ -101,13 +105,25 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       additionalInfoKeys: Object.keys(resumeData.additionalInfo || {}),
       workExperienceCount: resumeData.workExperience?.length || 0,
       educationCount: resumeData.education?.length || 0,
-      skillsCount: resumeData.skills?.length || 0
+      skillsCount: resumeData.skills?.length || 0,
+      updateTimestamp: new Date().toISOString() // Track when updates happen
     });
     
     // Process the HTML with the updated data
+    // Use immediate processing for fields changed in the personal information page
     processHtmlWithData();
   }, [
-    resumeData,  // Track the entire resumeData object for more reliable updates
+    resumeData.firstName,
+    resumeData.surname,
+    resumeData.profession,
+    resumeData.email,
+    resumeData.phone,
+    resumeData.city,
+    resumeData.country,
+    resumeData.postalCode,
+    resumeData.summary,
+    resumeData.photo,
+    processHtmlWithData  // Include the memoized callback
   ]);
   
   // Fallback direct template if template processing fails

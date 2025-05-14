@@ -52,15 +52,31 @@ const PersonalInformationPage = () => {
     photo: resumeData.photo || null
   });
   
-  // Effect to update resume data when form state changes
+  // Effect to update resume data when form state changes with improved logging
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       console.log("Debounced update with form state:", formState);
-      updateResumeData(formState);
-    }, 300); // 300ms debounce
+      
+      // Use direct update approach for better reactivity
+      updateResumeData((prevData) => ({
+        ...prevData,
+        firstName: formState.firstName,
+        surname: formState.surname,
+        profession: formState.profession,
+        email: formState.email,
+        phone: formState.phone,
+        city: formState.city,
+        country: formState.country,
+        postalCode: formState.postalCode,
+        summary: formState.summary,
+        photo: formState.photo
+      }));
+      
+      console.log("Personal information update triggered");
+    }, 100); // Reduced to 100ms for more responsive updates
     
     return () => clearTimeout(timeoutId);
-  }, [formState]);
+  }, [formState, updateResumeData]);
   
   // Handle input changes with debounced updates
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
