@@ -48,6 +48,12 @@ export interface ResumeData {
     drivingLicense?: string;
     [key: string]: string | undefined;
   };
+  additionalInfoVisibility: {
+    linkedin?: boolean;
+    website?: boolean;
+    drivingLicense?: boolean;
+    [key: string]: boolean | undefined;
+  };
 }
 
 // Create initial state
@@ -67,7 +73,8 @@ const initialResumeData: ResumeData = {
   skills: [],
   workExperience: [],
   education: [],
-  additionalInfo: {}
+  additionalInfo: {},
+  additionalInfoVisibility: {}
 };
 
 // Define context type
@@ -136,9 +143,15 @@ export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         additionalInfo: {
           ...prev.additionalInfo,
           [key]: value
+        },
+        // Also set the visibility to true when adding/updating a field
+        additionalInfoVisibility: {
+          ...prev.additionalInfoVisibility,
+          [key]: true
         }
       };
       console.log("Updated additionalInfo:", updatedData.additionalInfo);
+      console.log("Updated additionalInfoVisibility:", updatedData.additionalInfoVisibility);
       return updatedData;
     });
   };
@@ -147,12 +160,21 @@ export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const removeAdditionalInfo = (key: string) => {
     console.log(`Removing additionalInfo field: "${key}"`);
     setResumeData(prev => {
+      // Create new objects to avoid mutating state
       const newAdditionalInfo = { ...prev.additionalInfo };
+      const newAdditionalInfoVisibility = { ...prev.additionalInfoVisibility };
+      
+      // Remove both the value and visibility flag
       delete newAdditionalInfo[key];
+      delete newAdditionalInfoVisibility[key];
+      
       console.log("Updated additionalInfo after removal:", newAdditionalInfo);
+      console.log("Updated additionalInfoVisibility after removal:", newAdditionalInfoVisibility);
+      
       return {
         ...prev,
-        additionalInfo: newAdditionalInfo
+        additionalInfo: newAdditionalInfo,
+        additionalInfoVisibility: newAdditionalInfoVisibility
       };
     });
   };

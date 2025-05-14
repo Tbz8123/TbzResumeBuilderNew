@@ -190,25 +190,29 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                 )}
               </div>
 
-               {/* Additional info section - only render container if at least one field exists */}
-               {(Object.keys(resumeData.additionalInfo || {}).length > 0) && (
+               {/* Additional info section - only render container if at least one field has visibility true */}
+               {(
+                 (resumeData.additionalInfo?.linkedin && resumeData.additionalInfoVisibility?.linkedin) ||
+                 (resumeData.additionalInfo?.website && resumeData.additionalInfoVisibility?.website) ||
+                 (resumeData.additionalInfo?.drivingLicense && resumeData.additionalInfoVisibility?.drivingLicense)
+               ) && (
                  <div className="text-xs space-y-1 text-gray-600 mt-4">
-                   {/* LinkedIn - only render if field exists in additionalInfo */}
-                   {resumeData.additionalInfo && 'linkedin' in resumeData.additionalInfo && (
+                   {/* LinkedIn - only render if field exists and visibility is true */}
+                   {resumeData.additionalInfo?.linkedin && resumeData.additionalInfoVisibility?.linkedin && (
                      <div>
                        <span className="font-medium">LinkedIn: </span>
                        {resumeData.additionalInfo.linkedin}
                      </div>
                    )}
-                   {/* Website - only render if field exists in additionalInfo */}
-                   {resumeData.additionalInfo && 'website' in resumeData.additionalInfo && (
+                   {/* Website - only render if field exists and visibility is true */}
+                   {resumeData.additionalInfo?.website && resumeData.additionalInfoVisibility?.website && (
                      <div>
                        <span className="font-medium">Website: </span>
                        {resumeData.additionalInfo.website}
                      </div>
                    )}
-                   {/* Driving License - only render if field exists in additionalInfo */}
-                   {resumeData.additionalInfo && 'drivingLicense' in resumeData.additionalInfo && (
+                   {/* Driving License - only render if field exists and visibility is true */}
+                   {resumeData.additionalInfo?.drivingLicense && resumeData.additionalInfoVisibility?.drivingLicense && (
                      <div>
                        <span className="font-medium">License: </span>
                        {resumeData.additionalInfo.drivingLicense}

@@ -97,18 +97,18 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '{{skillsList}}': resumeData.skills && resumeData.skills.length > 0 ? resumeData.skills.map((skill: { name: string }) => skill.name).join(', ') : '',
     '{{skills_list}}': resumeData.skills && resumeData.skills.length > 0 ? resumeData.skills.map((skill: { name: string }) => skill.name).join(', ') : '',
     
-    // Website & social media - only include if explicitly added by user, replace with removal marker to completely remove from template
-    '{{website}}': hasProperty(resumeData.additionalInfo, 'website') ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
-    '{{personal_website}}': hasProperty(resumeData.additionalInfo, 'website') ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
-    '{{website_url}}': hasProperty(resumeData.additionalInfo, 'website') ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
-    '{{linkedin}}': hasProperty(resumeData.additionalInfo, 'linkedin') ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
-    '{{linkedinUrl}}': hasProperty(resumeData.additionalInfo, 'linkedin') ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
-    '{{linkedin_url}}': hasProperty(resumeData.additionalInfo, 'linkedin') ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
+    // Website & social media - only include if explicitly added by user and visibility is true, replace with removal marker to completely remove from template
+    '{{website}}': (hasProperty(resumeData.additionalInfo, 'website') && resumeData.additionalInfoVisibility?.website) ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
+    '{{personal_website}}': (hasProperty(resumeData.additionalInfo, 'website') && resumeData.additionalInfoVisibility?.website) ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
+    '{{website_url}}': (hasProperty(resumeData.additionalInfo, 'website') && resumeData.additionalInfoVisibility?.website) ? resumeData.additionalInfo.website : '##REMOVE_THIS##',
+    '{{linkedin}}': (hasProperty(resumeData.additionalInfo, 'linkedin') && resumeData.additionalInfoVisibility?.linkedin) ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
+    '{{linkedinUrl}}': (hasProperty(resumeData.additionalInfo, 'linkedin') && resumeData.additionalInfoVisibility?.linkedin) ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
+    '{{linkedin_url}}': (hasProperty(resumeData.additionalInfo, 'linkedin') && resumeData.additionalInfoVisibility?.linkedin) ? resumeData.additionalInfo.linkedin : '##REMOVE_THIS##',
     
-    // Additional info - only include if explicitly added by user, replace with removal marker to completely remove from template
-    '{{drivingLicense}}': hasProperty(resumeData.additionalInfo, 'drivingLicense') ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
-    '{{driving_license}}': hasProperty(resumeData.additionalInfo, 'drivingLicense') ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
-    '{{license}}': hasProperty(resumeData.additionalInfo, 'drivingLicense') ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
+    // Additional info - only include if explicitly added by user and visibility is true, replace with removal marker to completely remove from template
+    '{{drivingLicense}}': (hasProperty(resumeData.additionalInfo, 'drivingLicense') && resumeData.additionalInfoVisibility?.drivingLicense) ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
+    '{{driving_license}}': (hasProperty(resumeData.additionalInfo, 'drivingLicense') && resumeData.additionalInfoVisibility?.drivingLicense) ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
+    '{{license}}': (hasProperty(resumeData.additionalInfo, 'drivingLicense') && resumeData.additionalInfoVisibility?.drivingLicense) ? resumeData.additionalInfo.drivingLicense : '##REMOVE_THIS##',
     
     // Common template text patterns
     'SAHIB KHAN': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim().toUpperCase(),
@@ -148,8 +148,8 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '📍 address, city, st zip code': [resumeData.city, resumeData.country].filter(Boolean).length > 0 ? 
       `📍 ${[resumeData.city, resumeData.country].filter(Boolean).join(', ')}` : 
       '📍 address, city, st zip code',
-    '🔗 website': hasProperty(resumeData.additionalInfo, 'website') ? `🔗 ${resumeData.additionalInfo.website}` : '##REMOVE_THIS##',
-    '💼 linkedin': hasProperty(resumeData.additionalInfo, 'linkedin') ? `💼 ${resumeData.additionalInfo.linkedin}` : '##REMOVE_THIS##',
+    '🔗 website': (hasProperty(resumeData.additionalInfo, 'website') && resumeData.additionalInfoVisibility?.website) ? `🔗 ${resumeData.additionalInfo.website}` : '##REMOVE_THIS##',
+    '💼 linkedin': (hasProperty(resumeData.additionalInfo, 'linkedin') && resumeData.additionalInfoVisibility?.linkedin) ? `💼 ${resumeData.additionalInfo.linkedin}` : '##REMOVE_THIS##',
       
     // Professional template patterns and placeholders
     'moahmed': resumeData.firstName || 'moahmed',
