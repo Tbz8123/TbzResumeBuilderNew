@@ -115,13 +115,17 @@ export default function TemplateBindingsPage() {
   // Update template bindings mutation
   const updateBindingMutation = useMutation({
     mutationFn: async (binding: Binding) => {
+      // Convert from client model to server model
       const response = await fetch(`/api/templates/${templateId}/bindings/${binding.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          selector: binding.selector,
+          // Map client field names to server field names
+          dataField: binding.selector,
+          placeholderToken: binding.placeholder,
+          description: binding.description
         }),
       });
 
@@ -155,7 +159,20 @@ export default function TemplateBindingsPage() {
   // Initialize data on component mount
   useEffect(() => {
     if (bindingsData && Array.isArray(bindingsData)) {
-      setBindings(bindingsData);
+      // Map from server model to client model
+      const mappedBindings = bindingsData.map(binding => ({
+        id: binding.id,
+        templateId: binding.templateId,
+        placeholder: binding.placeholderToken || "",  // Use server's placeholderToken for client's placeholder
+        selector: binding.dataField || "",            // Use server's dataField for client's selector
+        description: binding.description,
+        createdAt: binding.createdAt,
+        updatedAt: binding.updatedAt,
+        isMapped: !!binding.dataField && binding.dataField.trim() !== ""
+      }));
+      
+      setBindings(mappedBindings);
+      console.log("Mapped bindings from server:", mappedBindings);
       
       // Calculate completion percentage
       updateCompletionPercentage();
