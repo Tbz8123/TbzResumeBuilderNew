@@ -8,16 +8,37 @@ interface HybridResumePreviewProps {
   height?: number;
   className?: string;
   scaleContent?: boolean;
+  resumeData?: any; // Allow passing resumeData directly
+  selectedTemplateId?: number | null; // Allow passing selectedTemplateId directly
+  setSelectedTemplateId?: (id: number | null) => void; // Allow passing setSelectedTemplateId function
+  templates?: any[]; // Allow passing templates directly
+  isModal?: boolean; // Indicates if preview is in a modal
+  hideSkills?: boolean; // Option to hide skills section
+  showTemplateControls?: boolean; // Option to show template selection controls
 }
 
 const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({ 
   width = 280, 
   height = 365,
   className = '',
-  scaleContent = true
+  scaleContent = true,
+  resumeData: propResumeData,
+  selectedTemplateId: propSelectedTemplateId,
+  setSelectedTemplateId: propSetSelectedTemplateId,
+  templates: propTemplates,
+  isModal = false,
+  hideSkills = false,
+  showTemplateControls = false
 }) => {
-  const { resumeData, selectedTemplateId, setSelectedTemplateId } = useResume();
-  const { data: templates } = useTemplates();
+  // Use props if provided, otherwise fall back to context
+  const resumeContext = useResume();
+  const templatesContext = useTemplates();
+  
+  // Determine the actual data to use (props take precedence over context)
+  const resumeData = propResumeData || resumeContext.resumeData;
+  const selectedTemplateId = propSelectedTemplateId !== undefined ? propSelectedTemplateId : resumeContext.selectedTemplateId;
+  const setSelectedTemplateId = propSetSelectedTemplateId || resumeContext.setSelectedTemplateId;
+  const templates = propTemplates || templatesContext.data;
   const [showDirectPreview, setShowDirectPreview] = useState(false);
   const [templateStyles, setTemplateStyles] = useState<string>('');
   const [templateHtml, setTemplateHtml] = useState<string>('');
