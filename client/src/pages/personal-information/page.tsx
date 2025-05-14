@@ -1,9 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, Link } from 'wouter';
-import { ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft, Info, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose
+} from '@/components/ui/dialog';
 import { useResume } from '@/contexts/ResumeContext';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
 import Logo from '@/components/Logo';
@@ -109,9 +116,13 @@ const PersonalInformationPage = () => {
     console.log(`Field changed ${name} to:`, value);
   };
   
-  // Preview resume
+  // State for preview modal
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  
+  // Preview resume - opens a modal with the full preview
   const handlePreview = () => {
-    console.log('Preview resume');
+    console.log('Opening resume preview modal');
+    setPreviewModalOpen(true);
   };
   
   // Handle additional information
@@ -363,37 +374,7 @@ const PersonalInformationPage = () => {
                 </div>
               </div>
               
-              {/* Professional Summary */}
-              <div className="mb-6">
-                <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
-                  SUMMARY
-                </div>
-                <textarea 
-                  id="summary" 
-                  name="summary"
-                  value={formState.summary}
-                  onChange={(e) => {
-                    const newValue = e.target.value;
-                    
-                    // Update local state
-                    setFormState(prev => ({
-                      ...prev,
-                      summary: newValue
-                    }));
-                    
-                    // Also update resume data immediately for faster feedback
-                    updateResumeData(prevData => ({
-                      ...prevData,
-                      summary: newValue
-                    }));
-                    
-                    console.log('Summary updated:', newValue.substring(0, 20) + '...');
-                  }}
-                  rows={5}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                  placeholder="Write a brief professional summary"
-                />
-              </div>
+              {/* Summary section removed as requested */}
               
               {/* Additional Information Section */}
               <div className="mb-20">
@@ -593,6 +574,32 @@ const PersonalInformationPage = () => {
         open={templateModalOpen} 
         onOpenChange={setTemplateModalOpen} 
       />
+      
+      {/* Resume Preview Modal */}
+      <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
+          <DialogHeader className="flex flex-row items-center justify-between">
+            <DialogTitle>Resume Preview</DialogTitle>
+            <DialogClose className="h-6 w-6 rounded-full opacity-70 ring-offset-background transition-opacity hover:opacity-100">
+              <X className="h-4 w-4" />
+            </DialogClose>
+          </DialogHeader>
+          
+          <div className="flex justify-center p-4 bg-gray-50 rounded-md">
+            <HybridResumePreview 
+              width={794} 
+              height={1123} 
+              className="border shadow-lg"
+              scaleContent={false}
+            />
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-4">
+            <Button onClick={() => setPreviewModalOpen(false)}>Close</Button>
+            <Button variant="default" onClick={handleNext}>Continue to Next Step</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

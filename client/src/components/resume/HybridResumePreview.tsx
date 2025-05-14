@@ -78,6 +78,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       phone: resumeData.phone,
       city: resumeData.city,
       country: resumeData.country,
+      postalcode: resumeData.postalCode,
       dataUpdateTimestamp: new Date().toISOString() // For tracking update timing
     });
     
