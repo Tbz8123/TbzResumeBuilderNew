@@ -207,49 +207,71 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                 {(() => {
                   // Debug info for LinkedIn
                   const linkedInField = resumeData.additionalFields?.linkedin;
-                  const shouldRenderLinkedIn = Boolean(linkedInField?.value) && linkedInField?.visible;
                   
-                  console.log("[PREVIEW] LinkedIn field:", linkedInField);
-                  console.log("[PREVIEW] Should render LinkedIn:", shouldRenderLinkedIn);
+                  // For debugging: log the entire field and the additionalFields object
+                  console.log("[PREVIEW] LinkedIn render details:", { 
+                    linkedInField,
+                    additionalFields: resumeData.additionalFields,
+                    resumeData
+                  });
                   
-                  return shouldRenderLinkedIn ? (
-                    <div>
-                      <span className="font-medium">LinkedIn: </span>
-                      {linkedInField.value}
-                    </div>
-                  ) : null;
+                  // Should render if the field exists and has a value
+                  if (linkedInField) {
+                    return (
+                      <div>
+                        <span className="font-medium">LinkedIn: </span>
+                        {linkedInField.value || '(No value provided)'}
+                      </div>
+                    );
+                  }
+                  
+                  return null;
                 })()}
                 
                 {(() => {
                   // Debug info for Website
                   const websiteField = resumeData.additionalFields?.website;
-                  const shouldRenderWebsite = Boolean(websiteField?.value) && websiteField?.visible;
                   
-                  console.log("[PREVIEW] Website field:", websiteField);
-                  console.log("[PREVIEW] Should render Website:", shouldRenderWebsite);
+                  // For debugging: log the entire field
+                  console.log("[PREVIEW] Website render details:", { 
+                    websiteField,
+                    additionalFields: resumeData.additionalFields
+                  });
                   
-                  return shouldRenderWebsite ? (
-                    <div>
-                      <span className="font-medium">Website: </span>
-                      {websiteField.value}
-                    </div>
-                  ) : null;
+                  // Should render if the field exists
+                  if (websiteField) {
+                    return (
+                      <div>
+                        <span className="font-medium">Website: </span>
+                        {websiteField.value || '(No value provided)'}
+                      </div>
+                    );
+                  }
+                  
+                  return null;
                 })()}
                 
                 {(() => {
                   // Debug info for Driving License
                   const drivingLicenseField = resumeData.additionalFields?.drivingLicense;
-                  const shouldRenderDrivingLicense = Boolean(drivingLicenseField?.value) && drivingLicenseField?.visible;
                   
-                  console.log("[PREVIEW] Driving License field:", drivingLicenseField);
-                  console.log("[PREVIEW] Should render Driving License:", shouldRenderDrivingLicense);
+                  // For debugging: log the entire field
+                  console.log("[PREVIEW] Driving License render details:", { 
+                    drivingLicenseField,
+                    additionalFields: resumeData.additionalFields
+                  });
                   
-                  return shouldRenderDrivingLicense ? (
-                    <div>
-                      <span className="font-medium">License: </span>
-                      {drivingLicenseField.value}
-                    </div>
-                  ) : null;
+                  // Should render if the field exists
+                  if (drivingLicenseField) {
+                    return (
+                      <div>
+                        <span className="font-medium">License: </span>
+                        {drivingLicenseField.value || '(No value provided)'}
+                      </div>
+                    );
+                  }
+                  
+                  return null;
                 })()}
               </div>
               </section>

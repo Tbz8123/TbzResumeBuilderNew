@@ -128,14 +128,24 @@ const PersonalInformationPage = () => {
   // Handle additional information
   const handleAddInfo = (type: string) => {
     // When adding a field, set both the value and visibility
+    console.log(`[PERSONAL_INFO] Adding info field: ${type} (before)`, resumeData.additionalFields);
     updateAdditionalInfo(type, '');
-    console.log(`Added info field: ${type}`);
+    
+    // The update is asynchronous, so we need to wait for the next render to see the change
+    setTimeout(() => {
+      console.log(`[PERSONAL_INFO] Added info field: ${type} (after)`, resumeData.additionalFields);
+    }, 100);
   };
   
   const handleRemoveInfo = (type: string) => {
     // When removing, clear both value and visibility
+    console.log(`[PERSONAL_INFO] Removing info field: ${type} (before)`, resumeData.additionalFields);
     removeAdditionalInfo(type);
-    console.log(`Removed info field: ${type}`);
+    
+    // The update is asynchronous, so we need to wait for the next render to see the change
+    setTimeout(() => {
+      console.log(`[PERSONAL_INFO] Removed info field: ${type} (after)`, resumeData.additionalFields);
+    }, 100);
   };
   
   const handleInfoChange = (type: string, value: string) => {
@@ -146,15 +156,28 @@ const PersonalInformationPage = () => {
   
   // Check if specific additional info exists
   const hasAdditionalInfo = (type: string) => {
-    const hasInfo = Boolean(resumeData.additionalFields?.[type]);
-    console.log(`[PERSONAL_INFO] Checking info field ${type} exists: ${hasInfo}`);
-    return hasInfo;
+    const field = resumeData.additionalFields?.[type];
+    const hasField = field !== undefined;
+    
+    console.log(`[PERSONAL_INFO] Checking if ${type} exists:`, {
+      field,
+      hasField,
+      resumeData
+    });
+    
+    return hasField;
   };
   
   // Get additional info value
   const getAdditionalInfoValue = (type: string) => {
-    const value = resumeData.additionalFields?.[type]?.value || '';
-    console.log(`[PERSONAL_INFO] Getting info field ${type} value: ${value}`);
+    const field = resumeData.additionalFields?.[type];
+    const value = field?.value || '';
+    
+    console.log(`[PERSONAL_INFO] Getting ${type} value:`, {
+      field,
+      value
+    });
+    
     return value;
   };
 
