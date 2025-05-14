@@ -129,20 +129,27 @@ export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   // Add or update additional info
   const updateAdditionalInfo = (key: string, value: string) => {
-    setResumeData(prev => ({
-      ...prev,
-      additionalInfo: {
-        ...prev.additionalInfo,
-        [key]: value
-      }
-    }));
+    console.log(`Adding/updating additionalInfo field: "${key}" with value: "${value}"`);
+    setResumeData(prev => {
+      const updatedData = {
+        ...prev,
+        additionalInfo: {
+          ...prev.additionalInfo,
+          [key]: value
+        }
+      };
+      console.log("Updated additionalInfo:", updatedData.additionalInfo);
+      return updatedData;
+    });
   };
 
   // Remove additional info
   const removeAdditionalInfo = (key: string) => {
+    console.log(`Removing additionalInfo field: "${key}"`);
     setResumeData(prev => {
       const newAdditionalInfo = { ...prev.additionalInfo };
       delete newAdditionalInfo[key];
+      console.log("Updated additionalInfo after removal:", newAdditionalInfo);
       return {
         ...prev,
         additionalInfo: newAdditionalInfo

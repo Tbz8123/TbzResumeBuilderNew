@@ -106,6 +106,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       country: resumeData.country,
       postalCode: resumeData.postalCode,
       summaryLength: resumeData.summary?.length || 0,
+      additionalInfo: resumeData.additionalInfo, // Log the full additionalInfo object
       updateTimestamp: new Date().toISOString() // Track when updates happen
     });
     

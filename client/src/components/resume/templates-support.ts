@@ -9,6 +9,9 @@
 export function processTemplateHtml(html: string, resumeData: any): string {
   if (!html) return '';
   
+  console.log("Processing template HTML with additionalInfo:", resumeData.additionalInfo);
+  console.log("additionalInfo keys:", Object.keys(resumeData.additionalInfo || {}));
+  
   // Create a map for standard replacements
   const replacementMap: Record<string, string> = {
     // Personal information placeholders - all variations
@@ -181,15 +184,50 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     }
   });
   
+  console.log("Starting post-processing to remove elements with ##REMOVE_THIS## marker");
+  console.log("HTML before post-processing:", processedHtml.substring(0, 500) + "...");
+  
   // Post-processing to completely remove any DOM elements containing our removal marker
   // This will remove entire elements (like list items, div elements, etc.) that contain the marker
-  processedHtml = processedHtml.replace(/<li[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/li>/gi, '');
-  processedHtml = processedHtml.replace(/<div[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/div>/gi, '');
-  processedHtml = processedHtml.replace(/<p[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/p>/gi, '');
-  processedHtml = processedHtml.replace(/<span[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/span>/gi, '');
+  let count = 0;
+  
+  // Replace list items
+  processedHtml = processedHtml.replace(/<li[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/li>/gi, (match) => {
+    count++;
+    console.log(`Removing list item: ${match}`);
+    return '';
+  });
+  
+  // Replace div elements
+  processedHtml = processedHtml.replace(/<div[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/div>/gi, (match) => {
+    count++;
+    console.log(`Removing div: ${match}`);
+    return '';
+  });
+  
+  // Replace paragraphs
+  processedHtml = processedHtml.replace(/<p[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/p>/gi, (match) => {
+    count++;
+    console.log(`Removing paragraph: ${match}`);
+    return '';
+  });
+  
+  // Replace spans
+  processedHtml = processedHtml.replace(/<span[^>]*>([^<]*##REMOVE_THIS##[^<]*)<\/span>/gi, (match) => {
+    count++;
+    console.log(`Removing span: ${match}`);
+    return '';
+  });
   
   // Also remove any remaining instances of the marker
-  processedHtml = processedHtml.replace(/##REMOVE_THIS##/g, '');
+  processedHtml = processedHtml.replace(/##REMOVE_THIS##/g, (match) => {
+    count++;
+    console.log(`Removing marker instance`);
+    return '';
+  });
+  
+  console.log(`Post-processing complete: removed ${count} elements or instances of ##REMOVE_THIS##`);
+  console.log("HTML after post-processing:", processedHtml.substring(0, 500) + "...");
   
   // Handle special case for full name with variant spellings - find any double-word name and replace
   const fullName = `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim();
