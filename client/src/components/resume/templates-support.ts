@@ -62,49 +62,56 @@ export function hasProperty(obj: any, prop: string): boolean {
 export function processTemplateHtml(html: string, resumeData: any): string {
   if (!html) return '';
   
-  console.log("[TEMPLATES] Processing template HTML with additionalFields:", resumeData.additionalFields);
-  console.log("[TEMPLATES] additionalFields keys:", Object.keys(resumeData.additionalFields || {}));
+  console.log("[TEMPLATES] Processing template HTML with data");
   
-  // PRE-PROCESSING STEP: Clean templates with known duplication issues
-  // This approach follows the recommended fix in the documentation
+  // STEP 1: Pre-process the template to remove all existing content in work experience section
+  // This is critical for template 16 which has duplication issues
   
-  // Detect templates with known issues - special focus on template 16 with SAHIB KHAN
-  const isProblematicTemplate = html.includes('SAHIB KHAN') || 
-                               html.includes('GRAPHIC DESIGNER') || 
-                               (html.includes('WORK EXPERIENCE') && html.includes('HOBBIES'));
+  // Start by detecting problematic templates that need special handling
+  const isTemplate16 = html.includes('SAHIB KHAN') || 
+                     html.includes('GRAPHIC DESIGNER') || 
+                     (html.includes('WORK EXPERIENCE') && html.includes('HOBBIES'));
   
-  if (isProblematicTemplate) {
-    console.log("[TEMPLATES] PRE-PROCESSING: Detected template with known duplication issues");
+  if (isTemplate16) {
+    console.log("[TEMPLATES] Detected template 16 with known duplication issues - applying special handling");
     
-    // NUCLEAR OPTION FOR TEMPLATE 16: Completely remove all work experience entries
-    // This is a drastic but effective approach to ensure no duplications
-    
-    console.log("[TEMPLATES] EMERGENCY CLEANUP: Applying aggressive cleaning for template 16");
-    
-    // First, try the standard cleaning approach
-    const workExpRegex = /(<div[^>]*>\s*<h2[^>]*>\s*WORK EXPERIENCE\s*<\/h2>)([\s\S]*?)(?=<div[^>]*>\s*<h2[^>]*>|$)/i;
-    const match = html.match(workExpRegex);
-    
-    if (match && match.length >= 3) {
-      const workExpHeader = match[1]; // Keep only the header
-      html = html.replace(workExpRegex, workExpHeader); // Remove existing content
-      console.log("[TEMPLATES] PRE-PROCESSING: Cleaned work experience section to prevent duplication");
+    try {
+      // First identify the work experience section in the HTML
+      const sections = html.split(/<div[^>]*>\s*<h2[^>]*>/gi);
+      let newHtml = sections[0]; // Start with content before first section
+      
+      // Process each section
+      for (let i = 1; i < sections.length; i++) {
+        const sectionContent = sections[i];
+        const sectionHeader = sectionContent.substring(0, sectionContent.indexOf('</h2>') + 5);
+        const sectionBody = sectionContent.substring(sectionContent.indexOf('</h2>') + 5);
+        
+        // If this is the work experience section, only keep the header
+        if (sectionHeader.includes('WORK EXPERIENCE')) {
+          console.log("[TEMPLATES] Found and cleaning work experience section");
+          newHtml += `<div class="resume-section"><h2>${sectionHeader}`;
+          // Don't add section body - we'll add fresh content later
+        } else {
+          // For other sections, keep everything
+          newHtml += `<div class="resume-section"><h2>${sectionHeader}${sectionBody}`;
+        }
+      }
+      
+      // Use the cleaned HTML 
+      html = newHtml;
+      console.log("[TEMPLATES] Successfully cleaned template to prevent duplication");
+    } catch (error) {
+      console.error("[TEMPLATES] Error during template cleaning:", error);
+      // If our advanced cleaning fails, try a simpler approach
+      const workExpRegex = /(<div[^>]*>\s*<h2[^>]*>\s*WORK EXPERIENCE\s*<\/h2>)([\s\S]*?)(?=<div[^>]*>\s*<h2[^>]*>|$)/i;
+      const match = html.match(workExpRegex);
+      
+      if (match && match.length >= 3) {
+        const workExpHeader = match[1]; // Keep only the header
+        html = html.replace(workExpRegex, workExpHeader); // Remove all content
+        console.log("[TEMPLATES] Applied fallback cleaning to work experience section");
+      }
     }
-    
-    // Then, for even more safety, look for any specific work experience content pattern
-    // and remove it completely, regardless of structure
-    
-    // Find and remove anything that looks like a work experience entry in template 16
-    const specificPattern = /Chief Technology Officer[\s\S]*?TBZ[\s\S]*?October 2016 - September 2018/g;
-    if (specificPattern.test(html)) {
-      html = html.replace(specificPattern, '');
-      console.log("[TEMPLATES] EMERGENCY CLEANUP: Removed specific detected duplicated content");
-    }
-    
-    // Also try to remove any other work experience items through a more general pattern
-    const workExpItemPattern = /<div[^>]*work-experience-item[^>]*>[\s\S]*?<\/div>/gi;
-    html = html.replace(workExpItemPattern, '');
-    console.log("[TEMPLATES] EMERGENCY CLEANUP: Removed all work experience items to start fresh");
   }
   
   // Create a map for standard replacements
@@ -430,31 +437,31 @@ export function processTemplateHtml(html: string, resumeData: any): string {
   // 2. Process work experience entries
   if (resumeData.workExperience && resumeData.workExperience.length > 0) {
     // Filter out temporary entries
-    const filteredExperiences = resumeData.workExperience.filter((exp: any) => 
+    const workExperiences = resumeData.workExperience.filter((exp: any) => 
       !(typeof exp.id === 'string' && exp.id === 'temp-entry')
     );
 
     console.log("[TEMPLATES] Processing work experience entries. Total entries:", 
-      resumeData.workExperience.length, "Filtered entries:", filteredExperiences.length);
+      resumeData.workExperience.length, "Filtered entries:", workExperiences.length);
     
-    // SPECIAL FIX: For problematic templates like "SAHIB KHAN", always deduplicate work experience
+    // SPECIAL FIX: Always deduplicate work experience entries
     // This prevents duplicate entries from being processed in the first place
-    const realExperiences = [];
+    const uniqueExperiences: any[] = [];
     const seenKeys = new Set();
     
-    for (const exp of filteredExperiences) {
+    for (const exp of workExperiences) {
       // Create a unique key based on job title, company and date
       const key = `${exp.jobTitle || ''}|${exp.employer || ''}|${exp.startYear || ''}`;
       if (!seenKeys.has(key)) {
         seenKeys.add(key);
-        realExperiences.push(exp);
+        uniqueExperiences.push(exp);
       } else {
         console.log("[TEMPLATES] Detected and removed duplicate work experience:", key);
       }
     }
     
     // Report the deduplication results
-    console.log("[TEMPLATES] After deduplication:", realExperiences.length, "unique entries");
+    console.log("[TEMPLATES] After deduplication:", uniqueExperiences.length, "unique entries");
 
     // Check if this is the specific template that's having issues
     // By detecting unique patterns in the template HTML
@@ -465,14 +472,14 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     console.log("[TEMPLATES] Template type detection:", isSpecialTemplate ? "Using special template formatting" : "Using standard formatting");
     
     // Add a rendering marker to help debug the duplication issue
-    console.log("[TEMPLATES] Creating unique work experience HTML with", realExperiences.length, "entries");
+    console.log("[TEMPLATES] Creating unique work experience HTML with", uniqueExperiences.length, "entries");
     
     // Generate HTML for work experience based on template type
     let workExpHtml = '';
     
     if (isSpecialTemplate) {
       // Special formatting for the template with the blue sidebar
-      workExpHtml = realExperiences.map((exp: any, index: number) => {
+      workExpHtml = uniqueExperiences.map((exp: any, index: number) => {
         const jobTitle = (exp.jobTitle || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const employer = (exp.employer || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
@@ -495,7 +502,7 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       }).join('');
     } else {
       // Default formatting for other templates
-      workExpHtml = realExperiences.map((exp: any) => {
+      workExpHtml = uniqueExperiences.map((exp: any) => {
         const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
         const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
         const dateRange = exp.isCurrentJob 
