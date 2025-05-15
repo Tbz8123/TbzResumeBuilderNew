@@ -387,8 +387,24 @@ export function processTemplateHtml(html: string, resumeData: any): string {
   
   // 2. Process work experience entries
   if (resumeData.workExperience && resumeData.workExperience.length > 0) {
+    // Clean the work experience data from temporary entries
+    const filteredExperiences = resumeData.workExperience.filter((exp: any) => 
+      !(typeof exp.id === 'string' && exp.id.includes('temp-'))
+    );
+    
+    // Debug the raw work experience data - with and without temporary entries
+    console.log("[TEMPLATES] Raw work experience data count:", resumeData.workExperience.length);
+    console.log("[TEMPLATES] After filtering temporary entries:", filteredExperiences.length);
+    console.log("[TEMPLATES] Processing work experience data:", 
+      JSON.stringify(filteredExperiences.length > 0 ? filteredExperiences : resumeData.workExperience, null, 2));
+    
+    // Use the filtered experiences when available, otherwise use all
+    const experiencesToRender = filteredExperiences.length > 0 ? 
+      filteredExperiences : 
+      resumeData.workExperience;
+    
     // Look for work experience placeholders and replace them
-    const workExperienceHTML = resumeData.workExperience.map((exp: any) => {
+    const workExperienceHTML = experiencesToRender.map((exp: any) => {
       // Format the date range based on our actual data model (startMonth/startYear/endMonth/endYear)
       const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
       const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
@@ -403,26 +419,44 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       // Get location and add Remote if flagged
       const locationText = exp.location + (exp.isRemote ? ' (Remote)' : '');
       
+      // Special template format for the work experience item
       return `
-        <div class="work-entry">
+        <div class="work-experience-item">
           <h3>${exp.jobTitle || ''}</h3>
           <p class="company">${exp.employer || ''}${exp.location ? `, ${locationText}` : ''}</p>
-          <p class="date">${dateRange}</p>
-          <p class="description">${description}</p>
+          <p class="work-dates">${dateRange}</p>
+          <p>${description}</p>
         </div>
       `;
     }).join('');
     
-    // Try to find work experience containers to replace
+    // Try various patterns to find the work experience section in the template
+
+    // First, try to find the section by looking for a heading inside a section div
+    const workExperienceSectionRegex = /<div class="section">\s*<h2>\s*WORK EXPERIENCE\s*<\/h2>\s*([\s\S]*?)\s*<\/div>/i;
+    if (workExperienceSectionRegex.test(processedHtml)) {
+      processedHtml = processedHtml.replace(
+        workExperienceSectionRegex, 
+        `<div class="section">
+          <h2>WORK EXPERIENCE</h2>
+          ${workExperienceHTML}
+        </div>`
+      );
+      console.log("[TEMPLATES] Successfully replaced WORK EXPERIENCE section");
+    }
+    
+    // Also try standard work-experience containers
     const workExperienceContainerRegex = /<div[^>]*class="[^"]*work-experience[^"]*"[^>]*>([\s\S]*?)<\/div>/i;
     if (workExperienceContainerRegex.test(processedHtml)) {
       processedHtml = processedHtml.replace(workExperienceContainerRegex, `<div class="work-experience">${workExperienceHTML}</div>`);
+      console.log("[TEMPLATES] Successfully replaced work-experience div");
     }
     
     // Look for employment history sections
     const employmentHistoryRegex = /<div[^>]*class="[^"]*employment-history[^"]*"[^>]*>([\s\S]*?)<\/div>/i;
     if (employmentHistoryRegex.test(processedHtml)) {
       processedHtml = processedHtml.replace(employmentHistoryRegex, `<div class="employment-history">${workExperienceHTML}</div>`);
+      console.log("[TEMPLATES] Successfully replaced employment-history div");
     }
     
     // Look for experience entries in the Testing template
