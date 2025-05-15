@@ -164,33 +164,23 @@ const WorkExperienceDetailsPage = () => {
     setWorkExperience(prev => {
       const updated = { ...prev, [field]: value };
       
-      // Always update preview in real-time for ALL fields
-      // Get existing work experiences or initialize empty array
-      const existingExperiences = [...(resumeData.workExperience || [])];
+      // For real-time preview, use an approach that doesn't accumulate entries
+      // Create a single work experience entry with the temporary ID
+      const tempId = 'temp-entry';
       
-      // Find if we have a temporary ID entry already
-      const tempEntryIndex = existingExperiences.findIndex(
-        exp => typeof exp.id === 'string' && exp.id.startsWith('temp-')
+      // Get existing work experiences without any temp entries
+      const existingExperiences = (resumeData.workExperience || []).filter(
+        exp => !(typeof exp.id === 'string' && exp.id === tempId)
       );
       
-      let updatedExperiences;
-      if (tempEntryIndex !== -1) {
-        // Replace the existing temporary entry
-        updatedExperiences = [...existingExperiences];
-        updatedExperiences[tempEntryIndex] = {
+      // Add our current working entry to the beginning 
+      const updatedExperiences = [
+        {
           ...updated,
-          id: 'temp-' + Date.now(), // Update the temporary ID
-        };
-      } else {
-        // Add a new entry at the beginning
-        updatedExperiences = [
-          {
-            ...updated,
-            id: 'temp-' + Date.now(),
-          },
-          ...existingExperiences
-        ];
-      }
+          id: tempId, // Use a consistent ID for the temp entry
+        },
+        ...existingExperiences
+      ];
       
       // Update the resume data in real-time
       updateResumeData({
@@ -212,36 +202,24 @@ const WorkExperienceDetailsPage = () => {
       dbJobTitleId: jobTitle.id // Store the database job title ID
     }));
     
-    // Get existing work experiences
-    const existingExperiences = [...(resumeData.workExperience || [])];
+    // For real-time preview, use the consistent approach
+    const tempId = 'temp-entry';
     
-    // Find if we have a temporary ID entry already
-    const tempEntryIndex = existingExperiences.findIndex(
-      exp => typeof exp.id === 'string' && exp.id.startsWith('temp-')
+    // Get existing work experiences without any temp entries
+    const existingExperiences = (resumeData.workExperience || []).filter(
+      exp => !(typeof exp.id === 'string' && exp.id === tempId)
     );
     
-    let updatedExperiences;
-    if (tempEntryIndex !== -1) {
-      // Replace the existing temporary entry
-      updatedExperiences = [...existingExperiences];
-      updatedExperiences[tempEntryIndex] = {
+    // Add our current working entry with the job title to the beginning
+    const updatedExperiences = [
+      {
         ...workExperience,
         jobTitle: jobTitle.title,
         dbJobTitleId: jobTitle.id,
-        id: 'temp-' + Date.now(),
-      };
-    } else {
-      // Add a new entry at the beginning
-      updatedExperiences = [
-        {
-          ...workExperience,
-          jobTitle: jobTitle.title,
-          dbJobTitleId: jobTitle.id,
-          id: 'temp-' + Date.now(),
-        },
-        ...existingExperiences
-      ];
-    }
+        id: tempId, // Use consistent ID
+      },
+      ...existingExperiences
+    ];
     
     // Update resume data for real-time preview
     updateResumeData({
@@ -263,36 +241,24 @@ const WorkExperienceDetailsPage = () => {
       ...(checked ? { endMonth: '', endYear: '' } : {})
     }));
     
-    // Get existing work experiences
-    const existingExperiences = [...(resumeData.workExperience || [])];
+    // For real-time preview, use the consistent approach
+    const tempId = 'temp-entry';
     
-    // Find if we have a temporary ID entry already
-    const tempEntryIndex = existingExperiences.findIndex(
-      exp => typeof exp.id === 'string' && exp.id.toString().startsWith('temp-')
+    // Get existing work experiences without any temp entries
+    const existingExperiences = (resumeData.workExperience || []).filter(
+      exp => !(typeof exp.id === 'string' && exp.id === tempId)
     );
     
-    let updatedExperiences;
-    if (tempEntryIndex !== -1) {
-      // Replace the existing temporary entry
-      updatedExperiences = [...existingExperiences];
-      updatedExperiences[tempEntryIndex] = {
+    // Add our current working entry with updated isCurrentJob to the beginning
+    const updatedExperiences = [
+      {
         ...workExperience,
         isCurrentJob: checked,
         ...(checked ? { endMonth: '', endYear: '' } : {}),
-        id: 'temp-' + Date.now(),
-      };
-    } else {
-      // Add a new entry at the beginning
-      updatedExperiences = [
-        {
-          ...workExperience,
-          isCurrentJob: checked,
-          ...(checked ? { endMonth: '', endYear: '' } : {}),
-          id: 'temp-' + Date.now(),
-        },
-        ...existingExperiences
-      ];
-    }
+        id: tempId, // Use a consistent ID
+      },
+      ...existingExperiences
+    ];
     
     // Update resume data for real-time preview
     updateResumeData({
