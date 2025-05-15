@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { 
   Dialog,
@@ -34,6 +34,41 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   // Create a unique key that changes whenever the modal is opened
   // This forces React to unmount and remount the component, resetting all internal state
   const [previewKey, setPreviewKey] = useState(0);
+  
+  // Create a deduplicated version of work experience to prevent duplications
+  const deduplicatedResumeData = useMemo(() => {
+    if (!resumeData?.workExperience?.length) return resumeData;
+    
+    // Clone the resume data to avoid mutating the original
+    const cleanedData = { ...resumeData };
+    
+    // Check if we're using template 16 (known problematic template)
+    const isTemplate16 = selectedTemplateId === 16;
+    
+    if (isTemplate16) {
+      console.log("[RESUME PREVIEW] Template 16 detected - using special handling");
+      
+      // For Template 16, just use the first work experience entry
+      if (cleanedData.workExperience?.length > 0) {
+        cleanedData.workExperience = [cleanedData.workExperience[0]];
+      }
+    } else {
+      // For other templates, deduplicate by creating a unique key for each entry
+      const seen = new Set();
+      cleanedData.workExperience = (cleanedData.workExperience || []).filter(exp => {
+        const key = `${exp.jobTitle || ''}|${exp.employer || ''}|${exp.startYear || ''}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+    
+    console.log("[RESUME PREVIEW] Deduplicated work experience:", 
+      cleanedData.workExperience.length, 
+      "entries (from original", resumeData.workExperience?.length || 0, "entries)");
+    
+    return cleanedData;
+  }, [resumeData, selectedTemplateId]);
   
   // Reset the preview key when the modal opens to force a complete re-render
   useEffect(() => {
@@ -207,12 +242,12 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           <div style={{ transform: 'scale(0.55)', transformOrigin: 'top center', marginBottom: '-30%' }}>
             {/* Use the key prop to force a complete remount when the modal opens */}
             <HybridResumePreview 
-              key={`resume-preview-${previewKey}`}
+              key={`resume-preview-${previewKey}-${Date.now()}`}
               width={794} 
               height={1123}
               className="border shadow-lg"
               scaleContent={false}
-              resumeData={resumeData}
+              resumeData={deduplicatedResumeData}
               selectedTemplateId={selectedTemplateId}
               setSelectedTemplateId={setSelectedTemplateId}
               templates={templates}
