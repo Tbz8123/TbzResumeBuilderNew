@@ -40,6 +40,134 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
     if (open) {
       console.log("[RESUME PREVIEW] Modal opened - resetting preview key to force clean render");
       setPreviewKey(prev => prev + 1);
+      
+      // EMERGENCY FIX: Add two approaches to solve the issue
+      // 1. Direct DOM manipulation right after render
+      // 2. MutationObserver to watch for template changes and fix them in real-time
+      
+      // First attempt - immediate fix
+      const clearWorkExperienceSection = () => {
+        try {
+          // Set multiple timeouts to catch the iframe at different stages of loading
+          // Some browsers may take longer to fully render the iframe content
+          [300, 600, 1000].forEach(delay => {
+            setTimeout(() => {
+              console.log(`[PREVIEW FIX] Applying fix after ${delay}ms delay`);
+              
+              // Target the iframes that contain the template content
+              const iframes = document.querySelectorAll('iframe');
+              
+              iframes.forEach(iframe => {
+                if (iframe.contentDocument) {
+                  const doc = iframe.contentDocument;
+                  
+                  // First, try targeting specific elements by ID or class name
+                  const workExpSection = doc.querySelector('.work-experience') || 
+                                       doc.querySelector('#work-experience') || 
+                                       doc.getElementById('workExperience');
+                  
+                  if (workExpSection) {
+                    console.log('[PREVIEW FIX] Found work experience by ID/class');
+                    
+                    // Keep only the section header and clear everything else
+                    const header = workExpSection.querySelector('h2');
+                    
+                    if (header) {
+                      // Save the header
+                      const headerClone = header.cloneNode(true);
+                      
+                      // Clear everything
+                      workExpSection.innerHTML = '';
+                      
+                      // Put back just the header
+                      workExpSection.appendChild(headerClone);
+                      console.log('[PREVIEW FIX] Cleared work experience section');
+                    }
+                  } else {
+                    // Fallback - find by heading text
+                    const headers = doc.querySelectorAll('h2, h3, h4');
+                    
+                    // Find the work experience section
+                    headers.forEach(header => {
+                      if (header.textContent?.includes('WORK EXPERIENCE')) {
+                        console.log('[PREVIEW FIX] Found Work Experience section by text content');
+                        
+                        // Find the container that holds work experience entries
+                        // Get the parent container
+                        const sectionContainer = header.closest('div');
+                        
+                        if (sectionContainer) {
+                          // Keep the header but remove all subsequent elements 
+                          const workEntryElements = Array.from(sectionContainer.children).filter(child => 
+                            child !== header && !child.tagName.startsWith('H')
+                          );
+                          
+                          console.log(`[PREVIEW FIX] Removing ${workEntryElements.length} existing work entries`);
+                          
+                          // Remove all existing content
+                          workEntryElements.forEach(element => element.remove());
+                        }
+                      }
+                    });
+                  }
+                }
+              });
+            }, delay);
+          });
+          
+          // Second approach: Set up a MutationObserver to catch any changes to the DOM
+          // This will handle cases where the template is updated after our initial fix
+          setTimeout(() => {
+            const iframes = document.querySelectorAll('iframe');
+            
+            iframes.forEach(iframe => {
+              if (iframe.contentDocument) {
+                const doc = iframe.contentDocument;
+                
+                // Create a mutation observer to watch for changes to the DOM
+                const observer = new MutationObserver((mutations) => {
+                  // Look for mutations that add nodes to the document
+                  mutations.forEach(mutation => {
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                      // Check if any of the added nodes contain work experience duplicates
+                      mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                          const element = node as Element;
+                          
+                          // Look for duplicate work experience entries
+                          const workExperienceEntries = element.querySelectorAll && 
+                            element.querySelectorAll('.work-experience-item, .work-experience > div, .workexp-container > div');
+                          
+                          if (workExperienceEntries && workExperienceEntries.length > 1) {
+                            console.log(`[PREVIEW FIX] Observer detected ${workExperienceEntries.length} work entries - fixing duplicates`);
+                            
+                            // Keep only the first entry and remove the rest to prevent duplicates
+                            for (let i = 1; i < workExperienceEntries.length; i++) {
+                              workExperienceEntries[i].remove();
+                            }
+                          }
+                        }
+                      });
+                    }
+                  });
+                });
+                
+                // Start observing the document with the configured parameters
+                observer.observe(doc.body, { childList: true, subtree: true });
+                
+                // Disconnect after 5 seconds to prevent memory leaks
+                setTimeout(() => observer.disconnect(), 5000);
+              }
+            });
+          }, 1000);
+          
+        } catch (err) {
+          console.error('[PREVIEW FIX] Error in emergency DOM fix:', err);
+        }
+      };
+      
+      // Apply the fix
+      clearWorkExperienceSection();
     }
   }, [open]);
   
