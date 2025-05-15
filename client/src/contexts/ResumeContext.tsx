@@ -1,24 +1,9 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
+import { WorkExperience as WorkExperienceType, Education as EducationType } from '@/types/resume';
 
-// Define the resume data structure
-export interface WorkExperience {
-  jobTitle: string;
-  employer: string;
-  location: string;
-  startDate: string;
-  endDate: string;
-  isCurrentPosition: boolean;
-  description: string;
-}
-
-export interface Education {
-  degree: string;
-  institution: string;
-  location: string;
-  startDate: string;
-  endDate: string;
-  description: string;
-}
+// Use types from resume.ts
+export type WorkExperience = WorkExperienceType;
+export type Education = EducationType;
 
 export interface Skill {
   id: string;
@@ -47,6 +32,7 @@ export interface ResumeData {
   skills: Skill[];
   workExperience: WorkExperience[];
   education: Education[];
+  _previewTimestamp?: number; // Used to force template re-processing
   
   // Simplified approach - store each additional field as an object with value and visibility
   additionalFields: {

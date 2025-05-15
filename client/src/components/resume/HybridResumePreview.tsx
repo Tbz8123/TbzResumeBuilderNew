@@ -344,7 +344,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
               </h2>
               <div className="text-xs space-y-3 text-gray-600">
                 {resumeData.workExperience && resumeData.workExperience.length > 0 ? (
-                  resumeData.workExperience.map((exp, index) => (
+                  resumeData.workExperience.map((exp: any, index: number) => (
                     <div key={exp.id || index}>
                       <div className="flex justify-between">
                         <p className="font-medium">{exp.jobTitle}</p>
