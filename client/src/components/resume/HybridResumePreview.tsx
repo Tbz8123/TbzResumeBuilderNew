@@ -397,56 +397,43 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   // Function to auto-scale content to fit one page (Zety-style)
   const autoScaleContent = useCallback(() => {
     const container = resumeContainerRef.current;
-    if (!container) return;
-    
-    // Reset any previous scaling and classes to measure true size
-    container.style.transform = 'scale(1)';
-    container.style.transformOrigin = 'top left';
-    container.classList.remove('content-exceeds', 'content-exceeds-large');
+    if (!container) {
+      console.log('[RESUME] Container reference not available');
+      return;
+    }
     
     // Get A4 size in pixels
     const maxHeight = 1123; // A4 height at 96 DPI
     
-    // Measure content height
+    // Skip auto-scaling for very small changes
+    // This prevents constant re-processing which might cause layout issues
     const contentHeight = container.scrollHeight;
     console.log(`[RESUME] Content height: ${contentHeight}px, Max height: ${maxHeight}px`);
     
-    // Implement multi-level scaling based on content amount
-    // Step 1: Apply CSS adjustments first (tighter spacing, smaller fonts)
-    if (contentHeight > maxHeight) {
-      // Apply medium compression for 0-20% overflow
-      if (contentHeight <= maxHeight * 1.2) {
+    // Only apply scaling if content significantly exceeds the page
+    // For small overflows, leave as is to avoid layout disruption
+    if (contentHeight > maxHeight * 1.05) {
+      console.log(`[RESUME] Content overflow detected (${((contentHeight/maxHeight - 1) * 100).toFixed(1)}% overflow)`);
+      
+      // Modify container to fit content
+      if (contentHeight <= maxHeight * 1.15) {
+        // For small overflow (5-15%), apply gentle CSS adjustments
         container.classList.add('content-exceeds');
-        console.log('[RESUME] Applied medium content compression (0-20% overflow)');
-      } 
-      // Apply maximum compression for >20% overflow
-      else {
+        container.classList.remove('content-exceeds-large');
+        console.log('[RESUME] Applied gentle content compression');
+      } else {
+        // For larger overflow (>15%), apply stronger CSS adjustments
         container.classList.add('content-exceeds-large');
-        console.log('[RESUME] Applied maximum content compression (>20% overflow)');
+        console.log('[RESUME] Applied stronger content compression');
       }
       
-      // Check if CSS adjustments were enough
-      const newHeight = container.scrollHeight;
-      if (newHeight <= maxHeight) {
-        console.log('[RESUME] CSS adjustments were sufficient for fitting content');
-        return 1; // No transform scale needed
-      }
-      
-      // Step 2: If CSS adjustments weren't enough, apply transform scaling
-      console.log(`[RESUME] CSS adjustments insufficient. Content still ${newHeight}px. Applying transform scaling...`);
-      
-      // Start with scale of 1 and reduce until content fits
-      let scale = 1;
-      while (container.scrollHeight > maxHeight && scale > 0.75) {
-        scale -= 0.01;
-        container.style.transform = `scale(${scale})`;
-      }
-      
-      console.log(`[RESUME] Applied transform scaling factor: ${scale.toFixed(2)}`);
-      return scale;
+      // Return without transform scaling to preserve layout structure
+      return;
     } else {
-      console.log(`[RESUME] Content fits within page. No scaling needed.`);
-      return 1;
+      // Remove any compression classes if content fits
+      container.classList.remove('content-exceeds', 'content-exceeds-large');
+      console.log(`[RESUME] Content fits within page (or only small overflow). No scaling needed.`);
+      return;
     }
   }, []);
   

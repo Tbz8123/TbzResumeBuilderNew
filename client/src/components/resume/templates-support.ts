@@ -395,7 +395,9 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     console.log("[TEMPLATES] Processing work experience entries. Total entries:", 
       resumeData.workExperience.length, "Real entries:", realExperiences.length);
 
-    // Generate HTML for work experience section
+    // Generate plain text work experience entries for this specific template format
+    // Analyze template structure to determine the best output format
+    // This simpler approach works better with the template's existing formatting
     const workExpHtml = realExperiences.map((exp: any) => {
       const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
       const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
@@ -404,17 +406,14 @@ export function processTemplateHtml(html: string, resumeData: any): string {
         ? `${startDate} - Present` 
         : `${startDate}${endDate ? ` - ${endDate}` : ''}`;
       
-      const description = exp.responsibilities || exp.description || '';
+      // Escape HTML in text fields to prevent rendering issues
+      const jobTitle = (exp.jobTitle || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const employer = (exp.employer || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const description = (exp.responsibilities || exp.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       
-      return `
-      <div class="work-experience-item">
-        <h3>${exp.jobTitle || ''}</h3>
-        <p class="company">${exp.employer || ''}</p>
-        <p class="work-dates">${dateRange}</p>
-        <p>${description}</p>
-      </div>
-      `;
-    }).join('');
+      // Use simple text structure that will format with the template's existing styles
+      return `${jobTitle}\n${employer}\n${dateRange}\n${description ? description + '\n' : ''}`;
+    }).join('\n');
 
     // Replace the entire work experience section
     const workExpSectionRegex = /<div class="section">\s*<h2>WORK EXPERIENCE<\/h2>[\s\S]*?<\/div>/i;
