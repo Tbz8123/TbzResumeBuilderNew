@@ -375,6 +375,9 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     </div>
   );
   
+  // Reference to the resume container for auto-scaling
+  const resumeContainerRef = useRef<HTMLDivElement>(null);
+  
   // Calculate scale factor based on container dimensions and A4 paper ratio
   const calculateScale = () => {
     if (!scaleContent) return 1;
@@ -391,6 +394,48 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     return Math.min(scaleX, scaleY);
   };
   
+  // Function to auto-scale content to fit one page (Zety-style)
+  const autoScaleContent = useCallback(() => {
+    const container = resumeContainerRef.current;
+    if (!container) return;
+    
+    // Reset any previous scaling to measure true size
+    container.style.transform = 'scale(1)';
+    container.style.transformOrigin = 'top left';
+    
+    // Get A4 size in pixels
+    const maxHeight = 1123; // A4 height at 96 DPI
+    
+    // If content exceeds the page height, scale it down
+    if (container.scrollHeight > maxHeight) {
+      console.log(`[RESUME] Content height (${container.scrollHeight}px) exceeds A4 height (${maxHeight}px). Auto-scaling...`);
+      
+      // Start with scale of 1 and reduce until content fits
+      let scale = 1;
+      while (container.scrollHeight > maxHeight && scale > 0.7) {
+        scale -= 0.01;
+        container.style.transform = `scale(${scale})`;
+      }
+      
+      console.log(`[RESUME] Applied auto-scaling factor: ${scale.toFixed(2)}`);
+      return scale;
+    } else {
+      console.log(`[RESUME] Content fits within page (${container.scrollHeight}px). No auto-scaling needed.`);
+      return 1;
+    }
+  }, []);
+  
+  // Apply auto-scaling after template updates
+  useEffect(() => {
+    if (templateHtml) {
+      // Use setTimeout to ensure content is fully rendered first
+      setTimeout(() => {
+        autoScaleContent();
+      }, 100);
+    }
+  }, [templateHtml, autoScaleContent]);
+  
+  // Initial scaling based on container size
   const scaleFactor = calculateScale();
   
   return (
