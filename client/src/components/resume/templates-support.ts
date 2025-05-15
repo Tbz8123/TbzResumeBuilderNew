@@ -568,7 +568,7 @@ export function processTemplateHtml(html: string, resumeData: any): string {
             // Construct our work experience content with clean formatting and tracking marker
             const formattedWorkExp = `
               <!-- START WORK EXPERIENCE CONTENT - Generated on ${new Date().toISOString()} -->
-              <!-- Contains ${realExperiences.length} work experience entries -->
+              <!-- Contains ${uniqueExperiences.length} work experience entries -->
               ${workExpHtml}
               <!-- END WORK EXPERIENCE CONTENT -->
             `;
@@ -596,7 +596,7 @@ export function processTemplateHtml(html: string, resumeData: any): string {
               `
               <div class="workexp-container">
                 <!-- ALTERNATIVE WORK EXPERIENCE CONTENT - Generated on ${new Date().toISOString()} -->
-                <!-- Contains ${realExperiences.length} work experience entries -->
+                <!-- Contains ${uniqueExperiences.length} work experience entries -->
                 ${workExpHtml}
                 <!-- END ALTERNATIVE CONTENT -->
               </div>
@@ -617,7 +617,7 @@ export function processTemplateHtml(html: string, resumeData: any): string {
           `<div class="section">
             <h2>WORK EXPERIENCE</h2>
             <!-- STANDARD WORK EXPERIENCE CONTENT - Generated on ${new Date().toISOString()} -->
-            <!-- Contains ${realExperiences.length} work experience entries -->
+            <!-- Contains ${uniqueExperiences.length} work experience entries -->
             ${workExpHtml}
             <!-- END STANDARD CONTENT -->
           </div>`
@@ -637,8 +637,8 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       
       // For each match, replace with corresponding work experience or leave it empty
       matches.forEach((match, index) => {
-        if (index < realExperiences.length) {
-          const exp = realExperiences[index];
+        if (index < uniqueExperiences.length) {
+          const exp = uniqueExperiences[index];
           
           // Format the date range based on our actual data model
           const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
