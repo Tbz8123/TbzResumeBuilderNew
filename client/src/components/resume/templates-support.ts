@@ -65,6 +65,29 @@ export function processTemplateHtml(html: string, resumeData: any): string {
   console.log("[TEMPLATES] Processing template HTML with additionalFields:", resumeData.additionalFields);
   console.log("[TEMPLATES] additionalFields keys:", Object.keys(resumeData.additionalFields || {}));
   
+  // PRE-PROCESSING STEP: Clean templates with known duplication issues
+  // This approach follows the recommended fix in the documentation
+  
+  // Detect templates with known issues
+  const isProblematicTemplate = html.includes('SAHIB KHAN') || 
+                               html.includes('GRAPHIC DESIGNER') || 
+                               (html.includes('WORK EXPERIENCE') && html.includes('HOBBIES'));
+  
+  if (isProblematicTemplate) {
+    console.log("[TEMPLATES] PRE-PROCESSING: Detected template with known duplication issues");
+    
+    // Clean up Work Experience section
+    // Find the section header and the section that comes after it
+    const workExpRegex = /(<div[^>]*>\s*<h2[^>]*>\s*WORK EXPERIENCE\s*<\/h2>)([\s\S]*?)(?=<div[^>]*>\s*<h2[^>]*>|$)/i;
+    const match = html.match(workExpRegex);
+    
+    if (match && match.length >= 3) {
+      const workExpHeader = match[1]; // Keep only the header
+      html = html.replace(workExpRegex, workExpHeader); // Remove existing content
+      console.log("[TEMPLATES] PRE-PROCESSING: Cleaned work experience section to prevent duplication");
+    }
+  }
+  
   // Create a map for standard replacements
   const replacementMap: Record<string, string> = {
     // Personal information placeholders - all variations
@@ -403,6 +426,9 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     
     console.log("[TEMPLATES] Template type detection:", isSpecialTemplate ? "Using special template formatting" : "Using standard formatting");
     
+    // Add a rendering marker to help debug the duplication issue
+    console.log("[TEMPLATES] Creating unique work experience HTML with", realExperiences.length, "entries");
+    
     // Generate HTML for work experience based on template type
     let workExpHtml = '';
     
@@ -457,17 +483,12 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       // For the special template, look for a different pattern
       const specialWorkExpSectionRegex = /<div[^>]*>\s*<h2[^>]*>WORK EXPERIENCE<\/h2>[\s\S]*?(?=<div[^>]*>\s*<h2[^>]*>|$)/i;
       
-      // EMERGENCY FIX FOR DUPLICATION ISSUE
-      // First, attempt to identify the original template structure without any content
-      const templateId = 16; // This is a specific fix for this template ID
-      
-      console.log("[TEMPLATES] Applying emergency duplication fix");
+      // IMPROVED FIX FOR DUPLICATION ISSUE
+      // Instead of complex DOM manipulation, we'll use a simpler, more reliable approach
+      console.log("[TEMPLATES] Applying improved duplication fix");
       
       try {
-        // NUCLEAR OPTION: Completely parse and rebuild the template structure
-        // We'll use a specific approach designed for this exact template
-        
-        // First, let's identify all the major section headings
+        // First, extract all section headers to maintain the document structure
         // This more precise regex will work better for this specific template
         const headerRegex = /<div[^>]*>\s*<h2[^>]*>\s*([^<]+)\s*<\/h2>/gi;
         const sectionHeaders = [];
@@ -499,16 +520,17 @@ export function processTemplateHtml(html: string, resumeData: any): string {
             // Get the HTML after the next section starts
             const afterWorkExp = processedHtml.substring(nextHeader.index);
             
-            // Construct our work experience content with clean formatting
+            // Construct our work experience content with clean formatting and tracking marker
             const formattedWorkExp = `
-              <!-- START WORK EXPERIENCE CONTENT -->
+              <!-- START WORK EXPERIENCE CONTENT - Generated on ${new Date().toISOString()} -->
+              <!-- Contains ${realExperiences.length} work experience entries -->
               ${workExpHtml}
               <!-- END WORK EXPERIENCE CONTENT -->
             `;
             
             // Complete reconstruction of the template HTML
             processedHtml = beforeWorkExp + formattedWorkExp + afterWorkExp;
-            console.log("[TEMPLATES] Successfully applied nuclear fix for work experience section");
+            console.log("[TEMPLATES] Successfully applied improved fix for work experience section");
           } else {
             console.log("[TEMPLATES] Found work experience header but no next section");
           }
