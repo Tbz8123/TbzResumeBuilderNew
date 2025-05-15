@@ -81,9 +81,19 @@ export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [resumeData, setResumeData] = useState<ResumeData>(initialResumeData);
   const [selectedTemplateId, setSelectedTemplateIdState] = useState<number | null>(null);
   
-  // Enhanced setSelectedTemplateId with tracking
+  // Enhanced setSelectedTemplateId with tracking and localStorage persistence
   const setSelectedTemplateId = (id: number | null) => {
     console.log("Template ID set in ResumeContext:", id);
+    
+    // Save to localStorage for persistence between page navigations
+    if (id) {
+      localStorage.setItem('selectedTemplateId', id.toString());
+      console.log("Template ID saved to localStorage:", id);
+    } else {
+      localStorage.removeItem('selectedTemplateId');
+      console.log("Template ID removed from localStorage");
+    }
+    
     setSelectedTemplateIdState(id);
   };
 
