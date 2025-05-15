@@ -105,16 +105,11 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   
   // Process HTML whenever resume data changes with improved reactivity and logging
   const processHtmlWithData = useCallback(() => {
-    // RESET STEPS: Clear everything to ensure no duplication
-    
-    // 1. Reset rendered sections tracking on each template processing
+    // Reset rendered sections tracking on each template processing
+    // This ensures we clean the state whenever we need to regenerate HTML
     renderedSectionsRef.current = {};
     
-    // 2. First empty the template HTML to ensure we don't get stacked/duplicated content
-    setTemplateHtml('');
-    
-    // 3. Log that we're clearing content before processing
-    console.log("[RESUME] processHtmlWithData() called - CLEARING content before processing");
+    console.log("[RESUME] processHtmlWithData() called - ensure we're not duplicating content");
     
     if (!templateHtmlRef.current) {
       console.log("No template HTML available to process");
