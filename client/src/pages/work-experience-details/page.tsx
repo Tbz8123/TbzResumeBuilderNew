@@ -164,43 +164,90 @@ const WorkExperienceDetailsPage = () => {
     setWorkExperience(prev => {
       const updated = { ...prev, [field]: value };
       
-      // Real-time update to the preview
-      if (field === 'jobTitle' || field === 'employer') {
-        // Create a temporary array with the current work experience
-        const tempWorkExperience = [...(resumeData.workExperience || [])];
-        
-        // Add the current form data to the first position
-        tempWorkExperience.unshift({
-          ...workExperience,
-          [field]: value, // Use the updated value
-          id: 'temp-' + Date.now(), // Temporary ID
-        });
-        
-        // Update the resume data in real-time
-        updateResumeData({ workExperience: tempWorkExperience });
+      // Always update preview in real-time for ALL fields
+      // Get existing work experiences or initialize empty array
+      const existingExperiences = [...(resumeData.workExperience || [])];
+      
+      // Find if we have a temporary ID entry already
+      const tempEntryIndex = existingExperiences.findIndex(
+        exp => typeof exp.id === 'string' && exp.id.startsWith('temp-')
+      );
+      
+      let updatedExperiences;
+      if (tempEntryIndex !== -1) {
+        // Replace the existing temporary entry
+        updatedExperiences = [...existingExperiences];
+        updatedExperiences[tempEntryIndex] = {
+          ...updated,
+          id: 'temp-' + Date.now(), // Update the temporary ID
+        };
+      } else {
+        // Add a new entry at the beginning
+        updatedExperiences = [
+          {
+            ...updated,
+            id: 'temp-' + Date.now(),
+          },
+          ...existingExperiences
+        ];
       }
       
+      // Update the resume data in real-time
+      updateResumeData({
+        workExperience: updatedExperiences,
+        _previewTimestamp: Date.now() // Force re-render for template
+      });
+      
+      console.log(`Updated ${field} with value: ${value} (real-time preview updated)`);
       return updated;
     });
   };
   
   // Handle job title suggestion selection
   const handleSelectJobTitle = (jobTitle: JobTitle) => {
+    // Update local state
     setWorkExperience(prev => ({
       ...prev,
       jobTitle: jobTitle.title,
       dbJobTitleId: jobTitle.id // Store the database job title ID
     }));
     
-    // Update the resume preview
-    const tempWorkExperience = [...(resumeData.workExperience || [])];
-    tempWorkExperience.unshift({
-      ...workExperience,
-      jobTitle: jobTitle.title,
-      dbJobTitleId: jobTitle.id, // Store the database job title ID
-      id: 'temp-' + Date.now(),
+    // Get existing work experiences
+    const existingExperiences = [...(resumeData.workExperience || [])];
+    
+    // Find if we have a temporary ID entry already
+    const tempEntryIndex = existingExperiences.findIndex(
+      exp => typeof exp.id === 'string' && exp.id.startsWith('temp-')
+    );
+    
+    let updatedExperiences;
+    if (tempEntryIndex !== -1) {
+      // Replace the existing temporary entry
+      updatedExperiences = [...existingExperiences];
+      updatedExperiences[tempEntryIndex] = {
+        ...workExperience,
+        jobTitle: jobTitle.title,
+        dbJobTitleId: jobTitle.id,
+        id: 'temp-' + Date.now(),
+      };
+    } else {
+      // Add a new entry at the beginning
+      updatedExperiences = [
+        {
+          ...workExperience,
+          jobTitle: jobTitle.title,
+          dbJobTitleId: jobTitle.id,
+          id: 'temp-' + Date.now(),
+        },
+        ...existingExperiences
+      ];
+    }
+    
+    // Update resume data for real-time preview
+    updateResumeData({
+      workExperience: updatedExperiences,
+      _previewTimestamp: Date.now() // Force re-render
     });
-    updateResumeData({ workExperience: tempWorkExperience });
     
     // Hide suggestions after selection
     setShowSuggestions(false);
@@ -208,6 +255,7 @@ const WorkExperienceDetailsPage = () => {
   };
 
   const handleCurrentJobChange = (checked: boolean) => {
+    // Update local state
     setWorkExperience(prev => ({
       ...prev,
       isCurrentJob: checked,
@@ -215,15 +263,44 @@ const WorkExperienceDetailsPage = () => {
       ...(checked ? { endMonth: '', endYear: '' } : {})
     }));
     
-    // Update the preview in real-time
-    const tempWorkExperience = [...(resumeData.workExperience || [])];
-    tempWorkExperience.unshift({
-      ...workExperience,
-      isCurrentJob: checked,
-      ...(checked ? { endMonth: '', endYear: '' } : {}),
-      id: 'temp-' + Date.now(),
+    // Get existing work experiences
+    const existingExperiences = [...(resumeData.workExperience || [])];
+    
+    // Find if we have a temporary ID entry already
+    const tempEntryIndex = existingExperiences.findIndex(
+      exp => typeof exp.id === 'string' && exp.id.toString().startsWith('temp-')
+    );
+    
+    let updatedExperiences;
+    if (tempEntryIndex !== -1) {
+      // Replace the existing temporary entry
+      updatedExperiences = [...existingExperiences];
+      updatedExperiences[tempEntryIndex] = {
+        ...workExperience,
+        isCurrentJob: checked,
+        ...(checked ? { endMonth: '', endYear: '' } : {}),
+        id: 'temp-' + Date.now(),
+      };
+    } else {
+      // Add a new entry at the beginning
+      updatedExperiences = [
+        {
+          ...workExperience,
+          isCurrentJob: checked,
+          ...(checked ? { endMonth: '', endYear: '' } : {}),
+          id: 'temp-' + Date.now(),
+        },
+        ...existingExperiences
+      ];
+    }
+    
+    // Update resume data for real-time preview
+    updateResumeData({
+      workExperience: updatedExperiences,
+      _previewTimestamp: Date.now() // Force re-render
     });
-    updateResumeData({ workExperience: tempWorkExperience });
+    
+    console.log(`Updated 'isCurrentJob' with value: ${checked} (real-time preview updated)`);
   };
 
   const months = generateMonths();
