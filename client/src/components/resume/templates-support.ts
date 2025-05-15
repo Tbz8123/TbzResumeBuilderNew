@@ -832,6 +832,91 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     }
   }
   
+  // FINAL SAFEGUARD: Do a post-processing check for any duplicated work experience sections
+  const workExpMarkersCount = (processedHtml.match(/work experience/gi) || []).length;
+  if (workExpMarkersCount > 3) { // Allow for reasonable mentions of "work experience" in headings etc.
+    console.log(`[TEMPLATES] Post-processing detected ${workExpMarkersCount} work experience markers - potential duplication issue`);
+    
+    // Look for patterns of duplicate work entries
+    const duplicateEntryCheck = (html: string): string => {
+      // Find all job titles
+      const jobTitleMatches = html.match(/<div[^>]*>(.*?)<\/div>/gi) || [];
+      const jobTitles: string[] = [];
+      
+      // Extract job titles from divs
+      jobTitleMatches.forEach(match => {
+        const content = match.replace(/<[^>]*>/g, '').trim();
+        if (content && content.length > 3 && !content.includes('WORK EXPERIENCE')) {
+          jobTitles.push(content);
+        }
+      });
+      
+      // Count occurrences of each job title
+      const jobTitleCounts: Record<string, number> = {};
+      for (const title of jobTitles) {
+        jobTitleCounts[title] = (jobTitleCounts[title] || 0) + 1;
+      }
+      
+      // Find duplicated job titles (appearing more than once)
+      const duplicatedTitles = Object.entries(jobTitleCounts)
+        .filter(([_, count]) => count > 1)
+        .map(([title]) => title);
+      
+      if (duplicatedTitles.length > 0) {
+        console.log(`[TEMPLATES] Post-processing found duplicated job titles: ${duplicatedTitles.join(', ')}`);
+        
+        // Add a warning comment to help debugging
+        html = `<!-- WARNING: Duplicated job titles detected: ${duplicatedTitles.join(', ')} -->\n${html}`;
+        
+        // ACTIVE REPAIR: Try to fix the duplication by removing duplicate work experience sections
+        try {
+          // Find the WORK EXPERIENCE section
+          const workExpRegex = /<div[^>]*>\s*<h2[^>]*>\s*WORK EXPERIENCE\s*<\/h2>([\s\S]*?)(?=<div[^>]*>\s*<h2[^>]*>|$)/i;
+          const workExpMatch = html.match(workExpRegex);
+          
+          if (workExpMatch && workExpMatch.length >= 2) {
+            // This is the content of the work experience section
+            const workExpContent = workExpMatch[1];
+            
+            // Count how many times each job title appears in the content
+            let fixedContent = workExpContent;
+            
+            // For each duplicated title, keep only the first occurrence
+            duplicatedTitles.forEach(title => {
+              // Escape special characters in the title for regex
+              const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              
+              // Create a regex to find div blocks containing this title
+              const titleBlockRegex = new RegExp(`(<div[^>]*>[\\s\\S]*?${escapedTitle}[\\s\\S]*?<\\/div>)([\\s\\S]*?${escapedTitle}[\\s\\S]*?)`, 'gi');
+              
+              // Replace with just the first occurrence
+              let matchCount = 0;
+              fixedContent = fixedContent.replace(titleBlockRegex, (match, firstBlock, rest) => {
+                matchCount++;
+                return firstBlock; // Keep only the first block
+              });
+              
+              if (matchCount > 0) {
+                console.log(`[TEMPLATES] Fixed ${matchCount} duplicate entries for job: ${title}`);
+              }
+            });
+            
+            // Replace the original work experience content with the fixed version
+            html = html.replace(workExpMatch[0], `<div><h2>WORK EXPERIENCE</h2>${fixedContent}</div>`);
+            console.log('[TEMPLATES] Successfully repaired duplicated work experience sections');
+          }
+        } catch (error) {
+          console.error('[TEMPLATES] Error attempting to repair duplicates:', error);
+        }
+      }
+      
+      return html;
+    };
+    
+    // Apply the duplicate check
+    processedHtml = duplicateEntryCheck(processedHtml);
+  }
+  
   return processedHtml;
 }
 
