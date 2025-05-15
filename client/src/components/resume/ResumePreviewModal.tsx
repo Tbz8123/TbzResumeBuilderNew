@@ -35,37 +35,56 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   // This forces React to unmount and remount the component, resetting all internal state
   const [previewKey, setPreviewKey] = useState(0);
   
-  // Create a deduplicated version of work experience to prevent duplications
+  // Always deduplicate work experience entries for all templates
   const deduplicatedResumeData = useMemo(() => {
-    if (!resumeData?.workExperience?.length) return resumeData;
+    // If no work experience or no resumeData, just return original data
+    if (!resumeData || !resumeData.workExperience?.length) return resumeData;
     
-    // Clone the resume data to avoid mutating the original
-    const cleanedData = { ...resumeData };
+    // Create a deep clone to avoid mutating the original data
+    const cleanedData = JSON.parse(JSON.stringify(resumeData));
     
-    // Check if we're using template 16 (known problematic template)
+    // Special handling for template 16
     const isTemplate16 = selectedTemplateId === 16;
     
-    if (isTemplate16) {
-      console.log("[RESUME PREVIEW] Template 16 detected - using special handling");
+    // For template 16, completely replace the array with first entry only
+    if (isTemplate16 && cleanedData.workExperience?.length > 0) {
+      console.log("[RESUME PREVIEW] Template 16 detected - using ONLY the first work experience entry");
       
-      // For Template 16, just use the first work experience entry
-      if (cleanedData.workExperience?.length > 0) {
-        cleanedData.workExperience = [cleanedData.workExperience[0]];
-      }
+      // Create a fresh array with just the first entry
+      cleanedData.workExperience = [cleanedData.workExperience[0]];
+      
+      console.log("[RESUME PREVIEW] Template 16 work experience RESTRICTED to:", 
+        cleanedData.workExperience[0].jobTitle,
+        "at",
+        cleanedData.workExperience[0].employer);
     } else {
-      // For other templates, deduplicate by creating a unique key for each entry
+      // For other templates, perform aggressive deduplication using Set
+      console.log("[RESUME PREVIEW] Standard template detected - performing work experience deduplication");
+      
+      // Create a Set of unique entries based on composite key
       const seen = new Set();
-      cleanedData.workExperience = (cleanedData.workExperience || []).filter(exp => {
-        const key = `${exp.jobTitle || ''}|${exp.employer || ''}|${exp.startYear || ''}`;
-        if (seen.has(key)) return false;
+      
+      // Filter the array to only keep unique entries
+      cleanedData.workExperience = cleanedData.workExperience.filter(exp => {
+        // Skip null/undefined entries
+        if (!exp) return false;
+        
+        // Create a composite key from multiple fields for more precise deduplication
+        const key = `${exp.jobTitle || ''}|${exp.employer || ''}|${exp.startYear || ''}|${exp.startMonth || ''}`;
+        
+        // If this key has been seen before, filter it out
+        if (seen.has(key)) {
+          console.log("[RESUME PREVIEW] Removing duplicate:", exp.jobTitle, "at", exp.employer);
+          return false;
+        }
+        
+        // Otherwise, add to seen set and keep this entry
         seen.add(key);
         return true;
       });
     }
     
-    console.log("[RESUME PREVIEW] Deduplicated work experience:", 
-      cleanedData.workExperience.length, 
-      "entries (from original", resumeData.workExperience?.length || 0, "entries)");
+    console.log("[RESUME PREVIEW] Final work experience entries:", cleanedData.workExperience.length);
     
     return cleanedData;
   }, [resumeData, selectedTemplateId]);

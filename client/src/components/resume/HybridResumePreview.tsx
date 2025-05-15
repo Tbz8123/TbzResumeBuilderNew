@@ -573,18 +573,15 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                 
                 ${templateStyles}
               ` }} />
-              {/* CRITICAL FIX: Using a wrapper div with its own unique key */}
-              {/* This ensures the DOM is completely cleared and rebuilt on each update */}
+              {/* Simplified approach that doesn't try to handle template 16 specially */}
               <div key={`template-wrapper-${new Date().getTime()}`} className="template-container">
                 <div 
-                  key={`template-${templateKey}-${new Date().getTime()}`} // Add timestamp to force complete remount
+                  key={`template-${templateKey}-${new Date().getTime()}`}
                   ref={resumeContainerRef}
                   dangerouslySetInnerHTML={{ __html: templateHtml }} 
                   data-work-entries={resumeData.workExperience?.length || 0}
                   data-render-id={`render-${new Date().getTime()}`}
-                  data-experience-count={resumeData.workExperience
-                    ?.filter((exp: any) => !(typeof exp.id === 'string' && exp.id === 'temp-entry'))
-                    .length || 0}
+                  data-template-id={selectedTemplateId || 'none'}
                   style={{ 
                     transform: `scale(${scaleFactor})`,
                     transformOrigin: 'top left',

@@ -571,13 +571,31 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       // For the special template, look for a different pattern
       const specialWorkExpSectionRegex = /<div[^>]*>\s*<h2[^>]*>WORK EXPERIENCE<\/h2>[\s\S]*?(?=<div[^>]*>\s*<h2[^>]*>|$)/i;
       
-      // IMPROVED FIX FOR DUPLICATION ISSUE
-      // Instead of complex DOM manipulation, we'll use a simpler, more reliable approach
-      console.log("[TEMPLATES] Applying improved duplication fix");
+      // ULTRA AGGRESSIVE FIX FOR DUPLICATION ISSUE
+      console.log("[TEMPLATES] Applying ULTRA AGGRESSIVE anti-duplication fix");
       
       try {
-        // First, extract all section headers to maintain the document structure
-        // This more precise regex will work better for this specific template
+        // First, check if the template already has work experience content markers
+        const hasExistingWorkExpContent = processedHtml.includes('START WORK EXPERIENCE CONTENT');
+        
+        if (hasExistingWorkExpContent) {
+          console.log('[TEMPLATES] 🚨 CRITICAL: Detected existing work experience content marker!');
+          console.log('[TEMPLATES] Taking emergency measures to prevent duplication');
+          
+          // The most reliable approach: completely remove all existing work experience HTML
+          const cleanedHtml = processedHtml.replace(
+            /<!-- START WORK EXPERIENCE CONTENT[\s\S]*?END WORK EXPERIENCE CONTENT -->/g,
+            '<!-- REMOVED DUPLICATE WORK EXPERIENCE CONTENT -->'
+          );
+          
+          // If we actually removed something, use the cleaned HTML
+          if (cleanedHtml !== processedHtml) {
+            console.log('[TEMPLATES] Successfully removed duplicated work experience section');
+            processedHtml = cleanedHtml;
+          }
+        }
+        
+        // Extract all section headers to maintain the document structure
         const headerRegex = /<div[^>]*>\s*<h2[^>]*>\s*([^<]+)\s*<\/h2>/gi;
         const sectionHeaders = [];
         let match;
@@ -588,10 +606,6 @@ export function processTemplateHtml(html: string, resumeData: any): string {
             index: match.index
           });
         }
-        
-        console.log("[TEMPLATES] Found section headers:", 
-          sectionHeaders.map(s => `${s.title} at index ${s.index}`).join(', ')
-        );
         
         // Find the WORK EXPERIENCE section and the section that follows it
         const workExpHeader = sectionHeaders.find(s => s.title === 'WORK EXPERIENCE');
@@ -608,11 +622,17 @@ export function processTemplateHtml(html: string, resumeData: any): string {
             // Get the HTML after the next section starts
             const afterWorkExp = processedHtml.substring(nextHeader.index);
             
-            // Construct our work experience content with clean formatting and tracking marker
+            // Generate a unique ID for this specific render process
+            const uniqueId = `work-exp-${new Date().getTime()}`;
+            
+            // Construct our work experience content with robust anti-duplication markers
             const formattedWorkExp = `
               <!-- START WORK EXPERIENCE CONTENT - Generated on ${new Date().toISOString()} -->
               <!-- Contains ${realExperiences.length} work experience entries -->
-              ${workExpHtml}
+              <!-- Render ID: ${uniqueId} -->
+              <div data-work-exp-container="${uniqueId}">
+                ${workExpHtml}
+              </div>
               <!-- END WORK EXPERIENCE CONTENT -->
             `;
             
