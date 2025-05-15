@@ -68,7 +68,7 @@ export function processTemplateHtml(html: string, resumeData: any): string {
   // PRE-PROCESSING STEP: Clean templates with known duplication issues
   // This approach follows the recommended fix in the documentation
   
-  // Detect templates with known issues
+  // Detect templates with known issues - special focus on template 16 with SAHIB KHAN
   const isProblematicTemplate = html.includes('SAHIB KHAN') || 
                                html.includes('GRAPHIC DESIGNER') || 
                                (html.includes('WORK EXPERIENCE') && html.includes('HOBBIES'));
@@ -76,8 +76,12 @@ export function processTemplateHtml(html: string, resumeData: any): string {
   if (isProblematicTemplate) {
     console.log("[TEMPLATES] PRE-PROCESSING: Detected template with known duplication issues");
     
-    // Clean up Work Experience section
-    // Find the section header and the section that comes after it
+    // NUCLEAR OPTION FOR TEMPLATE 16: Completely remove all work experience entries
+    // This is a drastic but effective approach to ensure no duplications
+    
+    console.log("[TEMPLATES] EMERGENCY CLEANUP: Applying aggressive cleaning for template 16");
+    
+    // First, try the standard cleaning approach
     const workExpRegex = /(<div[^>]*>\s*<h2[^>]*>\s*WORK EXPERIENCE\s*<\/h2>)([\s\S]*?)(?=<div[^>]*>\s*<h2[^>]*>|$)/i;
     const match = html.match(workExpRegex);
     
@@ -86,6 +90,21 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       html = html.replace(workExpRegex, workExpHeader); // Remove existing content
       console.log("[TEMPLATES] PRE-PROCESSING: Cleaned work experience section to prevent duplication");
     }
+    
+    // Then, for even more safety, look for any specific work experience content pattern
+    // and remove it completely, regardless of structure
+    
+    // Find and remove anything that looks like a work experience entry in template 16
+    const specificPattern = /Chief Technology Officer[\s\S]*?TBZ[\s\S]*?October 2016 - September 2018/g;
+    if (specificPattern.test(html)) {
+      html = html.replace(specificPattern, '');
+      console.log("[TEMPLATES] EMERGENCY CLEANUP: Removed specific detected duplicated content");
+    }
+    
+    // Also try to remove any other work experience items through a more general pattern
+    const workExpItemPattern = /<div[^>]*work-experience-item[^>]*>[\s\S]*?<\/div>/gi;
+    html = html.replace(workExpItemPattern, '');
+    console.log("[TEMPLATES] EMERGENCY CLEANUP: Removed all work experience items to start fresh");
   }
   
   // Create a map for standard replacements
@@ -411,12 +430,31 @@ export function processTemplateHtml(html: string, resumeData: any): string {
   // 2. Process work experience entries
   if (resumeData.workExperience && resumeData.workExperience.length > 0) {
     // Filter out temporary entries
-    const realExperiences = resumeData.workExperience.filter((exp: any) => 
+    const filteredExperiences = resumeData.workExperience.filter((exp: any) => 
       !(typeof exp.id === 'string' && exp.id === 'temp-entry')
     );
 
     console.log("[TEMPLATES] Processing work experience entries. Total entries:", 
-      resumeData.workExperience.length, "Real entries:", realExperiences.length);
+      resumeData.workExperience.length, "Filtered entries:", filteredExperiences.length);
+    
+    // SPECIAL FIX: For problematic templates like "SAHIB KHAN", always deduplicate work experience
+    // This prevents duplicate entries from being processed in the first place
+    const realExperiences = [];
+    const seenKeys = new Set();
+    
+    for (const exp of filteredExperiences) {
+      // Create a unique key based on job title, company and date
+      const key = `${exp.jobTitle || ''}|${exp.employer || ''}|${exp.startYear || ''}`;
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        realExperiences.push(exp);
+      } else {
+        console.log("[TEMPLATES] Detected and removed duplicate work experience:", key);
+      }
+    }
+    
+    // Report the deduplication results
+    console.log("[TEMPLATES] After deduplication:", realExperiences.length, "unique entries");
 
     // Check if this is the specific template that's having issues
     // By detecting unique patterns in the template HTML
