@@ -387,36 +387,16 @@ export function processTemplateHtml(html: string, resumeData: any): string {
   
   // 2. Process work experience entries
   if (resumeData.workExperience && resumeData.workExperience.length > 0) {
-    // Clean the work experience data from temporary entries - important for preview
+    // Filter out temporary entries
     const realExperiences = resumeData.workExperience.filter((exp: any) => 
       !(typeof exp.id === 'string' && exp.id === 'temp-entry')
     );
-    
-    // Always use only one instance of the temp entry to avoid duplication
-    let tempEntry = null;
-    let hasTemp = false;
-    
-    // Find the temporary entry if it exists
-    for (const exp of resumeData.workExperience) {
-      if (typeof exp.id === 'string' && exp.id === 'temp-entry') {
-        if (!hasTemp) {
-          tempEntry = exp;
-          hasTemp = true;
-        }
-        // Only keep the first one we find
-        break;
-      }
-    }
-    
-    // Combine real entries with at most one temp entry
-    const experiencesToRender = hasTemp 
-      ? [tempEntry, ...realExperiences] 
-      : realExperiences;
-    
-    console.log("[TEMPLATES] Processing work experience entries:", experiencesToRender.length);
-    
-    // Simple work experience items for the custom template
-    const entriesHtml = experiencesToRender.map((exp: any) => {
+
+    console.log("[TEMPLATES] Processing work experience entries. Total entries:", 
+      resumeData.workExperience.length, "Real entries:", realExperiences.length);
+
+    // Generate HTML for work experience section
+    const workExpHtml = realExperiences.map((exp: any) => {
       const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
       const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
       
@@ -426,27 +406,27 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       
       const description = exp.responsibilities || exp.description || '';
       
-      // Create simple text entries that preserve the template formatting
       return `
-${exp.jobTitle || 'Product Manager'}
-${exp.employer || ''}
-${dateRange}
+      <div class="work-experience-item">
+        <h3>${exp.jobTitle || ''}</h3>
+        <p class="company">${exp.employer || ''}</p>
+        <p class="work-dates">${dateRange}</p>
+        <p>${description}</p>
+      </div>
       `;
-    }).join('\n');
-    
-    // For your specific template, find the work experience section
-    const workExpRegex = /<div\s+class="section">\s*<h2>\s*WORK\s+EXPERIENCE\s*<\/h2>\s*([\s\S]*?)<\/div>/i;
-    
-    if (workExpRegex.test(processedHtml)) {
-      // Replace only the content inside the work experience section, preserving the structure
+    }).join('');
+
+    // Replace the entire work experience section
+    const workExpSectionRegex = /<div class="section">\s*<h2>WORK EXPERIENCE<\/h2>[\s\S]*?<\/div>/i;
+    if (workExpSectionRegex.test(processedHtml)) {
       processedHtml = processedHtml.replace(
-        workExpRegex, 
+        workExpSectionRegex,
         `<div class="section">
           <h2>WORK EXPERIENCE</h2>
-          ${entriesHtml}
+          ${workExpHtml}
         </div>`
       );
-      console.log("[TEMPLATES] Replaced work experience section preserving template format");
+      console.log("[TEMPLATES] Successfully replaced work experience section");
     } else {
       console.log("[TEMPLATES] Could not find work experience section in template");
     }
@@ -460,8 +440,8 @@ ${dateRange}
       
       // For each match, replace with corresponding work experience or leave it empty
       matches.forEach((match, index) => {
-        if (index < experiencesToRender.length) {
-          const exp = experiencesToRender[index];
+        if (index < realExperiences.length) {
+          const exp = realExperiences[index];
           
           // Format the date range based on our actual data model
           const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
