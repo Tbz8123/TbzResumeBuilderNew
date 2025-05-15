@@ -550,28 +550,34 @@ export function processTemplateHtml(html: string, resumeData: any): string {
               workExpMatch[1],
               `
               <div class="workexp-container">
+                <!-- ALTERNATIVE WORK EXPERIENCE CONTENT - Generated on ${new Date().toISOString()} -->
+                <!-- Contains ${realExperiences.length} work experience entries -->
                 ${workExpHtml}
+                <!-- END ALTERNATIVE CONTENT -->
               </div>
               `
             );
-            console.log("[TEMPLATES] Applied alternative work experience fix");
+            console.log("[TEMPLATES] Applied alternative work experience fix with proper tracking");
           }
         }
       } catch (err) {
         console.error("[TEMPLATES] Error in emergency fix:", err);
       }
     } else {
-      // Standard template replacement
+      // Standard template replacement with improved tracking
       const workExpSectionRegex = /<div class="section">\s*<h2>WORK EXPERIENCE<\/h2>[\s\S]*?<\/div>/i;
       if (workExpSectionRegex.test(processedHtml)) {
         processedHtml = processedHtml.replace(
           workExpSectionRegex,
           `<div class="section">
             <h2>WORK EXPERIENCE</h2>
+            <!-- STANDARD WORK EXPERIENCE CONTENT - Generated on ${new Date().toISOString()} -->
+            <!-- Contains ${realExperiences.length} work experience entries -->
             ${workExpHtml}
+            <!-- END STANDARD CONTENT -->
           </div>`
         );
-        console.log("[TEMPLATES] Successfully replaced work experience section");
+        console.log("[TEMPLATES] Successfully replaced work experience section with proper tracking");
       } else {
         console.log("[TEMPLATES] Could not find work experience section in template");
       }

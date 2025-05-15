@@ -179,7 +179,14 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     
     console.log("HTML processed with data", processedHtml.substring(0, 200) + "...");
     
-    // Update the templateKey to force a re-render even if the processed HTML looks the same
+    // Check for duplicated content by looking for repeated section markers
+    const workExpMarkersCount = (processedHtml.match(/WORK EXPERIENCE CONTENT/g) || []).length;
+    if (workExpMarkersCount > 1) {
+      console.warn(`[PREVIEW] Detected ${workExpMarkersCount} work experience markers - possible duplication issue`);
+    }
+    
+    // Update the templateKey to force a complete re-render of the component
+    // This is critical for preventing duplication by ensuring fresh DOM content
     setTemplateKey(prev => prev + 1);
     
     // Update the HTML state
@@ -201,6 +208,10 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       additionalFields: resumeData.additionalFields, // Log the full additionalFields object
       updateTimestamp: new Date().toISOString() // Track when updates happen
     });
+    
+    // Reset tracking flags to ensure clean rendering
+    renderedSectionsRef.current = {};
+    console.log("[PREVIEW] Reset rendered sections tracking");
     
     // Process the HTML with the updated data immediately for each change
     // This ensures real-time updates in the preview
