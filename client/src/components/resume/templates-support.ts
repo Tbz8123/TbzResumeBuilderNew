@@ -457,17 +457,33 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       // For the special template, look for a different pattern
       const specialWorkExpSectionRegex = /<div[^>]*>\s*<h2[^>]*>WORK EXPERIENCE<\/h2>[\s\S]*?(?=<div[^>]*>\s*<h2[^>]*>|$)/i;
       
-      if (specialWorkExpSectionRegex.test(processedHtml)) {
-        processedHtml = processedHtml.replace(
-          specialWorkExpSectionRegex,
-          `<div class="section">
-            <h2>WORK EXPERIENCE</h2>
-            ${workExpHtml}
-          </div>`
-        );
-        console.log("[TEMPLATES] Successfully replaced work experience section in special template");
+      // For the special template, let's take a more aggressive approach
+      // Completely clear and rebuild the work experience section
+      
+      // First, let's extract the template structure
+      const blueTemplateRegex = /([\s\S]*?WORK EXPERIENCE<\/h2>)[\s\S]*?(<div[^>]*>\s*<h2[^>]*>(?:HOBBIES|LEADERSHIP)<\/h2>[\s\S]*)/i;
+      const matches = processedHtml.match(blueTemplateRegex);
+      
+      if (matches && matches.length >= 3) {
+        // We found the beginning and end parts, now insert our content in between
+        const beforeWorkExp = matches[1];
+        const afterWorkExp = matches[2];
+        
+        // Completely rebuild the HTML with our work experience content
+        processedHtml = beforeWorkExp + workExpHtml + afterWorkExp;
+        console.log("[TEMPLATES] Successfully rebuilt work experience section in special template");
       } else {
-        console.log("[TEMPLATES] Could not find work experience section in special template");
+        console.log("[TEMPLATES] Could not find proper structure in special template");
+        
+        // Fallback to regular replacement if structure extraction fails
+        const fallbackRegex = /<h2[^>]*>WORK EXPERIENCE<\/h2>[\s\S]*?(?=<h2[^>]*>)/i;
+        if (fallbackRegex.test(processedHtml)) {
+          processedHtml = processedHtml.replace(
+            fallbackRegex,
+            `<h2>WORK EXPERIENCE</h2>\n${workExpHtml}\n`
+          );
+          console.log("[TEMPLATES] Used fallback replacement for work experience section");
+        }
       }
     } else {
       // Standard template replacement

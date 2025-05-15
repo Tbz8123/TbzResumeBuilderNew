@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { 
   Dialog,
@@ -31,6 +31,18 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   hideSkills = true,
   onNextStep
 }) => {
+  // Create a unique key that changes whenever the modal is opened
+  // This forces React to unmount and remount the component, resetting all internal state
+  const [previewKey, setPreviewKey] = useState(0);
+  
+  // Reset the preview key when the modal opens to force a complete re-render
+  useEffect(() => {
+    if (open) {
+      console.log("[RESUME PREVIEW] Modal opened - resetting preview key to force clean render");
+      setPreviewKey(prev => prev + 1);
+    }
+  }, [open]);
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto p-4">
@@ -43,7 +55,9 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
         
         <div className="flex justify-center p-4 bg-gray-50 rounded-md overflow-hidden" style={{ maxHeight: 'calc(90vh - 150px)' }}>
           <div style={{ transform: 'scale(0.55)', transformOrigin: 'top center', marginBottom: '-30%' }}>
+            {/* Use the key prop to force a complete remount when the modal opens */}
             <HybridResumePreview 
+              key={`resume-preview-${previewKey}`}
               width={794} 
               height={1123}
               className="border shadow-lg"
