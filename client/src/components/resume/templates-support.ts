@@ -388,25 +388,27 @@ export function processTemplateHtml(html: string, resumeData: any): string {
   // 2. Process work experience entries
   if (resumeData.workExperience && resumeData.workExperience.length > 0) {
     // Look for work experience placeholders and replace them
-    const workExperienceHTML = resumeData.workExperience.map((exp: {
-      jobTitle: string;
-      employer: string;
-      location: string;
-      startDate: string;
-      endDate: string;
-      isCurrentPosition: boolean;
-      description: string;
-    }) => {
-      const dateRange = exp.isCurrentPosition 
-        ? `${exp.startDate} - Present` 
-        : `${exp.startDate} - ${exp.endDate}`;
+    const workExperienceHTML = resumeData.workExperience.map((exp: any) => {
+      // Format the date range based on our actual data model (startMonth/startYear/endMonth/endYear)
+      const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
+      const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
+      
+      const dateRange = exp.isCurrentJob 
+        ? `${startDate} - Present` 
+        : `${startDate}${endDate ? ` - ${endDate}` : ''}`;
+      
+      // Get responsibilities or fall back to description field if it exists (for backwards compatibility)
+      const description = exp.responsibilities || exp.description || '';
+      
+      // Get location and add Remote if flagged
+      const locationText = exp.location + (exp.isRemote ? ' (Remote)' : '');
       
       return `
         <div class="work-entry">
-          <h3>${exp.jobTitle}</h3>
-          <p class="company">${exp.employer}, ${exp.location}</p>
+          <h3>${exp.jobTitle || ''}</h3>
+          <p class="company">${exp.employer || ''}${exp.location ? `, ${locationText}` : ''}</p>
           <p class="date">${dateRange}</p>
-          <p class="description">${exp.description}</p>
+          <p class="description">${description}</p>
         </div>
       `;
     }).join('');
@@ -433,24 +435,26 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       // For each match, replace with corresponding work experience or leave it empty
       matches.forEach((match, index) => {
         if (index < resumeData.workExperience.length) {
-          const exp: {
-            jobTitle: string;
-            employer: string;
-            location: string;
-            startDate: string;
-            endDate: string;
-            isCurrentPosition: boolean;
-            description: string;
-          } = resumeData.workExperience[index];
+          const exp = resumeData.workExperience[index];
           
-          const dateRange = exp.isCurrentPosition 
-            ? `${exp.startDate} - Present` 
-            : `${exp.startDate} - ${exp.endDate}`;
+          // Format the date range based on our actual data model
+          const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
+          const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
+          
+          const dateRange = exp.isCurrentJob 
+            ? `${startDate} - Present` 
+            : `${startDate}${endDate ? ` - ${endDate}` : ''}`;
             
+          // Get responsibilities or fall back to description
+          const description = exp.responsibilities || exp.description || '';
+            
+          // Get location and add Remote if flagged
+          const locationText = exp.location + (exp.isRemote ? ' (Remote)' : '');
+          
           const replacement = `
             <div class="entry">
               <div class="year">${dateRange}</div>
-              <div class="desc">${exp.jobTitle} at ${exp.employer}, ${exp.location}: ${exp.description}</div>
+              <div class="desc">${exp.jobTitle} at ${exp.employer}${exp.location ? `, ${locationText}` : ''}: ${description}</div>
             </div>
           `;
           
