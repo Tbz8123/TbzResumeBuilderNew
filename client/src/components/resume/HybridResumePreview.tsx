@@ -343,15 +343,18 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                 WORK EXPERIENCE
               </h2>
               <div className="text-xs space-y-3 text-gray-600">
-                {resumeData.workExperience.length > 0 ? (
+                {resumeData.workExperience && resumeData.workExperience.length > 0 ? (
                   resumeData.workExperience.map((exp, index) => (
-                    <div key={index}>
+                    <div key={exp.id || index}>
                       <div className="flex justify-between">
                         <p className="font-medium">{exp.jobTitle}</p>
-                        <p>{exp.startDate} – {exp.isCurrentPosition ? 'Present' : exp.endDate}</p>
+                        <p>
+                          {exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : ''} – {' '}
+                          {exp.isCurrentJob ? 'Present' : (exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '')}
+                        </p>
                       </div>
-                      <p className="italic">{exp.employer}, {exp.location}</p>
-                      <p className="mt-1">{exp.description}</p>
+                      <p className="italic">{exp.employer}{exp.location ? `, ${exp.location}` : ''}{exp.isRemote ? ' (Remote)' : ''}</p>
+                      <p className="mt-1">{exp.responsibilities}</p>
                     </div>
                   ))
                 ) : (

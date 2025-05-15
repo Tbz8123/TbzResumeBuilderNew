@@ -391,10 +391,7 @@ const WorkExperienceDetailsPage = () => {
                           className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex justify-between items-center"
                           onClick={() => handleSelectJobTitle(jobTitle)}
                         >
-                          <div>
-                            <span className="font-medium">{jobTitle.title}</span>
-                            <span className="text-xs text-gray-500 ml-2">({jobTitle.category})</span>
-                          </div>
+                          {jobTitle.title}
                         </button>
                       ))}
                     </div>
