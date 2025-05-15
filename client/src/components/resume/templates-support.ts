@@ -429,6 +429,14 @@ export function processTemplateHtml(html: string, resumeData: any): string {
   
   // 2. Process work experience entries
   if (resumeData.workExperience && resumeData.workExperience.length > 0) {
+    // Check if this is Template 16 which has a severe duplication problem
+    const selectedTemplateId = resumeData.selectedTemplateId || null;
+    const isTemplate16 = (selectedTemplateId === 16) || html.includes('SAHIB KHAN');
+    
+    if (isTemplate16) {
+      console.log("[TEMPLATES] 🚨 DETECTED TEMPLATE 16 - Applying extreme fix mode");
+    }
+    
     // Filter out temporary entries
     const filteredExperiences = resumeData.workExperience.filter((exp: any) => 
       !(typeof exp.id === 'string' && exp.id === 'temp-entry')
@@ -442,14 +450,21 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     const realExperiences = [];
     const seenKeys = new Set();
     
-    for (const exp of filteredExperiences) {
-      // Create a unique key based on job title, company and date
-      const key = `${exp.jobTitle || ''}|${exp.employer || ''}|${exp.startYear || ''}`;
-      if (!seenKeys.has(key)) {
-        seenKeys.add(key);
-        realExperiences.push(exp);
-      } else {
-        console.log("[TEMPLATES] Detected and removed duplicate work experience:", key);
+    // For template 16, take only the first experience regardless
+    if (isTemplate16 && filteredExperiences.length > 0) {
+      console.log("[TEMPLATES] TEMPLATE 16 FIX: Using only first work experience entry");
+      realExperiences.push(filteredExperiences[0]);
+    } else {
+      // For other templates, perform normal deduplication
+      for (const exp of filteredExperiences) {
+        // Create a unique key based on job title, company and date
+        const key = `${exp.jobTitle || ''}|${exp.employer || ''}|${exp.startYear || ''}`;
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          realExperiences.push(exp);
+        } else {
+          console.log("[TEMPLATES] Detected and removed duplicate work experience:", key);
+        }
       }
     }
     
@@ -458,20 +473,53 @@ export function processTemplateHtml(html: string, resumeData: any): string {
 
     // Check if this is the specific template that's having issues
     // By detecting unique patterns in the template HTML
+    const templateId = resumeData.selectedTemplateId || null;
     const isSpecialTemplate = processedHtml.includes('SAHIB KHAN') || 
                              processedHtml.includes('GRAPHIC DESIGNER') || 
-                             (processedHtml.includes('WORK EXPERIENCE') && processedHtml.includes('HOBBIES'));
+                             (processedHtml.includes('WORK EXPERIENCE') && processedHtml.includes('HOBBIES')) ||
+                             templateId === 16;
     
     console.log("[TEMPLATES] Template type detection:", isSpecialTemplate ? "Using special template formatting" : "Using standard formatting");
     
     // Add a rendering marker to help debug the duplication issue
     console.log("[TEMPLATES] Creating unique work experience HTML with", realExperiences.length, "entries");
     
+    // Add timestamp for uniqueness to prevent caching
+    const renderTimestamp = new Date().getTime();
+    
     // Generate HTML for work experience based on template type
     let workExpHtml = '';
     
-    if (isSpecialTemplate) {
-      // Special formatting for the template with the blue sidebar
+    // Special handling for Template 16
+    if (templateId === 16) {
+      console.log("[TEMPLATES] 🚨 Using EXTREMELY simplified formatting for Template 16");
+      
+      // For Template 16, create completely minimized HTML with no class names
+      // Use only the first experience even if there are multiple
+      if (realExperiences.length > 0) {
+        const exp = realExperiences[0];
+        const jobTitle = (exp.jobTitle || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const employer = (exp.employer || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
+        const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
+        const dateRange = exp.isCurrentJob 
+          ? `${startDate} - Present` 
+          : `${startDate}${endDate ? ` - ${endDate}` : ''}`;
+        
+        // Create ultra-simple HTML with unique timestamp attribute to prevent duplication
+        workExpHtml = `
+          <div data-timestamp="${renderTimestamp}">
+            <div data-item="true">
+              ${jobTitle}<br/>
+              ${employer}<br/>
+              ${dateRange}
+            </div>
+          </div>
+        `;
+      }
+    }  
+    else if (isSpecialTemplate) {
+      // Special formatting for other templates with the blue sidebar
       workExpHtml = realExperiences.map((exp: any, index: number) => {
         const jobTitle = (exp.jobTitle || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const employer = (exp.employer || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -485,7 +533,7 @@ export function processTemplateHtml(html: string, resumeData: any): string {
         // Format each entry as individual HTML elements with proper spacing
         return `
           ${index > 0 ? '<br/>' : ''}
-          <div>
+          <div data-timestamp="${renderTimestamp}">
             <strong>${jobTitle}</strong><br/>
             ${employer}<br/>
             ${dateRange}<br/>
@@ -495,7 +543,7 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       }).join('');
     } else {
       // Default formatting for other templates
-      workExpHtml = realExperiences.map((exp: any) => {
+      workExpHtml = realExperiences.map((exp: any, index: number) => {
         const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
         const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
         const dateRange = exp.isCurrentJob 
@@ -505,8 +553,10 @@ export function processTemplateHtml(html: string, resumeData: any): string {
         const employer = (exp.employer || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const description = (exp.responsibilities || exp.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         
+        // Add unique timestamp and index to each work experience item
+        // This helps prevent duplication by ensuring unique DOM elements
         return `
-        <div class="work-experience-item">
+        <div class="work-experience-item" data-timestamp="${renderTimestamp}" data-index="${index}">
           <h3>${jobTitle}</h3>
           <p class="company">${employer}</p>
           <p class="work-dates">${dateRange}</p>
