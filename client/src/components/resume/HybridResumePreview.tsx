@@ -455,15 +455,53 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     }
   }, []);
   
-  // Apply auto-scaling after template updates
+  // Apply auto-scaling after template updates and check for duplications
   useEffect(() => {
     if (templateHtml) {
       // Use setTimeout to ensure content is fully rendered first
       setTimeout(() => {
+        // First check for duplicate work experience entries
+        const container = resumeContainerRef.current;
+        if (container) {
+          // Check for duplicate work experience entries by looking for repeated section markers
+          const workExpMarkersCount = (templateHtml.match(/WORK EXPERIENCE CONTENT/g) || []).length;
+          
+          // Count actual work entries in the DOM
+          const workExpContainers = container.querySelectorAll('.work-experience-item, .workexp-container');
+          const realExperienceCount = resumeData.workExperience?.filter((exp: any) => 
+            !(typeof exp.id === 'string' && exp.id === 'temp-entry')).length || 0;
+          
+          console.log(`[DUPLICATION CHECK] Found ${workExpContainers.length} work exp containers in DOM for ${realExperienceCount} actual entries`);
+          
+          // If we detect more containers than actual entries, we might have a duplication issue
+          if (workExpContainers.length > realExperienceCount * 1.5 && realExperienceCount > 0) {
+            console.warn('[DUPLICATION CHECK] Possible work experience duplication detected, forcing re-render');
+            // Force a complete re-render with a new key
+            setTemplateKey(prev => prev + 100);
+            
+            // Clear the inner HTML completely
+            container.innerHTML = '';
+            
+            // Re-render after clearing
+            setTimeout(() => {
+              setTemplateHtml(processTemplateHtml(templateHtmlRef.current || '', resumeData));
+            }, 50);
+            
+            return; // Skip auto-scaling until next render
+          }
+        }
+        
+        // Proceed with auto-scaling if no duplication detected
         autoScaleContent();
-      }, 100);
+      }, 150); // Increased timeout for more reliable DOM checking
     }
-  }, [templateHtml, autoScaleContent]);
+  }, [
+    templateHtml, 
+    autoScaleContent, 
+    resumeData.workExperience,
+    processHtmlWithData, // Include the data processing function
+    templateHtmlRef     // Include the HTML reference
+  ]);
   
   // Initial scaling based on container size
   const scaleFactor = calculateScale();
@@ -539,6 +577,11 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                 key={`template-${templateKey}`} // Use key to force re-render on updates
                 ref={resumeContainerRef}
                 dangerouslySetInnerHTML={{ __html: templateHtml }} 
+                data-work-entries={resumeData.workExperience?.length || 0}
+                data-render-id={`render-${new Date().getTime()}`}
+                data-experience-count={resumeData.workExperience
+                  ?.filter((exp: any) => !(typeof exp.id === 'string' && exp.id === 'temp-entry'))
+                  .length || 0}
                 style={{ 
                   transform: `scale(${scaleFactor})`,
                   transformOrigin: 'top left',
