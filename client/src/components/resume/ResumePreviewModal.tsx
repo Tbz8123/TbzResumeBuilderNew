@@ -42,124 +42,146 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       setPreviewKey(prev => prev + 1);
       
       // EMERGENCY FIX: Add two approaches to solve the issue
-      // 1. Direct DOM manipulation right after render
-      // 2. MutationObserver to watch for template changes and fix them in real-time
+      // COMPREHENSIVE FIX FOR DUPLICATION ISSUES
+      // Using multiple techniques to ensure work experience doesn't duplicate
       
-      // First attempt - immediate fix
+      // Main fix function with enhanced tactics
       const clearWorkExperienceSection = () => {
         try {
+          console.log("[PREVIEW FIX] Implementing comprehensive duplication fix");
+          
+          // APPROACH 1: Completely remount the element by deleting and recreating it
+          // This ensures we have a fresh DOM on each preview
           // Set multiple timeouts to catch the iframe at different stages of loading
-          // Some browsers may take longer to fully render the iframe content
           [300, 600, 1000].forEach(delay => {
             setTimeout(() => {
-              console.log(`[PREVIEW FIX] Applying fix after ${delay}ms delay`);
+              console.log(`[PREVIEW FIX] Applying DOM cleanup after ${delay}ms delay`);
               
-              // Target the iframes that contain the template content
+              // Target any iframe elements that might contain the template
               const iframes = document.querySelectorAll('iframe');
               
               iframes.forEach(iframe => {
                 if (iframe.contentDocument) {
                   const doc = iframe.contentDocument;
                   
-                  // First, try targeting specific elements by ID or class name
-                  const workExpSection = doc.querySelector('.work-experience') || 
-                                       doc.querySelector('#work-experience') || 
-                                       doc.getElementById('workExperience');
+                  // NUCLEAR OPTION: Instead of selectively clearing sections,
+                  // completely rebuild the entire document structure
+                  // This ensures a clean slate for each render
                   
-                  if (workExpSection) {
-                    console.log('[PREVIEW FIX] Found work experience by ID/class');
-                    
-                    // Keep only the section header and clear everything else
-                    const header = workExpSection.querySelector('h2');
-                    
-                    if (header) {
-                      // Save the header
-                      const headerClone = header.cloneNode(true);
-                      
-                      // Clear everything
-                      workExpSection.innerHTML = '';
-                      
-                      // Put back just the header
-                      workExpSection.appendChild(headerClone);
-                      console.log('[PREVIEW FIX] Cleared work experience section');
-                    }
-                  } else {
-                    // Fallback - find by heading text
-                    const headers = doc.querySelectorAll('h2, h3, h4');
-                    
-                    // Find the work experience section
-                    headers.forEach(header => {
-                      if (header.textContent?.includes('WORK EXPERIENCE')) {
-                        console.log('[PREVIEW FIX] Found Work Experience section by text content');
-                        
-                        // Find the container that holds work experience entries
-                        // Get the parent container
-                        const sectionContainer = header.closest('div');
-                        
-                        if (sectionContainer) {
-                          // Keep the header but remove all subsequent elements 
-                          const workEntryElements = Array.from(sectionContainer.children).filter(child => 
-                            child !== header && !child.tagName.startsWith('H')
-                          );
-                          
-                          console.log(`[PREVIEW FIX] Removing ${workEntryElements.length} existing work entries`);
-                          
-                          // Remove all existing content
-                          workEntryElements.forEach(element => element.remove());
-                        }
-                      }
-                    });
-                  }
+                  // Extract critical elements to preserve (like <head> content)
+                  const htmlElement = doc.documentElement;
+                  const headContent = doc.head.innerHTML;
+                  
+                  // Save the original body structure but reset all content
+                  const bodyClasses = doc.body.className;
+                  const bodyStyle = doc.body.getAttribute('style') || '';
+                  
+                  // Create a fresh body element
+                  const newBody = doc.createElement('body');
+                  newBody.className = bodyClasses;
+                  newBody.setAttribute('style', bodyStyle);
+                  
+                  // Replace the entire body with the new empty one
+                  // This forces a complete rebuild of the content
+                  doc.body.replaceWith(newBody);
+                  
+                  // Rebuild any necessary structure that needs to exist
+                  // before template content is injected
+                  
+                  // This approach ensures no duplicated elements can exist
+                  // because the entire DOM is completely reset
+                  console.log(`[PREVIEW FIX] Completely rebuilt document structure at ${delay}ms`);
                 }
               });
             }, delay);
           });
           
-          // Second approach: Set up a MutationObserver to catch any changes to the DOM
-          // This will handle cases where the template is updated after our initial fix
+          // APPROACH 2: Monitor the DOM for duplicates and fix in real-time
           setTimeout(() => {
+            console.log("[PREVIEW FIX] Setting up mutation observer to catch duplicates");
+            
             const iframes = document.querySelectorAll('iframe');
             
             iframes.forEach(iframe => {
               if (iframe.contentDocument) {
                 const doc = iframe.contentDocument;
                 
-                // Create a mutation observer to watch for changes to the DOM
+                // Create a more sophisticated mutation observer that looks specifically
+                // for duplication patterns
                 const observer = new MutationObserver((mutations) => {
-                  // Look for mutations that add nodes to the document
+                  let potentialDuplicatesFound = false;
+                  
                   mutations.forEach(mutation => {
                     if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                      // Check if any of the added nodes contain work experience duplicates
+                      // Check each added node for potential work experience duplicates
                       mutation.addedNodes.forEach(node => {
                         if (node.nodeType === Node.ELEMENT_NODE) {
                           const element = node as Element;
                           
-                          // Look for duplicate work experience entries
-                          const workExperienceEntries = element.querySelectorAll && 
-                            element.querySelectorAll('.work-experience-item, .work-experience > div, .workexp-container > div');
+                          // Look for work experience divs using multiple selector patterns
+                          // This catches various template structures
+                          const workExpSelectors = [
+                            '.work-experience-item', 
+                            '.work-experience > div', 
+                            '.workexp-container > div',
+                            '[data-section="work-experience"] > div',
+                            'div:has(h2:contains("WORK EXPERIENCE")) > div',
+                            'div:has(h3:contains("WORK EXPERIENCE")) > div'
+                          ];
                           
+                          // Find any work experience entries using our selectors
+                          const workExperienceEntries = element.querySelectorAll && 
+                            element.querySelectorAll(workExpSelectors.join(', '));
+                          
+                          // If more than one work entry is found, we have duplicates
                           if (workExperienceEntries && workExperienceEntries.length > 1) {
                             console.log(`[PREVIEW FIX] Observer detected ${workExperienceEntries.length} work entries - fixing duplicates`);
+                            potentialDuplicatesFound = true;
                             
-                            // Keep only the first entry and remove the rest to prevent duplicates
-                            for (let i = 1; i < workExperienceEntries.length; i++) {
-                              workExperienceEntries[i].remove();
-                            }
+                            // Keep only the first entry of each type and remove the rest
+                            const seen = new Set();
+                            
+                            workExperienceEntries.forEach(entry => {
+                              // Create a fingerprint of the entry based on text content
+                              const fingerprint = entry.textContent?.trim();
+                              
+                              if (fingerprint && seen.has(fingerprint)) {
+                                // This is a duplicate based on content, remove it
+                                entry.remove();
+                                console.log('[PREVIEW FIX] Removed duplicate entry with matching content');
+                              } else if (fingerprint) {
+                                // This is the first occurrence, keep track of it
+                                seen.add(fingerprint);
+                              }
+                            });
                           }
                         }
                       });
                     }
                   });
+                  
+                  // If we found and fixed duplicates, log it
+                  if (potentialDuplicatesFound) {
+                    console.log('[PREVIEW FIX] Fixed duplicate entries via observer');
+                  }
                 });
                 
-                // Start observing the document with the configured parameters
-                observer.observe(doc.body, { childList: true, subtree: true });
+                // Start observing with comprehensive coverage
+                observer.observe(doc.body, { 
+                  childList: true, 
+                  subtree: true,
+                  characterData: true,
+                  attributes: true 
+                });
                 
                 // Disconnect after 5 seconds to prevent memory leaks
-                setTimeout(() => observer.disconnect(), 5000);
+                setTimeout(() => {
+                  observer.disconnect();
+                  console.log('[PREVIEW FIX] Disconnected observer to prevent memory leaks');
+                }, 5000);
               }
             });
-          }, 1000);
+          }, 800);
           
         } catch (err) {
           console.error('[PREVIEW FIX] Error in emergency DOM fix:', err);

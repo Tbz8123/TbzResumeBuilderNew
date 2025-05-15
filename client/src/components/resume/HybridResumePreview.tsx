@@ -573,27 +573,31 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                 
                 ${templateStyles}
               ` }} />
-              <div 
-                key={`template-${templateKey}`} // Use key to force re-render on updates
-                ref={resumeContainerRef}
-                dangerouslySetInnerHTML={{ __html: templateHtml }} 
-                data-work-entries={resumeData.workExperience?.length || 0}
-                data-render-id={`render-${new Date().getTime()}`}
-                data-experience-count={resumeData.workExperience
-                  ?.filter((exp: any) => !(typeof exp.id === 'string' && exp.id === 'temp-entry'))
-                  .length || 0}
-                style={{ 
-                  transform: `scale(${scaleFactor})`,
-                  transformOrigin: 'top left',
-                  width: '794px', // A4 width
-                  minHeight: '1123px', // A4 height
-                  maxHeight: 'none', // Allow content to expand for measuring
-                  overflow: 'visible', // Important for measuring true content height
-                  padding: '0',
-                  margin: '0',
-                }}
-                className="resume-page"
-              />
+              {/* CRITICAL FIX: Using a wrapper div with its own unique key */}
+              {/* This ensures the DOM is completely cleared and rebuilt on each update */}
+              <div key={`template-wrapper-${new Date().getTime()}`} className="template-container">
+                <div 
+                  key={`template-${templateKey}-${new Date().getTime()}`} // Add timestamp to force complete remount
+                  ref={resumeContainerRef}
+                  dangerouslySetInnerHTML={{ __html: templateHtml }} 
+                  data-work-entries={resumeData.workExperience?.length || 0}
+                  data-render-id={`render-${new Date().getTime()}`}
+                  data-experience-count={resumeData.workExperience
+                    ?.filter((exp: any) => !(typeof exp.id === 'string' && exp.id === 'temp-entry'))
+                    .length || 0}
+                  style={{ 
+                    transform: `scale(${scaleFactor})`,
+                    transformOrigin: 'top left',
+                    width: '794px', // A4 width
+                    minHeight: '1123px', // A4 height
+                    maxHeight: 'none', // Allow content to expand for measuring
+                    overflow: 'visible', // Important for measuring true content height
+                    padding: '0',
+                    margin: '0',
+                  }}
+                  className="resume-page"
+                />
+              </div>
             </div>
           </div>
         ) : (
