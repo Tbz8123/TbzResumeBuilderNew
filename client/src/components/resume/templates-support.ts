@@ -395,39 +395,95 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     console.log("[TEMPLATES] Processing work experience entries. Total entries:", 
       resumeData.workExperience.length, "Real entries:", realExperiences.length);
 
-    // Generate plain text work experience entries for this specific template format
-    // Analyze template structure to determine the best output format
-    // This simpler approach works better with the template's existing formatting
-    const workExpHtml = realExperiences.map((exp: any) => {
-      const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
-      const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
-      
-      const dateRange = exp.isCurrentJob 
-        ? `${startDate} - Present` 
-        : `${startDate}${endDate ? ` - ${endDate}` : ''}`;
-      
-      // Escape HTML in text fields to prevent rendering issues
-      const jobTitle = (exp.jobTitle || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      const employer = (exp.employer || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      const description = (exp.responsibilities || exp.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      
-      // Use simple text structure that will format with the template's existing styles
-      return `${jobTitle}\n${employer}\n${dateRange}\n${description ? description + '\n' : ''}`;
-    }).join('\n');
-
-    // Replace the entire work experience section
-    const workExpSectionRegex = /<div class="section">\s*<h2>WORK EXPERIENCE<\/h2>[\s\S]*?<\/div>/i;
-    if (workExpSectionRegex.test(processedHtml)) {
-      processedHtml = processedHtml.replace(
-        workExpSectionRegex,
-        `<div class="section">
-          <h2>WORK EXPERIENCE</h2>
-          ${workExpHtml}
-        </div>`
-      );
-      console.log("[TEMPLATES] Successfully replaced work experience section");
+    // Check if this is the specific template that's having issues
+    // By detecting unique patterns in the template HTML
+    const isSpecialTemplate = processedHtml.includes('SAHIB KHAN') || 
+                             processedHtml.includes('GRAPHIC DESIGNER') || 
+                             (processedHtml.includes('WORK EXPERIENCE') && processedHtml.includes('HOBBIES'));
+    
+    console.log("[TEMPLATES] Template type detection:", isSpecialTemplate ? "Using special template formatting" : "Using standard formatting");
+    
+    // Generate HTML for work experience based on template type
+    let workExpHtml = '';
+    
+    if (isSpecialTemplate) {
+      // Special formatting for the template with the blue sidebar
+      workExpHtml = realExperiences.map((exp: any, index: number) => {
+        const jobTitle = (exp.jobTitle || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const employer = (exp.employer || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
+        const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
+        const dateRange = exp.isCurrentJob 
+          ? `${startDate} - Present` 
+          : `${startDate}${endDate ? ` - ${endDate}` : ''}`;
+        const description = (exp.responsibilities || exp.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        
+        // Format each entry as individual HTML elements with proper spacing
+        return `
+          ${index > 0 ? '<br/>' : ''}
+          <div>
+            <strong>${jobTitle}</strong><br/>
+            ${employer}<br/>
+            ${dateRange}<br/>
+            ${description}
+          </div>
+        `;
+      }).join('');
     } else {
-      console.log("[TEMPLATES] Could not find work experience section in template");
+      // Default formatting for other templates
+      workExpHtml = realExperiences.map((exp: any) => {
+        const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
+        const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
+        const dateRange = exp.isCurrentJob 
+          ? `${startDate} - Present` 
+          : `${startDate}${endDate ? ` - ${endDate}` : ''}`;
+        const jobTitle = (exp.jobTitle || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const employer = (exp.employer || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const description = (exp.responsibilities || exp.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        
+        return `
+        <div class="work-experience-item">
+          <h3>${jobTitle}</h3>
+          <p class="company">${employer}</p>
+          <p class="work-dates">${dateRange}</p>
+          <p>${description}</p>
+        </div>
+        `;
+      }).join('');
+    }
+
+    // Different replacement strategy based on template type
+    if (isSpecialTemplate) {
+      // For the special template, look for a different pattern
+      const specialWorkExpSectionRegex = /<div[^>]*>\s*<h2[^>]*>WORK EXPERIENCE<\/h2>[\s\S]*?(?=<div[^>]*>\s*<h2[^>]*>|$)/i;
+      
+      if (specialWorkExpSectionRegex.test(processedHtml)) {
+        processedHtml = processedHtml.replace(
+          specialWorkExpSectionRegex,
+          `<div class="section">
+            <h2>WORK EXPERIENCE</h2>
+            ${workExpHtml}
+          </div>`
+        );
+        console.log("[TEMPLATES] Successfully replaced work experience section in special template");
+      } else {
+        console.log("[TEMPLATES] Could not find work experience section in special template");
+      }
+    } else {
+      // Standard template replacement
+      const workExpSectionRegex = /<div class="section">\s*<h2>WORK EXPERIENCE<\/h2>[\s\S]*?<\/div>/i;
+      if (workExpSectionRegex.test(processedHtml)) {
+        processedHtml = processedHtml.replace(
+          workExpSectionRegex,
+          `<div class="section">
+            <h2>WORK EXPERIENCE</h2>
+            ${workExpHtml}
+          </div>`
+        );
+        console.log("[TEMPLATES] Successfully replaced work experience section");
+      } else {
+        console.log("[TEMPLATES] Could not find work experience section in template");
+      }
     }
     
     // Look for experience entries in the Testing template
