@@ -666,6 +666,38 @@ export function extractAndEnhanceStyles(htmlContent: string): string {
         height: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
+      }
+      
+      /* Zety-style content-fitting styles */
+      .content-exceeds h1, .content-exceeds h2, .content-exceeds h3 {
+        margin-top: 0.5em !important;
+        margin-bottom: 0.5em !important;
+      }
+      
+      .content-exceeds p {
+        margin-top: 0.3em !important;
+        margin-bottom: 0.3em !important;
+        line-height: 1.3 !important;
+      }
+      
+      .content-exceeds-large h1, .content-exceeds-large h2, .content-exceeds-large h3 {
+        margin-top: 0.4em !important;
+        margin-bottom: 0.4em !important;
+        font-size: 0.95em !important;
+      }
+      
+      .content-exceeds-large p {
+        margin-top: 0.2em !important;
+        margin-bottom: 0.2em !important;
+        line-height: 1.2 !important;
+      }
+      
+      .content-exceeds-large .section {
+        margin-bottom: 0.5em !important;
+        padding-bottom: 0.5em !important;
+      }
+      
+      .page, .resume {
         box-shadow: none !important;
       }
       .sidebar, .contact-item, .sidebar-section {

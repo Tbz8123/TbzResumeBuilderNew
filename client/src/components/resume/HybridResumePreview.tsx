@@ -399,28 +399,53 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     const container = resumeContainerRef.current;
     if (!container) return;
     
-    // Reset any previous scaling to measure true size
+    // Reset any previous scaling and classes to measure true size
     container.style.transform = 'scale(1)';
     container.style.transformOrigin = 'top left';
+    container.classList.remove('content-exceeds', 'content-exceeds-large');
     
     // Get A4 size in pixels
     const maxHeight = 1123; // A4 height at 96 DPI
     
-    // If content exceeds the page height, scale it down
-    if (container.scrollHeight > maxHeight) {
-      console.log(`[RESUME] Content height (${container.scrollHeight}px) exceeds A4 height (${maxHeight}px). Auto-scaling...`);
+    // Measure content height
+    const contentHeight = container.scrollHeight;
+    console.log(`[RESUME] Content height: ${contentHeight}px, Max height: ${maxHeight}px`);
+    
+    // Implement multi-level scaling based on content amount
+    // Step 1: Apply CSS adjustments first (tighter spacing, smaller fonts)
+    if (contentHeight > maxHeight) {
+      // Apply medium compression for 0-20% overflow
+      if (contentHeight <= maxHeight * 1.2) {
+        container.classList.add('content-exceeds');
+        console.log('[RESUME] Applied medium content compression (0-20% overflow)');
+      } 
+      // Apply maximum compression for >20% overflow
+      else {
+        container.classList.add('content-exceeds-large');
+        console.log('[RESUME] Applied maximum content compression (>20% overflow)');
+      }
+      
+      // Check if CSS adjustments were enough
+      const newHeight = container.scrollHeight;
+      if (newHeight <= maxHeight) {
+        console.log('[RESUME] CSS adjustments were sufficient for fitting content');
+        return 1; // No transform scale needed
+      }
+      
+      // Step 2: If CSS adjustments weren't enough, apply transform scaling
+      console.log(`[RESUME] CSS adjustments insufficient. Content still ${newHeight}px. Applying transform scaling...`);
       
       // Start with scale of 1 and reduce until content fits
       let scale = 1;
-      while (container.scrollHeight > maxHeight && scale > 0.7) {
+      while (container.scrollHeight > maxHeight && scale > 0.75) {
         scale -= 0.01;
         container.style.transform = `scale(${scale})`;
       }
       
-      console.log(`[RESUME] Applied auto-scaling factor: ${scale.toFixed(2)}`);
+      console.log(`[RESUME] Applied transform scaling factor: ${scale.toFixed(2)}`);
       return scale;
     } else {
-      console.log(`[RESUME] Content fits within page (${container.scrollHeight}px). No auto-scaling needed.`);
+      console.log(`[RESUME] Content fits within page. No scaling needed.`);
       return 1;
     }
   }, []);
@@ -472,16 +497,54 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
           <div className="absolute inset-0 flex items-start justify-start overflow-hidden">
             {/* Resume content with proper scaling */}
             <div className="relative">
-              <style dangerouslySetInnerHTML={{ __html: templateStyles }} />
+              <style dangerouslySetInnerHTML={{ __html: `
+                /* Base styles for the resume page */
+                .resume-page {
+                  position: relative;
+                  box-sizing: border-box;
+                  background-color: white;
+                  font-family: Arial, sans-serif;
+                }
+
+                /* Zety-style auto-scaling CSS adjustments */
+                @media print, screen {
+                  .resume-page {
+                    width: 210mm;
+                    min-height: 297mm;
+                  }
+                  
+                  /* When content exceeds container, tighten spacing */
+                  .resume-page.content-exceeds {
+                    --scale-factor: 0.95;
+                    font-size: calc(1em * var(--scale-factor));
+                    line-height: calc(1.4 * var(--scale-factor));
+                  }
+                  
+                  /* Even tighter spacing for very long content */
+                  .resume-page.content-exceeds-large {
+                    --scale-factor: 0.9;
+                    font-size: calc(1em * var(--scale-factor));
+                    line-height: calc(1.3 * var(--scale-factor));
+                  }
+                }
+                
+                ${templateStyles}
+              ` }} />
               <div 
                 key={`template-${templateKey}`} // Use key to force re-render on updates
+                ref={resumeContainerRef}
                 dangerouslySetInnerHTML={{ __html: templateHtml }} 
                 style={{ 
                   transform: `scale(${scaleFactor})`,
                   transformOrigin: 'top left',
                   width: '794px', // A4 width
-                  height: '1123px', // A4 height
+                  minHeight: '1123px', // A4 height
+                  maxHeight: 'none', // Allow content to expand for measuring
+                  overflow: 'visible', // Important for measuring true content height
+                  padding: '0',
+                  margin: '0',
                 }}
+                className="resume-page"
               />
             </div>
           </div>
