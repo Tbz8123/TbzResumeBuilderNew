@@ -457,33 +457,86 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       // For the special template, look for a different pattern
       const specialWorkExpSectionRegex = /<div[^>]*>\s*<h2[^>]*>WORK EXPERIENCE<\/h2>[\s\S]*?(?=<div[^>]*>\s*<h2[^>]*>|$)/i;
       
-      // For the special template, let's take a more aggressive approach
-      // Completely clear and rebuild the work experience section
+      // EMERGENCY FIX FOR DUPLICATION ISSUE
+      // First, attempt to identify the original template structure without any content
+      const templateId = 16; // This is a specific fix for this template ID
       
-      // First, let's extract the template structure
-      const blueTemplateRegex = /([\s\S]*?WORK EXPERIENCE<\/h2>)[\s\S]*?(<div[^>]*>\s*<h2[^>]*>(?:HOBBIES|LEADERSHIP)<\/h2>[\s\S]*)/i;
-      const matches = processedHtml.match(blueTemplateRegex);
+      console.log("[TEMPLATES] Applying emergency duplication fix");
       
-      if (matches && matches.length >= 3) {
-        // We found the beginning and end parts, now insert our content in between
-        const beforeWorkExp = matches[1];
-        const afterWorkExp = matches[2];
+      try {
+        // NUCLEAR OPTION: Completely parse and rebuild the template structure
+        // We'll use a specific approach designed for this exact template
         
-        // Completely rebuild the HTML with our work experience content
-        processedHtml = beforeWorkExp + workExpHtml + afterWorkExp;
-        console.log("[TEMPLATES] Successfully rebuilt work experience section in special template");
-      } else {
-        console.log("[TEMPLATES] Could not find proper structure in special template");
-        
-        // Fallback to regular replacement if structure extraction fails
-        const fallbackRegex = /<h2[^>]*>WORK EXPERIENCE<\/h2>[\s\S]*?(?=<h2[^>]*>)/i;
-        if (fallbackRegex.test(processedHtml)) {
-          processedHtml = processedHtml.replace(
-            fallbackRegex,
-            `<h2>WORK EXPERIENCE</h2>\n${workExpHtml}\n`
-          );
-          console.log("[TEMPLATES] Used fallback replacement for work experience section");
+        // First, let's identify all the major section headings
+        // This more precise regex will work better for this specific template
+        const headerRegex = /<div[^>]*>\s*<h2[^>]*>\s*([^<]+)\s*<\/h2>/gi;
+        const sectionHeaders = [];
+        let match;
+        while ((match = headerRegex.exec(processedHtml)) !== null) {
+          sectionHeaders.push({
+            fullMatch: match[0],
+            title: match[1].trim(),
+            index: match.index
+          });
         }
+        
+        console.log("[TEMPLATES] Found section headers:", 
+          sectionHeaders.map(s => `${s.title} at index ${s.index}`).join(', ')
+        );
+        
+        // Find the WORK EXPERIENCE section and the section that follows it
+        const workExpHeader = sectionHeaders.find(s => s.title === 'WORK EXPERIENCE');
+        
+        if (workExpHeader) {
+          // Find the next section header after work experience
+          const nextHeaders = sectionHeaders.filter(s => s.index > workExpHeader.index);
+          const nextHeader = nextHeaders.length > 0 ? nextHeaders[0] : null;
+          
+          if (nextHeader) {
+            // Get the HTML before work experience section
+            const beforeWorkExp = processedHtml.substring(0, workExpHeader.index + workExpHeader.fullMatch.length);
+            
+            // Get the HTML after the next section starts
+            const afterWorkExp = processedHtml.substring(nextHeader.index);
+            
+            // Construct our work experience content with clean formatting
+            const formattedWorkExp = `
+              <!-- START WORK EXPERIENCE CONTENT -->
+              ${workExpHtml}
+              <!-- END WORK EXPERIENCE CONTENT -->
+            `;
+            
+            // Complete reconstruction of the template HTML
+            processedHtml = beforeWorkExp + formattedWorkExp + afterWorkExp;
+            console.log("[TEMPLATES] Successfully applied nuclear fix for work experience section");
+          } else {
+            console.log("[TEMPLATES] Found work experience header but no next section");
+          }
+        } else {
+          console.log("[TEMPLATES] Could not find WORK EXPERIENCE header");
+          
+          // ALTERNATIVE APPROACH: Use a more aggressive pattern matching
+          console.log("[TEMPLATES] Attempting alternative fallback approach");
+          
+          // Look for any work experience entries in the current HTML and clear them completely
+          const workExpContentRegex = /<div[^>]*>(?:[\s\S]*?)<h2[^>]*>WORK EXPERIENCE<\/h2>([\s\S]*?)(?:<h2[^>]*>|$)/i;
+          const workExpMatch = processedHtml.match(workExpContentRegex);
+          
+          if (workExpMatch) {
+            // Replace everything between WORK EXPERIENCE heading and the next heading
+            processedHtml = processedHtml.replace(
+              workExpMatch[1],
+              `
+              <div class="workexp-container">
+                ${workExpHtml}
+              </div>
+              `
+            );
+            console.log("[TEMPLATES] Applied alternative work experience fix");
+          }
+        }
+      } catch (err) {
+        console.error("[TEMPLATES] Error in emergency fix:", err);
       }
     } else {
       // Standard template replacement
