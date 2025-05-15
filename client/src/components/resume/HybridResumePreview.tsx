@@ -44,6 +44,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   const [templateHtml, setTemplateHtml] = useState<string>('');
   const [templateKey, setTemplateKey] = useState<number>(0); // Force re-renders with a key
   const templateHtmlRef = useRef<string>('');
+  const renderedSectionsRef = useRef<{[key: string]: boolean}>({}); // Track which sections have been rendered
   
   // Special debug function to check additionalFields
   const hasAdditionalInfo = (key: string): boolean => {
@@ -104,6 +105,12 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   
   // Process HTML whenever resume data changes with improved reactivity and logging
   const processHtmlWithData = useCallback(() => {
+    // Reset rendered sections tracking on each template processing
+    // This ensures we clean the state whenever we need to regenerate HTML
+    renderedSectionsRef.current = {};
+    
+    console.log("[RESUME] processHtmlWithData() called - ensure we're not duplicating content");
+    
     if (!templateHtmlRef.current) {
       console.log("No template HTML available to process");
       return;
