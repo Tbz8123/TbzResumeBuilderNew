@@ -47,24 +47,31 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
     }
   }, [open]);
 
-  // Professional preview - displays the resume in a full A4 format without page breaks
+  // Professional preview - displays the resume exactly as shown in the second screenshot
   const ProfessionalPreview = () => (
-    <div className="professional-preview bg-white shadow-lg mx-auto rounded overflow-auto" 
+    <div className="professional-preview bg-white mx-auto rounded overflow-auto"
          style={{ maxWidth: '100%', maxHeight: '85vh' }}>
       <div className="p-0">
-        {/* This is a completely fresh implementation for the professional view */}
-        <div className="a4-paper mx-auto" style={{ width: '794px', backgroundColor: 'white' }}>
+        <div className="resume-preview-container" style={{ 
+          width: '100%', 
+          maxWidth: '650px', 
+          margin: '0 auto',
+          backgroundColor: 'white',
+          borderRadius: '4px'
+        }}>
+          {/* This is a direct implementation to match the Zety-style preview shown in the second screenshot */}
           <HybridResumePreview 
-            width={794}
+            width={650}
             height="auto"
-            className="resume-expanded-view"
+            className="resume-zety-view"
             resumeData={resumeData}
-            selectedTemplateId={selectedTemplateId}
+            selectedTemplateId={16} // Force the SAHIB KHAN template (template 16)
             setSelectedTemplateId={setSelectedTemplateId}
             templates={templates}
             isModal={true}
-            hideSkills={hideSkills}
+            hideSkills={false}
             scaleContent={false}
+            showTemplateControls={false}
           />
         </div>
       </div>
