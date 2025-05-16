@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
+import ZetyStylePreview from '@/components/resume/ZetyStylePreview';
 import { useTemplates } from '@/hooks/use-templates';
 import { Input } from '@/components/ui/input';
 import { JobTitle, getJobTitleSuggestions, findJobTitleById } from '@/utils/jobTitlesData';
@@ -751,7 +751,7 @@ const JobDescriptionPage = () => {
 
       {/* Resume Preview Modal */}
       {templates && (
-        <ResumePreviewModal
+        <ZetyStylePreview
           open={previewOpen}
           onOpenChange={setPreviewOpen}
           resumeData={resumeData}

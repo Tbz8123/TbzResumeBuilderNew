@@ -17,6 +17,8 @@ interface ZetyStylePreviewProps {
   selectedTemplateId: number | null;
   templates: ResumeTemplate[];
   onNextStep?: () => void;
+  setSelectedTemplateId?: (id: number | null) => void;
+  hideSkills?: boolean;
 }
 
 const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
@@ -140,10 +142,33 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
             className="resume-document bg-white shadow-md mx-auto" 
             style={{ 
               width: '210mm', 
-              height: 'auto', 
-              minHeight: '297mm' 
+              height: 'auto',
+              minHeight: 'min-content' // Allow content to expand as needed
             }}
           >
+            {/* Inject styles to allow content to expand vertically */}
+            <style dangerouslySetInnerHTML={{ __html: `
+              .resume-content {
+                overflow: visible !important; 
+                height: auto !important;
+                min-height: auto !important;
+                max-height: none !important;
+              }
+              
+              /* Ensure all sections are visible */
+              .resume-content * {
+                overflow: visible !important;
+                max-height: none !important;
+              }
+              
+              /* Fix for common template issues */
+              .sidebar, .main-content, .resume-section, .section {
+                height: auto !important;
+                min-height: min-content !important;
+                max-height: none !important;
+              }
+            `}} />
+            
             {/* Resume content */}
             <div 
               dangerouslySetInnerHTML={{ __html: templateHtml }}
