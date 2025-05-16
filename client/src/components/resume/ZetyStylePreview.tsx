@@ -129,71 +129,99 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
     printWindow.document.close();
   };
   
-  // Component to render the professional preview with seamless continuous scroll
+  // Component to render the professional preview that mimics Zety's design
   const ProfessionalPreview = () => (
-    <div className="professional-preview bg-white shadow-lg mx-auto rounded" style={{ maxWidth: '720px' }}>
-      <div className="preview-content p-8">
-        {/* Template Display */}
-        <div 
-          ref={contentRef}
-          className="resume-document bg-white mx-auto" 
-          style={{ 
-            width: '100%',
-            margin: '0 auto'
-          }}
-        >
-          {/* Inject styles for continuous scrolling web preview */}
-          <style dangerouslySetInnerHTML={{ __html: `
-            /* Base styles for web preview - continuous scroll */
-            .resume-content {
-              display: block;
-              width: 100%;
-              height: auto !important;
-              overflow: visible !important;
-            }
-            
-            /* Remove constraints that prevent continuous flow */
-            .resume-content * {
-              overflow: visible !important;
-              max-height: none !important;
-              page-break-after: avoid !important;
-              page-break-inside: avoid !important;
-            }
-            
-            /* Make all sections flow naturally */
-            .sidebar, .main-content, .resume-section, .section {
-              display: block;
-              height: auto !important;
-              min-height: auto !important;
-              max-height: none !important;
-            }
-            
-            /* Print-specific styles for PDF output */
-            @media print {
-              body {
-                margin: 0;
-                padding: 0;
-                background: white;
-              }
-              
-              .resume-document {
-                width: 210mm;
-                min-height: 297mm;
-                box-sizing: border-box;
-              }
-              
-              .resume-page, .page {
-                page-break-after: always;
-              }
-            }
-          `}} />
+    <div className="professional-preview" style={{ 
+      width: '100%', 
+      maxWidth: '700px',
+      margin: '0 auto',
+      backgroundColor: 'white',
+      boxShadow: '0 2px 10px rgba(0, 0, 0, 0.15)',
+      borderRadius: '6px'
+    }}>
+      <div 
+        ref={contentRef}
+        className="resume-document bg-white"
+        style={{ 
+          width: '100%',
+          height: 'auto',
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: '6px'
+        }}
+      >
+        {/* Zety-like styling for preview */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          /* Zety-style web preview */
+          .resume-content {
+            font-family: 'Arial', sans-serif;
+            padding: 40px;
+            line-height: 1.5;
+            color: #333;
+            max-width: 100%;
+          }
           
-          {/* Resume content */}
-          <div 
-            dangerouslySetInnerHTML={{ __html: templateHtml }}
-            className="resume-content"
-          />
-        </div>
+          /* Enhance typography */
+          .resume-content h1 {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #25335c;
+          }
+          
+          .resume-content h2, .resume-content h3 {
+            font-weight: 600;
+            color: #25335c;
+            margin-top: 18px;
+            margin-bottom: 12px;
+          }
+          
+          /* Contact details styling */
+          .contact-details, .personal-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 18px;
+            font-size: 14px;
+          }
+          
+          .contact-details > div, .personal-details > div {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          }
+          
+          /* Section styling */
+          .resume-section {
+            margin-bottom: 20px;
+            width: 100%;
+          }
+          
+          /* Print-specific styles for PDF output - hidden in web preview */
+          @media print {
+            body {
+              margin: 0;
+              padding: 0;
+              background: white;
+            }
+            
+            .resume-document {
+              width: 210mm;
+              min-height: 297mm;
+              box-sizing: border-box;
+            }
+            
+            .resume-page, .page {
+              page-break-after: always;
+            }
+          }
+        `}} />
+        
+        {/* Resume content */}
+        <div 
+          dangerouslySetInnerHTML={{ __html: templateHtml }}
+          className="resume-content"
+        />
       </div>
     </div>
   );
@@ -222,37 +250,33 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl p-0 overflow-hidden">
-        <div className="flex justify-between items-center p-4 border-b">
-          <DialogTitle className="text-lg font-semibold">Resume Preview</DialogTitle>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
+        <div className="flex justify-between items-center p-3 pl-5">
+          <DialogTitle className="text-base font-semibold">Resume Preview</DialogTitle>
           <div className="flex items-center gap-2">
             <Button 
               variant="default" 
               size="sm"
-              className="bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1"
+              className="bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 rounded-md"
               onClick={handleDownload}
             >
               <Download className="h-4 w-4" />
               Download PDF
             </Button>
-            <DialogClose className="rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-100">
+            <DialogClose className="rounded-md w-7 h-7 flex items-center justify-center hover:bg-gray-100">
               <X className="h-4 w-4" />
             </DialogClose>
           </div>
         </div>
         
-        <div className="p-6 bg-gray-50 flex justify-center" style={{ maxHeight: 'calc(80vh)', overflowY: 'auto' }}>
+        <div className="flex justify-center" style={{ 
+          maxHeight: 'calc(90vh - 60px)', 
+          overflowY: 'auto',
+          padding: '0.5rem 0',
+          backgroundColor: '#fff'
+        }}>
           <ProfessionalPreview />
         </div>
-        
-        {onNextStep && (
-          <DialogFooter className="p-4 border-t">
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-              <Button variant="default" onClick={onNextStep}>Continue</Button>
-            </div>
-          </DialogFooter>
-        )}
       </DialogContent>
     </Dialog>
   );
