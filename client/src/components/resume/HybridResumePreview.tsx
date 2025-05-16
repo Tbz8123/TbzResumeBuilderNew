@@ -587,10 +587,12 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                     transformOrigin: 'top left',
                     width: '794px', // A4 width
                     minHeight: '1123px', // A4 height
+                    height: 'auto', // Allow the height to adjust based on content
                     maxHeight: 'none', // Allow content to expand for measuring
                     overflow: 'visible', // Important for measuring true content height
                     padding: '0',
                     margin: '0',
+                    marginBottom: isModal ? '50px' : '0', // Add margin at bottom for modal view
                   }}
                   className="resume-page"
                 />
