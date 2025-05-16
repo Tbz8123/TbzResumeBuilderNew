@@ -748,19 +748,6 @@ const JobDescriptionPage = () => {
           © 2025 TbzResumeBuilder. All rights reserved.
         </div>
       </footer>
-
-      {/* Resume Preview Modal */}
-      {templates && (
-        <ResumePreviewModal
-          open={previewOpen}
-          onOpenChange={setPreviewOpen}
-          resumeData={resumeData}
-          selectedTemplateId={resumeData.selectedTemplateId}
-          setSelectedTemplateId={(id) => updateResumeData({ selectedTemplateId: id })}
-          templates={templates}
-          hideSkills={true}
-        />
-      )}
     </div>
   );
 };
