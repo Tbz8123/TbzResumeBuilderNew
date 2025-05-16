@@ -331,70 +331,38 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
     </div>
   );
 
-  // Component for classic preview with Zety-style intelligent content adaptation
+  // Component for classic preview with HybridResumePreview and improved content scaling
   const ClassicPreview = () => (
     <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(80vh)' }}>
-      {/* Remove scaling container to allow proper content expansion */}
-      <div className="zety-style-preview" style={{ width: '100%', maxWidth: '750px' }}>
-        {/* Add styles to ensure Zety-like intelligent layout */}
+      <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center' }}>
+        {/* Add enhanced styles to ensure all content is visible */}
         <style dangerouslySetInnerHTML={{ __html: `
-          /* Zety-style intelligent content expansion */
-          .zety-style-content {
-            height: auto !important;
-            overflow-y: auto !important;
-          }
-          
-          /* Ensure all content is properly displayed - nothing gets cut off */
-          .zety-style-content [class*="section"],
-          .zety-style-content [class*="content"],
-          .zety-style-content [class*="entry"],
-          .zety-style-content > div,
-          .zety-style-content > div > div {
-            height: auto !important;
-            min-height: min-content !important;
-            max-height: none !important;
+          /* Make sure content doesn't get cut off */
+          .resume-page {
             overflow: visible !important;
           }
           
-          /* Make two-column layout templates stretch properly */
-          .resume-document > div,
-          .resume-content > div {
-            display: flex !important;
-            flex-direction: row !important;
-            min-height: 100% !important;
-          }
-          
-          /* Fix for SAHIB KHAN template specifically */
-          .resume-document [class*="sidebar"],
-          .resume-document > div > div:first-child {
-            height: auto !important;
-            min-height: 100% !important;
-          }
-          
-          /* Special fix for very long text content to prevent overflow */
-          p, li, div {
+          /* Ensure text wraps properly */
+          p, div, li {
             overflow-wrap: break-word !important;
             word-wrap: break-word !important;
-            word-break: break-word !important;
           }
         `}} />
         
         {/* Use the key prop to force a complete remount when the modal opens */}
-        <div className="zety-style-content border shadow-lg">
-          <HybridResumePreview 
-            key={`resume-preview-${previewKey}-${Date.now()}`}
-            width={794} 
-            height={'auto'} /* Allow height to adapt to content */
-            className="zety-style-preview"
-            scaleContent={false}
-            resumeData={deduplicatedResumeData}
-            selectedTemplateId={selectedTemplateId}
-            setSelectedTemplateId={setSelectedTemplateId}
-            templates={templates}
-            isModal={true}
-            hideSkills={hideSkills}
-          />
-        </div>
+        <HybridResumePreview 
+          key={`resume-preview-${previewKey}-${Date.now()}`}
+          width={794} 
+          height={1123}
+          className="border shadow-lg"
+          scaleContent={false}
+          resumeData={deduplicatedResumeData}
+          selectedTemplateId={selectedTemplateId}
+          setSelectedTemplateId={setSelectedTemplateId}
+          templates={templates}
+          isModal={true}
+          hideSkills={hideSkills}
+        />
       </div>
     </div>
   );
