@@ -49,7 +49,7 @@ export interface ResumeData {
   summary: string;
   professionalSummary?: string; // Added for the Professional Summary feature
   professionalSummaryTitleId?: number; // Added to store the selected professional summary title ID
-  skills: string[];
+  skills: string[] | {id: string; name: string; level: number}[];
   workExperience: WorkExperience[];
   education: Education[];
   certifications?: any[];
