@@ -390,61 +390,103 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             max-height: none !important;
           }
           
-          /* Match the specific SAHIB KHAN template styling exactly as in the original */
+          /* Use original template styles without modifications - EXACT MATCH */
+          /* Basic structure layout */
           .resume-page {
             display: flex !important;
             flex-direction: row !important;
             width: 210mm !important;
             min-height: 297mm !important;
             background: #fff !important;
+            font-family: Arial, sans-serif !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
           }
           
+          /* Left column styling */
           .left {
             width: 35% !important;
-            background: #407187 !important;
+            background: #32607A !important;
             color: #fff !important;
-            padding: 20px 15px !important;
+            padding: 25px 15px !important;
           }
           
+          /* Right column styling */
           .right {
             width: 65% !important;
-            padding: 20px !important;
+            padding: 25px 20px !important;
             background: #fff !important;
           }
           
+          /* Name styling */
           .left h1 {
-            font-size: 1.25rem !important;
+            font-size: 1.5rem !important;
+            font-weight: bold !important;
             margin-bottom: 5px !important;
             color: #fff !important;
-          }
-          
-          .left h3 {
-            font-size: 0.875rem !important;
-            margin-bottom: 15px !important;
-            color: #fff !important;
-          }
-          
-          .section {
-            margin-bottom: 15px !important;
-          }
-          
-          .section h2 {
-            font-size: 0.875rem !important;
-            background: #f0f0f0 !important;
-            color: #000 !important;
-            padding: 5px !important;
-            margin-bottom: 5px !important;
             text-transform: uppercase !important;
           }
           
+          /* Job title styling */
+          .left h3 {
+            font-size: 0.9rem !important;
+            margin-bottom: 20px !important;
+            color: #fff !important;
+            text-transform: uppercase !important;
+            font-weight: normal !important;
+          }
+          
+          /* Section styling */
+          .section {
+            margin-bottom: 20px !important;
+          }
+          
+          /* Section headers in left column */
+          .left .section h2 {
+            background: #fff !important;
+            color: #000 !important;
+            font-size: 0.8rem !important;
+            padding: 5px 8px !important;
+            margin-bottom: 10px !important;
+            text-transform: uppercase !important;
+            font-weight: bold !important;
+          }
+          
+          /* Section headers in right column */
           .right .section h2 {
             background-color: #f0f0f0 !important;
             color: #000 !important;
+            font-size: 0.8rem !important;
+            padding: 5px 8px !important;
+            margin-bottom: 10px !important;
+            text-transform: uppercase !important;
+            font-weight: bold !important;
           }
           
+          /* Text content styling */
           .section p, .section li, .right p {
-            font-size: 0.75rem !important;
+            font-size: 0.8rem !important;
+            line-height: 1.4 !important;
             margin: 4px 0 !important;
+          }
+          
+          /* Color indicators for contact items */
+          .left .contact .telephone::before,
+          .left .contact .email::before,
+          .left .contact .address::before {
+            content: "■" !important;
+            color: #E94D8E !important;
+            margin-right: 5px !important;
+            display: inline-block !important;
+          }
+          
+          /* Additional info icons */
+          .left .additional-info .linkedin::before,
+          .left .additional-info .website::before,
+          .left .additional-info .driving-license::before {
+            content: "✓" !important; 
+            color: #63C5DA !important;
+            margin-right: 5px !important;
+            display: inline-block !important;
           }
           
           /* Add proper scrolling */
