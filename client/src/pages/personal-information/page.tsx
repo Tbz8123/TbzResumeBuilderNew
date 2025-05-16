@@ -9,7 +9,6 @@ import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
-// Use the original ResumePreviewModal to avoid import issues
 import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
 
@@ -625,14 +624,15 @@ const PersonalInformationPage = () => {
         onOpenChange={setTemplateModalOpen} 
       />
       
-      {/* Resume Preview Modal with Real-time Updates */}
+      {/* Resume Preview Modal - Pass the most up-to-date data */}
       {templates && Array.isArray(templates) && (
         <ResumePreviewModal
           open={previewModalOpen}
           onOpenChange={setPreviewModalOpen}
-          resumeData={resumeData} 
+          resumeData={previewData} // Use local previewData which updates when typing
           selectedTemplateId={selectedTemplateId}
           templates={templates as ResumeTemplate[]}
+          key={`preview-${Date.now()}`} // Force re-render when modal opens
         />
       )}
     </div>

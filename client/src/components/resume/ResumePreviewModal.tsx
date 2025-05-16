@@ -3,7 +3,6 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResumeTemplate } from '@shared/schema';
 import { ResumeData } from '@/types/resume';
-import { useResume } from '@/contexts/ResumeContext';
 import {
   Dialog,
   DialogContent,
@@ -27,27 +26,16 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   selectedTemplateId,
   templates
 }) => {
-  // Get real-time data from the context
-  const resumeContext = useResume();
+  // Create local state that immediately syncs with incoming resumeData
+  const [previewData, setPreviewData] = useState(resumeData);
+  const [renderId, setRenderId] = useState(Date.now());
   
-  // Force re-renders while modal is open
-  const [renderKey, setRenderKey] = useState(Date.now());
-  
-  // Update the render key on a timer to force refresh
+  // Update local state whenever resumeData changes
   useEffect(() => {
-    let timerId: NodeJS.Timeout;
-    
-    if (open) {
-      timerId = setInterval(() => {
-        setRenderKey(Date.now());
-        console.log("Refreshing preview...");
-      }, 100);
-    }
-    
-    return () => {
-      if (timerId) clearInterval(timerId);
-    };
-  }, [open]);
+    console.log("ResumePreviewModal: Received updated data", resumeData);
+    setPreviewData({...resumeData});
+    setRenderId(Date.now()); // Force re-render
+  }, [JSON.stringify(resumeData)]); // Use JSON.stringify to detect all changes
   
   // Find the selected template
   const selectedTemplate = templates?.find(template => template.id === selectedTemplateId);
@@ -148,8 +136,34 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
     return processedHtml;
   };
   
-  // Always get the most up-to-date data from context
-  const latestData = resumeContext.resumeData;
+  // Real-time template rendering
+  const renderResumeContent = () => {
+    try {
+      // Get and process the HTML content
+      const processedHtml = processTemplate(selectedTemplate.htmlContent, previewData);
+      
+      return (
+        <div 
+          dangerouslySetInnerHTML={{ __html: processedHtml }} 
+          className="template-content"
+          style={{ 
+            width: '100%',
+            height: 'auto',
+            maxWidth: '800px',
+            margin: '0 auto',
+            padding: '0'
+          }}
+        />
+      );
+    } catch (error) {
+      console.error("Error rendering template:", error);
+      return (
+        <div className="p-6 text-center">
+          <p>An error occurred while rendering the template. Please try again.</p>
+        </div>
+      );
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -168,19 +182,9 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
         
         <div className="resume-container p-6">
           <div className="resume-preview shadow-lg mx-auto bg-white rounded-sm overflow-hidden" style={{maxWidth: '100%'}}>
-            {/* Use key to force re-render when data changes */}
-            <div key={`preview-${renderKey}`}>
-              <div 
-                dangerouslySetInnerHTML={{ __html: processTemplate(selectedTemplate.htmlContent, latestData) }} 
-                className="template-content"
-                style={{ 
-                  width: '100%',
-                  height: 'auto',
-                  maxWidth: '800px',
-                  margin: '0 auto',
-                  padding: '0'
-                }}
-              />
+            {/* Use a key to force re-render when data changes */}
+            <div key={`preview-${renderId}`}>
+              {renderResumeContent()}
             </div>
           </div>
         </div>
