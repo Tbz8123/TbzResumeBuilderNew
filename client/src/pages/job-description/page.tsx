@@ -266,7 +266,7 @@ const JobDescriptionPage = () => {
     };
     
     fetchJobDescriptions();
-  }, [currentJob.jobTitle, currentJob.dbJobTitleId, searchTerm, resumeData.workExperience]);
+  }, [currentJob.jobTitle, currentJob.dbJobTitleId, searchTerm]);
   
   // Effect to update job title suggestions when search term changes
   useEffect(() => {
