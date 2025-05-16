@@ -260,7 +260,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           </div>
         </div>
         
-        {/* Simple iframe solution for template display */}
+        {/* Simple scrollable container - back to the original approach */}
         <div 
           className="flex flex-col items-center p-6 bg-gray-50 rounded-md overflow-y-auto" 
           style={{ 
@@ -268,53 +268,25 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             minHeight: '500px'
           }}
         >
-          {/* Display template content directly in an iframe for better rendering */}
-          {selectedTemplateId && (
-            <div className="border shadow-lg bg-white">
-              <iframe 
-                srcDoc={`
-                  <!DOCTYPE html>
-                  <html>
-                    <head>
-                      <style>
-                        body {
-                          margin: 0;
-                          padding: 0;
-                          font-family: Arial, sans-serif;
-                        }
-                        .resume-page {
-                          width: 210mm;
-                          min-height: 297mm;
-                          background: #fff;
-                          margin-bottom: 20px;
-                          page-break-after: always;
-                        }
-                        .resume-page .left {
-                          min-height: 297mm;
-                        }
-                        .resume-page .right {
-                          min-height: 297mm;
-                        }
-                      </style>
-                    </head>
-                    <body>
-                      <div id="resume-content">
-                        ${templates.find(t => t.id === selectedTemplateId)?.htmlContent || ''}
-                      </div>
-                    </body>
-                  </html>
-                `}
-                style={{
-                  width: '794px',
-                  height: '1123px',
-                  border: 'none',
-                  transform: 'scale(0.7)',
-                  transformOrigin: 'top center'
-                }}
-                title="Resume Preview"
+          {/* Resume container with basic styling */}
+          <div className="border shadow-lg bg-white">
+            {/* Go back to using HybridResumePreview but with a larger scale */}
+            <div style={{ transform: 'scale(0.65)', transformOrigin: 'top center' }}>
+              <HybridResumePreview 
+                key={`preview-${Date.now()}`}
+                width={794} 
+                height={1123}
+                scaleContent={false}
+                resumeData={deduplicatedResumeData}
+                selectedTemplateId={selectedTemplateId}
+                setSelectedTemplateId={setSelectedTemplateId}
+                templates={templates}
+                isModal={true}
+                hideSkills={hideSkills}
+                showTemplateControls={false}
               />
             </div>
-          )}
+          </div>
         </div>
         
         {onNextStep && (
