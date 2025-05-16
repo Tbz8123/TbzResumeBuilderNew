@@ -26,6 +26,13 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   selectedTemplateId,
   templates
 }) => {
+  // Create local state that immediately syncs with incoming resumeData
+  const [previewData, setPreviewData] = React.useState(resumeData);
+  
+  // Update local state whenever resumeData changes
+  React.useEffect(() => {
+    setPreviewData({...resumeData, _previewTimestamp: Date.now()});
+  }, [resumeData]);
   // Find the selected template
   const selectedTemplate = templates?.find(template => template.id === selectedTemplateId);
   
@@ -46,6 +53,11 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       </Dialog>
     );
   }
+
+  // To enable real-time updates, re-render when resumeData changes
+  React.useEffect(() => {
+    console.log("ResumePreviewModal: ResumeData updated", resumeData);
+  }, [resumeData]);
 
   // Function to safely prepare and render the template HTML content
   const renderTemplateContent = () => {
