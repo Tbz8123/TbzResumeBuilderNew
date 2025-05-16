@@ -49,21 +49,24 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
 
   // Professional preview - displays the resume in a full A4 format without page breaks
   const ProfessionalPreview = () => (
-    <div className="professional-preview bg-white shadow-lg mx-auto rounded overflow-auto" style={{ maxWidth: '720px' }}>
+    <div className="professional-preview bg-white shadow-lg mx-auto rounded overflow-auto" 
+         style={{ maxWidth: '100%', maxHeight: '85vh' }}>
       <div className="p-0">
-        <HybridResumePreview 
-          width={700}
-          height="auto"
-          className="transition-all duration-300"
-          resumeData={resumeData}
-          selectedTemplateId={selectedTemplateId}
-          setSelectedTemplateId={setSelectedTemplateId}
-          templates={templates}
-          isModal={true}
-          hideSkills={hideSkills}
-          scaleContent={false}
-          expandContent={true}
-        />
+        {/* This is a completely fresh implementation for the professional view */}
+        <div className="a4-paper mx-auto" style={{ width: '794px', backgroundColor: 'white' }}>
+          <HybridResumePreview 
+            width={794}
+            height="auto"
+            className="resume-expanded-view"
+            resumeData={resumeData}
+            selectedTemplateId={selectedTemplateId}
+            setSelectedTemplateId={setSelectedTemplateId}
+            templates={templates}
+            isModal={true}
+            hideSkills={hideSkills}
+            scaleContent={false}
+          />
+        </div>
       </div>
     </div>
   );
@@ -123,7 +126,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           </div>
         </div>
         
-        <Tabs defaultValue="classic" className="mt-2 flex-1 flex flex-col overflow-hidden">
+        <Tabs defaultValue="professional" className="mt-2 flex-1 flex flex-col overflow-hidden">
           <TabsList className="mx-auto mb-4">
             <TabsTrigger value="professional" className="flex items-center gap-1">
               <FileText className="h-4 w-4" /> Professional View
