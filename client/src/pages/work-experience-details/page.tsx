@@ -7,7 +7,7 @@ import { getJobTitleSuggestions } from '@/utils/jobTitlesData';
 import { apiRequest } from '@/lib/queryClient';
 import { JobTitle } from '@shared/schema';
 import { useTemplates } from '@/hooks/use-templates';
-import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
+// Preview modal removed as requested
 import { 
   Select,
   SelectContent,
@@ -545,17 +545,7 @@ const WorkExperienceDetailsPage = () => {
         </div>
       </main>
       
-      {/* Use the Resume Preview Modal component */}
-      <ResumePreviewModal
-        open={previewModalOpen}
-        onOpenChange={setPreviewModalOpen}
-        resumeData={resumeData}
-        selectedTemplateId={selectedTemplateId}
-        setSelectedTemplateId={setSelectedTemplateId}
-        templates={templates as any}
-        hideSkills={true}
-        onNextStep={() => handleNext()}
-      />
+      {/* Preview modal component removed as requested */}
     </div>
   );
 };

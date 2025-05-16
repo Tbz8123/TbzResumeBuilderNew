@@ -9,7 +9,7 @@ import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
-import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
+// Modal preview removed as requested
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
 
 const PersonalInformationPage = () => {
@@ -619,17 +619,7 @@ const PersonalInformationPage = () => {
         onOpenChange={setTemplateModalOpen} 
       />
       
-      {/* Use the centralized Resume Preview Modal component */}
-      <ResumePreviewModal
-        open={previewModalOpen}
-        onOpenChange={setPreviewModalOpen}
-        resumeData={resumeData}
-        selectedTemplateId={selectedTemplateId}
-        setSelectedTemplateId={setSelectedTemplateId}
-        templates={templates as any}
-        hideSkills={true}
-        onNextStep={handleNext}
-      />
+      {/* Preview modal component removed as requested */}
       
       {/* Template selection modal */}
     </div>
