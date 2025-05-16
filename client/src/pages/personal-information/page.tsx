@@ -623,9 +623,10 @@ const PersonalInformationPage = () => {
         <ResumePreviewModal
           open={previewModalOpen}
           onOpenChange={setPreviewModalOpen}
-          resumeData={resumeData}
+          resumeData={resumeData} 
           selectedTemplateId={selectedTemplateId}
           templates={templates as ResumeTemplate[]}
+          key={`preview-${JSON.stringify(resumeData)}`} // Force re-render on data changes
         />
       )}
     </div>
