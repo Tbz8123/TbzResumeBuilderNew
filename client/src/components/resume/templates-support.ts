@@ -125,9 +125,7 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '{{name}}': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim(),
     '{{fullname}}': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim(),
     
-    // Fix for specific template name placeholder issues
-    'FIRSTNAME/SURNAME TAB': resumeData.firstName && resumeData.surname ? 
-      `${resumeData.firstName} ${resumeData.surname}`.toUpperCase() : 'FIRSTNAME/SURNAME TAB',
+
     
     // Professional title/job title
     '{{profession}}': resumeData.profession || '',
@@ -283,6 +281,25 @@ export function processTemplateHtml(html: string, resumeData: any): string {
       processedHtml = processedHtml.replace(regex, replacement);
     }
   });
+  
+  // Special case for FIRSTNAME/SURNAME TAB pattern which appears in some templates
+  if (resumeData.firstName && resumeData.surname) {
+    // Only replace within header/title sections to avoid messing up content
+    const nameHeaderRegex = /(<div[^>]*header[^>]*>[\s\S]*?)FIRSTNAME\/SURNAME TAB([\s\S]*?<\/div>)/gi;
+    processedHtml = processedHtml.replace(nameHeaderRegex, (match, prefix, suffix) => {
+      return `${prefix}${resumeData.firstName} ${resumeData.surname}${suffix}`;
+    });
+    
+    // Also try with h1/heading tags
+    const headerTagRegex = /(<h[1-3][^>]*>[\s\S]*?)FIRSTNAME\/SURNAME TAB([\s\S]*?<\/h[1-3]>)/gi;
+    processedHtml = processedHtml.replace(headerTagRegex, (match, prefix, suffix) => {
+      return `${prefix}${resumeData.firstName} ${resumeData.surname}${suffix}`;
+    });
+    
+    // Target the specific blue sidebar pattern from the image
+    const sidebarRegex = /(FIRSTNAME\/SURNAME TAB)/g;
+    processedHtml = processedHtml.replace(sidebarRegex, `${resumeData.firstName} ${resumeData.surname}`.toUpperCase());
+  }
   
   // Add explicit support for Handlebars syntax in the template for additional fields
   const handlebarsFieldsMap: Record<string, string> = {
