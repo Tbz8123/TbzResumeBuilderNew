@@ -1,14 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { X, Download, FileText } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
-  DialogClose
+  DialogClose,
+  DialogTitle,
+  DialogFooter
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
 import { ResumeData } from '@/contexts/ResumeContext';
 import { ResumeTemplate } from '@shared/schema';
 import { Button } from '@/components/ui/button';
+import { processTemplateHtml, extractAndEnhanceStyles } from './templates-support';
 
 interface ResumePreviewModalProps {
   open: boolean;
@@ -34,6 +38,9 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   // Create a unique key that changes whenever the modal is opened
   // This forces React to unmount and remount the component, resetting all internal state
   const [previewKey, setPreviewKey] = useState(0);
+  const [templateHtml, setTemplateHtml] = useState<string>('');
+  const [templateStyles, setTemplateStyles] = useState<string>('');
+  const contentRef = useRef<HTMLDivElement>(null);
   
   // Always deduplicate work experience entries for all templates
   const deduplicatedResumeData = useMemo(() => {
@@ -52,11 +59,6 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       
       // Create a fresh array with just the first entry
       cleanedData.workExperience = [cleanedData.workExperience[0]];
-      
-      console.log("[RESUME PREVIEW] Template 16 work experience RESTRICTED to:", 
-        cleanedData.workExperience[0].jobTitle,
-        "at",
-        cleanedData.workExperience[0].employer);
     } else {
       // For other templates, perform aggressive deduplication using Set
       console.log("[RESUME PREVIEW] Standard template detected - performing work experience deduplication");
@@ -84,203 +86,219 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       });
     }
     
-    console.log("[RESUME PREVIEW] Final work experience entries:", cleanedData.workExperience.length);
-    
     return cleanedData;
   }, [resumeData, selectedTemplateId]);
+
+  // Find the selected template from the templates array
+  const selectedTemplate = templates.find(t => t.id === selectedTemplateId) || null;
   
-  // Reset the preview key when the modal opens to force a complete re-render
+  // Process the template HTML and styles
   useEffect(() => {
-    if (open) {
-      console.log("[RESUME PREVIEW] Modal opened - resetting preview key to force clean render");
-      setPreviewKey(prev => prev + 1);
-      
-      // EMERGENCY FIX: Add two approaches to solve the issue
-      // COMPREHENSIVE FIX FOR DUPLICATION ISSUES
-      // Using multiple techniques to ensure work experience doesn't duplicate
-      
-      // Main fix function with enhanced tactics
-      const clearWorkExperienceSection = () => {
-        try {
-          console.log("[PREVIEW FIX] Implementing comprehensive duplication fix");
-          
-          // APPROACH 1: Completely remount the element by deleting and recreating it
-          // This ensures we have a fresh DOM on each preview
-          // Set multiple timeouts to catch the iframe at different stages of loading
-          [300, 600, 1000].forEach(delay => {
-            setTimeout(() => {
-              console.log(`[PREVIEW FIX] Applying DOM cleanup after ${delay}ms delay`);
-              
-              // Target any iframe elements that might contain the template
-              const iframes = document.querySelectorAll('iframe');
-              
-              iframes.forEach(iframe => {
-                if (iframe.contentDocument) {
-                  const doc = iframe.contentDocument;
-                  
-                  // NUCLEAR OPTION: Instead of selectively clearing sections,
-                  // completely rebuild the entire document structure
-                  // This ensures a clean slate for each render
-                  
-                  // Extract critical elements to preserve (like <head> content)
-                  const htmlElement = doc.documentElement;
-                  const headContent = doc.head.innerHTML;
-                  
-                  // Save the original body structure but reset all content
-                  const bodyClasses = doc.body.className;
-                  const bodyStyle = doc.body.getAttribute('style') || '';
-                  
-                  // Create a fresh body element
-                  const newBody = doc.createElement('body');
-                  newBody.className = bodyClasses;
-                  newBody.setAttribute('style', bodyStyle);
-                  
-                  // Replace the entire body with the new empty one
-                  // This forces a complete rebuild of the content
-                  doc.body.replaceWith(newBody);
-                  
-                  // Rebuild any necessary structure that needs to exist
-                  // before template content is injected
-                  
-                  // This approach ensures no duplicated elements can exist
-                  // because the entire DOM is completely reset
-                  console.log(`[PREVIEW FIX] Completely rebuilt document structure at ${delay}ms`);
-                }
-              });
-            }, delay);
-          });
-          
-          // APPROACH 2: Monitor the DOM for duplicates and fix in real-time
-          setTimeout(() => {
-            console.log("[PREVIEW FIX] Setting up mutation observer to catch duplicates");
-            
-            const iframes = document.querySelectorAll('iframe');
-            
-            iframes.forEach(iframe => {
-              if (iframe.contentDocument) {
-                const doc = iframe.contentDocument;
-                
-                // Create a more sophisticated mutation observer that looks specifically
-                // for duplication patterns
-                const observer = new MutationObserver((mutations) => {
-                  let potentialDuplicatesFound = false;
-                  
-                  mutations.forEach(mutation => {
-                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                      // Check each added node for potential work experience duplicates
-                      mutation.addedNodes.forEach(node => {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                          const element = node as Element;
-                          
-                          // Look for work experience divs using multiple selector patterns
-                          // This catches various template structures
-                          const workExpSelectors = [
-                            '.work-experience-item', 
-                            '.work-experience > div', 
-                            '.workexp-container > div',
-                            '[data-section="work-experience"] > div',
-                            'div:has(h2:contains("WORK EXPERIENCE")) > div',
-                            'div:has(h3:contains("WORK EXPERIENCE")) > div'
-                          ];
-                          
-                          // Find any work experience entries using our selectors
-                          const workExperienceEntries = element.querySelectorAll && 
-                            element.querySelectorAll(workExpSelectors.join(', '));
-                          
-                          // If more than one work entry is found, we have duplicates
-                          if (workExperienceEntries && workExperienceEntries.length > 1) {
-                            console.log(`[PREVIEW FIX] Observer detected ${workExperienceEntries.length} work entries - fixing duplicates`);
-                            potentialDuplicatesFound = true;
-                            
-                            // Keep only the first entry of each type and remove the rest
-                            const seen = new Set();
-                            
-                            workExperienceEntries.forEach(entry => {
-                              // Create a fingerprint of the entry based on text content
-                              const fingerprint = entry.textContent?.trim();
-                              
-                              if (fingerprint && seen.has(fingerprint)) {
-                                // This is a duplicate based on content, remove it
-                                entry.remove();
-                                console.log('[PREVIEW FIX] Removed duplicate entry with matching content');
-                              } else if (fingerprint) {
-                                // This is the first occurrence, keep track of it
-                                seen.add(fingerprint);
-                              }
-                            });
-                          }
-                        }
-                      });
-                    }
-                  });
-                  
-                  // If we found and fixed duplicates, log it
-                  if (potentialDuplicatesFound) {
-                    console.log('[PREVIEW FIX] Fixed duplicate entries via observer');
-                  }
-                });
-                
-                // Start observing with comprehensive coverage
-                observer.observe(doc.body, { 
-                  childList: true, 
-                  subtree: true,
-                  characterData: true,
-                  attributes: true 
-                });
-                
-                // Disconnect after 5 seconds to prevent memory leaks
-                setTimeout(() => {
-                  observer.disconnect();
-                  console.log('[PREVIEW FIX] Disconnected observer to prevent memory leaks');
-                }, 5000);
-              }
-            });
-          }, 800);
-          
-        } catch (err) {
-          console.error('[PREVIEW FIX] Error in emergency DOM fix:', err);
+    if (open && selectedTemplate) {
+      try {
+        // Reset the preview key to force a clean render
+        setPreviewKey(prev => prev + 1);
+        
+        // Extract CSS styles from the template
+        const enhancedStyles = extractAndEnhanceStyles(selectedTemplate.htmlContent || '');
+        if (enhancedStyles) {
+          setTemplateStyles(enhancedStyles);
         }
-      };
-      
-      // Apply the fix
-      clearWorkExperienceSection();
+        
+        // Process the template HTML with resume data
+        const processedHtml = processTemplateHtml(selectedTemplate.htmlContent || '', deduplicatedResumeData);
+        
+        // Set the processed HTML
+        setTemplateHtml(processedHtml);
+        
+      } catch (error) {
+        console.error('Error processing template:', error);
+      }
     }
-  }, [open]);
+  }, [open, selectedTemplate, deduplicatedResumeData]);
+  
+  // Handle PDF download
+  const handleDownload = () => {
+    if (!contentRef.current) return;
+    
+    // Create a printable version in a new window
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow pop-ups to download as PDF');
+      return;
+    }
+    
+    // Setup the print document with proper CSS for printing
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${resumeData.firstName || ''} ${resumeData.surname || ''} - Resume</title>
+          <style>
+            @page {
+              size: A4;
+              margin: 0;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+            }
+            .resume-document {
+              width: 210mm;
+              min-height: 297mm;
+              padding: 0;
+              margin: 0;
+              box-sizing: border-box;
+            }
+            .section, .job-entry, .education-entry {
+              page-break-inside: avoid;
+            }
+            ${templateStyles}
+          </style>
+        </head>
+        <body>
+          <div class="resume-document">
+            ${templateHtml}
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+              }, 200);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+  };
+
+  // Component to render the professional preview (like in the first screenshot)
+  const ProfessionalPreview = () => (
+    <div className="professional-preview bg-white shadow-lg mx-auto rounded overflow-hidden" style={{ maxWidth: '720px' }}>
+      <div className="preview-content">
+        {/* Template Display */}
+        <div 
+          ref={contentRef}
+          className="resume-document bg-white mx-auto overflow-hidden" 
+          style={{ 
+            width: '100%', 
+            height: 'auto',
+            minHeight: 'min-content',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}
+        >
+          {/* Inject styles to allow content to expand vertically */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            .resume-content {
+              overflow: visible !important; 
+              height: auto !important;
+              min-height: auto !important;
+              max-height: none !important;
+            }
+            
+            /* Ensure all sections are visible */
+            .resume-content * {
+              overflow: visible !important;
+              max-height: none !important;
+            }
+            
+            /* Fix for common template issues */
+            .sidebar, .main-content, .resume-section, .section {
+              height: auto !important;
+              min-height: min-content !important;
+              max-height: none !important;
+            }
+          `}} />
+          
+          {/* Resume content */}
+          <div 
+            dangerouslySetInnerHTML={{ __html: templateHtml }}
+            className="resume-content"
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  // Component for classic preview with HybridResumePreview
+  const ClassicPreview = () => (
+    <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(80vh)' }}>
+      <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center' }}>
+        {/* Use the key prop to force a complete remount when the modal opens */}
+        <HybridResumePreview 
+          key={`resume-preview-${previewKey}-${Date.now()}`}
+          width={794} 
+          height={1123}
+          className="border shadow-lg"
+          scaleContent={false}
+          resumeData={deduplicatedResumeData}
+          selectedTemplateId={selectedTemplateId}
+          setSelectedTemplateId={setSelectedTemplateId}
+          templates={templates}
+          isModal={true}
+          hideSkills={hideSkills}
+        />
+      </div>
+    </div>
+  );
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Resume Preview</h2>
-          <DialogClose className="rounded-full w-6 h-6 flex items-center justify-center">
-            <X className="h-4 w-4" />
-          </DialogClose>
-        </div>
-        
-        <div className="flex justify-center p-4 bg-gray-50 rounded-md overflow-auto" style={{ maxHeight: 'calc(90vh - 150px)' }}>
-          <div style={{ transform: 'scale(0.55)', transformOrigin: 'top left' }}>
-            {/* Use the key prop to force a complete remount when the modal opens */}
-            <HybridResumePreview 
-              key={`resume-preview-${previewKey}-${Date.now()}`}
-              width={794} 
-              height={1123}
-              className="border shadow-lg"
-              scaleContent={false}
-              resumeData={deduplicatedResumeData}
-              selectedTemplateId={selectedTemplateId}
-              setSelectedTemplateId={setSelectedTemplateId}
-              templates={templates}
-              isModal={true}
-              hideSkills={hideSkills}
-            />
+      <DialogContent className="max-w-5xl p-0 overflow-hidden">
+        <div className="flex justify-between items-center p-4 border-b">
+          <DialogTitle className="text-lg font-semibold">Resume Preview</DialogTitle>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="default" 
+              size="sm"
+              className="flex items-center gap-1"
+              onClick={handleDownload}
+            >
+              <Download className="h-4 w-4" />
+              Download PDF
+            </Button>
+            <DialogClose className="rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-100">
+              <X className="h-4 w-4" />
+            </DialogClose>
           </div>
         </div>
+        
+        <Tabs defaultValue="professional" className="w-full">
+          <div className="border-b px-4">
+            <TabsList className="w-full justify-start">
+              <TabsTrigger value="professional">
+                <FileText className="h-4 w-4 mr-2" />
+                Professional View
+              </TabsTrigger>
+              <TabsTrigger value="classic">
+                <FileText className="h-4 w-4 mr-2" />
+                Classic View
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          
+          <div className="p-6 bg-gray-50" style={{ maxHeight: 'calc(80vh)', overflow: 'auto' }}>
+            <TabsContent value="professional" className="mt-0">
+              <ProfessionalPreview />
+            </TabsContent>
+            
+            <TabsContent value="classic" className="mt-0">
+              <ClassicPreview />
+            </TabsContent>
+          </div>
+        </Tabs>
         
         {onNextStep && (
-          <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={() => onOpenChange(false)}>Close</Button>
-            <Button variant="default" onClick={onNextStep}>Continue to Next Step</Button>
-          </div>
+          <DialogFooter className="p-4 border-t">
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+              <Button variant="default" onClick={onNextStep}>Continue to Next Step</Button>
+            </div>
+          </DialogFooter>
         )}
       </DialogContent>
     </Dialog>
