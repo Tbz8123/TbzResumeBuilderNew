@@ -617,13 +617,13 @@ const PersonalInformationPage = () => {
       />
       
       {/* Resume Preview Modal */}
-      {templates && (
+      {templates && Array.isArray(templates) && (
         <ResumePreviewModal
           open={previewModalOpen}
           onOpenChange={setPreviewModalOpen}
           resumeData={resumeData}
           selectedTemplateId={selectedTemplateId}
-          templates={templates}
+          templates={templates as ResumeTemplate[]}
         />
       )}
     </div>
