@@ -88,3 +88,18 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Resume multi-page styles */
+.modal-preview {
+  position: relative;
+}
+
+.resume-page {
+  width: 210mm;
+  min-height: 297mm;
+  background: #fff;
+  box-shadow: 0 0 5px rgba(0,0,0,0.2);
+  margin-bottom: 25px;
+  page-break-after: always;
+  position: relative;
+}

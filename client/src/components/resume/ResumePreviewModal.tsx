@@ -260,7 +260,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           </div>
         </div>
         
-        {/* Scrollable container with padding to ensure content is fully visible */}
+        {/* Scrollable container that allows viewing multiple pages */}
         <div 
           className="flex flex-col items-center p-4 bg-gray-50 rounded-md overflow-y-auto" 
           style={{ 
@@ -268,12 +268,17 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             minHeight: '400px'
           }}
         >
-          {/* Resume container that preserves multi-page layout */}
+          <p className="text-xs text-gray-500 mb-4">
+            Your resume is fully scrollable. If content exceeds one page, additional pages will be created automatically.
+          </p>
+          
+          {/* Resume container that shows all pages */}
           <div 
-            className="resume-multi-page-container" 
+            className="modal-preview" 
             style={{ 
-              transform: 'scale(0.75)', 
+              transform: 'scale(0.75)',
               transformOrigin: 'top center',
+              width: '794px',
               marginBottom: '40px'
             }}
           >
@@ -282,7 +287,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
               key={`resume-preview-${previewKey}-${Date.now()}`}
               width={794} 
               height={1123}
-              className="border shadow-lg mb-8"
+              className="border shadow-lg"
               scaleContent={false}
               resumeData={deduplicatedResumeData}
               selectedTemplateId={selectedTemplateId}
