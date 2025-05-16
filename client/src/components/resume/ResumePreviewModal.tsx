@@ -260,7 +260,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           </div>
         </div>
         
-        {/* Better scrollable container for multi-page templates */}
+        {/* Scrollable container for multi-page templates */}
         <div 
           className="flex flex-col items-center p-6 bg-gray-50 rounded-md overflow-y-auto" 
           style={{ 
@@ -270,29 +270,121 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
         >
           {/* Message to help users understand they can scroll */}
           <p className="text-sm text-gray-500 mb-4">
-            Scroll down to see all content. Template will automatically create new pages for overflow content.
+            Scroll down to see all content. Template will automatically display all content.
           </p>
 
-          {/* Resume container with improved styling */}
-          <div className="border-none shadow-lg bg-white overflow-hidden">
-            {/* Custom container with better scaling for readability */}
-            <div style={{ transform: 'scale(0.70)', transformOrigin: 'top center', margin: '0 auto' }}>
-              <div style={{ height: 'auto', overflow: 'visible', paddingBottom: '50px' }}>
-                <HybridResumePreview 
-                  key={`preview-${Date.now()}`}
-                  width={794} 
-                  height={1123}
-                  scaleContent={false}
-                  resumeData={deduplicatedResumeData}
-                  selectedTemplateId={selectedTemplateId}
-                  setSelectedTemplateId={setSelectedTemplateId}
-                  templates={templates}
-                  isModal={true}
-                  hideSkills={hideSkills}
-                  showTemplateControls={false}
-                />
-              </div>
-            </div>
+          {/* Specialized resume preview container for multi-page viewing */}
+          <div className="multi-page-preview-container w-full">
+            {/* Process the HTML content to display as vertical pages */}
+            {(() => {
+              // Apply template-specific styles to ensure proper rendering 
+              const templateStyles = templates.find(t => t.id === selectedTemplateId)?.cssContent || '';
+              
+              // Process the HTML as needed
+              const templateDiv = document.createElement('div');
+              
+              try {
+                // Find the selected template 
+                const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
+                if (!selectedTemplate || !selectedTemplate.htmlContent) {
+                  return <div>No template content available</div>;
+                }
+                
+                // Get the processed HTML content for the template 
+                let processedTemplate = selectedTemplate.htmlContent;
+                
+                // Process the template with the resume data 
+                // This processing would typically be handled by your template engine 
+                // For personal info 
+                if (deduplicatedResumeData.personalInfo) {
+                  const { name, title, email, phone, location, linkedin, website, drivingLicense } = deduplicatedResumeData.personalInfo;
+                  processedTemplate = processedTemplate
+                    .replace(/\[\[FIELD:name\]\]/g, name || '')
+                    .replace(/\[\[FIELD:title\]\]/g, title || '')
+                    .replace(/\[\[FIELD:email\]\]/g, email || '')
+                    .replace(/\[\[FIELD:phone\]\]/g, phone || '')
+                    .replace(/\[\[FIELD:location\]\]/g, location || '')
+                    .replace(/\[\[FIELD:linkedin\]\]/g, linkedin || '')
+                    .replace(/\[\[FIELD:website\]\]/g, website || '')
+                    .replace(/\[\[FIELD:drivinglicense\]\]/g, drivingLicense || '');
+                }
+                
+                // Process work experience 
+                if (deduplicatedResumeData.workExperience && deduplicatedResumeData.workExperience.length > 0) {
+                  // Find work experience container 
+                  const workExpTemplate = processedTemplate.match(/<div class="work-experience-item">(.*?)<\/div>/s);
+                  
+                  if (workExpTemplate && workExpTemplate[1]) {
+                    let workExpHtml = '';
+                    
+                    // Generate HTML for each work experience entry 
+                    deduplicatedResumeData.workExperience.forEach((exp, index) => {
+                      if (!exp) return;
+                      
+                      const uniqueId = `exp-${Date.now()}-${index}`;
+                      let itemHtml = workExpTemplate[1]
+                        .replace(/\[\[FIELD:workExperienceJobTitle\]\]/g, exp.jobTitle || '')
+                        .replace(/\[\[FIELD:workExperienceCompany\]\]/g, exp.company || '')
+                        .replace(/\[\[FIELD:workExperienceStartDate\]\]/g, exp.startDate || `${exp.startMonth || ''} ${exp.startYear || ''}`)
+                        .replace(/\[\[FIELD:workExperienceEndDate\]\]/g, exp.endDate || `${exp.endMonth || ''} ${exp.endYear || ''}`)
+                        .replace(/\[\[FIELD:workExperienceDescription\]\]/g, exp.description || '');
+                      
+                      workExpHtml += `<div class="work-experience-item" data-id="${uniqueId}">${itemHtml}</div>`;
+                    });
+                    
+                    // Replace the template with actual entries 
+                    processedTemplate = processedTemplate.replace(
+                      /<div class="work-experience-item">.*?<\/div>/s,
+                      workExpHtml
+                    );
+                  }
+                }
+                
+                // Add to DOM for any further processing
+                templateDiv.innerHTML = processedTemplate;
+                
+                // Special handling for Template 16 (blue sidebar template)
+                if (selectedTemplateId === 16) {
+                  // Find the main content elements and ensure they expand properly
+                  const leftColumn = templateDiv.querySelector('.left');
+                  const rightColumn = templateDiv.querySelector('.right');
+                  
+                  if (leftColumn) {
+                    leftColumn.setAttribute('style', 'min-height: 1500px !important');
+                  }
+                  
+                  if (rightColumn) {
+                    rightColumn.setAttribute('style', 'min-height: 1500px !important');
+                  }
+                }
+                
+                // Return the container with the processed HTML
+                return (
+                  <div className="rendered-resume-container" style={{ width: '794px', margin: '0 auto' }}>
+                    <style dangerouslySetInnerHTML={{ __html: templateStyles }} />
+                    <div 
+                      className="resume-page" 
+                      data-template-id={selectedTemplateId || 'none'}
+                      style={{ 
+                        transform: 'scale(0.7)',
+                        transformOrigin: 'top center',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        margin: '0 auto',
+                        minHeight: '1123px',
+                        height: 'auto',
+                        width: '794px', // A4 width
+                        padding: '0',
+                        marginBottom: '50px'
+                      }}
+                      dangerouslySetInnerHTML={{ __html: templateDiv.innerHTML }}
+                    />
+                  </div>
+                );
+              } catch (error) {
+                console.error('Error rendering template:', error);
+                return <div>Error rendering template</div>;
+              }
+            })()}
           </div>
         </div>
         
