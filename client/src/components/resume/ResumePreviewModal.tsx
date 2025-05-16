@@ -390,10 +390,13 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             max-height: none !important;
           }
           
-          /* Match the specific SAHIB KHAN template styling */
+          /* Match the specific SAHIB KHAN template styling exactly as in the original */
           .resume-page {
             display: flex !important;
             flex-direction: row !important;
+            width: 210mm !important;
+            min-height: 297mm !important;
+            background: #fff !important;
           }
           
           .left {
@@ -406,6 +409,23 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           .right {
             width: 65% !important;
             padding: 20px !important;
+            background: #fff !important;
+          }
+          
+          .left h1 {
+            font-size: 1.25rem !important;
+            margin-bottom: 5px !important;
+            color: #fff !important;
+          }
+          
+          .left h3 {
+            font-size: 0.875rem !important;
+            margin-bottom: 15px !important;
+            color: #fff !important;
+          }
+          
+          .section {
+            margin-bottom: 15px !important;
           }
           
           .section h2 {
@@ -414,6 +434,17 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             color: #000 !important;
             padding: 5px !important;
             margin-bottom: 5px !important;
+            text-transform: uppercase !important;
+          }
+          
+          .right .section h2 {
+            background-color: #f0f0f0 !important;
+            color: #000 !important;
+          }
+          
+          .section p, .section li, .right p {
+            font-size: 0.75rem !important;
+            margin: 4px 0 !important;
           }
           
           /* Add proper scrolling */
