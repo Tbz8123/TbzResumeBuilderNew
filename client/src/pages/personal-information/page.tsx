@@ -632,7 +632,6 @@ const PersonalInformationPage = () => {
           resumeData={previewData} // Use local previewData which updates when typing
           selectedTemplateId={selectedTemplateId}
           templates={templates as ResumeTemplate[]}
-          key={`preview-${Date.now()}`} // Force re-render when modal opens
         />
       )}
     </div>
