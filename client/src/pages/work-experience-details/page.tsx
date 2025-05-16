@@ -7,7 +7,7 @@ import { getJobTitleSuggestions } from '@/utils/jobTitlesData';
 import { apiRequest } from '@/lib/queryClient';
 import { JobTitle } from '@shared/schema';
 import { useTemplates } from '@/hooks/use-templates';
-import ZetyStylePreview from '@/components/resume/ZetyStylePreview';
+import SimpleResumePreview from '@/components/resume/SimpleResumePreview';
 import { 
   Select,
   SelectContent,
@@ -51,6 +51,12 @@ const WorkExperienceDetailsPage = () => {
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const { data: templates } = useTemplates();
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  
+  // Add onNextStep function for the preview modal
+  const onNextStep = () => {
+    setPreviewModalOpen(false);
+    handleNext();
+  };
   
   // Initialize with empty values
   const [workExperience, setWorkExperience] = useState<WorkExperience>({
@@ -539,15 +545,12 @@ const WorkExperienceDetailsPage = () => {
         </div>
       </main>
       
-      {/* Use the centralized Resume Preview Modal component */}
-      <ZetyStylePreview
+      {/* Use the simple Resume Preview Modal component */}
+      <SimpleResumePreview
         open={previewModalOpen}
         onOpenChange={setPreviewModalOpen}
         resumeData={resumeData}
-        selectedTemplateId={selectedTemplateId}
-        setSelectedTemplateId={setSelectedTemplateId}
-        templates={templates || []}
-        hideSkills={true}
+        onNextStep={() => handleNext()}
       />
     </div>
   );
