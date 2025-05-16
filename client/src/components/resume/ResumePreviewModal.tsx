@@ -333,16 +333,15 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
 
   // Component for classic preview with HybridResumePreview and improved content scaling
   const ClassicPreview = () => {
-    // Ensure template consistency for SAHIB KHAN template
-    const fixedTemplateId = selectedTemplateId === 16 ? 16 : selectedTemplateId;
-    
+    // Use the original template without any customization
+    // This will ensure it looks identical to the sidebar preview
     return (
     <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(90vh)', padding: '20px 0' }}>
-      <div className="template-wrapper">
-        {/* Fix for template flickering in preview modal */}
+      <div className="template-preview">
+        {/* Minimal styling - let the original template styles take priority */}
         <style dangerouslySetInnerHTML={{ __html: `
-          /* Template container styles */
-          .template-wrapper {
+          /* Only basic container styling */
+          .template-preview {
             /* Show at true A4 size with auto scrolling */
             width: 210mm;
             min-height: 297mm;
