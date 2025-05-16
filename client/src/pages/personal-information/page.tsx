@@ -521,15 +521,7 @@ const PersonalInformationPage = () => {
                   Optional: Personal details
                 </Button>
                 
-                <div className="flex gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={handlePreview}
-                    className="border border-gray-400 bg-white hover:bg-gray-50 text-gray-800 rounded-full px-8 py-2 font-normal"
-                  >
-                    Preview
-                  </Button>
-                  
+                <div className="flex justify-end">
                   <Button
                     variant="default"
                     onClick={handleNext}

@@ -134,13 +134,7 @@ const WorkExperienceDetailsPage = () => {
     setLocation('/work-history');
   };
 
-  const handlePreview = () => {
-    // Save before previewing
-    saveWorkExperience();
-    // Open the preview modal instead of navigating
-    console.log('Opening resume preview modal');
-    setPreviewModalOpen(true);
-  };
+  // Preview functionality removed
 
   const handleNext = () => {
     // Save and navigate to the next step
