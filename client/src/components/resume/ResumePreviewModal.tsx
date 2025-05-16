@@ -13,6 +13,7 @@ import { ResumeData } from '@/contexts/ResumeContext';
 import { ResumeTemplate } from '@shared/schema';
 import { Button } from '@/components/ui/button';
 import { processTemplateHtml, extractAndEnhanceStyles } from './templates-support';
+import { WorkExperience } from '@/types/resume';
 
 interface ResumePreviewModalProps {
   open: boolean;
@@ -67,7 +68,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       const seen = new Set();
       
       // Filter the array to only keep unique entries
-      cleanedData.workExperience = cleanedData.workExperience.filter(exp => {
+      cleanedData.workExperience = cleanedData.workExperience.filter((exp: WorkExperience) => {
         // Skip null/undefined entries
         if (!exp) return false;
         

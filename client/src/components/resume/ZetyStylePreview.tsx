@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download } from 'lucide-react';
+import { X, Download, FileText } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
-  DialogClose
+  DialogClose,
+  DialogTitle,
+  DialogFooter
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ResumeData } from '@/contexts/ResumeContext';
 import { ResumeTemplate } from '@shared/schema';
 import { processTemplateHtml, extractAndEnhanceStyles } from './templates-support';
+import HybridResumePreview from './HybridResumePreview';
 
 interface ZetyStylePreviewProps {
   open: boolean;
@@ -27,14 +31,24 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
   resumeData,
   selectedTemplateId,
   templates,
-  onNextStep
+  onNextStep,
+  setSelectedTemplateId,
+  hideSkills = true
 }) => {
   const [templateHtml, setTemplateHtml] = useState<string>('');
   const [templateStyles, setTemplateStyles] = useState<string>('');
+  const [previewKey, setPreviewKey] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   
   // Find the selected template from the templates array
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId) || null;
+  
+  // Reset the preview key when the modal opens to force a complete re-render
+  useEffect(() => {
+    if (open) {
+      setPreviewKey(prev => prev + 1);
+    }
+  }, [open]);
   
   // Process the template HTML and styles
   useEffect(() => {
@@ -73,7 +87,7 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Resume</title>
+          <title>${resumeData.firstName || ''} ${resumeData.surname || ''} - Resume</title>
           <style>
             @page {
               size: A4;
@@ -115,11 +129,82 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
     printWindow.document.close();
   };
   
+  // Component to render the professional preview (similar to the reference screenshot)
+  const ProfessionalPreview = () => (
+    <div className="professional-preview bg-white shadow-lg mx-auto rounded overflow-hidden" style={{ maxWidth: '720px' }}>
+      <div className="preview-content">
+        {/* Template Display */}
+        <div 
+          ref={contentRef}
+          className="resume-document bg-white mx-auto overflow-hidden" 
+          style={{ 
+            width: '100%', 
+            height: 'auto',
+            minHeight: 'min-content',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}
+        >
+          {/* Inject styles to allow content to expand vertically */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            .resume-content {
+              overflow: visible !important; 
+              height: auto !important;
+              min-height: auto !important;
+              max-height: none !important;
+            }
+            
+            /* Ensure all sections are visible */
+            .resume-content * {
+              overflow: visible !important;
+              max-height: none !important;
+            }
+            
+            /* Fix for common template issues */
+            .sidebar, .main-content, .resume-section, .section {
+              height: auto !important;
+              min-height: min-content !important;
+              max-height: none !important;
+            }
+          `}} />
+          
+          {/* Resume content */}
+          <div 
+            dangerouslySetInnerHTML={{ __html: templateHtml }}
+            className="resume-content"
+          />
+        </div>
+      </div>
+    </div>
+  );
+  
+  // Component for classic preview
+  const ClassicPreview = () => (
+    <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(80vh)' }}>
+      <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center' }}>
+        {/* Use the key prop to force a complete remount when the modal opens */}
+        <HybridResumePreview 
+          key={`resume-preview-${previewKey}-${Date.now()}`}
+          width={794} 
+          height={1123}
+          className="border shadow-lg"
+          scaleContent={false}
+          resumeData={resumeData}
+          selectedTemplateId={selectedTemplateId}
+          setSelectedTemplateId={setSelectedTemplateId}
+          templates={templates}
+          isModal={true}
+          hideSkills={hideSkills}
+        />
+      </div>
+    </div>
+  );
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] p-0 bg-gray-50">
-        <div className="sticky top-0 z-10 flex justify-between items-center p-4 bg-white border-b">
-          <h2 className="text-lg font-semibold">Resume Preview</h2>
+      <DialogContent className="max-w-5xl p-0 overflow-hidden">
+        <div className="flex justify-between items-center p-4 border-b">
+          <DialogTitle className="text-lg font-semibold">Resume Preview</DialogTitle>
           <div className="flex items-center gap-2">
             <Button 
               variant="default" 
@@ -130,59 +215,44 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
               <Download className="h-4 w-4" />
               Download PDF
             </Button>
-            <DialogClose className="rounded-full w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200">
+            <DialogClose className="rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-100">
               <X className="h-4 w-4" />
             </DialogClose>
           </div>
         </div>
         
-        <div className="resume-preview-container overflow-auto p-8" style={{ maxHeight: 'calc(90vh - 70px)' }}>
-          <div 
-            ref={contentRef}
-            className="resume-document bg-white shadow-md mx-auto" 
-            style={{ 
-              width: '210mm', 
-              height: 'auto',
-              minHeight: 'min-content' // Allow content to expand as needed
-            }}
-          >
-            {/* Inject styles to allow content to expand vertically */}
-            <style dangerouslySetInnerHTML={{ __html: `
-              .resume-content {
-                overflow: visible !important; 
-                height: auto !important;
-                min-height: auto !important;
-                max-height: none !important;
-              }
-              
-              /* Ensure all sections are visible */
-              .resume-content * {
-                overflow: visible !important;
-                max-height: none !important;
-              }
-              
-              /* Fix for common template issues */
-              .sidebar, .main-content, .resume-section, .section {
-                height: auto !important;
-                min-height: min-content !important;
-                max-height: none !important;
-              }
-            `}} />
-            
-            {/* Resume content */}
-            <div 
-              dangerouslySetInnerHTML={{ __html: templateHtml }}
-              className="resume-content"
-            />
+        <Tabs defaultValue="professional" className="w-full">
+          <div className="border-b px-4">
+            <TabsList className="w-full justify-start">
+              <TabsTrigger value="professional">
+                <FileText className="h-4 w-4 mr-2" />
+                Professional View
+              </TabsTrigger>
+              <TabsTrigger value="classic">
+                <FileText className="h-4 w-4 mr-2" />
+                Classic View
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </div>
+          
+          <div className="p-6 bg-gray-50" style={{ maxHeight: 'calc(80vh)', overflow: 'auto' }}>
+            <TabsContent value="professional" className="mt-0">
+              <ProfessionalPreview />
+            </TabsContent>
+            
+            <TabsContent value="classic" className="mt-0">
+              <ClassicPreview />
+            </TabsContent>
+          </div>
+        </Tabs>
         
         {onNextStep && (
-          <div className="p-4 bg-white border-t flex justify-end">
-            <Button onClick={onNextStep}>
-              Continue
-            </Button>
-          </div>
+          <DialogFooter className="p-4 border-t">
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+              <Button variant="default" onClick={onNextStep}>Continue</Button>
+            </div>
+          </DialogFooter>
         )}
       </DialogContent>
     </Dialog>
