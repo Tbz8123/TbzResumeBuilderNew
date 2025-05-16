@@ -584,13 +584,13 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                   data-template-id={selectedTemplateId || 'none'}
                   style={{ 
                     transform: `scale(${scaleFactor})`,
-                    transformOrigin: 'top left',
+                    transformOrigin: 'top center',
                     width: '794px', // A4 width
-                    minHeight: '1123px', // A4 height
+                    height: '1123px', // A4 height
                     maxHeight: 'none', // Allow content to expand for measuring
                     overflow: 'visible', // Important for measuring true content height
                     padding: '0',
-                    margin: '0',
+                    margin: '0 auto', // Center the content horizontally
                   }}
                   className="resume-page"
                 />
