@@ -331,117 +331,102 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
     </div>
   );
 
-  // Component for classic preview with HybridResumePreview and improved content scaling
-  const ClassicPreview = () => (
-    <div className="flex justify-center overflow-hidden" style={{ maxHeight: 'calc(80vh)' }}>
-      <div className="template-wrapper" style={{ 
-        transform: 'scale(0.7)', 
-        transformOrigin: 'top center',
-        width: '210mm',
-        margin: '0 auto',
+  // Using a static pre-rendered preview to eliminate flickering completely
+  const ClassicPreview = () => {
+    // Create a static container that won't reflow or recalculate dimensions
+    return (
+      <div className="flex justify-center" style={{ 
+        maxHeight: 'calc(80vh)',
+        overflow: 'auto',
         position: 'relative',
       }}>
-        {/* Stop flickering by using fixed dimensions and preventing resize reactions */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          /* Anti-flickering fixes - fixed dimensions and transforms */
-          .resume-container {
-            width: 210mm !important;
-            margin: 0 auto !important;
-            height: auto !important; 
-            min-height: 297mm !important;
-            position: relative !important;
-            transform: none !important;
-            transition: none !important;
-          }
+        <div style={{
+          width: '210mm',
+          maxWidth: '210mm',
+          margin: '0 auto',
+          transform: 'scale(0.7)',
+          transformOrigin: 'top center',
+          position: 'relative',
+          backgroundColor: 'white',
+          boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+        }}>
+          {/* Add global style to prevent any animations or transitions */}
+          <style>
+            {`
+              * {
+                transition: none !important;
+                animation: none !important;
+              }
+              
+              /* Fix SAHIB KHAN template layout */
+              .resume-container {
+                width: 210mm !important;
+                height: auto !important;
+                min-height: 297mm !important;
+                overflow: visible !important;
+                position: static !important;
+              }
+              
+              .resume-page {
+                width: 210mm !important;
+                min-height: 297mm !important;
+                height: auto !important;
+                display: flex !important;
+                flex-direction: row !important;
+                position: static !important;
+                flex-wrap: nowrap !important;
+              }
+              
+              .left {
+                width: 35% !important;
+                background-color: #407187 !important;
+                min-height: 297mm !important;
+                position: static !important;
+                flex-shrink: 0 !important;
+              }
+              
+              .right {
+                width: 65% !important;
+                min-height: 297mm !important;
+                position: static !important;
+                flex-shrink: 0 !important;
+              }
+              
+              /* Ensure content visibility */
+              .section {
+                margin-bottom: 15px !important;
+                display: block !important;
+                visibility: visible !important;
+                height: auto !important;
+              }
+              
+              /* Fix text formatting */
+              p, h1, h2, h3, li {
+                overflow-wrap: break-word !important;
+                word-wrap: break-word !important;
+                white-space: normal !important;
+              }
+            `}
+          </style>
           
-          .resume-page {
-            width: 210mm !important;
-            min-height: 297mm !important;
-            height: auto !important;
-            display: flex !important;
-            flex-direction: row !important;
-            box-shadow: 0 0 5px rgba(0,0,0,0.1) !important;
-            position: relative !important;
-            transition: none !important;
-          }
-          
-          /* Fixed dimensions for sidebar and content - prevent dynamic resizing */
-          .left {
-            width: 35% !important;
-            min-height: 297mm !important;
-            height: auto !important;
-            position: relative !important;
-            flex-shrink: 0 !important;
-          }
-          
-          .right {
-            width: 65% !important;
-            min-height: 297mm !important;
-            height: auto !important;
-            position: relative !important;
-            flex-shrink: 0 !important;
-          }
-          
-          /* Disable transitions and animations that might cause flickering */
-          *, *::before, *::after {
-            transition: none !important;
-            animation: none !important;
-            transform: none !important;
-          }
-          
-          /* Fix content visibility and wrapping */
-          p, li, div, span, h1, h2, h3, .section {
-            overflow-wrap: break-word !important;
-            word-wrap: break-word !important;
-            white-space: normal !important;
-            transition: none !important;
-          }
-          
-          /* Fix job sections specifically */
-          .job-title, .company, .section p {
-            display: block !important;
-            visibility: visible !important;
-            max-width: 100% !important;
-            transition: none !important;
-          }
-          
-          /* Ensure work experience section is fully visible */
-          .section {
-            display: block !important;
-            visibility: visible !important;
-            height: auto !important;
-            min-height: auto !important;
-            margin-bottom: 15px !important;
-            page-break-inside: avoid !important;
-            transition: none !important;
-          }
-          
-          /* Fix content sizing */
-          .section p {
-            font-size: 0.75rem !important;
-            line-height: 1.4 !important;
-            margin: 4px 0 !important;
-            padding: 0 !important;
-          }
-        `}} />
-        
-        {/* Use the key prop to force a complete remount when the modal opens */}
-        <HybridResumePreview 
-          key={`resume-preview-${previewKey}-${Date.now()}`}
-          width={794} 
-          height={1123}
-          className="border shadow-lg"
-          scaleContent={false}
-          resumeData={deduplicatedResumeData}
-          selectedTemplateId={selectedTemplateId}
-          setSelectedTemplateId={setSelectedTemplateId}
-          templates={templates}
-          isModal={true}
-          hideSkills={hideSkills}
-        />
+          {/* Render the preview with a stable key that won't cause remounts */}
+          <HybridResumePreview 
+            key={`fixed-preview-${previewKey}`}
+            width={794} 
+            height={1123}
+            className="border shadow-lg"
+            scaleContent={false}
+            resumeData={deduplicatedResumeData}
+            selectedTemplateId={selectedTemplateId}
+            setSelectedTemplateId={setSelectedTemplateId}
+            templates={templates}
+            isModal={true}
+            hideSkills={hideSkills}
+          />
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
