@@ -7,7 +7,7 @@ import { getJobTitleSuggestions } from '@/utils/jobTitlesData';
 import { apiRequest } from '@/lib/queryClient';
 import { JobTitle } from '@shared/schema';
 import { useTemplates } from '@/hooks/use-templates';
-import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
+import ZetyStylePreview from '@/components/resume/ZetyStylePreview';
 import { 
   Select,
   SelectContent,
@@ -540,7 +540,7 @@ const WorkExperienceDetailsPage = () => {
       </main>
       
       {/* Use the centralized Resume Preview Modal component */}
-      <ResumePreviewModal
+      <ZetyStylePreview
         open={previewModalOpen}
         onOpenChange={setPreviewModalOpen}
         resumeData={resumeData}

@@ -9,7 +9,7 @@ import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
-import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
+import ZetyStylePreview from '@/components/resume/ZetyStylePreview';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
 
 const PersonalInformationPage = () => {
@@ -620,7 +620,7 @@ const PersonalInformationPage = () => {
       />
       
       {/* Use the centralized Resume Preview Modal component */}
-      <ResumePreviewModal
+      <ZetyStylePreview
         open={previewModalOpen}
         onOpenChange={setPreviewModalOpen}
         resumeData={resumeData}
