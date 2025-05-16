@@ -114,3 +114,48 @@
 [data-template-id="16"] .right {
   min-height: 2000px !important;
 }
+
+/* Template 16 special rendering for modal view */
+.template16-special {
+  height: auto !important;
+}
+
+.template16-special .left,
+.template16-special .right {
+  min-height: 2000px !important;
+  height: auto !important;
+}
+
+/* Force template 16 flex columns to expand */
+.template16-special {
+  display: flex;
+  flex-direction: row;
+}
+
+.template16-special .left {
+  width: 35%;
+  height: auto;
+  flex-shrink: 0;
+}
+
+.template16-special .right {
+  width: 65%;
+  height: auto;
+  flex-grow: 1;
+}
+
+/* Resume preview modal styling */
+.multi-page-preview-container {
+  max-width: 794px;
+  margin: 0 auto;
+}
+
+/* Make job titles and work experience entries clearly visible */
+.resume-page .job-title {
+  font-weight: bold;
+}
+
+.resume-page .work-experience-item {
+  margin-bottom: 15px;
+  page-break-inside: avoid;
+}

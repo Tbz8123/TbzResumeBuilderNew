@@ -575,28 +575,55 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
               ` }} />
               {/* Simplified approach that doesn't try to handle template 16 specially */}
               <div key={`template-wrapper-${new Date().getTime()}`} className="template-container">
-                <div 
-                  key={`template-${templateKey}-${new Date().getTime()}`}
-                  ref={resumeContainerRef}
-                  dangerouslySetInnerHTML={{ __html: templateHtml }} 
-                  data-work-entries={resumeData.workExperience?.length || 0}
-                  data-render-id={`render-${new Date().getTime()}`}
-                  data-template-id={selectedTemplateId || 'none'}
-                  style={{ 
-                    transform: `scale(${scaleFactor})`,
-                    transformOrigin: 'top left',
-                    width: '794px', // A4 width 
-                    // For Template 16 (blue sidebar), ensure both columns expand
-                    minHeight: selectedTemplateId === 16 ? '2000px' : '1123px',
-                    height: 'auto',
-                    maxHeight: 'none',
-                    overflow: 'visible',
-                    padding: '0',
-                    margin: '0',
-                    marginBottom: isModal ? '50px' : '0',
-                  }}
-                  className="resume-page"
-                />
+                {isModal && selectedTemplateId === 16 ? (
+                  // Special rendering for Template 16 in modal view
+                  <div className="template16-container">
+                    <div 
+                      key={`template-${templateKey}-${new Date().getTime()}`}
+                      ref={resumeContainerRef}
+                      dangerouslySetInnerHTML={{ __html: templateHtml }} 
+                      data-work-entries={resumeData.workExperience?.length || 0}
+                      data-render-id={`render-${new Date().getTime()}`}
+                      data-template-id={selectedTemplateId || 'none'}
+                      style={{ 
+                        transform: `scale(${scaleFactor})`,
+                        transformOrigin: 'top left',
+                        width: '794px', // A4 width 
+                        height: 'auto',
+                        maxHeight: 'none',
+                        overflow: 'visible',
+                        padding: '0',
+                        margin: '0',
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                        backgroundColor: '#fff'
+                      }}
+                      className="resume-page template16-special"
+                    />
+                  </div>
+                ) : (
+                  // Default rendering for all other templates
+                  <div 
+                    key={`template-${templateKey}-${new Date().getTime()}`}
+                    ref={resumeContainerRef}
+                    dangerouslySetInnerHTML={{ __html: templateHtml }} 
+                    data-work-entries={resumeData.workExperience?.length || 0}
+                    data-render-id={`render-${new Date().getTime()}`}
+                    data-template-id={selectedTemplateId || 'none'}
+                    style={{ 
+                      transform: `scale(${scaleFactor})`,
+                      transformOrigin: 'top left',
+                      width: '794px', // A4 width 
+                      minHeight: '1123px', // A4 height
+                      height: 'auto',
+                      maxHeight: 'none',
+                      overflow: 'visible',
+                      padding: '0',
+                      margin: '0',
+                      marginBottom: isModal ? '50px' : '0',
+                    }}
+                    className="resume-page"
+                  />
+                )}
               </div>
             </div>
           </div>
