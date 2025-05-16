@@ -30,6 +30,10 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   hideSkills = false,
   showTemplateControls = false
 }) => {
+  // Convert height to number if it's a string number, otherwise use as is
+  const processedHeight = typeof height === 'string' ? 
+    (height === 'auto' ? 'auto' : parseInt(height, 10) || 365) : 
+    height;
   // Use props if provided, otherwise fall back to context
   const resumeContext = useResume();
   const templatesContext = useTemplates();
