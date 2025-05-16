@@ -199,17 +199,19 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '{{driving_license}}': hasAdditionalField(resumeData, 'drivingLicense') ? getAdditionalFieldValue(resumeData, 'drivingLicense') : '##REMOVE_THIS##',
     '{{license}}': hasAdditionalField(resumeData, 'drivingLicense') ? getAdditionalFieldValue(resumeData, 'drivingLicense') : '##REMOVE_THIS##',
     
-    // Common template text patterns
+    // Common template text patterns - ONLY replace exact patterns, not partial matches
     'SAHIB KHAN': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim().toUpperCase(),
     'Stephen John': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim(),
     'John Doe': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim(),
     'JOHN DOE': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim().toUpperCase(),
-    'GRAPHIC DESIGNER': resumeData.profession ? resumeData.profession.toUpperCase() : '',
-    'Graphic Designer': resumeData.profession || '',
-    'Software Engineer': resumeData.profession || '',
-    'SOFTWARE ENGINEER': resumeData.profession ? resumeData.profession.toUpperCase() : '',
-    'Web Developer': resumeData.profession || '',
-    'WEB DEVELOPER': resumeData.profession ? resumeData.profession.toUpperCase() : '',
+    
+    // Only exact matches with word boundaries to avoid replacing parts of other content
+    ' GRAPHIC DESIGNER ': ` ${resumeData.profession ? resumeData.profession.toUpperCase() : ''} `,
+    ' Graphic Designer ': ` ${resumeData.profession || ''} `,
+    ' Software Engineer ': ` ${resumeData.profession || ''} `,
+    ' SOFTWARE ENGINEER ': ` ${resumeData.profession ? resumeData.profession.toUpperCase() : ''} `,
+    ' Web Developer ': ` ${resumeData.profession || ''} `,
+    ' WEB DEVELOPER ': ` ${resumeData.profession ? resumeData.profession.toUpperCase() : ''} `,
     
     // Section headers (preserve these)
     'ABOUT ME': 'ABOUT ME',
@@ -240,12 +242,9 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '🔗 website': hasAdditionalField(resumeData, 'website') ? `🔗 ${getAdditionalFieldValue(resumeData, 'website')}` : '##REMOVE_THIS##',
     '💼 linkedin': hasAdditionalField(resumeData, 'linkedin') ? `💼 ${getAdditionalFieldValue(resumeData, 'linkedin')}` : '##REMOVE_THIS##',
       
-    // Professional template patterns and placeholders
-    'moahmed': resumeData.firstName || 'moahmed',
-    'tabt=rez': resumeData.surname || 'tabt=rez',
-    'MOHAMED': resumeData.firstName?.toUpperCase() || 'MOHAMED',
-    'TABREZ': resumeData.surname?.toUpperCase() || 'TABREZ',
-    'MOHAMED TABREZ': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim().toUpperCase(),
+    // Only replace exact matches for name placeholders to avoid interference with content
+    ' moahmed ': resumeData.firstName ? ` ${resumeData.firstName} ` : ' moahmed ',
+    ' tabt=rez ': resumeData.surname ? ` ${resumeData.surname} ` : ' tabt=rez ',
     'movewo': resumeData.profession || 'movewo',
     'onewon': resumeData.city || 'onewon',
     'olnvewon': resumeData.country || 'olnvewon',
@@ -285,20 +284,42 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     }
   });
   
-  // Special case for template-specific name patterns that appear in templates
+  // Direct fix for the specific template with MOHAMED TABREZ in the blue sidebar
   if (resumeData.firstName && resumeData.surname) {
+    // Create the replacement name
     const fullName = `${resumeData.firstName} ${resumeData.surname}`.trim();
     const fullNameUpper = fullName.toUpperCase();
     
-    // Replace MOHAMED TABREZ pattern that appears in the blue sidebar
-    processedHtml = processedHtml.replace(/MOHAMED TABREZ/g, fullNameUpper);
+    // Replace the name only in the sidebar (beginning of the document)
+    // This way we don't affect content elsewhere in the template
+    if (processedHtml.includes("MOHAMED TABREZ")) {
+      // Check if we're dealing with the specific template from the screenshot
+      // Look for blue sidebar with name at top (exact match for template in screenshot)
+      processedHtml = processedHtml.replace(
+        /MOHAMED TABREZ<\/h1>/g, 
+        `${fullNameUpper}</h1>`
+      );
+      
+      // Just to be extra safe, also look for it within header or sidebar divs
+      processedHtml = processedHtml.replace(
+        /<div[^>]*class=["']left[^"']*["'][^>]*>[\s\S]{0,200}MOHAMED TABREZ[\s\S]{0,50}/g,
+        (match) => match.replace("MOHAMED TABREZ", fullNameUpper)
+      );
+    }
     
-    // Also replace individual parts
-    processedHtml = processedHtml.replace(/MOHAMED/g, resumeData.firstName.toUpperCase());
-    processedHtml = processedHtml.replace(/TABREZ/g, resumeData.surname.toUpperCase());
-    
-    // Handle other variations
-    processedHtml = processedHtml.replace(/FIRSTNAME\/SURNAME TAB/g, fullNameUpper);
+    // Also handle the FIRSTNAME/SURNAME TAB pattern seen in the screenshot
+    if (processedHtml.includes("FIRSTNAME/SURNAME TAB")) {
+      processedHtml = processedHtml.replace(
+        /FIRSTNAME\/SURNAME TAB<\/h1>/g, 
+        `${fullNameUpper}</h1>`
+      );
+      
+      // Just to be extra safe, also look for it within header or sidebar divs
+      processedHtml = processedHtml.replace(
+        /<div[^>]*class=["']left[^"']*["'][^>]*>[\s\S]{0,200}FIRSTNAME\/SURNAME TAB[\s\S]{0,50}/g,
+        (match) => match.replace("FIRSTNAME/SURNAME TAB", fullNameUpper)
+      );
+    }
   }
   
   // Add explicit support for Handlebars syntax in the template for additional fields
