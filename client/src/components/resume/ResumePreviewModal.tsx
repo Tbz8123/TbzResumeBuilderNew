@@ -253,21 +253,36 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Resume Preview</h2>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">Scroll down to see all pages</span>
+            <span className="text-xs text-gray-500">Scroll down to see all content</span>
             <DialogClose className="rounded-full w-6 h-6 flex items-center justify-center">
               <X className="h-4 w-4" />
             </DialogClose>
           </div>
         </div>
         
-        <div className="flex flex-col items-center p-4 bg-gray-50 rounded-md overflow-y-auto" style={{ maxHeight: 'calc(90vh - 150px)' }}>
-          <div className="relative" style={{ transform: 'scale(0.75)', transformOrigin: 'top center', width: '794px', marginBottom: '20px' }}>
+        {/* Scrollable container with padding to ensure content is fully visible */}
+        <div 
+          className="flex flex-col items-center p-4 bg-gray-50 rounded-md overflow-y-auto" 
+          style={{ 
+            maxHeight: 'calc(90vh - 150px)',
+            minHeight: '400px'
+          }}
+        >
+          {/* Resume container that preserves multi-page layout */}
+          <div 
+            className="resume-multi-page-container" 
+            style={{ 
+              transform: 'scale(0.75)', 
+              transformOrigin: 'top center',
+              marginBottom: '40px'
+            }}
+          >
             {/* Use the key prop to force a complete remount when the modal opens */}
             <HybridResumePreview 
               key={`resume-preview-${previewKey}-${Date.now()}`}
               width={794} 
               height={1123}
-              className="border shadow-lg"
+              className="border shadow-lg mb-8"
               scaleContent={false}
               resumeData={deduplicatedResumeData}
               selectedTemplateId={selectedTemplateId}
@@ -275,6 +290,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
               templates={templates}
               isModal={true}
               hideSkills={hideSkills}
+              showTemplateControls={false}
             />
           </div>
         </div>

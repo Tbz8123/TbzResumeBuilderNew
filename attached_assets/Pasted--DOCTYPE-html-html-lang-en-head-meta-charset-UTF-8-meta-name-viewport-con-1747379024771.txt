@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Multi-page Resume - Sahib Khan</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 10px;
+    }
+
+    .resume-container {
+      width: 210mm;
+      margin: auto;
+    }
+
+    .resume-page {
+      width: 210mm;
+      min-height: 297mm;
+      background: #fff;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      page-break-after: always;
+      overflow: hidden;
+    }
+
+    .left {
+      width: 35%;
+      background: #407187;
+      color: #fff;
+      padding: 20px 15px;
+    }
+
+    .right {
+      width: 65%;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+
+    .left h1 {
+      font-size: 1.25rem;
+      margin-bottom: 5px;
+    }
+
+    .left h3 {
+      font-size: 0.875rem;
+      margin-bottom: 15px;
+    }
+
+    .section {
+      margin-bottom: 15px;
+      page-break-inside: avoid;
+    }
+
+    .section h2 {
+      font-size: 0.875rem;
+      background: #f0f0f0;
+      color: #000;
+      padding: 5px;
+      margin-bottom: 5px;
+    }
+
+    .section p, .section li, .right p, .company {
+      font-size: 0.75rem;
+      margin: 4px 0;
+    }
+
+    .job-title {
+      font-weight: bold;
+    }
+
+    .company {
+      font-style: italic;
+    }
+
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .skills li,
+    .languages li,
+    .hobbies li {
+      margin-bottom: 4px;
+    }
+
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+      }
+      .resume-container {
+        width: 100%;
+        margin: 0;
+      }
+      .resume-page {
+        margin: 0;
+        box-shadow: none;
+        page-break-after: always;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="resume-container">
+    <div class="resume-page">
+      <div class="left">
+        <h1>SAHIB KHAN</h1>
+        <h3>GRAPHIC DESIGNER</h3>
+
+        <div class="section">
+          <h2>CONTACT</h2>
+          <p>📞 telephone</p>
+          <p>✉️ email</p>
+          <p>📍 Address, Postal Code</p>
+        </div>
+
+        <div class="section">
+          <h2>ADDITIONAL INFO</h2>
+          <p>🔗 LinkedIn: example</p>
+          <p>🌐 Website: example.com</p>
+          <p>🚘 Driving License: Yes</p>
+        </div>
+
+        <div class="section">
+          <h2>LANGUAGES</h2>
+          <ul class="languages">
+            <li>Arabic</li>
+            <li>English</li>
+            <li>Hindi</li>
+            <li>German</li>
+          </ul>
+        </div>
+
+        <div class="section">
+          <h2>HOBBIES</h2>
+          <ul class="hobbies">
+            <li>Writing</li>
+            <li>Reading</li>
+            <li>Swimming</li>
+            <li>Dancing</li>
+          </ul>
+        </div>
+
+        <div class="section">
+          <h2>LEADERSHIP</h2>
+          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="section">
+          <h2>ABOUT ME</h2>
+          <p>My name is Stephen John. Lorem ipsum is simply dummy text...</p>
+        </div>
+
+        <div class="section">
+          <h2>EDUCATION</h2>
+          <p class="job-title">COLLEGE OF USA 2009–2012</p>
+          <p class="company">Master in Programming</p>
+          <p>Description here...</p>
+
+          <p class="job-title">COLLEGE OF ART 2005–2009</p>
+          <p class="company">Specialized in Sculpting</p>
+          <p>Description here...</p>
+        </div>
+
+        <div class="section">
+          <h2>WORK EXPERIENCE</h2>
+          <p class="job-title">Product Manager</p>
+          <p class="company">Dell</p>
+          <p>September 2016 – September 2018</p>
+          <p>Description here...</p>
+
+          <p class="job-title">Project Lead</p>
+          <p class="company">HP</p>
+          <p>October 2018 – December 2020</p>
+          <p>Led cross-functional teams on design projects and implementation strategies across markets.</p>
+
+          <p class="job-title">Creative Director</p>
+          <p class="company">Adobe</p>
+          <p>January 2021 – Present</p>
+          <p>Oversaw branding campaigns, product redesigns, and innovation strategies. Mentored junior designers.</p>
+
+          <p class="job-title">Chief Data Officer</p>
+          <p class="company">IBM</p>
+          <p>January 2022 – Present</p>
+          <p>• As a Chief Data Officer (CDO), I was responsible for managing all aspects of the role, working with cross-functional teams, and driving strategic initiatives. • Repeated for overflow testing...</p>
+        </div>
+
+        <div class="section">
+          <h2>KEY SKILLS</h2>
+          <ul class="skills">
+            <li>Painting</li>
+            <li>Marketing</li>
+            <li>Planning</li>
+            <li>Drawing</li>
+            <li>UI/UX Design</li>
+            <li>Team Leadership</li>
+            <li>Project Management</li>
+            <li>Adobe Suite</li>
+            <li>Agile Methodologies</li>
+            <li>Creative Direction</li>
+          </ul>
+        </div>
+
+        <div class="section">
+          <h2>REFERENCE</h2>
+          <p><strong>ALEX ROBERT</strong>, Manager of Techno Media</p>
+          <p>Contact: +909 3940 3309 3</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
