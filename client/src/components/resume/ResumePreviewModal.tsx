@@ -74,22 +74,22 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       // Get the HTML content from the template
       let htmlContent = selectedTemplate.htmlContent;
       
-      // Replace template variables with actual data
+      // Replace template variables with actual data from our synced previewData
       htmlContent = htmlContent
-        .replace(/{{ name }}/g, `${resumeData.firstName || ''} ${resumeData.surname || ''}`)
-        .replace(/{{ profession }}/g, resumeData.profession || '')
-        .replace(/{{ email }}/g, resumeData.email || '')
-        .replace(/{{ phone }}/g, resumeData.phone || '')
-        .replace(/{{ city }}/g, resumeData.city || '')
-        .replace(/{{ country }}/g, resumeData.country || '')
-        .replace(/{{ postalCode }}/g, resumeData.postalCode || '')
-        .replace(/{{ summary }}/g, resumeData.summary || '');
+        .replace(/{{ name }}/g, `${previewData.firstName || ''} ${previewData.surname || ''}`)
+        .replace(/{{ profession }}/g, previewData.profession || '')
+        .replace(/{{ email }}/g, previewData.email || '')
+        .replace(/{{ phone }}/g, previewData.phone || '')
+        .replace(/{{ city }}/g, previewData.city || '')
+        .replace(/{{ country }}/g, previewData.country || '')
+        .replace(/{{ postalCode }}/g, previewData.postalCode || '')
+        .replace(/{{ summary }}/g, previewData.summary || '');
       
       // Work experience
-      if (resumeData.workExperience && resumeData.workExperience.length > 0) {
+      if (previewData.workExperience && previewData.workExperience.length > 0) {
         let workExperienceHtml = '';
         
-        resumeData.workExperience.forEach(exp => {
+        previewData.workExperience.forEach(exp => {
           workExperienceHtml += `
             <div class="work-item">
               <h3>${exp.jobTitle || ''}</h3>
@@ -106,10 +106,10 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       }
       
       // Education
-      if (resumeData.education && resumeData.education.length > 0) {
+      if (previewData.education && previewData.education.length > 0) {
         let educationHtml = '';
         
-        resumeData.education.forEach(edu => {
+        previewData.education.forEach(edu => {
           educationHtml += `
             <div class="education-item">
               <h3>${edu.degree || ''}</h3>
@@ -125,10 +125,10 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       }
       
       // Skills
-      if (resumeData.skills && resumeData.skills.length > 0) {
+      if (previewData.skills && previewData.skills.length > 0) {
         let skillsHtml = '<ul>';
         
-        resumeData.skills.forEach(skill => {
+        previewData.skills.forEach(skill => {
           skillsHtml += `<li>${typeof skill === 'string' ? skill : skill.name || ''}</li>`;
         });
         

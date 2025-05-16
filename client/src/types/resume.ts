@@ -37,6 +37,7 @@ export interface EducationAchievement {
 }
 
 export interface ResumeData {
+  _previewTimestamp?: number; // For real-time preview updates
   firstName: string;
   surname: string;
   profession: string;
