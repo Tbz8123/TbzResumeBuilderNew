@@ -257,8 +257,8 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           </DialogClose>
         </div>
         
-        <div className="flex justify-center p-4 bg-gray-50 rounded-md overflow-hidden" style={{ maxHeight: 'calc(90vh - 150px)' }}>
-          <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center', margin: '0 auto' }}>
+        <div className="flex justify-center p-4 bg-gray-50 rounded-md overflow-auto" style={{ maxHeight: 'calc(90vh - 150px)' }}>
+          <div style={{ transform: 'scale(0.55)', transformOrigin: 'top left' }}>
             {/* Use the key prop to force a complete remount when the modal opens */}
             <HybridResumePreview 
               key={`resume-preview-${previewKey}-${Date.now()}`}
