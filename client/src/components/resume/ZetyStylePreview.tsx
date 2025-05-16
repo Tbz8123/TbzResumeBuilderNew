@@ -129,40 +129,62 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
     printWindow.document.close();
   };
   
-  // Component to render the professional preview (similar to the reference screenshot)
+  // Component to render the professional preview with seamless continuous scroll
   const ProfessionalPreview = () => (
     <div className="professional-preview bg-white shadow-lg mx-auto rounded" style={{ maxWidth: '720px' }}>
-      <div className="preview-content">
+      <div className="preview-content p-8">
         {/* Template Display */}
         <div 
           ref={contentRef}
           className="resume-document bg-white mx-auto" 
           style={{ 
-            width: '100%', 
-            height: 'auto',
-            minHeight: 'min-content'
+            width: '100%',
+            margin: '0 auto'
           }}
         >
-          {/* Inject styles to allow content to expand vertically */}
+          {/* Inject styles for continuous scrolling web preview */}
           <style dangerouslySetInnerHTML={{ __html: `
+            /* Base styles for web preview - continuous scroll */
             .resume-content {
-              overflow: visible !important; 
+              display: block;
+              width: 100%;
+              height: auto !important;
+              overflow: visible !important;
+            }
+            
+            /* Remove constraints that prevent continuous flow */
+            .resume-content * {
+              overflow: visible !important;
+              max-height: none !important;
+              page-break-after: avoid !important;
+              page-break-inside: avoid !important;
+            }
+            
+            /* Make all sections flow naturally */
+            .sidebar, .main-content, .resume-section, .section {
+              display: block;
               height: auto !important;
               min-height: auto !important;
               max-height: none !important;
             }
             
-            /* Ensure all sections are visible */
-            .resume-content * {
-              overflow: visible !important;
-              max-height: none !important;
-            }
-            
-            /* Fix for common template issues */
-            .sidebar, .main-content, .resume-section, .section {
-              height: auto !important;
-              min-height: min-content !important;
-              max-height: none !important;
+            /* Print-specific styles for PDF output */
+            @media print {
+              body {
+                margin: 0;
+                padding: 0;
+                background: white;
+              }
+              
+              .resume-document {
+                width: 210mm;
+                min-height: 297mm;
+                box-sizing: border-box;
+              }
+              
+              .resume-page, .page {
+                page-break-after: always;
+              }
             }
           `}} />
           
