@@ -91,7 +91,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   }, [resumeData, selectedTemplateId]);
 
   // Find the selected template from the templates array
-  const selectedTemplate = templates.find(t => t.id === selectedTemplateId) || null;
+  const selectedTemplate = templates && Array.isArray(templates) ? templates.find(t => t.id === selectedTemplateId) || null : null;
   
   // Process the template HTML and styles
   useEffect(() => {
