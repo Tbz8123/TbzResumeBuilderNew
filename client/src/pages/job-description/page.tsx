@@ -83,7 +83,7 @@ const JobDescriptionPage = () => {
   const [descriptions, setDescriptions] = useState<any[]>([]);
   const [isLoadingDescriptions, setIsLoadingDescriptions] = useState(false);
   const [showingResults, setShowingResults] = useState<string>('');
-  const [previewOpen, setPreviewOpen] = useState(false);
+  // Preview functionality removed
   const { data: templates } = useTemplates();
   
   // Animation variants for framer-motion
@@ -749,25 +749,7 @@ const JobDescriptionPage = () => {
         </div>
       </footer>
 
-      {/* Resume Preview Modal */}
-      {templates && (
-        <ResumePreviewModal
-          open={previewOpen}
-          onOpenChange={setPreviewOpen}
-          resumeData={resumeData}
-          selectedTemplateId={resumeData.selectedTemplateId || null}
-          setSelectedTemplateId={(id: number | null) => {
-            // Handle template selection
-            if (id !== null) {
-              const updatedData = {...resumeData};
-              (updatedData as any).selectedTemplateId = id;
-              updateResumeData(updatedData);
-            }
-          }}
-          templates={templates as any}
-          hideSkills={true}
-        />
-      )}
+      {/* Resume preview functionality has been removed */}
     </div>
   );
 };
