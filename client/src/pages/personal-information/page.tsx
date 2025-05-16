@@ -624,15 +624,15 @@ const PersonalInformationPage = () => {
         onOpenChange={setTemplateModalOpen} 
       />
       
-      {/* Resume Preview Modal */}
+      {/* Resume Preview Modal - Pass the most up-to-date data */}
       {templates && Array.isArray(templates) && (
         <ResumePreviewModal
           open={previewModalOpen}
           onOpenChange={setPreviewModalOpen}
-          resumeData={resumeData} 
+          resumeData={previewData} // Use local previewData which updates when typing
           selectedTemplateId={selectedTemplateId}
           templates={templates as ResumeTemplate[]}
-          key={`preview-${JSON.stringify(resumeData)}`} // Force re-render on data changes
+          key={`preview-${Date.now()}`} // Force re-render when modal opens
         />
       )}
     </div>
