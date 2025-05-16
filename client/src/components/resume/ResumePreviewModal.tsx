@@ -1,19 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { X, Download, FileText } from 'lucide-react';
-import { 
-  Dialog,
-  DialogContent,
-  DialogClose,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import HybridResumePreview from '@/components/resume/HybridResumePreview';
-import { ResumeData } from '@/contexts/ResumeContext';
-import { ResumeTemplate } from '@shared/schema';
+import React, { useEffect, useState } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import HybridResumePreview from './HybridResumePreview';
 import { Button } from '@/components/ui/button';
-import { processTemplateHtml, extractAndEnhanceStyles } from './templates-support';
-import { WorkExperience } from '@/types/resume';
+import { ResumeData, ResumeTemplate } from '@/types/resume';
+import { cn } from '@/lib/utils';
+import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 
 interface ResumePreviewModalProps {
   open: boolean;
@@ -33,421 +24,173 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   selectedTemplateId,
   setSelectedTemplateId,
   templates,
-  hideSkills = true,
+  hideSkills = false,
   onNextStep
 }) => {
-  // Create a unique key that changes whenever the modal is opened
-  // This forces React to unmount and remount the component, resetting all internal state
-  const [previewKey, setPreviewKey] = useState(0);
-  const [templateHtml, setTemplateHtml] = useState<string>('');
-  const [templateStyles, setTemplateStyles] = useState<string>('');
-  const contentRef = useRef<HTMLDivElement>(null);
-  
-  // Always deduplicate work experience entries for all templates
-  const deduplicatedResumeData = useMemo(() => {
-    // If no work experience or no resumeData, just return original data
-    if (!resumeData || !resumeData.workExperience?.length) return resumeData;
-    
-    // Create a deep clone to avoid mutating the original data
-    const cleanedData = JSON.parse(JSON.stringify(resumeData));
-    
-    // Special handling for template 16
-    const isTemplate16 = selectedTemplateId === 16;
-    
-    // For template 16, completely replace the array with first entry only
-    if (isTemplate16 && cleanedData.workExperience?.length > 0) {
-      console.log("[RESUME PREVIEW] Template 16 detected - using ONLY the first work experience entry");
-      
-      // Create a fresh array with just the first entry
-      cleanedData.workExperience = [cleanedData.workExperience[0]];
-    } else {
-      // For other templates, perform aggressive deduplication using Set
-      console.log("[RESUME PREVIEW] Standard template detected - performing work experience deduplication");
-      
-      // Create a Set of unique entries based on composite key
-      const seen = new Set();
-      
-      // Filter the array to only keep unique entries
-      cleanedData.workExperience = cleanedData.workExperience.filter((exp: WorkExperience) => {
-        // Skip null/undefined entries
-        if (!exp) return false;
-        
-        // Create a composite key from multiple fields for more precise deduplication
-        const key = `${exp.jobTitle || ''}|${exp.employer || ''}|${exp.startYear || ''}|${exp.startMonth || ''}`;
-        
-        // If this key has been seen before, filter it out
-        if (seen.has(key)) {
-          console.log("[RESUME PREVIEW] Removing duplicate:", exp.jobTitle, "at", exp.employer);
-          return false;
-        }
-        
-        // Otherwise, add to seen set and keep this entry
-        seen.add(key);
-        return true;
-      });
-    }
-    
-    return cleanedData;
-  }, [resumeData, selectedTemplateId]);
+  const [templateSelection, setTemplateSelection] = useState<'classic' | 'overlay'>('classic');
+  const [activeTemplateIndex, setActiveTemplateIndex] = useState(0);
 
-  // Find the selected template from the templates array
-  const selectedTemplate = templates && Array.isArray(templates) ? templates.find(t => t.id === selectedTemplateId) || null : null;
-  
-  // Process the template HTML and styles
-  useEffect(() => {
-    if (open && selectedTemplate) {
-      try {
-        // Reset the preview key to force a clean render
-        setPreviewKey(prev => prev + 1);
-        
-        // Extract CSS styles from the template
-        const enhancedStyles = extractAndEnhanceStyles(selectedTemplate.htmlContent || '');
-        if (enhancedStyles) {
-          setTemplateStyles(enhancedStyles);
-        }
-        
-        // Process the template HTML with resume data
-        let processedHtml = processTemplateHtml(selectedTemplate.htmlContent || '', deduplicatedResumeData);
-        
-        // Ensure job description appears in the resume
-        if (deduplicatedResumeData?.workExperience && deduplicatedResumeData.workExperience.length > 0) {
-          const firstJob = deduplicatedResumeData.workExperience[0];
-          if (firstJob.responsibilities) {
-            const description = firstJob.responsibilities.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            
-            // 1. Replace description placeholder (standard approach)
-            processedHtml = processedHtml.replace(
-              /<p>Description here\.\.\.<\/p>/g, 
-              `<p>${description}</p>`
-            );
-            
-            // 2. Replace any bare text "Description here..." (broader approach)
-            processedHtml = processedHtml.replace(
-              /Description here\.\.\./g, 
-              description
-            );
-            
-            // 3. For Template 16 (SAHIB KHAN template) - Special approach
-            if (selectedTemplateId === 16 || processedHtml.includes('SAHIB KHAN')) {
-              console.log("Special fix for Template 16 (SAHIB KHAN template)");
-              
-              // Insert job description after work experience section
-              const workExperiencePattern = /(WORK EXPERIENCE[\s\S]*?Software Engineer[\s\S]*?ef[\s\S]*?September 2017 - August 2019)/i;
-              if (workExperiencePattern.test(processedHtml)) {
-                processedHtml = processedHtml.replace(
-                  workExperiencePattern,
-                  `$1
-                  <div style="margin-top:8px;">${description}</div>`
-                );
-              }
-            }
+  // Filter to only show templates that have template HTML available
+  const availableTemplates = templates.filter(t => t.html);
+
+  // Function to strip identifying data for preview
+  const deduplicateResumeData = (data: ResumeData): ResumeData => {
+    // Create a deep copy to avoid mutating the original
+    const copy = JSON.parse(JSON.stringify(data));
+
+    // Ensure work experience entries are properly deduplicated
+    if (copy.workExperience && Array.isArray(copy.workExperience)) {
+      // Filter out any temporary entries and ensure unique values
+      const seenKeys = new Set();
+      copy.workExperience = copy.workExperience
+        .filter(exp => !(typeof exp.id === 'string' && exp.id === 'temp-entry'))
+        .filter(exp => {
+          // Create a unique key based on job title, company and date
+          const key = `${exp.jobTitle || ''}|${exp.employer || ''}|${exp.startYear || ''}`;
+          if (!seenKeys.has(key)) {
+            seenKeys.add(key);
+            return true;
           }
-        }
-        
-        // Set the processed HTML
-        setTemplateHtml(processedHtml);
-        
-      } catch (error) {
-        console.error('Error processing template:', error);
-      }
+          return false;
+        });
     }
-  }, [open, selectedTemplate, deduplicatedResumeData]);
-  
-  // Handle PDF download
-  const handleDownload = () => {
-    if (!contentRef.current) return;
-    
-    // Create a printable version in a new window
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow pop-ups to download as PDF');
-      return;
-    }
-    
-    // Setup the print document with proper CSS for printing
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${resumeData.firstName || ''} ${resumeData.surname || ''} - Resume</title>
-          <style>
-            @page {
-              size: A4;
-              margin: 0;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-            }
-            .resume-document {
-              width: 210mm;
-              min-height: 297mm;
-              padding: 0;
-              margin: 0;
-              box-sizing: border-box;
-            }
-            .section, .job-entry, .education-entry {
-              page-break-inside: avoid;
-            }
-            ${templateStyles}
-          </style>
-        </head>
-        <body>
-          <div class="resume-document">
-            ${templateHtml}
-          </div>
-          <script>
-            window.onload = function() {
-              setTimeout(function() {
-                window.print();
-                setTimeout(function() { window.close(); }, 500);
-              }, 200);
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    
-    printWindow.document.close();
+
+    return copy;
   };
 
-  // Component to render the professional preview (like in the first screenshot)
-  const ProfessionalPreview = () => (
-    <div className="professional-preview bg-white shadow-lg mx-auto rounded overflow-hidden" style={{ maxWidth: '720px' }}>
-      <div className="preview-content">
-        {/* Template Display */}
-        <div 
-          ref={contentRef}
-          className="resume-document bg-white mx-auto overflow-hidden" 
-          style={{ 
-            width: '100%',
-            height: 'auto',
-            minHeight: 'min-content',
-            maxHeight: '80vh',
-            overflowY: 'auto'
-          }}
-        >
-          {/* Enhanced styles for intelligent layout adaptation */}
-          <style dangerouslySetInnerHTML={{ __html: `
-            /* Zety-style auto-scaling content */
-            .resume-content {
-              overflow: visible !important; 
-              height: auto !important;
-              min-height: auto !important;
-              max-height: none !important;
-              display: flex !important;
-              flex-direction: column !important;
-              flex-grow: 1 !important;
-            }
-            
-            /* Ensure all sections are visible and properly flow */
-            .resume-content * {
-              overflow: visible !important;
-              max-height: none !important;
-              box-sizing: border-box !important;
-            }
-            
-            /* Intelligent layout scaling for content-heavy sections */
-            .resume-content p, 
-            .resume-content li, 
-            .resume-content div {
-              overflow-wrap: break-word !important;
-              word-wrap: break-word !important;
-              hyphens: auto !important;
-              margin-bottom: 0.1em !important;
-            }
-            
-            /* Fix for common template issues - ensure every section can grow */
-            .sidebar, .main-content, .resume-section, .section, 
-            [class*="section"], [class*="container"], [class*="content"],
-            [class*="experience"], [class*="education"], [class*="skills"],
-            [class*="work"], [class*="history"] {
-              height: auto !important;
-              min-height: min-content !important;
-              max-height: none !important;
-              overflow: visible !important;
-              page-break-inside: avoid !important;
-            }
-            
-            /* Automatic adaptive scaling for content density */
-            @media screen {
-              .resume-content.content-dense {
-                font-size: 0.95em !important;
-                line-height: 1.3 !important;
-              }
-              
-              .resume-content.content-very-dense {
-                font-size: 0.9em !important;
-                line-height: 1.25 !important;
-              }
-              
-              /* For two-column templates, ensure columns stretch */
-              .resume-content [class*="column"],
-              .resume-content [class*="col-"],
-              .resume-content [style*="column"],
-              .resume-content > div > div {
-                height: auto !important;
-                min-height: min-content !important;
-                flex: 1 1 auto !important;
-              }
-            }
-            
-            /* Fix for specific template types */
-            .work-experience-item, .education-item, 
-            [class*="experience-item"], [class*="education-item"],
-            .resume-section > div {
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-              display: block !important;
-              margin-bottom: 0.5em !important;
-            }
-          `}} />
-          
-          {/* Resume content */}
-          <div 
-            dangerouslySetInnerHTML={{ __html: templateHtml }}
-            className="resume-content"
-            ref={(el) => {
-              // Dynamic content density detection
-              if (el) {
-                setTimeout(() => {
-                  const contentHeight = el.scrollHeight;
-                  const viewportHeight = el.clientHeight;
-                  
-                  // If content exceeds container height, add adaptive classes
-                  if (contentHeight > viewportHeight * 1.2) {
-                    el.classList.add('content-dense');
-                  }
-                  
-                  if (contentHeight > viewportHeight * 1.5) {
-                    el.classList.add('content-very-dense');
-                  }
-                }, 100);
-              }
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
+  const deduplicatedResumeData = deduplicateResumeData(resumeData);
 
-  // Component for classic preview with HybridResumePreview and improved content scaling
+  // Update the active template index when selectedTemplateId changes
+  useEffect(() => {
+    if (selectedTemplateId) {
+      const index = availableTemplates.findIndex(t => t.id === selectedTemplateId);
+      if (index !== -1) {
+        setActiveTemplateIndex(index);
+      }
+    }
+  }, [selectedTemplateId, availableTemplates]);
+
+  // Select the next available template
+  const selectNextTemplate = () => {
+    const nextIndex = (activeTemplateIndex + 1) % availableTemplates.length;
+    setSelectedTemplateId(availableTemplates[nextIndex].id);
+  };
+
+  // Select the previous available template
+  const selectPrevTemplate = () => {
+    const prevIndex = (activeTemplateIndex - 1 + availableTemplates.length) % availableTemplates.length;
+    setSelectedTemplateId(availableTemplates[prevIndex].id);
+  };
+
+  // Component for classic preview with HybridResumePreview
   const ClassicPreview = () => {
     // Ensure template consistency for SAHIB KHAN template
     const fixedTemplateId = selectedTemplateId === 16 ? 16 : selectedTemplateId;
     
     return (
-    <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(90vh)', padding: '20px 0' }}>
-      <div className="template-wrapper">
-        {/* Fix for template flickering in preview modal */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          /* Template container styles */
-          .template-wrapper {
-            /* Show at true A4 size with auto scrolling */
-            width: 210mm;
-            min-height: 297mm;
-            transform: scale(0.85);
-            transform-origin: top center;
-            margin: 0 auto 50px auto;
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-          }
-          
-          /* Resume page expansion */
-          .resume-page {
-            min-height: 297mm !important;
-            height: auto !important;
-            overflow: visible !important;
-            page-break-inside: avoid !important;
-          }
-          
-          /* Left sidebar stretching */
-          .resume-page .left {
-            min-height: 100% !important;
-            height: auto !important;
-          }
-          
-          /* Text content */
-          p, div, li, .section {
-            overflow-wrap: break-word !important;
-            word-wrap: break-word !important;
-            page-break-inside: avoid !important;
-          }
-          
-          /* Ensure all section content is visible */
-          .section, .right .section {
-            height: auto !important;
-            min-height: min-content !important;
-            overflow: visible !important;
-            page-break-inside: avoid !important;
-          }
-          
-          /* Fix SAHIB KHAN template specifically */
-          body .resume-container,
-          body .resume-container * {
-            height: auto !important;
-            min-height: min-content !important;
-            max-height: none !important;
-          }
-          
-          /* Match the specific SAHIB KHAN template styling */
-          .resume-page {
-            display: flex !important;
-            flex-direction: row !important;
-          }
-          
-          .left {
-            width: 35% !important;
-            background: #407187 !important;
-            color: #fff !important;
-            padding: 20px 15px !important;
-          }
-          
-          .right {
-            width: 65% !important;
-            padding: 20px !important;
-          }
-          
-          .section h2 {
-            font-size: 0.875rem !important;
-            background: #f0f0f0 !important;
-            color: #000 !important;
-            padding: 5px !important;
-            margin-bottom: 5px !important;
-          }
-          
-          /* Add proper scrolling */
-          .resume-container {
-            overflow-y: visible !important;
-            height: auto !important;
-          }
-          
-          /* Prevent template flickering */
-          [data-template-id="16"] {
-            visibility: visible !important;
-            display: block !important;
-          }
-        `}} />
-        
-        {/* Use the key prop with template ID to force a consistent template */}
-        <HybridResumePreview 
-          key={`resume-preview-template-${fixedTemplateId}-${previewKey}`}
-          width={794} 
-          height={1123}
-          className="border shadow-lg"
-          scaleContent={false}
-          resumeData={deduplicatedResumeData}
-          selectedTemplateId={fixedTemplateId}
-          setSelectedTemplateId={setSelectedTemplateId}
-          templates={templates}
-          isModal={true}
-          hideSkills={hideSkills}
-        />
+      <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(90vh)', padding: '20px 0' }}>
+        <div className="template-wrapper">
+          <style dangerouslySetInnerHTML={{ __html: `
+            /* Template container styles */
+            .template-wrapper {
+              width: 210mm;
+              min-height: 297mm;
+              transform: scale(0.85);
+              transform-origin: top center;
+              box-shadow: 0 0 12px rgba(0,0,0,0.1);
+              background: white;
+              margin: 0 auto;
+              padding: 0;
+              overflow: hidden;
+            }
+            
+            /* For SAHIB KHAN template (Template 16) */
+            .resume-page {
+              display: flex;
+              flex-direction: row;
+              width: 210mm;
+              min-height: 297mm;
+              background: #fff;
+              box-shadow: 0 0 5px rgba(0,0,0,0.1);
+              margin-bottom: 10px;
+              page-break-inside: avoid;
+            }
+            
+            .left {
+              width: 35%;
+              background: #407187;
+              color: #fff;
+              padding: 20px 15px;
+            }
+            
+            .right {
+              width: 65%;
+              padding: 20px;
+            }
+            
+            /* Section styling */
+            .section {
+              margin-bottom: 15px;
+              page-break-inside: avoid;
+            }
+            
+            .section h2 {
+              font-size: 0.875rem;
+              background: #f0f0f0;
+              color: #000;
+              padding: 5px;
+              margin-bottom: 5px;
+            }
+            
+            /* Add proper scrolling */
+            .resume-container {
+              overflow-y: visible !important;
+              min-height: fit-content !important;
+            }
+            
+            /* Ensure content expands properly */
+            body .resume-container,
+            body .resume-container * {
+              height: auto !important;
+              min-height: min-content !important;
+              max-height: none !important;
+            }
+            
+            /* Text styles */
+            .job-title {
+              font-weight: bold;
+            }
+            
+            .company {
+              font-style: italic;
+            }
+            
+            /* Lists */
+            .skills li,
+            .languages li,
+            .hobbies li {
+              margin-bottom: 4px;
+            }
+          `}} />
+
+          {/* Hybrid resume preview */}
+          <HybridResumePreview
+            width={595}
+            height="auto"
+            className="border shadow-lg"
+            scaleContent={false}
+            resumeData={deduplicatedResumeData}
+            selectedTemplateId={fixedTemplateId}
+            setSelectedTemplateId={setSelectedTemplateId}
+            templates={templates}
+            isModal={true}
+            hideSkills={hideSkills}
+          />
+        </div>
       </div>
-    </div>
-  );
-  }
-  
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl p-0 overflow-hidden">
@@ -455,53 +198,66 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           <DialogTitle className="text-lg font-semibold">Resume Preview</DialogTitle>
           <div className="flex items-center gap-2">
             <Button 
-              variant="default" 
+              variant="ghost" 
               size="sm"
-              className="flex items-center gap-1"
-              onClick={handleDownload}
+              className={cn(
+                "text-xs",
+                templateSelection === 'classic' && "bg-gray-100"
+              )}
+              onClick={() => setTemplateSelection('classic')}
             >
-              <Download className="h-4 w-4" />
-              Download PDF
+              Classic View
             </Button>
-            <DialogClose className="rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-100">
+            {onNextStep && (
+              <Button 
+                size="sm" 
+                onClick={() => {
+                  onOpenChange(false);
+                  onNextStep();
+                }}
+              >
+                Continue
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => onOpenChange(false)}
+            >
               <X className="h-4 w-4" />
-            </DialogClose>
+            </Button>
           </div>
         </div>
         
-        <Tabs defaultValue="professional" className="w-full">
-          <div className="border-b px-4">
-            <TabsList className="w-full justify-start">
-              <TabsTrigger value="professional">
-                <FileText className="h-4 w-4 mr-2" />
-                Professional View
-              </TabsTrigger>
-              <TabsTrigger value="classic">
-                <FileText className="h-4 w-4 mr-2" />
-                Classic View
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          
-          <div className="p-6 bg-gray-50" style={{ maxHeight: 'calc(80vh)', overflow: 'auto' }}>
-            <TabsContent value="professional" className="mt-0">
-              <ProfessionalPreview />
-            </TabsContent>
-            
-            <TabsContent value="classic" className="mt-0">
-              <ClassicPreview />
-            </TabsContent>
-          </div>
-        </Tabs>
+        {/* Template navigation controls */}
+        <div className="flex justify-between items-center p-4 border-b">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={selectPrevTemplate}
+            disabled={availableTemplates.length <= 1}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Previous Template
+          </Button>
+          <span className="text-sm font-medium">
+            {selectedTemplateId && availableTemplates.find(t => t.id === selectedTemplateId)?.name}
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={selectNextTemplate}
+            disabled={availableTemplates.length <= 1}
+          >
+            Next Template
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
         
-        {onNextStep && (
-          <DialogFooter className="p-4 border-t">
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-              <Button variant="default" onClick={onNextStep}>Continue to Next Step</Button>
-            </div>
-          </DialogFooter>
-        )}
+        {/* Preview content */}
+        <div className="h-full max-h-[80vh] overflow-auto bg-gray-50">
+          <ClassicPreview />
+        </div>
       </DialogContent>
     </Dialog>
   );
