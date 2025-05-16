@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResumeTemplate } from '@shared/schema';
 import { ResumeData } from '@/types/resume';
+import HybridResumePreview from './HybridResumePreview';
 import {
   Dialog,
   DialogContent,
@@ -59,7 +60,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
     console.log("ResumePreviewModal: ResumeData updated", resumeData);
   }, [resumeData]);
 
-  // Function to safely prepare and render the template HTML content
+  // Use HybridResumePreview for consistent real-time updating 
   const renderTemplateContent = () => {
     if (!selectedTemplate || !selectedTemplate.htmlContent) {
       return (
@@ -69,100 +70,19 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       );
     }
 
-    // Process the HTML content to insert user data
-    try {
-      // Get the HTML content from the template
-      let htmlContent = selectedTemplate.htmlContent;
-      
-      // Replace template variables with actual data from our synced previewData
-      htmlContent = htmlContent
-        .replace(/{{ name }}/g, `${previewData.firstName || ''} ${previewData.surname || ''}`)
-        .replace(/{{ profession }}/g, previewData.profession || '')
-        .replace(/{{ email }}/g, previewData.email || '')
-        .replace(/{{ phone }}/g, previewData.phone || '')
-        .replace(/{{ city }}/g, previewData.city || '')
-        .replace(/{{ country }}/g, previewData.country || '')
-        .replace(/{{ postalCode }}/g, previewData.postalCode || '')
-        .replace(/{{ summary }}/g, previewData.summary || '');
-      
-      // Work experience
-      if (previewData.workExperience && previewData.workExperience.length > 0) {
-        let workExperienceHtml = '';
-        
-        previewData.workExperience.forEach(exp => {
-          workExperienceHtml += `
-            <div class="work-item">
-              <h3>${exp.jobTitle || ''}</h3>
-              <p>${exp.employer || ''}, ${exp.location || ''}</p>
-              <p>${exp.startMonth || ''} ${exp.startYear || ''} - ${exp.isCurrentJob ? 'Present' : `${exp.endMonth || ''} ${exp.endYear || ''}`}</p>
-              <div>${exp.responsibilities || ''}</div>
-            </div>
-          `;
-        });
-        
-        htmlContent = htmlContent.replace(/{{ work_experience }}/g, workExperienceHtml);
-      } else {
-        htmlContent = htmlContent.replace(/{{ work_experience }}/g, '');
-      }
-      
-      // Education
-      if (previewData.education && previewData.education.length > 0) {
-        let educationHtml = '';
-        
-        previewData.education.forEach(edu => {
-          educationHtml += `
-            <div class="education-item">
-              <h3>${edu.degree || ''}</h3>
-              <p>${edu.schoolName || ''} - ${edu.schoolLocation || ''}</p>
-              <div>${edu.description || ''}</div>
-            </div>
-          `;
-        });
-        
-        htmlContent = htmlContent.replace(/{{ education }}/g, educationHtml);
-      } else {
-        htmlContent = htmlContent.replace(/{{ education }}/g, '');
-      }
-      
-      // Skills
-      if (previewData.skills && previewData.skills.length > 0) {
-        let skillsHtml = '<ul>';
-        
-        previewData.skills.forEach(skill => {
-          skillsHtml += `<li>${typeof skill === 'string' ? skill : skill.name || ''}</li>`;
-        });
-        
-        skillsHtml += '</ul>';
-        htmlContent = htmlContent.replace(/{{ skills }}/g, skillsHtml);
-      } else {
-        htmlContent = htmlContent.replace(/{{ skills }}/g, '');
-      }
-      
-      // Additional placeholders that might be in templates
-      htmlContent = htmlContent.replace(/{{ additional_info }}/g, '');
-      htmlContent = htmlContent.replace(/{{ website }}/g, '');
-      htmlContent = htmlContent.replace(/{{ linkedin }}/g, '');
-      
-      return (
-        <div 
-          dangerouslySetInnerHTML={{ __html: htmlContent }} 
-          className="template-content"
-          style={{ 
-            width: '100%',
-            height: 'auto',
-            maxWidth: '800px',
-            margin: '0 auto' 
-          }}
-        />
-      );
-    } catch (error) {
-      console.error("Error rendering template:", error);
-      return (
-        <div className="p-6 text-center">
-          <p>An error occurred while rendering the template. Please try again.</p>
-        </div>
-      );
-    }
+    // Use the HybridResumePreview component which already has real-time update capability
+    return (
+      <HybridResumePreview
+        templateHtml={selectedTemplate.htmlContent}
+        resumeData={previewData} // Use our local state that updates immediately
+        width={800}
+        height={1130}
+        scaleContent={true}
+        showPrintButton={true}
+        fullPreviewMode={true}
+        key={`preview-${Date.now()}`} // Force re-render on every update
+      />
+    );
   };
 
   return (
