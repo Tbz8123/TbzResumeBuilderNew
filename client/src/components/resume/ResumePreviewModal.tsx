@@ -337,15 +337,20 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
     const fixedTemplateId = selectedTemplateId === 16 ? 16 : selectedTemplateId;
     
     return (
-    <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(80vh)' }}>
+    <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(90vh)', padding: '20px 0' }}>
       <div className="template-wrapper">
         {/* Fix for template flickering in preview modal */}
         <style dangerouslySetInnerHTML={{ __html: `
           /* Template container styles */
           .template-wrapper {
-            /* Use a larger scale to show more content */
-            transform: scale(1.0);
+            /* Show at true A4 size with auto scrolling */
+            width: 210mm;
+            min-height: 297mm;
+            transform: scale(0.85);
             transform-origin: top center;
+            margin: 0 auto 50px auto;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
           }
           
           /* Resume page expansion */
