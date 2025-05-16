@@ -131,18 +131,16 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
   
   // Component to render the professional preview (similar to the reference screenshot)
   const ProfessionalPreview = () => (
-    <div className="professional-preview bg-white shadow-lg mx-auto rounded overflow-hidden" style={{ maxWidth: '720px' }}>
+    <div className="professional-preview bg-white shadow-lg mx-auto rounded" style={{ maxWidth: '720px' }}>
       <div className="preview-content">
         {/* Template Display */}
         <div 
           ref={contentRef}
-          className="resume-document bg-white mx-auto overflow-hidden" 
+          className="resume-document bg-white mx-auto" 
           style={{ 
             width: '100%', 
             height: 'auto',
-            minHeight: 'min-content',
-            maxHeight: '80vh',
-            overflowY: 'auto'
+            minHeight: 'min-content'
           }}
         >
           {/* Inject styles to allow content to expand vertically */}
@@ -209,7 +207,7 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
             <Button 
               variant="default" 
               size="sm"
-              className="flex items-center gap-1"
+              className="bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1"
               onClick={handleDownload}
             >
               <Download className="h-4 w-4" />
@@ -221,30 +219,9 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
           </div>
         </div>
         
-        <Tabs defaultValue="professional" className="w-full">
-          <div className="border-b px-4">
-            <TabsList className="w-full justify-start">
-              <TabsTrigger value="professional">
-                <FileText className="h-4 w-4 mr-2" />
-                Professional View
-              </TabsTrigger>
-              <TabsTrigger value="classic">
-                <FileText className="h-4 w-4 mr-2" />
-                Classic View
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          
-          <div className="p-6 bg-gray-50" style={{ maxHeight: 'calc(80vh)', overflow: 'auto' }}>
-            <TabsContent value="professional" className="mt-0">
-              <ProfessionalPreview />
-            </TabsContent>
-            
-            <TabsContent value="classic" className="mt-0">
-              <ClassicPreview />
-            </TabsContent>
-          </div>
-        </Tabs>
+        <div className="p-6 bg-gray-50 flex justify-center" style={{ maxHeight: 'calc(80vh)', overflowY: 'auto' }}>
+          <ProfessionalPreview />
+        </div>
         
         {onNextStep && (
           <DialogFooter className="p-4 border-t">
