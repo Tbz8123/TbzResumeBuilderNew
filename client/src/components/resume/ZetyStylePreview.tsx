@@ -131,8 +131,8 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
   
   // Component to render the professional preview (similar to the reference screenshot)
   const ProfessionalPreview = () => (
-    <div className="professional-preview bg-white shadow-lg mx-auto rounded" style={{ maxWidth: '720px' }}>
-      <div className="preview-content">
+    <div className="professional-preview bg-white shadow-lg mx-auto rounded overflow-hidden border" style={{ maxWidth: '720px' }}>
+      <div className="preview-content p-4">
         {/* Template Display */}
         <div 
           ref={contentRef}
@@ -201,16 +201,16 @@ const ZetyStylePreview: React.FC<ZetyStylePreviewProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl p-0 overflow-hidden">
-        <div className="flex justify-between items-center p-4 border-b">
+        <div className="flex justify-between items-center px-4 py-3 border-b">
           <DialogTitle className="text-lg font-semibold">Resume Preview</DialogTitle>
           <div className="flex items-center gap-2">
             <Button 
               variant="default" 
               size="sm"
-              className="bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1"
+              className="bg-[#9333ea] text-white hover:bg-[#7e22ce] flex items-center gap-1 rounded-md px-3 py-1"
               onClick={handleDownload}
             >
-              <Download className="h-4 w-4" />
+              <Download className="h-4 w-4 mr-1" />
               Download PDF
             </Button>
             <DialogClose className="rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-100">
