@@ -220,33 +220,86 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           ref={contentRef}
           className="resume-document bg-white mx-auto overflow-hidden" 
           style={{ 
-            width: '100%', 
+            width: '100%',
             height: 'auto',
             minHeight: 'min-content',
             maxHeight: '80vh',
             overflowY: 'auto'
           }}
         >
-          {/* Inject styles to allow content to expand vertically */}
+          {/* Enhanced styles for intelligent layout adaptation */}
           <style dangerouslySetInnerHTML={{ __html: `
+            /* Zety-style auto-scaling content */
             .resume-content {
               overflow: visible !important; 
               height: auto !important;
               min-height: auto !important;
               max-height: none !important;
+              display: flex !important;
+              flex-direction: column !important;
+              flex-grow: 1 !important;
             }
             
-            /* Ensure all sections are visible */
+            /* Ensure all sections are visible and properly flow */
             .resume-content * {
               overflow: visible !important;
               max-height: none !important;
+              box-sizing: border-box !important;
             }
             
-            /* Fix for common template issues */
-            .sidebar, .main-content, .resume-section, .section {
+            /* Intelligent layout scaling for content-heavy sections */
+            .resume-content p, 
+            .resume-content li, 
+            .resume-content div {
+              overflow-wrap: break-word !important;
+              word-wrap: break-word !important;
+              hyphens: auto !important;
+              margin-bottom: 0.1em !important;
+            }
+            
+            /* Fix for common template issues - ensure every section can grow */
+            .sidebar, .main-content, .resume-section, .section, 
+            [class*="section"], [class*="container"], [class*="content"],
+            [class*="experience"], [class*="education"], [class*="skills"],
+            [class*="work"], [class*="history"] {
               height: auto !important;
               min-height: min-content !important;
               max-height: none !important;
+              overflow: visible !important;
+              page-break-inside: avoid !important;
+            }
+            
+            /* Automatic adaptive scaling for content density */
+            @media screen {
+              .resume-content.content-dense {
+                font-size: 0.95em !important;
+                line-height: 1.3 !important;
+              }
+              
+              .resume-content.content-very-dense {
+                font-size: 0.9em !important;
+                line-height: 1.25 !important;
+              }
+              
+              /* For two-column templates, ensure columns stretch */
+              .resume-content [class*="column"],
+              .resume-content [class*="col-"],
+              .resume-content [style*="column"],
+              .resume-content > div > div {
+                height: auto !important;
+                min-height: min-content !important;
+                flex: 1 1 auto !important;
+              }
+            }
+            
+            /* Fix for specific template types */
+            .work-experience-item, .education-item, 
+            [class*="experience-item"], [class*="education-item"],
+            .resume-section > div {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              display: block !important;
+              margin-bottom: 0.5em !important;
             }
           `}} />
           
@@ -254,6 +307,24 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           <div 
             dangerouslySetInnerHTML={{ __html: templateHtml }}
             className="resume-content"
+            ref={(el) => {
+              // Dynamic content density detection
+              if (el) {
+                setTimeout(() => {
+                  const contentHeight = el.scrollHeight;
+                  const viewportHeight = el.clientHeight;
+                  
+                  // If content exceeds container height, add adaptive classes
+                  if (contentHeight > viewportHeight * 1.2) {
+                    el.classList.add('content-dense');
+                  }
+                  
+                  if (contentHeight > viewportHeight * 1.5) {
+                    el.classList.add('content-very-dense');
+                  }
+                }, 100);
+              }
+            }}
           />
         </div>
       </div>
