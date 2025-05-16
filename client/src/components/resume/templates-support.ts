@@ -506,13 +506,18 @@ export function processTemplateHtml(html: string, resumeData: any): string {
           ? `${startDate} - Present` 
           : `${startDate}${endDate ? ` - ${endDate}` : ''}`;
         
+        // Extract job description
+        const description = (exp.responsibilities || exp.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        
         // Create ultra-simple HTML with unique timestamp attribute to prevent duplication
+        // IMPORTANT: We explicitly include the job description for Template 16
         workExpHtml = `
           <div data-timestamp="${renderTimestamp}">
             <div data-item="true">
               ${jobTitle}<br/>
               ${employer}<br/>
-              ${dateRange}
+              ${dateRange}<br/>
+              <p style="margin-top: 5px;">${description}</p>
             </div>
           </div>
         `;

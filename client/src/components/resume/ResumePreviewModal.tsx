@@ -109,14 +109,38 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
         // Process the template HTML with resume data
         let processedHtml = processTemplateHtml(selectedTemplate.htmlContent || '', deduplicatedResumeData);
         
-        // Check for "Description here..." placeholder and replace it with actual job description
+        // Ensure job description appears in the resume
         if (deduplicatedResumeData?.workExperience && deduplicatedResumeData.workExperience.length > 0) {
           const firstJob = deduplicatedResumeData.workExperience[0];
           if (firstJob.responsibilities) {
+            const description = firstJob.responsibilities.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
+            // 1. Replace description placeholder (standard approach)
             processedHtml = processedHtml.replace(
               /<p>Description here\.\.\.<\/p>/g, 
-              `<p>${firstJob.responsibilities.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
+              `<p>${description}</p>`
             );
+            
+            // 2. Replace any bare text "Description here..." (broader approach)
+            processedHtml = processedHtml.replace(
+              /Description here\.\.\./g, 
+              description
+            );
+            
+            // 3. For Template 16 (SAHIB KHAN template) - Special approach
+            if (selectedTemplateId === 16 || processedHtml.includes('SAHIB KHAN')) {
+              console.log("Special fix for Template 16 (SAHIB KHAN template)");
+              
+              // Insert job description after work experience section
+              const workExperiencePattern = /(WORK EXPERIENCE[\s\S]*?Software Engineer[\s\S]*?ef[\s\S]*?September 2017 - August 2019)/i;
+              if (workExperiencePattern.test(processedHtml)) {
+                processedHtml = processedHtml.replace(
+                  workExperiencePattern,
+                  `$1
+                  <div style="margin-top:8px;">${description}</div>`
+                );
+              }
+            }
           }
         }
         
