@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResumeTemplate } from '@shared/schema';
@@ -27,36 +27,25 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   selectedTemplateId,
   templates
 }) => {
-  // Access the resume context directly 
+  // Get real-time data from the context
   const resumeContext = useResume();
   
-  // Always use the most up-to-date data from context
-  const actualResumeData = resumeContext.resumeData;
+  // Force re-renders while modal is open
+  const [renderKey, setRenderKey] = useState(Date.now());
   
-  // Create a state to force re-rendering
-  const [renderId, setRenderId] = useState(Date.now());
-  
-  // Update when modal is opened or when data changes
+  // Update the render key on a timer to force refresh
   useEffect(() => {
-    if (open) {
-      console.log("Modal opened with latest data:", actualResumeData);
-      setRenderId(Date.now()); // Force re-render when modal opens
-    }
-  }, [open, actualResumeData]); 
-  
-  // Set up an interval to refresh the preview while modal is open
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    let timerId: NodeJS.Timeout;
     
     if (open) {
-      // Check for changes every 100ms while modal is open
-      intervalId = setInterval(() => {
-        setRenderId(Date.now());
+      timerId = setInterval(() => {
+        setRenderKey(Date.now());
+        console.log("Refreshing preview...");
       }, 100);
     }
     
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      if (timerId) clearInterval(timerId);
     };
   }, [open]);
   
@@ -159,34 +148,8 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
     return processedHtml;
   };
   
-  // Real-time template rendering
-  const renderResumeContent = () => {
-    try {
-      // Get and process the HTML content with the latest data from context
-      const processedHtml = processTemplate(selectedTemplate.htmlContent, actualResumeData);
-      
-      return (
-        <div 
-          dangerouslySetInnerHTML={{ __html: processedHtml }} 
-          className="template-content"
-          style={{ 
-            width: '100%',
-            height: 'auto',
-            maxWidth: '800px',
-            margin: '0 auto',
-            padding: '0'
-          }}
-        />
-      );
-    } catch (error) {
-      console.error("Error rendering template:", error);
-      return (
-        <div className="p-6 text-center">
-          <p>An error occurred while rendering the template. Please try again.</p>
-        </div>
-      );
-    }
-  };
+  // Always get the most up-to-date data from context
+  const latestData = resumeContext.resumeData;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -205,9 +168,19 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
         
         <div className="resume-container p-6">
           <div className="resume-preview shadow-lg mx-auto bg-white rounded-sm overflow-hidden" style={{maxWidth: '100%'}}>
-            {/* Use a key to force re-render when data changes */}
-            <div key={`preview-${renderId}`}>
-              {renderResumeContent()}
+            {/* Use key to force re-render when data changes */}
+            <div key={`preview-${renderKey}`}>
+              <div 
+                dangerouslySetInnerHTML={{ __html: processTemplate(selectedTemplate.htmlContent, latestData) }} 
+                className="template-content"
+                style={{ 
+                  width: '100%',
+                  height: 'auto',
+                  maxWidth: '800px',
+                  margin: '0 auto',
+                  padding: '0'
+                }}
+              />
             </div>
           </div>
         </div>
