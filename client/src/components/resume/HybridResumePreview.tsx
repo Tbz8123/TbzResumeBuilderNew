@@ -435,19 +435,22 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     // For Zety-style infinite expansion, we don't compress content
     // Instead, allow the template to grow naturally to fit all content
     
-    // Find the left sidebar and right content areas if they exist
-    const leftSidebar = previewRef.current.querySelector('.left');
-    const rightContent = previewRef.current.querySelector('.right');
+    // Find the resume page element to adjust
+    const resumePage = container.querySelector('.resume-page');
     
     // Ensure the resume page grows to fit content
-    if (contentDiv) {
-      contentDiv.style.minHeight = 'auto';
-      contentDiv.style.height = 'auto';
+    if (resumePage) {
+      resumePage.style.minHeight = 'auto';
+      resumePage.style.height = 'auto';
     }
     
-    // Special handling for Sahib Khan template (ID 16)
-    if (selectedTemplateId === 16 || (selectedTemplate && selectedTemplate.name?.includes('Sahib'))) {
-      // Apply special infinite expansion styling
+    // Find the left sidebar and right content areas if they exist
+    const leftSidebar = container.querySelector('.left');
+    const rightContent = container.querySelector('.right');
+    
+    // Special handling for all templates, but with extra care for Template 16 (SAHIB KHAN)
+    if (container) {
+      // Apply special infinite expansion styling to all templates
       container.classList.add('zety-infinite-expansion');
       
       // Ensure left sidebar stretches with content
