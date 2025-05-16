@@ -390,6 +390,32 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             max-height: none !important;
           }
           
+          /* Match the specific SAHIB KHAN template styling */
+          .resume-page {
+            display: flex !important;
+            flex-direction: row !important;
+          }
+          
+          .left {
+            width: 35% !important;
+            background: #407187 !important;
+            color: #fff !important;
+            padding: 20px 15px !important;
+          }
+          
+          .right {
+            width: 65% !important;
+            padding: 20px !important;
+          }
+          
+          .section h2 {
+            font-size: 0.875rem !important;
+            background: #f0f0f0 !important;
+            color: #000 !important;
+            padding: 5px !important;
+            margin-bottom: 5px !important;
+          }
+          
           /* Add proper scrolling */
           .resume-container {
             overflow-y: visible !important;
