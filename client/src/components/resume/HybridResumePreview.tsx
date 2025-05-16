@@ -424,7 +424,15 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       return;
     }
     
-    // Get A4 size in pixels
+    // IMPORTANT: Only apply expansion in modal preview
+    // For the right-side preview in the form, maintain fixed size
+    if (!isModal) {
+      // For the right-side preview, maintain fixed dimensions 
+      container.classList.remove('content-exceeds', 'content-exceeds-large');
+      return;
+    }
+    
+    // Get A4 size in pixels - only for modal preview
     const maxHeight = 1123; // A4 height at 96 DPI
     
     // Skip auto-scaling for very small changes
@@ -437,7 +445,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     if (contentHeight > maxHeight * 1.05) {
       console.log(`[RESUME] Content overflow detected (${((contentHeight/maxHeight - 1) * 100).toFixed(1)}% overflow)`);
       
-      // Modify container to fit content
+      // Modify container to fit content - ONLY in modal preview
       if (contentHeight <= maxHeight * 1.15) {
         // For small overflow (5-15%), apply gentle CSS adjustments
         container.classList.add('content-exceeds');
@@ -457,7 +465,7 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
       console.log(`[RESUME] Content fits within page (or only small overflow). No scaling needed.`);
       return;
     }
-  }, []);
+  }, [isModal]);
   
   // Apply auto-scaling after template updates and check for duplications
   useEffect(() => {
