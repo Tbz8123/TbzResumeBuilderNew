@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import ResumePreviewModal from '@/components/resume/ResumePreviewModal.new';
+import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
 import { useTemplates } from '@/hooks/use-templates';
 import { Input } from '@/components/ui/input';
 import { JobTitle, getJobTitleSuggestions, findJobTitleById } from '@/utils/jobTitlesData';

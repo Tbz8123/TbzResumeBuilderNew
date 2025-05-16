@@ -7,7 +7,7 @@ import { getJobTitleSuggestions } from '@/utils/jobTitlesData';
 import { apiRequest } from '@/lib/queryClient';
 import { JobTitle } from '@shared/schema';
 import { useTemplates } from '@/hooks/use-templates';
-import ResumePreviewModal from '@/components/resume/ResumePreviewModal.new';
+import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
 import { 
   Select,
   SelectContent,
