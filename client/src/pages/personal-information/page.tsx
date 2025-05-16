@@ -512,14 +512,24 @@ const PersonalInformationPage = () => {
               </div>
               
               {/* Navigation Buttons */}
-              <div className="pb-10 flex justify-between">
-                <Button
-                  variant="default"
-                  onClick={() => {}}
-                  className="bg-[#400b92] hover:bg-[#33076c] text-white rounded-full px-8 py-2 font-normal"
-                >
-                  Optional: Personal details
-                </Button>
+              <div className="pb-10 flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                  <Button
+                    variant="default"
+                    onClick={() => {}}
+                    className="bg-[#400b92] hover:bg-[#33076c] text-white rounded-full px-8 py-2 font-normal"
+                  >
+                    Optional: Personal details
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => setPreviewModalOpen(true)}
+                    className="flex items-center gap-1 text-gray-700 hover:text-gray-900 border border-gray-400 hover:border-gray-600 font-normal rounded-full px-6 py-2"
+                  >
+                    <Eye size={16} /> Preview
+                  </Button>
+                </div>
                 
                 <div className="flex justify-end">
                   <Button
