@@ -343,7 +343,8 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
         <style dangerouslySetInnerHTML={{ __html: `
           /* Template container styles */
           .template-wrapper {
-            transform: scale(0.7);
+            /* Use a larger scale to show more content */
+            transform: scale(1.0);
             transform-origin: top center;
           }
           
