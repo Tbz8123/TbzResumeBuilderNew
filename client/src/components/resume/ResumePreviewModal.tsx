@@ -260,79 +260,61 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           </div>
         </div>
         
-        {/* Scrollable container that allows viewing multiple pages */}
+        {/* Simple iframe solution for template display */}
         <div 
-          className="flex flex-col items-center p-4 bg-gray-50 rounded-md overflow-y-auto" 
+          className="flex flex-col items-center p-6 bg-gray-50 rounded-md overflow-y-auto" 
           style={{ 
             maxHeight: 'calc(90vh - 150px)',
-            minHeight: '400px'
+            minHeight: '500px'
           }}
         >
-          <p className="text-xs text-gray-500 mb-4">
-            Your resume is fully scrollable. If content exceeds one page, additional pages will be created automatically.
-          </p>
-          
-          {/* Resume container that shows all pages - we increase content scale for better visibility */}
-          <div 
-            className="modal-preview" 
-            style={{ 
-              transform: 'scale(0.80)',
-              transformOrigin: 'top center',
-              marginBottom: '40px'
-            }}
-          >
-            {/* Apply special multi-page CSS to ensure all content is visible */}
-            <style dangerouslySetInnerHTML={{ __html: `
-              .resume-container {
-                width: 100%;
-                max-width: 794px;
-              }
-              .resume-page {
-                width: 210mm;
-                min-height: 297mm;
-                background: white;
-                margin-bottom: 30px;
-                page-break-after: always;
-                position: relative;
-                overflow: visible !important;
-              }
-              /* Style for blue sidebar template (ID: 16) */
-              .resume-page .left {
-                min-height: 297mm;
-              }
-              .resume-page .right {
-                min-height: 297mm;
-              }
-              /* Add markers between pages */
-              .resume-page:not(:last-child)::after {
-                content: '';
-                display: block;
-                width: 90%;
-                margin: 0 auto;
-                height: 1px;
-                background-color: #ccc;
-                position: absolute;
-                bottom: -15px;
-                left: 5%;
-              }
-            `}} />
-            
-            {/* Use the key prop to force a complete remount when the modal opens */}
-            <HybridResumePreview 
-              key={`resume-preview-${previewKey}-${Date.now()}`}
-              width={794} 
-              height="auto"
-              className="border shadow-lg"
-              scaleContent={false}
-              resumeData={deduplicatedResumeData}
-              selectedTemplateId={selectedTemplateId}
-              setSelectedTemplateId={setSelectedTemplateId}
-              templates={templates}
-              isModal={true}
-              hideSkills={hideSkills}
-              showTemplateControls={false}
-            />
-          </div>
+          {/* Display template content directly in an iframe for better rendering */}
+          {selectedTemplateId && (
+            <div className="border shadow-lg bg-white">
+              <iframe 
+                srcDoc={`
+                  <!DOCTYPE html>
+                  <html>
+                    <head>
+                      <style>
+                        body {
+                          margin: 0;
+                          padding: 0;
+                          font-family: Arial, sans-serif;
+                        }
+                        .resume-page {
+                          width: 210mm;
+                          min-height: 297mm;
+                          background: #fff;
+                          margin-bottom: 20px;
+                          page-break-after: always;
+                        }
+                        .resume-page .left {
+                          min-height: 297mm;
+                        }
+                        .resume-page .right {
+                          min-height: 297mm;
+                        }
+                      </style>
+                    </head>
+                    <body>
+                      <div id="resume-content">
+                        ${templates.find(t => t.id === selectedTemplateId)?.htmlContent || ''}
+                      </div>
+                    </body>
+                  </html>
+                `}
+                style={{
+                  width: '794px',
+                  height: '1123px',
+                  border: 'none',
+                  transform: 'scale(0.7)',
+                  transformOrigin: 'top center'
+                }}
+                title="Resume Preview"
+              />
+            </div>
+          )}
         </div>
         
         {onNextStep && (
