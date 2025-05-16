@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResumeTemplate } from '@shared/schema';
@@ -20,38 +20,27 @@ interface ResumePreviewModalProps {
   templates: ResumeTemplate[];
 }
 
-const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
+const ResumePreviewModalRealTime: React.FC<ResumePreviewModalProps> = ({
   open,
   onOpenChange,
   resumeData,
   selectedTemplateId,
   templates
 }) => {
-  // Access the resume context directly 
+  // Access the resume context directly to get the most up-to-date data
   const resumeContext = useResume();
   
-  // Always use the most up-to-date data from context
-  const actualResumeData = resumeContext.resumeData;
+  // Force re-render when the modal is open
+  const [renderKey, setRenderKey] = useState(Date.now());
   
-  // Create a state to force re-rendering
-  const [renderId, setRenderId] = useState(Date.now());
-  
-  // Update when modal is opened or when data changes
+  // Set up polling for real-time updates when the modal is open
   useEffect(() => {
-    if (open) {
-      console.log("Modal opened with latest data:", actualResumeData);
-      setRenderId(Date.now()); // Force re-render when modal opens
-    }
-  }, [open, actualResumeData]); 
-  
-  // Set up an interval to refresh the preview while modal is open
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    let intervalId: ReturnType<typeof setInterval>;
     
     if (open) {
-      // Check for changes every 100ms while modal is open
+      // Update the UI every 100ms to reflect the latest resumeData
       intervalId = setInterval(() => {
-        setRenderId(Date.now());
+        setRenderKey(Date.now());
       }, 100);
     }
     
@@ -158,12 +147,15 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
     
     return processedHtml;
   };
+
+  // Get the latest resume data from context for real-time updates
+  const latestResumeData = resumeContext.resumeData;
   
   // Real-time template rendering
   const renderResumeContent = () => {
     try {
-      // Get and process the HTML content with the latest data from context
-      const processedHtml = processTemplate(selectedTemplate.htmlContent, actualResumeData);
+      // Get and process the HTML content with the latest data
+      const processedHtml = processTemplate(selectedTemplate.htmlContent, latestResumeData);
       
       return (
         <div 
@@ -205,8 +197,8 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
         
         <div className="resume-container p-6">
           <div className="resume-preview shadow-lg mx-auto bg-white rounded-sm overflow-hidden" style={{maxWidth: '100%'}}>
-            {/* Use a key to force re-render when data changes */}
-            <div key={`preview-${renderId}`}>
+            {/* Use key to force re-render when data changes */}
+            <div key={`preview-${renderKey}`}>
               {renderResumeContent()}
             </div>
           </div>
@@ -216,4 +208,4 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   );
 };
 
-export default ResumePreviewModal;
+export default ResumePreviewModalRealTime;

@@ -9,7 +9,7 @@ import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
-import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
+import ResumePreviewModalRealTime from '@/components/resume/ResumePreviewModalRealTime';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
 
 const PersonalInformationPage = () => {
@@ -624,15 +624,14 @@ const PersonalInformationPage = () => {
         onOpenChange={setTemplateModalOpen} 
       />
       
-      {/* Resume Preview Modal */}
+      {/* Resume Preview Modal with Real-time Updates */}
       {templates && Array.isArray(templates) && (
-        <ResumePreviewModal
+        <ResumePreviewModalRealTime
           open={previewModalOpen}
           onOpenChange={setPreviewModalOpen}
           resumeData={resumeData} 
           selectedTemplateId={selectedTemplateId}
           templates={templates as ResumeTemplate[]}
-          key={`preview-${JSON.stringify(resumeData)}`} // Force re-render on data changes
         />
       )}
     </div>
