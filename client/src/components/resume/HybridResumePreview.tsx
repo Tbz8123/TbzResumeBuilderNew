@@ -15,6 +15,7 @@ interface HybridResumePreviewProps {
   isModal?: boolean; // Indicates if preview is in a modal
   hideSkills?: boolean; // Option to hide skills section
   showTemplateControls?: boolean; // Option to show template selection controls
+  expandContent?: boolean; // Option to expand content to fit in modal with no page breaks
 }
 
 const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({ 
@@ -28,7 +29,8 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
   templates: propTemplates,
   isModal = false,
   hideSkills = false,
-  showTemplateControls = false
+  showTemplateControls = false,
+  expandContent = false
 }) => {
   // Convert height to number if it's a string number, otherwise use as is
   const processedHeight = typeof height === 'string' ? 

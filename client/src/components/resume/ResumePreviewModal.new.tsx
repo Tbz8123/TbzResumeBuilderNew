@@ -47,12 +47,12 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
     }
   }, [open]);
 
-  // Simple component for professional preview
+  // Professional preview - displays the resume in a full A4 format without page breaks
   const ProfessionalPreview = () => (
-    <div className="professional-preview bg-white shadow-lg mx-auto rounded overflow-hidden" style={{ maxWidth: '720px' }}>
-      <div className="p-8">
+    <div className="professional-preview bg-white shadow-lg mx-auto rounded overflow-auto" style={{ maxWidth: '720px' }}>
+      <div className="p-0">
         <HybridResumePreview 
-          width={600}
+          width={700}
           height="auto"
           className="transition-all duration-300"
           resumeData={resumeData}
@@ -62,6 +62,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           isModal={true}
           hideSkills={hideSkills}
           scaleContent={false}
+          expandContent={true}
         />
       </div>
     </div>
