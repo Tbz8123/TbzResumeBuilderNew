@@ -272,21 +272,56 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             Your resume is fully scrollable. If content exceeds one page, additional pages will be created automatically.
           </p>
           
-          {/* Resume container that shows all pages */}
+          {/* Resume container that shows all pages - we increase content scale for better visibility */}
           <div 
             className="modal-preview" 
             style={{ 
-              transform: 'scale(0.75)',
+              transform: 'scale(0.80)',
               transformOrigin: 'top center',
-              width: '794px',
               marginBottom: '40px'
             }}
           >
+            {/* Apply special multi-page CSS to ensure all content is visible */}
+            <style dangerouslySetInnerHTML={{ __html: `
+              .resume-container {
+                width: 100%;
+                max-width: 794px;
+              }
+              .resume-page {
+                width: 210mm;
+                min-height: 297mm;
+                background: white;
+                margin-bottom: 30px;
+                page-break-after: always;
+                position: relative;
+                overflow: visible !important;
+              }
+              /* Style for blue sidebar template (ID: 16) */
+              .resume-page .left {
+                min-height: 297mm;
+              }
+              .resume-page .right {
+                min-height: 297mm;
+              }
+              /* Add markers between pages */
+              .resume-page:not(:last-child)::after {
+                content: '';
+                display: block;
+                width: 90%;
+                margin: 0 auto;
+                height: 1px;
+                background-color: #ccc;
+                position: absolute;
+                bottom: -15px;
+                left: 5%;
+              }
+            `}} />
+            
             {/* Use the key prop to force a complete remount when the modal opens */}
             <HybridResumePreview 
               key={`resume-preview-${previewKey}-${Date.now()}`}
               width={794} 
-              height={1123}
+              height="auto"
               className="border shadow-lg"
               scaleContent={false}
               resumeData={deduplicatedResumeData}
