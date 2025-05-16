@@ -107,7 +107,18 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
         }
         
         // Process the template HTML with resume data
-        const processedHtml = processTemplateHtml(selectedTemplate.htmlContent || '', deduplicatedResumeData);
+        let processedHtml = processTemplateHtml(selectedTemplate.htmlContent || '', deduplicatedResumeData);
+        
+        // Check for "Description here..." placeholder and replace it with actual job description
+        if (deduplicatedResumeData?.workExperience && deduplicatedResumeData.workExperience.length > 0) {
+          const firstJob = deduplicatedResumeData.workExperience[0];
+          if (firstJob.responsibilities) {
+            processedHtml = processedHtml.replace(
+              /<p>Description here\.\.\.<\/p>/g, 
+              `<p>${firstJob.responsibilities.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
+            );
+          }
+        }
         
         // Set the processed HTML
         setTemplateHtml(processedHtml);
