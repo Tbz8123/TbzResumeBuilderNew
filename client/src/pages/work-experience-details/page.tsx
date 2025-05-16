@@ -50,13 +50,7 @@ const WorkExperienceDetailsPage = () => {
   const jobTitleRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const { data: templates } = useTemplates();
-  const [previewModalOpen, setPreviewModalOpen] = useState(false);
-  
-  // Add onNextStep function for the preview modal
-  const onNextStep = () => {
-    setPreviewModalOpen(false);
-    handleNext();
-  };
+  // Preview functionality removed
   
   // Initialize with empty values
   const [workExperience, setWorkExperience] = useState<WorkExperience>({
@@ -521,13 +515,7 @@ const WorkExperienceDetailsPage = () => {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-center items-center gap-6 pt-12 mt-10">
-              <button 
-                onClick={handlePreview}
-                className="text-purple-600 hover:text-purple-800 border border-purple-600 hover:border-purple-800 font-medium rounded-full px-10 py-2.5 text-base w-28"
-              >
-                Preview
-              </button>
+            <div className="flex justify-center items-center pt-12 mt-10">
               <button 
                 onClick={handleNext}
                 className="bg-amber-400 hover:bg-amber-500 text-black font-medium rounded-full px-10 py-2.5 text-base w-28"
