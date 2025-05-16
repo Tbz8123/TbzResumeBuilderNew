@@ -333,41 +333,60 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
 
   // Component for classic preview with HybridResumePreview and improved content scaling
   const ClassicPreview = () => (
-    <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(80vh)' }}>
-      <div className="template-wrapper" style={{ transform: 'scale(0.7)', transformOrigin: 'top center' }}>
-        {/* Add styles for Zety-style intelligent layout expansion */}
+    <div className="flex justify-center overflow-hidden" style={{ maxHeight: 'calc(80vh)' }}>
+      <div className="template-wrapper" style={{ 
+        transform: 'scale(0.7)', 
+        transformOrigin: 'top center',
+        width: '210mm',
+        margin: '0 auto',
+        position: 'relative',
+      }}>
+        {/* Stop flickering by using fixed dimensions and preventing resize reactions */}
         <style dangerouslySetInnerHTML={{ __html: `
-          /* Template container styles are now applied directly with inline style */
-          
-          /* SAHIB KHAN Template (Template 16) specific fixes */
+          /* Anti-flickering fixes - fixed dimensions and transforms */
           .resume-container {
             width: 210mm !important;
-            margin: auto !important;
+            margin: 0 auto !important;
             height: auto !important; 
-            min-height: auto !important;
-            overflow: visible !important;
+            min-height: 297mm !important;
+            position: relative !important;
+            transform: none !important;
+            transition: none !important;
           }
           
           .resume-page {
             width: 210mm !important;
-            height: auto !important;
             min-height: 297mm !important;
+            height: auto !important;
             display: flex !important;
             flex-direction: row !important;
-            flex-wrap: wrap !important;
             box-shadow: 0 0 5px rgba(0,0,0,0.1) !important;
+            position: relative !important;
+            transition: none !important;
           }
           
-          /* Critical: Make the left sidebar stretch with content */
+          /* Fixed dimensions for sidebar and content - prevent dynamic resizing */
           .left {
             width: 35% !important;
+            min-height: 297mm !important;
             height: auto !important;
-            min-height: 100% !important;
+            position: relative !important;
+            flex-shrink: 0 !important;
           }
           
           .right {
             width: 65% !important;
+            min-height: 297mm !important;
             height: auto !important;
+            position: relative !important;
+            flex-shrink: 0 !important;
+          }
+          
+          /* Disable transitions and animations that might cause flickering */
+          *, *::before, *::after {
+            transition: none !important;
+            animation: none !important;
+            transform: none !important;
           }
           
           /* Fix content visibility and wrapping */
@@ -375,18 +394,15 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             overflow-wrap: break-word !important;
             word-wrap: break-word !important;
             white-space: normal !important;
+            transition: none !important;
           }
           
-          /* Ensure job sections are visible */
+          /* Fix job sections specifically */
           .job-title, .company, .section p {
             display: block !important;
             visibility: visible !important;
             max-width: 100% !important;
-          }
-          
-          /* Prevent flickering by removing max heights and fixed dimensions */
-          * {
-            max-height: none !important;
+            transition: none !important;
           }
           
           /* Ensure work experience section is fully visible */
@@ -397,9 +413,10 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             min-height: auto !important;
             margin-bottom: 15px !important;
             page-break-inside: avoid !important;
+            transition: none !important;
           }
           
-          /* Fix text size and line height for better readability */
+          /* Fix content sizing */
           .section p {
             font-size: 0.75rem !important;
             line-height: 1.4 !important;
