@@ -125,6 +125,10 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     '{{name}}': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim(),
     '{{fullname}}': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim(),
     
+    // Fix for specific template name placeholder issues
+    'FIRSTNAME/SURNAME TAB': resumeData.firstName && resumeData.surname ? 
+      `${resumeData.firstName} ${resumeData.surname}`.toUpperCase() : 'FIRSTNAME/SURNAME TAB',
+    
     // Professional title/job title
     '{{profession}}': resumeData.profession || '',
     '{{job_title}}': resumeData.profession || '',
