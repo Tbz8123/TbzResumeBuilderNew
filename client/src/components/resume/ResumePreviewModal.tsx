@@ -343,47 +343,77 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             transform-origin: top center;
           }
           
+          /* Resume container expansion - key to infinite expansion */
+          .resume-container {
+            width: 210mm !important;
+            margin: auto !important;
+            height: auto !important;
+            overflow: visible !important;
+            max-height: none !important;
+          }
+          
           /* Resume page expansion */
           .resume-page {
+            width: 210mm !important;
             min-height: 297mm !important;
             height: auto !important;
             overflow: visible !important;
             page-break-inside: avoid !important;
+            margin-bottom: 0 !important;
+            padding-bottom: 20px !important;
           }
           
-          /* Left sidebar stretching */
+          /* Critical: Left sidebar stretching to match content height */
           .resume-page .left {
             min-height: 100% !important;
             height: auto !important;
           }
           
-          /* Text content */
-          p, div, li, .section {
+          /* Ensure right content can expand properly */
+          .resume-page .right {
+            height: auto !important;
+            min-height: min-content !important;
+          }
+          
+          /* Text content proper wrapping */
+          p, div, li, .section, h1, h2, h3 {
             overflow-wrap: break-word !important;
             word-wrap: break-word !important;
+            white-space: normal !important;
             page-break-inside: avoid !important;
           }
           
-          /* Ensure all section content is visible */
+          /* Ensure all sections expand properly */
           .section, .right .section {
             height: auto !important;
             min-height: min-content !important;
             overflow: visible !important;
             page-break-inside: avoid !important;
+            margin-bottom: 15px !important;
           }
           
-          /* Fix SAHIB KHAN template specifically */
-          body .resume-container,
-          body .resume-container * {
-            height: auto !important;
-            min-height: min-content !important;
+          /* Critical: Remove all fixed heights */
+          * {
             max-height: none !important;
           }
           
-          /* Add proper scrolling */
-          .resume-container {
-            overflow-y: visible !important;
-            height: auto !important;
+          /* Fix work experience section specifically */
+          .section h2 + p, .section h2 ~ p {
+            display: block !important;
+            visibility: visible !important;
+            overflow: visible !important;
+          }
+          
+          /* Remove any padding limits */
+          .left, .right {
+            padding-bottom: 20px !important;
+          }
+          
+          /* Fix for job descriptions */
+          .job-title, .company, .section p {
+            max-width: 100% !important;
+            overflow: visible !important;
+            white-space: normal !important;
           }
         `}} />
         

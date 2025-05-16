@@ -432,31 +432,41 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
     const contentHeight = container.scrollHeight;
     console.log(`[RESUME] Content height: ${contentHeight}px, Max height: ${maxHeight}px`);
     
-    // Only apply scaling if content significantly exceeds the page
-    // For small overflows, leave as is to avoid layout disruption
-    if (contentHeight > maxHeight * 1.05) {
-      console.log(`[RESUME] Content overflow detected (${((contentHeight/maxHeight - 1) * 100).toFixed(1)}% overflow)`);
+    // For Zety-style infinite expansion, we don't compress content
+    // Instead, allow the template to grow naturally to fit all content
+    
+    // Find the left sidebar and right content areas if they exist
+    const leftSidebar = previewRef.current.querySelector('.left');
+    const rightContent = previewRef.current.querySelector('.right');
+    
+    // Ensure the resume page grows to fit content
+    if (contentDiv) {
+      contentDiv.style.minHeight = 'auto';
+      contentDiv.style.height = 'auto';
+    }
+    
+    // Special handling for Sahib Khan template (ID 16)
+    if (selectedTemplateId === 16 || (selectedTemplate && selectedTemplate.name?.includes('Sahib'))) {
+      // Apply special infinite expansion styling
+      container.classList.add('zety-infinite-expansion');
       
-      // Modify container to fit content
-      if (contentHeight <= maxHeight * 1.15) {
-        // For small overflow (5-15%), apply gentle CSS adjustments
-        container.classList.add('content-exceeds');
-        container.classList.remove('content-exceeds-large');
-        console.log('[RESUME] Applied gentle content compression');
-      } else {
-        // For larger overflow (>15%), apply stronger CSS adjustments
-        container.classList.add('content-exceeds-large');
-        console.log('[RESUME] Applied stronger content compression');
+      // Ensure left sidebar stretches with content
+      if (leftSidebar && rightContent) {
+        const rightHeight = rightContent.scrollHeight;
+        if (rightHeight > leftSidebar.scrollHeight) {
+          leftSidebar.style.minHeight = `${rightHeight}px`;
+        }
       }
       
-      // Return without transform scaling to preserve layout structure
-      return;
-    } else {
-      // Remove any compression classes if content fits
-      container.classList.remove('content-exceeds', 'content-exceeds-large');
-      console.log(`[RESUME] Content fits within page (or only small overflow). No scaling needed.`);
-      return;
+      console.log('[RESUME] Applied Zety-style infinite expansion to template');
     }
+    
+    // Never compress content regardless of amount
+    container.classList.remove('content-exceeds');
+    container.classList.remove('content-exceeds-large');
+    
+    // Return without transform scaling to preserve layout structure
+    return;
   }, []);
   
   // Apply auto-scaling after template updates and check for duplications
