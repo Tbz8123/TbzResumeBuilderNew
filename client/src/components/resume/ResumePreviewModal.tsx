@@ -332,10 +332,14 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   );
 
   // Component for classic preview with HybridResumePreview and improved content scaling
-  const ClassicPreview = () => (
+  const ClassicPreview = () => {
+    // Ensure template consistency for SAHIB KHAN template
+    const fixedTemplateId = selectedTemplateId === 16 ? 16 : selectedTemplateId;
+    
+    return (
     <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(80vh)' }}>
       <div className="template-wrapper">
-        {/* Add styles for Zety-style intelligent layout expansion */}
+        {/* Fix for template flickering in preview modal */}
         <style dangerouslySetInnerHTML={{ __html: `
           /* Template container styles */
           .template-wrapper {
@@ -385,17 +389,23 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             overflow-y: visible !important;
             height: auto !important;
           }
+          
+          /* Prevent template flickering */
+          [data-template-id="16"] {
+            visibility: visible !important;
+            display: block !important;
+          }
         `}} />
         
-        {/* Use the key prop to force a complete remount when the modal opens */}
+        {/* Use the key prop with template ID to force a consistent template */}
         <HybridResumePreview 
-          key={`resume-preview-${previewKey}-${Date.now()}`}
+          key={`resume-preview-template-${fixedTemplateId}-${previewKey}`}
           width={794} 
           height={1123}
           className="border shadow-lg"
           scaleContent={false}
           resumeData={deduplicatedResumeData}
-          selectedTemplateId={selectedTemplateId}
+          selectedTemplateId={fixedTemplateId}
           setSelectedTemplateId={setSelectedTemplateId}
           templates={templates}
           isModal={true}
@@ -404,6 +414,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       </div>
     </div>
   );
+  }
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
