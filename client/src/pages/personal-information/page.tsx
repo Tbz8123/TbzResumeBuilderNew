@@ -11,6 +11,7 @@ import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
 import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
+import FixedSizePreview from '@/components/resume/FixedSizePreview';
 
 const PersonalInformationPage = () => {
   const [, setLocation] = useLocation();
