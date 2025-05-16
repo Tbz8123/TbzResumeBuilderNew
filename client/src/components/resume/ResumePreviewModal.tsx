@@ -334,86 +334,77 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   // Component for classic preview with HybridResumePreview and improved content scaling
   const ClassicPreview = () => (
     <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(80vh)' }}>
-      <div className="template-wrapper">
+      <div className="template-wrapper" style={{ transform: 'scale(0.7)', transformOrigin: 'top center' }}>
         {/* Add styles for Zety-style intelligent layout expansion */}
         <style dangerouslySetInnerHTML={{ __html: `
-          /* Template container styles */
-          .template-wrapper {
-            transform: scale(0.7);
-            transform-origin: top center;
-          }
+          /* Template container styles are now applied directly with inline style */
           
-          /* Resume container expansion - key to infinite expansion */
+          /* SAHIB KHAN Template (Template 16) specific fixes */
           .resume-container {
             width: 210mm !important;
             margin: auto !important;
-            height: auto !important;
+            height: auto !important; 
+            min-height: auto !important;
             overflow: visible !important;
-            max-height: none !important;
           }
           
-          /* Resume page expansion */
           .resume-page {
             width: 210mm !important;
+            height: auto !important;
             min-height: 297mm !important;
-            height: auto !important;
-            overflow: visible !important;
-            page-break-inside: avoid !important;
-            margin-bottom: 0 !important;
-            padding-bottom: 20px !important;
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: wrap !important;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1) !important;
           }
           
-          /* Critical: Left sidebar stretching to match content height */
-          .resume-page .left {
+          /* Critical: Make the left sidebar stretch with content */
+          .left {
+            width: 35% !important;
+            height: auto !important;
             min-height: 100% !important;
+          }
+          
+          .right {
+            width: 65% !important;
             height: auto !important;
           }
           
-          /* Ensure right content can expand properly */
-          .resume-page .right {
-            height: auto !important;
-            min-height: min-content !important;
-          }
-          
-          /* Text content proper wrapping */
-          p, div, li, .section, h1, h2, h3 {
+          /* Fix content visibility and wrapping */
+          p, li, div, span, h1, h2, h3, .section {
             overflow-wrap: break-word !important;
             word-wrap: break-word !important;
             white-space: normal !important;
-            page-break-inside: avoid !important;
           }
           
-          /* Ensure all sections expand properly */
-          .section, .right .section {
-            height: auto !important;
-            min-height: min-content !important;
-            overflow: visible !important;
-            page-break-inside: avoid !important;
-            margin-bottom: 15px !important;
+          /* Ensure job sections are visible */
+          .job-title, .company, .section p {
+            display: block !important;
+            visibility: visible !important;
+            max-width: 100% !important;
           }
           
-          /* Critical: Remove all fixed heights */
+          /* Prevent flickering by removing max heights and fixed dimensions */
           * {
             max-height: none !important;
           }
           
-          /* Fix work experience section specifically */
-          .section h2 + p, .section h2 ~ p {
+          /* Ensure work experience section is fully visible */
+          .section {
             display: block !important;
             visibility: visible !important;
-            overflow: visible !important;
+            height: auto !important;
+            min-height: auto !important;
+            margin-bottom: 15px !important;
+            page-break-inside: avoid !important;
           }
           
-          /* Remove any padding limits */
-          .left, .right {
-            padding-bottom: 20px !important;
-          }
-          
-          /* Fix for job descriptions */
-          .job-title, .company, .section p {
-            max-width: 100% !important;
-            overflow: visible !important;
-            white-space: normal !important;
+          /* Fix text size and line height for better readability */
+          .section p {
+            font-size: 0.75rem !important;
+            line-height: 1.4 !important;
+            margin: 4px 0 !important;
+            padding: 0 !important;
           }
         `}} />
         
