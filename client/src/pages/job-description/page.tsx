@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import ZetyStylePreview from '@/components/resume/ZetyStylePreview';
+import ZetyPreview from '@/components/resume/ZetyPreview';
 import { useTemplates } from '@/hooks/use-templates';
 import { Input } from '@/components/ui/input';
 import { JobTitle, getJobTitleSuggestions, findJobTitleById } from '@/utils/jobTitlesData';
@@ -85,6 +85,7 @@ const JobDescriptionPage = () => {
   const [showingResults, setShowingResults] = useState<string>('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const { data: templates } = useTemplates();
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(16); // Default to template ID 16 (or adjust as needed)
   
   // Animation variants for framer-motion
   const containerVariants = {
@@ -751,14 +752,12 @@ const JobDescriptionPage = () => {
 
       {/* Resume Preview Modal */}
       {templates && (
-        <ZetyStylePreview
+        <ZetyPreview
           open={previewOpen}
           onOpenChange={setPreviewOpen}
           resumeData={resumeData}
-          selectedTemplateId={resumeData.selectedTemplateId}
-          setSelectedTemplateId={(id) => updateResumeData({ selectedTemplateId: id })}
+          selectedTemplateId={selectedTemplateId}
           templates={templates}
-          hideSkills={true}
         />
       )}
     </div>
