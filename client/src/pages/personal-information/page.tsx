@@ -122,13 +122,7 @@ const PersonalInformationPage = () => {
   };
   
   // State for preview modal
-  const [previewModalOpen, setPreviewModalOpen] = useState(false);
-  
-  // Preview resume - opens a modal with the full preview
-  const handlePreview = () => {
-    console.log('Opening resume preview modal');
-    setPreviewModalOpen(true);
-  };
+  // Preview functionality removed
   
   // New simplified direct-state handlers for additional fields
   
