@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResumeTemplate } from '@shared/schema';
 import { ResumeData } from '@/types/resume';
+import { useResume } from '@/contexts/ResumeContext';
 import HybridResumePreview from './HybridResumePreview';
 import {
   Dialog,
@@ -20,6 +21,80 @@ interface ResumePreviewModalProps {
   templates: ResumeTemplate[];
 }
 
+// Helper function to process template with real data
+const processTemplate = (html: string, data: any) => {
+  // Replace template variables with actual data
+  let processedHtml = html
+    .replace(/{{ name }}/g, `${data.firstName || ''} ${data.surname || ''}`)
+    .replace(/{{ profession }}/g, data.profession || '')
+    .replace(/{{ email }}/g, data.email || '')
+    .replace(/{{ phone }}/g, data.phone || '')
+    .replace(/{{ city }}/g, data.city || '')
+    .replace(/{{ country }}/g, data.country || '')
+    .replace(/{{ postalCode }}/g, data.postalCode || '')
+    .replace(/{{ summary }}/g, data.summary || '');
+  
+  // Work experience
+  if (data.workExperience && data.workExperience.length > 0) {
+    let workExperienceHtml = '';
+    
+    data.workExperience.forEach((exp: any) => {
+      workExperienceHtml += `
+        <div class="work-item">
+          <h3>${exp.jobTitle || ''}</h3>
+          <p>${exp.employer || ''}, ${exp.location || ''}</p>
+          <p>${exp.startMonth || ''} ${exp.startYear || ''} - ${exp.isCurrentJob ? 'Present' : `${exp.endMonth || ''} ${exp.endYear || ''}`}</p>
+          <div>${exp.responsibilities || ''}</div>
+        </div>
+      `;
+    });
+    
+    processedHtml = processedHtml.replace(/{{ work_experience }}/g, workExperienceHtml);
+  } else {
+    processedHtml = processedHtml.replace(/{{ work_experience }}/g, '');
+  }
+  
+  // Education
+  if (data.education && data.education.length > 0) {
+    let educationHtml = '';
+    
+    data.education.forEach((edu: any) => {
+      educationHtml += `
+        <div class="education-item">
+          <h3>${edu.degree || ''}</h3>
+          <p>${edu.schoolName || ''} - ${edu.schoolLocation || ''}</p>
+          <div>${edu.description || ''}</div>
+        </div>
+      `;
+    });
+    
+    processedHtml = processedHtml.replace(/{{ education }}/g, educationHtml);
+  } else {
+    processedHtml = processedHtml.replace(/{{ education }}/g, '');
+  }
+  
+  // Skills
+  if (data.skills && data.skills.length > 0) {
+    let skillsHtml = '<ul>';
+    
+    data.skills.forEach((skill: any) => {
+      skillsHtml += `<li>${typeof skill === 'string' ? skill : skill.name || ''}</li>`;
+    });
+    
+    skillsHtml += '</ul>';
+    processedHtml = processedHtml.replace(/{{ skills }}/g, skillsHtml);
+  } else {
+    processedHtml = processedHtml.replace(/{{ skills }}/g, '');
+  }
+  
+  // Additional placeholders that might be in templates
+  processedHtml = processedHtml.replace(/{{ additional_info }}/g, '');
+  processedHtml = processedHtml.replace(/{{ website }}/g, '');
+  processedHtml = processedHtml.replace(/{{ linkedin }}/g, '');
+  
+  return processedHtml;
+};
+
 const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   open,
   onOpenChange,
@@ -33,7 +108,9 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   // Update local state whenever resumeData changes
   React.useEffect(() => {
     setPreviewData({...resumeData, _previewTimestamp: Date.now()});
+    console.log("Preview data updated:", resumeData);
   }, [resumeData]);
+  
   // Find the selected template
   const selectedTemplate = templates?.find(template => template.id === selectedTemplateId);
   
@@ -70,19 +147,38 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       );
     }
 
-    // Use the HybridResumePreview component which already has real-time update capability
-    return (
-      <HybridResumePreview
-        templateHtml={selectedTemplate.htmlContent}
-        resumeData={previewData} // Use our local state that updates immediately
-        width={800}
-        height={1130}
-        scaleContent={true}
-        showPrintButton={true}
-        fullPreviewMode={true}
-        key={`preview-${Date.now()}`} // Force re-render on every update
-      />
-    );
+    // Use the direct HTML rendering approach to avoid template flickering
+    try {
+      // Get the HTML content from the selected template
+      let htmlContent = selectedTemplate.htmlContent;
+      
+      // Create a unique timestamp for this rendering cycle
+      const renderTimestamp = Date.now();
+      
+      // Process HTML with all resume data
+      htmlContent = processTemplate(htmlContent, previewData);
+      
+      return (
+        <div 
+          dangerouslySetInnerHTML={{ __html: htmlContent }} 
+          className="template-content"
+          style={{ 
+            width: '100%',
+            height: 'auto',
+            maxWidth: '800px',
+            margin: '0 auto',
+            padding: '0'
+          }}
+        />
+      );
+    } catch (error) {
+      console.error("Error rendering template:", error);
+      return (
+        <div className="p-6 text-center">
+          <p>An error occurred while rendering the template. Please try again.</p>
+        </div>
+      );
+    }
   };
 
   return (
