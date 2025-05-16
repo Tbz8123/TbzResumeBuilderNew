@@ -1,10 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResumeTemplate } from '@shared/schema';
 import { ResumeData } from '@/types/resume';
-import { useResume } from '@/contexts/ResumeContext';
-import HybridResumePreview from './HybridResumePreview';
 import {
   Dialog,
   DialogContent,
@@ -21,80 +19,6 @@ interface ResumePreviewModalProps {
   templates: ResumeTemplate[];
 }
 
-// Helper function to process template with real data
-const processTemplate = (html: string, data: any) => {
-  // Replace template variables with actual data
-  let processedHtml = html
-    .replace(/{{ name }}/g, `${data.firstName || ''} ${data.surname || ''}`)
-    .replace(/{{ profession }}/g, data.profession || '')
-    .replace(/{{ email }}/g, data.email || '')
-    .replace(/{{ phone }}/g, data.phone || '')
-    .replace(/{{ city }}/g, data.city || '')
-    .replace(/{{ country }}/g, data.country || '')
-    .replace(/{{ postalCode }}/g, data.postalCode || '')
-    .replace(/{{ summary }}/g, data.summary || '');
-  
-  // Work experience
-  if (data.workExperience && data.workExperience.length > 0) {
-    let workExperienceHtml = '';
-    
-    data.workExperience.forEach((exp: any) => {
-      workExperienceHtml += `
-        <div class="work-item">
-          <h3>${exp.jobTitle || ''}</h3>
-          <p>${exp.employer || ''}, ${exp.location || ''}</p>
-          <p>${exp.startMonth || ''} ${exp.startYear || ''} - ${exp.isCurrentJob ? 'Present' : `${exp.endMonth || ''} ${exp.endYear || ''}`}</p>
-          <div>${exp.responsibilities || ''}</div>
-        </div>
-      `;
-    });
-    
-    processedHtml = processedHtml.replace(/{{ work_experience }}/g, workExperienceHtml);
-  } else {
-    processedHtml = processedHtml.replace(/{{ work_experience }}/g, '');
-  }
-  
-  // Education
-  if (data.education && data.education.length > 0) {
-    let educationHtml = '';
-    
-    data.education.forEach((edu: any) => {
-      educationHtml += `
-        <div class="education-item">
-          <h3>${edu.degree || ''}</h3>
-          <p>${edu.schoolName || ''} - ${edu.schoolLocation || ''}</p>
-          <div>${edu.description || ''}</div>
-        </div>
-      `;
-    });
-    
-    processedHtml = processedHtml.replace(/{{ education }}/g, educationHtml);
-  } else {
-    processedHtml = processedHtml.replace(/{{ education }}/g, '');
-  }
-  
-  // Skills
-  if (data.skills && data.skills.length > 0) {
-    let skillsHtml = '<ul>';
-    
-    data.skills.forEach((skill: any) => {
-      skillsHtml += `<li>${typeof skill === 'string' ? skill : skill.name || ''}</li>`;
-    });
-    
-    skillsHtml += '</ul>';
-    processedHtml = processedHtml.replace(/{{ skills }}/g, skillsHtml);
-  } else {
-    processedHtml = processedHtml.replace(/{{ skills }}/g, '');
-  }
-  
-  // Additional placeholders that might be in templates
-  processedHtml = processedHtml.replace(/{{ additional_info }}/g, '');
-  processedHtml = processedHtml.replace(/{{ website }}/g, '');
-  processedHtml = processedHtml.replace(/{{ linkedin }}/g, '');
-  
-  return processedHtml;
-};
-
 const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   open,
   onOpenChange,
@@ -103,12 +27,13 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   templates
 }) => {
   // Create local state that immediately syncs with incoming resumeData
-  const [previewData, setPreviewData] = React.useState(resumeData);
+  const [previewData, setPreviewData] = useState(resumeData);
+  const [renderId, setRenderId] = useState(Date.now());
   
   // Update local state whenever resumeData changes
-  React.useEffect(() => {
-    setPreviewData({...resumeData, _previewTimestamp: Date.now()});
-    console.log("Preview data updated:", resumeData);
+  useEffect(() => {
+    setPreviewData({...resumeData});
+    setRenderId(Date.now()); // Force re-render
   }, [resumeData]);
   
   // Find the selected template
@@ -131,36 +56,92 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
       </Dialog>
     );
   }
-
-  // To enable real-time updates, re-render when resumeData changes
-  React.useEffect(() => {
-    console.log("ResumePreviewModal: ResumeData updated", resumeData);
-  }, [resumeData]);
-
-  // Use HybridResumePreview for consistent real-time updating 
-  const renderTemplateContent = () => {
-    if (!selectedTemplate || !selectedTemplate.htmlContent) {
-      return (
-        <div className="p-6 text-center">
-          <p>Unable to load template content. Please try another template.</p>
-        </div>
-      );
+  
+  // Process the template HTML with actual resume data
+  const processTemplate = (htmlContent: string, data: ResumeData) => {
+    let processedHtml = htmlContent;
+    
+    // Basic information
+    processedHtml = processedHtml
+      .replace(/{{ name }}/g, `${data.firstName || ''} ${data.surname || ''}`)
+      .replace(/{{ profession }}/g, data.profession || '')
+      .replace(/{{ email }}/g, data.email || '')
+      .replace(/{{ phone }}/g, data.phone || '')
+      .replace(/{{ city }}/g, data.city || '')
+      .replace(/{{ country }}/g, data.country || '')
+      .replace(/{{ postalCode }}/g, data.postalCode || '')
+      .replace(/{{ summary }}/g, data.summary || '');
+    
+    // Work experience
+    if (data.workExperience && data.workExperience.length > 0) {
+      let workExperienceHtml = '';
+      
+      data.workExperience.forEach(exp => {
+        workExperienceHtml += `
+          <div class="work-item">
+            <h3>${exp.jobTitle || ''}</h3>
+            <p>${exp.employer || ''}, ${exp.location || ''}</p>
+            <p>${exp.startMonth || ''} ${exp.startYear || ''} - ${exp.isCurrentJob ? 'Present' : `${exp.endMonth || ''} ${exp.endYear || ''}`}</p>
+            <div>${exp.responsibilities || ''}</div>
+          </div>
+        `;
+      });
+      
+      processedHtml = processedHtml.replace(/{{ work_experience }}/g, workExperienceHtml);
+    } else {
+      processedHtml = processedHtml.replace(/{{ work_experience }}/g, '');
     }
-
-    // Use the direct HTML rendering approach to avoid template flickering
+    
+    // Education
+    if (data.education && data.education.length > 0) {
+      let educationHtml = '';
+      
+      data.education.forEach(edu => {
+        educationHtml += `
+          <div class="education-item">
+            <h3>${edu.degree || ''}</h3>
+            <p>${edu.schoolName || ''} - ${edu.schoolLocation || ''}</p>
+            <div>${edu.description || ''}</div>
+          </div>
+        `;
+      });
+      
+      processedHtml = processedHtml.replace(/{{ education }}/g, educationHtml);
+    } else {
+      processedHtml = processedHtml.replace(/{{ education }}/g, '');
+    }
+    
+    // Skills
+    if (data.skills && data.skills.length > 0) {
+      let skillsHtml = '<ul>';
+      
+      data.skills.forEach(skill => {
+        skillsHtml += `<li>${typeof skill === 'string' ? skill : skill.name || ''}</li>`;
+      });
+      
+      skillsHtml += '</ul>';
+      processedHtml = processedHtml.replace(/{{ skills }}/g, skillsHtml);
+    } else {
+      processedHtml = processedHtml.replace(/{{ skills }}/g, '');
+    }
+    
+    // Additional placeholders
+    processedHtml = processedHtml.replace(/{{ additional_info }}/g, '');
+    processedHtml = processedHtml.replace(/{{ website }}/g, '');
+    processedHtml = processedHtml.replace(/{{ linkedin }}/g, '');
+    
+    return processedHtml;
+  };
+  
+  // Real-time template rendering
+  const renderResumeContent = () => {
     try {
-      // Get the HTML content from the selected template
-      let htmlContent = selectedTemplate.htmlContent;
-      
-      // Create a unique timestamp for this rendering cycle
-      const renderTimestamp = Date.now();
-      
-      // Process HTML with all resume data
-      htmlContent = processTemplate(htmlContent, previewData);
+      // Get and process the HTML content
+      const processedHtml = processTemplate(selectedTemplate.htmlContent, previewData);
       
       return (
         <div 
-          dangerouslySetInnerHTML={{ __html: htmlContent }} 
+          dangerouslySetInnerHTML={{ __html: processedHtml }} 
           className="template-content"
           style={{ 
             width: '100%',
@@ -198,7 +179,10 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
         
         <div className="resume-container p-6">
           <div className="resume-preview shadow-lg mx-auto bg-white rounded-sm overflow-hidden" style={{maxWidth: '100%'}}>
-            {renderTemplateContent()}
+            {/* Use a key to force re-render when data changes */}
+            <div key={`preview-${renderId}`}>
+              {renderResumeContent()}
+            </div>
           </div>
         </div>
       </DialogContent>
