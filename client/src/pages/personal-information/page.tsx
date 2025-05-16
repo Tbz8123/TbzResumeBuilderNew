@@ -9,7 +9,7 @@ import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
-import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
+import ResumePreviewModal from '@/components/resume/ResumePreviewModal.new';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
 
 const PersonalInformationPage = () => {
