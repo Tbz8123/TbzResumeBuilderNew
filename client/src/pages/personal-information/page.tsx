@@ -103,11 +103,18 @@ const PersonalInformationPage = () => {
       [name]: value
     }));
     
+    // Update local preview data for immediate reflection in preview
+    setPreviewData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
     // Directly update ALL personal info fields in resumeData for immediate feedback
     // This ensures the preview updates instantly for better user experience
     updateResumeData(prevData => ({
       ...prevData,
-      [name]: value
+      [name]: value,
+      _previewTimestamp: Date.now() // Force updates to propagate
     }));
     
     // For special fields like name, also update the document title to show real-time changes
@@ -124,8 +131,7 @@ const PersonalInformationPage = () => {
     console.log(`Field changed ${name} to:`, value);
   };
   
-  // State for preview modal
-  // Preview functionality removed
+  // State for preview modal - removed duplicate state
   
   // New simplified direct-state handlers for additional fields
   

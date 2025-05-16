@@ -32,9 +32,10 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   
   // Update local state whenever resumeData changes
   useEffect(() => {
+    console.log("ResumePreviewModal: Received updated data", resumeData);
     setPreviewData({...resumeData});
     setRenderId(Date.now()); // Force re-render
-  }, [resumeData]);
+  }, [JSON.stringify(resumeData)]); // Use JSON.stringify to detect all changes
   
   // Find the selected template
   const selectedTemplate = templates?.find(template => template.id === selectedTemplateId);
@@ -58,7 +59,9 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   }
   
   // Process the template HTML with actual resume data
-  const processTemplate = (htmlContent: string, data: ResumeData) => {
+  const processTemplate = (htmlContent: string | null, data: ResumeData) => {
+    if (!htmlContent) return '';
+    
     let processedHtml = htmlContent;
     
     // Basic information
