@@ -11,7 +11,7 @@ import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
 import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
-import FixedSizePreview from '@/components/resume/FixedSizePreview';
+import StaticResumePreview from '@/components/resume/StaticResumePreview';
 
 const PersonalInformationPage = () => {
   const [, setLocation] = useLocation();
@@ -566,14 +566,15 @@ const PersonalInformationPage = () => {
               </div>
             </div>
             
-            {/* Resume Preview */}
+            {/* Resume Preview - Using Static Non-Flickering Component */}
             <div className="border border-gray-200 overflow-hidden mx-auto" style={{ maxWidth: '280px' }}>
               <div className="relative bg-white" style={{ height: '400px' }}>
-                <HybridResumePreview 
-                  className="h-full w-full" 
+                <StaticResumePreview 
                   width={280} 
                   height={410}
-                  scaleContent={true}
+                  resumeData={resumeData}
+                  selectedTemplateId={selectedTemplateId}
+                  templates={templates || []}
                 />
               </div>
             </div>
