@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, Link } from 'wouter';
-import { ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft, Info, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import Logo from '@/components/Logo';
 import { useTemplates } from '@/hooks/use-templates';
 import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
-// Modal preview removed as requested
+import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
 
 const PersonalInformationPage = () => {
@@ -17,6 +17,7 @@ const PersonalInformationPage = () => {
   const { resumeData, updateResumeData, updateAdditionalInfo, removeAdditionalInfo, selectedTemplateId, setSelectedTemplateId } = useResume();
   const { data: templates } = useTemplates();
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   
   // Initialize local state from the resumeData context
   // This ensures our UI state reflects what's stored in the context
@@ -615,9 +616,16 @@ const PersonalInformationPage = () => {
         onOpenChange={setTemplateModalOpen} 
       />
       
-      {/* Preview modal component removed as requested */}
-      
-      {/* Template selection modal */}
+      {/* Resume Preview Modal */}
+      {templates && (
+        <ResumePreviewModal
+          open={previewModalOpen}
+          onOpenChange={setPreviewModalOpen}
+          resumeData={resumeData}
+          selectedTemplateId={selectedTemplateId}
+          templates={templates}
+        />
+      )}
     </div>
   );
 };
