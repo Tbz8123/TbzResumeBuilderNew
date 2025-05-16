@@ -260,7 +260,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           </div>
         </div>
         
-        {/* Simple scrollable container - back to the original approach */}
+        {/* Better scrollable container for multi-page templates */}
         <div 
           className="flex flex-col items-center p-6 bg-gray-50 rounded-md overflow-y-auto" 
           style={{ 
@@ -268,23 +268,30 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
             minHeight: '500px'
           }}
         >
-          {/* Resume container with basic styling */}
-          <div className="border shadow-lg bg-white">
-            {/* Go back to using HybridResumePreview but with a larger scale */}
-            <div style={{ transform: 'scale(0.65)', transformOrigin: 'top center' }}>
-              <HybridResumePreview 
-                key={`preview-${Date.now()}`}
-                width={794} 
-                height={1123}
-                scaleContent={false}
-                resumeData={deduplicatedResumeData}
-                selectedTemplateId={selectedTemplateId}
-                setSelectedTemplateId={setSelectedTemplateId}
-                templates={templates}
-                isModal={true}
-                hideSkills={hideSkills}
-                showTemplateControls={false}
-              />
+          {/* Message to help users understand they can scroll */}
+          <p className="text-sm text-gray-500 mb-4">
+            Scroll down to see all content. Template will automatically create new pages for overflow content.
+          </p>
+
+          {/* Resume container with improved styling */}
+          <div className="border-none shadow-lg bg-white overflow-hidden">
+            {/* Custom container with better scaling for readability */}
+            <div style={{ transform: 'scale(0.70)', transformOrigin: 'top center', margin: '0 auto' }}>
+              <div style={{ height: 'auto', overflow: 'visible', paddingBottom: '50px' }}>
+                <HybridResumePreview 
+                  key={`preview-${Date.now()}`}
+                  width={794} 
+                  height={1123}
+                  scaleContent={false}
+                  resumeData={deduplicatedResumeData}
+                  selectedTemplateId={selectedTemplateId}
+                  setSelectedTemplateId={setSelectedTemplateId}
+                  templates={templates}
+                  isModal={true}
+                  hideSkills={hideSkills}
+                  showTemplateControls={false}
+                />
+              </div>
             </div>
           </div>
         </div>

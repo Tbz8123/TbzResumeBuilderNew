@@ -103,3 +103,14 @@
   page-break-after: always;
   position: relative;
 }
+
+/* Special styling for template 16 */
+[data-template-id="16"] {
+  min-height: 2000px !important;
+}
+
+/* Template 16 inner columns need to expand */
+[data-template-id="16"] .left, 
+[data-template-id="16"] .right {
+  min-height: 2000px !important;
+}
