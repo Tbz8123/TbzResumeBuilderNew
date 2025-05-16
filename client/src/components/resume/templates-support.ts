@@ -243,6 +243,9 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     // Professional template patterns and placeholders
     'moahmed': resumeData.firstName || 'moahmed',
     'tabt=rez': resumeData.surname || 'tabt=rez',
+    'MOHAMED': resumeData.firstName?.toUpperCase() || 'MOHAMED',
+    'TABREZ': resumeData.surname?.toUpperCase() || 'TABREZ',
+    'MOHAMED TABREZ': `${resumeData.firstName || ''} ${resumeData.surname || ''}`.trim().toUpperCase(),
     'movewo': resumeData.profession || 'movewo',
     'onewon': resumeData.city || 'onewon',
     'olnvewon': resumeData.country || 'olnvewon',
@@ -282,23 +285,20 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     }
   });
   
-  // Special case for FIRSTNAME/SURNAME TAB pattern which appears in some templates
+  // Special case for template-specific name patterns that appear in templates
   if (resumeData.firstName && resumeData.surname) {
-    // Only replace within header/title sections to avoid messing up content
-    const nameHeaderRegex = /(<div[^>]*header[^>]*>[\s\S]*?)FIRSTNAME\/SURNAME TAB([\s\S]*?<\/div>)/gi;
-    processedHtml = processedHtml.replace(nameHeaderRegex, (match, prefix, suffix) => {
-      return `${prefix}${resumeData.firstName} ${resumeData.surname}${suffix}`;
-    });
+    const fullName = `${resumeData.firstName} ${resumeData.surname}`.trim();
+    const fullNameUpper = fullName.toUpperCase();
     
-    // Also try with h1/heading tags
-    const headerTagRegex = /(<h[1-3][^>]*>[\s\S]*?)FIRSTNAME\/SURNAME TAB([\s\S]*?<\/h[1-3]>)/gi;
-    processedHtml = processedHtml.replace(headerTagRegex, (match, prefix, suffix) => {
-      return `${prefix}${resumeData.firstName} ${resumeData.surname}${suffix}`;
-    });
+    // Replace MOHAMED TABREZ pattern that appears in the blue sidebar
+    processedHtml = processedHtml.replace(/MOHAMED TABREZ/g, fullNameUpper);
     
-    // Target the specific blue sidebar pattern from the image
-    const sidebarRegex = /(FIRSTNAME\/SURNAME TAB)/g;
-    processedHtml = processedHtml.replace(sidebarRegex, `${resumeData.firstName} ${resumeData.surname}`.toUpperCase());
+    // Also replace individual parts
+    processedHtml = processedHtml.replace(/MOHAMED/g, resumeData.firstName.toUpperCase());
+    processedHtml = processedHtml.replace(/TABREZ/g, resumeData.surname.toUpperCase());
+    
+    // Handle other variations
+    processedHtml = processedHtml.replace(/FIRSTNAME\/SURNAME TAB/g, fullNameUpper);
   }
   
   // Add explicit support for Handlebars syntax in the template for additional fields
