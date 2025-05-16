@@ -334,18 +334,56 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
   // Component for classic preview with HybridResumePreview and improved content scaling
   const ClassicPreview = () => (
     <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(80vh)' }}>
-      <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center' }}>
-        {/* Add enhanced styles to ensure all content is visible */}
+      <div className="template-wrapper">
+        {/* Add styles for Zety-style intelligent layout expansion */}
         <style dangerouslySetInnerHTML={{ __html: `
-          /* Make sure content doesn't get cut off */
-          .resume-page {
-            overflow: visible !important;
+          /* Template container styles */
+          .template-wrapper {
+            transform: scale(0.7);
+            transform-origin: top center;
           }
           
-          /* Ensure text wraps properly */
-          p, div, li {
+          /* Resume page expansion */
+          .resume-page {
+            min-height: 297mm !important;
+            height: auto !important;
+            overflow: visible !important;
+            page-break-inside: avoid !important;
+          }
+          
+          /* Left sidebar stretching */
+          .resume-page .left {
+            min-height: 100% !important;
+            height: auto !important;
+          }
+          
+          /* Text content */
+          p, div, li, .section {
             overflow-wrap: break-word !important;
             word-wrap: break-word !important;
+            page-break-inside: avoid !important;
+          }
+          
+          /* Ensure all section content is visible */
+          .section, .right .section {
+            height: auto !important;
+            min-height: min-content !important;
+            overflow: visible !important;
+            page-break-inside: avoid !important;
+          }
+          
+          /* Fix SAHIB KHAN template specifically */
+          body .resume-container,
+          body .resume-container * {
+            height: auto !important;
+            min-height: min-content !important;
+            max-height: none !important;
+          }
+          
+          /* Add proper scrolling */
+          .resume-container {
+            overflow-y: visible !important;
+            height: auto !important;
           }
         `}} />
         
