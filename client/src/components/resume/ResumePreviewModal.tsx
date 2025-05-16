@@ -331,102 +331,79 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
     </div>
   );
 
-  // Using a static pre-rendered preview to eliminate flickering completely
-  const ClassicPreview = () => {
-    // Create a static container that won't reflow or recalculate dimensions
-    return (
-      <div className="flex justify-center" style={{ 
-        maxHeight: 'calc(80vh)',
-        overflow: 'auto',
-        position: 'relative',
-      }}>
-        <div style={{
-          width: '210mm',
-          maxWidth: '210mm',
-          margin: '0 auto',
-          transform: 'scale(0.7)',
-          transformOrigin: 'top center',
-          position: 'relative',
-          backgroundColor: 'white',
-          boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-        }}>
-          {/* Add global style to prevent any animations or transitions */}
-          <style>
-            {`
-              * {
-                transition: none !important;
-                animation: none !important;
-              }
-              
-              /* Fix SAHIB KHAN template layout */
-              .resume-container {
-                width: 210mm !important;
-                height: auto !important;
-                min-height: 297mm !important;
-                overflow: visible !important;
-                position: static !important;
-              }
-              
-              .resume-page {
-                width: 210mm !important;
-                min-height: 297mm !important;
-                height: auto !important;
-                display: flex !important;
-                flex-direction: row !important;
-                position: static !important;
-                flex-wrap: nowrap !important;
-              }
-              
-              .left {
-                width: 35% !important;
-                background-color: #407187 !important;
-                min-height: 297mm !important;
-                position: static !important;
-                flex-shrink: 0 !important;
-              }
-              
-              .right {
-                width: 65% !important;
-                min-height: 297mm !important;
-                position: static !important;
-                flex-shrink: 0 !important;
-              }
-              
-              /* Ensure content visibility */
-              .section {
-                margin-bottom: 15px !important;
-                display: block !important;
-                visibility: visible !important;
-                height: auto !important;
-              }
-              
-              /* Fix text formatting */
-              p, h1, h2, h3, li {
-                overflow-wrap: break-word !important;
-                word-wrap: break-word !important;
-                white-space: normal !important;
-              }
-            `}
-          </style>
+  // Component for classic preview with HybridResumePreview and improved content scaling
+  const ClassicPreview = () => (
+    <div className="flex justify-center overflow-auto" style={{ maxHeight: 'calc(80vh)' }}>
+      <div className="template-wrapper">
+        {/* Add styles for Zety-style intelligent layout expansion */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          /* Template container styles */
+          .template-wrapper {
+            transform: scale(0.7);
+            transform-origin: top center;
+          }
           
-          {/* Render the preview with a stable key that won't cause remounts */}
-          <HybridResumePreview 
-            key={`fixed-preview-${previewKey}`}
-            width={794} 
-            height={1123}
-            className="border shadow-lg"
-            scaleContent={false}
-            resumeData={deduplicatedResumeData}
-            selectedTemplateId={selectedTemplateId}
-            setSelectedTemplateId={setSelectedTemplateId}
-            templates={templates}
-            isModal={true}
-            hideSkills={hideSkills}
-          />
-        </div>
+          /* Resume page expansion */
+          .resume-page {
+            min-height: 297mm !important;
+            height: auto !important;
+            overflow: visible !important;
+            page-break-inside: avoid !important;
+          }
+          
+          /* Left sidebar stretching */
+          .resume-page .left {
+            min-height: 100% !important;
+            height: auto !important;
+          }
+          
+          /* Text content */
+          p, div, li, .section {
+            overflow-wrap: break-word !important;
+            word-wrap: break-word !important;
+            page-break-inside: avoid !important;
+          }
+          
+          /* Ensure all section content is visible */
+          .section, .right .section {
+            height: auto !important;
+            min-height: min-content !important;
+            overflow: visible !important;
+            page-break-inside: avoid !important;
+          }
+          
+          /* Fix SAHIB KHAN template specifically */
+          body .resume-container,
+          body .resume-container * {
+            height: auto !important;
+            min-height: min-content !important;
+            max-height: none !important;
+          }
+          
+          /* Add proper scrolling */
+          .resume-container {
+            overflow-y: visible !important;
+            height: auto !important;
+          }
+        `}} />
+        
+        {/* Use the key prop to force a complete remount when the modal opens */}
+        <HybridResumePreview 
+          key={`resume-preview-${previewKey}-${Date.now()}`}
+          width={794} 
+          height={1123}
+          className="border shadow-lg"
+          scaleContent={false}
+          resumeData={deduplicatedResumeData}
+          selectedTemplateId={selectedTemplateId}
+          setSelectedTemplateId={setSelectedTemplateId}
+          templates={templates}
+          isModal={true}
+          hideSkills={hideSkills}
+        />
       </div>
-    );
-  };
+    </div>
+  );
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
