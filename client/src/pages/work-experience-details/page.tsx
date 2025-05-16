@@ -552,7 +552,7 @@ const WorkExperienceDetailsPage = () => {
         resumeData={resumeData}
         selectedTemplateId={selectedTemplateId}
         setSelectedTemplateId={setSelectedTemplateId}
-        templates={templates || []}
+        templates={templates as any}
         hideSkills={true}
         onNextStep={() => handleNext()}
       />

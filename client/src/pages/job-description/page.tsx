@@ -755,9 +755,16 @@ const JobDescriptionPage = () => {
           open={previewOpen}
           onOpenChange={setPreviewOpen}
           resumeData={resumeData}
-          selectedTemplateId={resumeData.selectedTemplateId}
-          setSelectedTemplateId={(id) => updateResumeData({ selectedTemplateId: id })}
-          templates={templates}
+          selectedTemplateId={resumeData.selectedTemplateId || null}
+          setSelectedTemplateId={(id: number | null) => {
+            // Handle template selection
+            if (id !== null) {
+              const updatedData = {...resumeData};
+              (updatedData as any).selectedTemplateId = id;
+              updateResumeData(updatedData);
+            }
+          }}
+          templates={templates as any}
           hideSkills={true}
         />
       )}
