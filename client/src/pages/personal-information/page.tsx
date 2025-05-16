@@ -18,6 +18,8 @@ const PersonalInformationPage = () => {
   const { data: templates } = useTemplates();
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  // Keep a local copy of form data for real-time preview
+  const [previewData, setPreviewData] = useState({...resumeData});
   
   // Initialize local state from the resumeData context
   // This ensures our UI state reflects what's stored in the context
