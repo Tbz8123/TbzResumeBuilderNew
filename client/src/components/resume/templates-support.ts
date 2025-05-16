@@ -445,15 +445,16 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     console.log("[TEMPLATES] Processing work experience entries. Total entries:", 
       resumeData.workExperience.length, "Filtered entries:", filteredExperiences.length);
     
-    // SPECIAL FIX: For problematic templates like "SAHIB KHAN", always deduplicate work experience
+    // SPECIAL FIX: For problematic templates like "SAHIB KHAN", handle work experience differently
     // This prevents duplicate entries from being processed in the first place
     const realExperiences = [];
     const seenKeys = new Set();
     
-    // For template 16, take only the first experience regardless
-    if (isTemplate16 && filteredExperiences.length > 0) {
-      console.log("[TEMPLATES] TEMPLATE 16 FIX: Using only first work experience entry");
-      realExperiences.push(filteredExperiences[0]);
+    // For template 16 (SAHIB KHAN), include all work experiences
+    if (isTemplate16) {
+      console.log("[TEMPLATES] TEMPLATE 16 ENHANCEMENT: Including all work experience entries for expansion");
+      // Let the template's built-in expansion handle multiple work experiences
+      realExperiences.push(...filteredExperiences);
     } else {
       // For other templates, perform normal deduplication
       for (const exp of filteredExperiences) {
@@ -490,35 +491,39 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     // Generate HTML for work experience based on template type
     let workExpHtml = '';
     
-    // Special handling for Template 16
+    // Special handling for Template 16 (SAHIB KHAN)
     if (templateId === 16) {
-      console.log("[TEMPLATES] 🚨 Using EXTREMELY simplified formatting for Template 16");
+      console.log("[TEMPLATES] 🚨 Using ENHANCED formatting for Template 16");
       
-      // For Template 16, create completely minimized HTML with no class names
-      // Use only the first experience even if there are multiple
+      // For Template 16, create properly formatted work experience entries
+      // Include all work experiences to allow template's built-in expansion
       if (realExperiences.length > 0) {
-        const exp = realExperiences[0];
-        const jobTitle = (exp.jobTitle || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const employer = (exp.employer || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
-        const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
-        const dateRange = exp.isCurrentJob 
-          ? `${startDate} - Present` 
-          : `${startDate}${endDate ? ` - ${endDate}` : ''}`;
+        // Generate work experience entries using the template's original format
+        workExpHtml = realExperiences.map((exp: any) => {
+          const jobTitle = (exp.jobTitle || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          const employer = (exp.employer || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          const startDate = exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : '';
+          const endDate = exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '';
+          const dateRange = exp.isCurrentJob 
+            ? `${startDate} - Present` 
+            : `${startDate}${endDate ? ` - ${endDate}` : ''}`;
+          
+          // Extract job description
+          const description = (exp.responsibilities || exp.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          
+          // Create HTML following the template's original structure for work experience entries
+          return `
+            <p class="job-title">${jobTitle}</p>
+            <p class="company">${employer}</p>
+            <p>${dateRange}</p>
+            <p>${description}</p>
+          `;
+        }).join('<br/>');
         
-        // Extract job description
-        const description = (exp.responsibilities || exp.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        
-        // Create ultra-simple HTML with unique timestamp attribute to prevent duplication
-        // IMPORTANT: We explicitly include the job description for Template 16
+        // Add a wrapper to maintain styling and structure
         workExpHtml = `
-          <div data-timestamp="${renderTimestamp}">
-            <div data-item="true">
-              ${jobTitle}<br/>
-              ${employer}<br/>
-              ${dateRange}<br/>
-              <p style="margin-top: 5px;">${description}</p>
-            </div>
+          <div class="section" data-timestamp="${renderTimestamp}">
+            ${workExpHtml}
           </div>
         `;
       }
