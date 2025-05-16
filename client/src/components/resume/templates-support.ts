@@ -284,55 +284,58 @@ export function processTemplateHtml(html: string, resumeData: any): string {
     }
   });
   
-  // COMPLETE FIX: First identify the template we're working with, then only replace name in header section
-  // This prevents name from appearing in skills, about me, and other irrelevant sections
+  // FINAL FIX FOR TEMPLATE 16: Targeting exact names in specific places
   if (resumeData.firstName && resumeData.surname) {
     // Create the replacement name
     const fullName = `${resumeData.firstName} ${resumeData.surname}`.trim();
     const fullNameUpper = fullName.toUpperCase();
     
-    // This is template 13 as seen in your screenshot with blue sidebar
-    if (processedHtml.includes("MOHAMED TABREZ")) {
-      console.log("[TEMPLATE-FIX] Working with MOHAMED TABREZ template (template 13)");
+    // Split the HTML into sections to target replacements precisely
+    let parts = processedHtml.split('<div class="right">');
+    
+    if (parts.length === 2) {
+      // We have successfully split the document into left and right sections
+      let leftSection = parts[0]; // Contains the sidebar
+      let rightSection = parts[1]; // Contains the main content
       
-      // Get just the left sidebar/header section
-      const leftSidebarMatch = processedHtml.match(/<div[^>]*class=["'][^"']*left[^"']*["'][^>]*>[\s\S]*?<\/div>/i);
-      
-      // If we successfully found the left sidebar section
-      if (leftSidebarMatch && leftSidebarMatch[0]) {
-        const leftSidebar = leftSidebarMatch[0];
-        // Replace name only in this section
-        const updatedSidebar = leftSidebar.replace(/MOHAMED TABREZ/g, fullNameUpper);
-        
-        // Replace the sidebar section in the full HTML
-        processedHtml = processedHtml.replace(leftSidebar, updatedSidebar);
-        console.log("[TEMPLATE-FIX] Successfully updated name in left sidebar only");
-      } else {
-        // Fallback: Only try to replace in h1 tags to limit scope
-        processedHtml = processedHtml.replace(/<h1[^>]*>MOHAMED TABREZ<\/h1>/gi, `<h1>${fullNameUpper}</h1>`);
+      // Only replace SAHIB KHAN in the left section (sidebar)
+      if (leftSection.includes("SAHIB KHAN")) {
+        leftSection = leftSection.replace(/<h1[^>]*>SAHIB KHAN<\/h1>/g, `<h1>${fullNameUpper}</h1>`);
       }
+      
+      // For the right section, ONLY target the "My name is Stephen John" in the ABOUT ME section
+      // This specific approach prevents updating names in other sections
+      if (rightSection.includes("ABOUT ME")) {
+        // Use a specific pattern that only matches this exact text pattern in the ABOUT ME section
+        const aboutMePattern = /(<h2[^>]*>ABOUT ME<\/h2>\s*<p[^>]*>)My name is Stephen John\.(.*?<\/p>)/g;
+        rightSection = rightSection.replace(aboutMePattern, (match, prefix, suffix) => {
+          return `${prefix}My name is ${fullName}.${suffix}`;
+        });
+      }
+      
+      // Rejoin the document
+      processedHtml = leftSection + '<div class="right">' + rightSection;
+    } else {
+      // Fallback: Only update h1 and specific parts if we couldn't split properly
+      console.log("[TEMPLATE-FIX] Using targeted fallback name replacement");
+      
+      // Only replace "SAHIB KHAN" when it appears as an h1 element
+      processedHtml = processedHtml.replace(/<h1[^>]*>SAHIB KHAN<\/h1>/g, `<h1>${fullNameUpper}</h1>`);
+      
+      // Create a special pattern for "My name is Stephen John." in About Me section
+      const aboutMeRegex = /(<h2[^>]*>ABOUT ME<\/h2>\s*<p[^>]*>)My name is Stephen John\.(.*?<\/p>)/g;
+      processedHtml = processedHtml.replace(aboutMeRegex, `$1My name is ${fullName}.$2`);
+    }
+      
+    // Also handle other common name patterns
+    if (processedHtml.includes("MOHAMED TABREZ")) {
+      // Only update in h1 elements to prevent affecting other content
+      processedHtml = processedHtml.replace(/<h1[^>]*>MOHAMED TABREZ<\/h1>/g, `<h1>${fullNameUpper}</h1>`);
     }
     
-    // For templates with FIRSTNAME/SURNAME TAB pattern
     if (processedHtml.includes("FIRSTNAME/SURNAME TAB")) {
-      console.log("[TEMPLATE-FIX] Working with FIRSTNAME/SURNAME TAB template");
-      
-      // Find the left sidebar section only
-      const leftSidebarMatch = processedHtml.match(/<div[^>]*class=["'][^"']*left[^"']*["'][^>]*>[\s\S]*?<\/div>/i);
-      
-      // If we successfully found the left sidebar section
-      if (leftSidebarMatch && leftSidebarMatch[0]) {
-        const leftSidebar = leftSidebarMatch[0];
-        // Replace name only in this section
-        const updatedSidebar = leftSidebar.replace(/FIRSTNAME\/SURNAME TAB/g, fullNameUpper);
-        
-        // Replace the sidebar section in the full HTML
-        processedHtml = processedHtml.replace(leftSidebar, updatedSidebar);
-        console.log("[TEMPLATE-FIX] Successfully updated name in left sidebar only");
-      } else {
-        // Fallback: Only try to replace in h1 tags to limit scope
-        processedHtml = processedHtml.replace(/<h1[^>]*>FIRSTNAME\/SURNAME TAB<\/h1>/gi, `<h1>${fullNameUpper}</h1>`);
-      }
+      // Only update in h1 elements to prevent affecting other content
+      processedHtml = processedHtml.replace(/<h1[^>]*>FIRSTNAME\/SURNAME TAB<\/h1>/g, `<h1>${fullNameUpper}</h1>`);
     }
   }
   
