@@ -2,13 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useResume } from '@/contexts/ResumeContext';
 import Logo from '@/components/Logo';
-import { ArrowLeft, HelpCircle, Search, Plus, ArrowRight, RotateCw, Undo2, X } from 'lucide-react';
+import { ArrowLeft, HelpCircle, Search, Plus, ArrowRight, RotateCw, Undo2, X, Eye } from 'lucide-react';
 import { 
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
+import { useTemplates } from '@/hooks/use-templates';
 import { Input } from '@/components/ui/input';
 import { JobTitle, getJobTitleSuggestions, findJobTitleById } from '@/utils/jobTitlesData';
 import { JobDescription } from '@shared/schema';
@@ -81,6 +83,8 @@ const JobDescriptionPage = () => {
   const [descriptions, setDescriptions] = useState<any[]>([]);
   const [isLoadingDescriptions, setIsLoadingDescriptions] = useState(false);
   const [showingResults, setShowingResults] = useState<string>('');
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const { data: templates } = useTemplates();
   
   // Animation variants for framer-motion
   const containerVariants = {
@@ -331,7 +335,8 @@ const JobDescriptionPage = () => {
   const handlePreview = () => {
     // Save before previewing
     saveJobDescription();
-    setLocation('/preview');
+    // Open the preview modal instead of navigating
+    setPreviewOpen(true);
   };
 
   const handleNext = () => {
