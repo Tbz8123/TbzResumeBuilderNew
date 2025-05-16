@@ -5,7 +5,7 @@ import { processTemplateHtml, extractAndEnhanceStyles } from './templates-suppor
 
 interface HybridResumePreviewProps {
   width?: number;
-  height?: number;
+  height?: number | string; // Allow auto height for Zety-style intelligent layout
   className?: string;
   scaleContent?: boolean;
   resumeData?: any; // Allow passing resumeData directly
@@ -590,7 +590,8 @@ const HybridResumePreview: React.FC<HybridResumePreviewProps> = ({
                     transform: `scale(${scaleFactor})`,
                     transformOrigin: 'top left',
                     width: '794px', // A4 width
-                    height: '1123px', // A4 height
+                    height: processedHeight === 'auto' ? 'auto' : '1123px', // A4 height or auto
+                    minHeight: processedHeight === 'auto' ? 'min-content' : 'auto', // Min height for auto mode
                     maxHeight: 'none', // Allow content to expand for measuring
                     overflow: 'visible', // Important for measuring true content height
                     padding: '0',

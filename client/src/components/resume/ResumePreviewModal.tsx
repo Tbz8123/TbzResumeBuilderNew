@@ -384,7 +384,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
           <HybridResumePreview 
             key={`resume-preview-${previewKey}-${Date.now()}`}
             width={794} 
-            height="auto" /* Allow height to adapt to content */
+            height={'auto'} /* Allow height to adapt to content */
             className="zety-style-preview"
             scaleContent={false}
             resumeData={deduplicatedResumeData}
