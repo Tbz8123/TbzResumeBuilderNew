@@ -18,8 +18,6 @@ const PersonalInformationPage = () => {
   const { data: templates } = useTemplates();
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
-  // Keep a local copy of form data for real-time preview
-  const [previewData, setPreviewData] = useState({...resumeData});
   
   // Initialize local state from the resumeData context
   // This ensures our UI state reflects what's stored in the context
@@ -67,44 +65,12 @@ const PersonalInformationPage = () => {
     photo: resumeData.photo || null
   });
   
-  // Effect to update resume data when form state changes with improved logging
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      console.log("Debounced update with form state:", formState);
-      
-      // Use direct update approach for better reactivity
-      updateResumeData((prevData) => ({
-        ...prevData,
-        firstName: formState.firstName,
-        surname: formState.surname,
-        profession: formState.profession,
-        email: formState.email,
-        phone: formState.phone,
-        city: formState.city,
-        country: formState.country,
-        postalCode: formState.postalCode,
-        summary: formState.summary,
-        photo: formState.photo
-      }));
-      
-      console.log("Personal information update triggered");
-    }, 100); // Reduced to 100ms for more responsive updates
-    
-    return () => clearTimeout(timeoutId);
-  }, [formState, updateResumeData]);
-  
   // Handle input changes with enhanced real-time feedback and immediate updates
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     
     // Update local form state first
     setFormState(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Update local preview data for immediate reflection in preview
-    setPreviewData(prev => ({
       ...prev,
       [name]: value
     }));
@@ -130,8 +96,6 @@ const PersonalInformationPage = () => {
     // Log update for debugging
     console.log(`Field changed ${name} to:`, value);
   };
-  
-  // State for preview modal - removed duplicate state
   
   // New simplified direct-state handlers for additional fields
   
@@ -276,13 +240,15 @@ const PersonalInformationPage = () => {
                         if (file) {
                           const reader = new FileReader();
                           reader.onload = (event) => {
-                            // Update both form state and resume data
                             const photoData = event.target?.result as string;
                             setFormState(prev => ({
                               ...prev,
                               photo: photoData
                             }));
-                            console.log('Photo updated');
+                            updateResumeData(prev => ({
+                              ...prev,
+                              photo: photoData
+                            }));
                           };
                           reader.readAsDataURL(file);
                         }
@@ -629,7 +595,7 @@ const PersonalInformationPage = () => {
         <ResumePreviewModal
           open={previewModalOpen}
           onOpenChange={setPreviewModalOpen}
-          resumeData={previewData} // Use local previewData which updates when typing
+          resumeData={resumeData}
           selectedTemplateId={selectedTemplateId}
           templates={templates as ResumeTemplate[]}
         />
