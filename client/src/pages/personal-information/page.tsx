@@ -11,6 +11,7 @@ import { ResumeTemplate } from '@shared/schema';
 import TemplateSelectionModal from '@/components/resume/TemplateSelectionModal';
 import ResumePreviewModal from '@/components/resume/ResumePreviewModal';
 import HybridResumePreview from '@/components/resume/HybridResumePreview';
+import { motion } from 'framer-motion';
 
 const PersonalInformationPage = () => {
   const [, setLocation] = useLocation();
@@ -53,7 +54,7 @@ const PersonalInformationPage = () => {
   
   // Create state to track form inputs with debounced updates
   const [formState, setFormState] = useState({
-    firstName: resumeData.firstName || '',
+    firstName: resumeData.firstName || "First Name T",
     surname: resumeData.surname || '',
     profession: resumeData.profession || '',
     email: resumeData.email || '',
@@ -64,6 +65,15 @@ const PersonalInformationPage = () => {
     summary: resumeData.summary || '',
     photo: resumeData.photo || null
   });
+  
+  // Initialize resume data with form state on mount
+  useEffect(() => {
+    updateResumeData(prevData => ({
+      ...prevData,
+      ...formState,
+      _previewTimestamp: Date.now()
+    }));
+  }, []); // Run once on mount
   
   // Handle input changes with enhanced real-time feedback and immediate updates
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,49 +170,33 @@ const PersonalInformationPage = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ overflowY: 'auto', maxHeight: '100vh' }}>
+    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 flex flex-col" style={{ overflowY: 'auto', maxHeight: '100vh' }}>
       {/* Header with logo */}
-      <header className="py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+      <header className="py-4 border-b border-gray-100 bg-white shadow-sm sticky top-0 z-30">
         <div className="container mx-auto px-4">
           <Logo size="medium" />
         </div>
       </header>
-      
-      {/* Main content */}
-      <div className="flex-1 max-w-[1200px] mx-auto px-4 py-8 bg-gradient-to-b from-white to-blue-50">
-        {/* Back button */}
-        <div className="mb-6">
-          <button 
-            onClick={handleBack}
-            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 bg-transparent px-0 py-0 text-xs"
-          >
-            <ArrowLeft size={12} />
-            <span>Go Back</span>
-          </button>
-        </div>
-        
-        <div className="flex flex-col lg:flex-row lg:gap-16">
-          {/* Left column - Form Fields - EXPANDED */}
-          <div className="lg:w-[68%]">
-            <div className="mb-2">
-              <h1 className="text-xl font-bold text-gray-900 mb-1">
-                What's the best way for employers to contact you?
-              </h1>
-              <p className="text-gray-600 text-sm mb-4">
-                We suggest including an email and phone number.
-              </p>
-            </div>
-            
-            {/* Required field indicator */}
+      <main className="flex-grow py-6 md:py-10 overflow-x-hidden">
+        <div className="w-full max-w-5xl mx-auto px-4 md:px-8">
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }} className="mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500 mb-1">
+              What's the best way for employers to contact you?
+            </h1>
+            <p className="text-gray-600 text-sm mb-4">
+              We suggest including an email and phone number.
+            </p>
             <div className="text-xs text-gray-500 mb-4">
               <span className="text-red-500">*</span> Indicates a required field
             </div>
-            
-            {/* Form layout - EXACTLY like the screenshot */}
-            <div className="mb-10">
+          </motion.div>
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 justify-end items-start">
+            {/* Left: Form (2/3 width) */}
+            <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }} className="md:col-span-2 flex flex-col justify-center">
               {/* Photo and Name Row */}
-              <div className="flex mb-5">
-                <div className="w-[83px]">
+              <div className="flex flex-col md:flex-row gap-8 mb-6">
+                <div className="w-[83px] mx-auto md:mx-0">
                   <div className="w-full aspect-square border border-gray-300 bg-gray-100 flex items-center justify-center mb-1">
                     {resumeData.photo ? (
                       <img 
@@ -256,12 +250,11 @@ const PersonalInformationPage = () => {
                     />
                   </div>
                 </div>
-                
-                <div className="flex-1 ml-12">
-                  <div className="flex gap-5 mb-6">
-                    <div className="flex-1">
+                <div className="flex-1 md:ml-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
                       <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
-                        FIRST NAME
+                        First name T
                       </div>
                       <Input
                         id="firstName"
@@ -272,8 +265,7 @@ const PersonalInformationPage = () => {
                         className="border border-gray-300 h-10 rounded-none"
                       />
                     </div>
-                    
-                    <div className="flex-1">
+                    <div>
                       <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
                         SURNAME
                       </div>
@@ -287,9 +279,8 @@ const PersonalInformationPage = () => {
                       />
                     </div>
                   </div>
-                  
                   {/* Profession */}
-                  <div className="mb-6">
+                  <div className="mb-4 md:col-span-2">
                     <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
                       PROFESSION
                     </div>
@@ -304,10 +295,9 @@ const PersonalInformationPage = () => {
                   </div>
                 </div>
               </div>
-              
-              {/* City, Country, PIN Code - FIXED */}
-              <div className="flex gap-5 mb-6">
-                <div className="flex-1">
+              {/* City, Country, PIN Code */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
                   <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
                     CITY
                   </div>
@@ -320,8 +310,7 @@ const PersonalInformationPage = () => {
                     className="border border-gray-300 h-10 rounded-none w-full"
                   />
                 </div>
-                
-                <div className="w-[200px]">
+                <div>
                   <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
                     COUNTRY
                   </div>
@@ -334,8 +323,7 @@ const PersonalInformationPage = () => {
                     className="border border-gray-300 h-10 rounded-none w-full"
                   />
                 </div>
-                
-                <div className="w-[200px]">
+                <div>
                   <div className="mb-2 text-xs font-medium text-gray-700 uppercase">
                     PIN CODE
                   </div>
@@ -349,10 +337,9 @@ const PersonalInformationPage = () => {
                   />
                 </div>
               </div>
-              
-              {/* Phone and Email - FIXED ALIGNMENT */}
-              <div className="flex gap-5 mb-7">
-                <div className="flex-1">
+              {/* Phone and Email */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
                   <div className="mb-4 text-xs font-medium text-gray-700 uppercase">
                     PHONE
                   </div>
@@ -366,8 +353,7 @@ const PersonalInformationPage = () => {
                     className="border border-gray-300 h-10 rounded-none w-full"
                   />
                 </div>
-                
-                <div className="flex-1">
+                <div>
                   <div className="mb-2 flex items-center">
                     <div className="text-xs font-medium text-gray-700 uppercase">
                       EMAIL
@@ -386,11 +372,8 @@ const PersonalInformationPage = () => {
                   />
                 </div>
               </div>
-              
-              {/* Summary section removed as requested */}
-              
               {/* Additional Information Section */}
-              <div className="mb-20">
+              <div className="mb-10">
                 <div className="flex items-center mb-4">
                   <span className="text-sm text-gray-700">Add additional information to your resume</span>
                   <span className="text-xs text-gray-500 ml-1">(optional)</span>
@@ -398,9 +381,8 @@ const PersonalInformationPage = () => {
                     <Info size={16} className="text-gray-500" />
                   </div>
                 </div>
-                
-                <div className="flex flex-wrap gap-3 mb-8">
-                  {/* LinkedIn with direct local state */}
+                <div className="flex flex-wrap gap-3 mb-6">
+                  {/* LinkedIn */}
                   {showLinkedIn ? (
                     <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
                       <label className="text-sm text-gray-700 whitespace-nowrap">LinkedIn:</label>
@@ -427,8 +409,7 @@ const PersonalInformationPage = () => {
                       <span className="ml-2 font-bold">+</span>
                     </button>
                   )}
-                  
-                  {/* Website with direct local state */}
+                  {/* Website */}
                   {showWebsite ? (
                     <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
                       <label className="text-sm text-gray-700 whitespace-nowrap">Website:</label>
@@ -455,8 +436,7 @@ const PersonalInformationPage = () => {
                       <span className="ml-2 font-bold">+</span>
                     </button>
                   )}
-                  
-                  {/* Driving License with direct local state */}
+                  {/* Driving License */}
                   {showDrivingLicense ? (
                     <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 px-4 py-2 rounded-lg mb-2 w-full">
                       <label className="text-sm text-gray-700 whitespace-nowrap">Driving License:</label>
@@ -485,10 +465,9 @@ const PersonalInformationPage = () => {
                   )}
                 </div>
               </div>
-              
               {/* Navigation Buttons */}
-              <div className="pb-10 flex flex-col gap-4">
-                <div className="flex justify-between items-center">
+              <div className="pt-2 flex flex-col gap-4">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                   <Button
                     variant="default"
                     onClick={() => {}}
@@ -496,7 +475,6 @@ const PersonalInformationPage = () => {
                   >
                     Optional: Personal details
                   </Button>
-                  
                   <Button
                     variant="outline"
                     onClick={() => setPreviewModalOpen(true)}
@@ -505,8 +483,7 @@ const PersonalInformationPage = () => {
                     <Eye size={16} /> Preview
                   </Button>
                 </div>
-                
-                <div className="flex justify-end">
+                <div className="flex justify-end mt-2">
                   <Button
                     variant="default"
                     onClick={handleNext}
@@ -516,56 +493,31 @@ const PersonalInformationPage = () => {
                   </Button>
                 </div>
               </div>
-            </div>
-          </div>
-          
-          {/* Right column - Resume Preview */}
-          <div className="lg:w-[32%] mt-10 lg:mt-0">
-            {/* Results notification with exact styling */}
-            <div className="mb-4">
-              <div className="bg-blue-50 rounded-lg p-2 px-3">
-                <div className="flex items-center">
-                  <p className="text-sm text-blue-800">Our Resume Builder delivers results¹</p>
+            </motion.div>
+            {/* Right: Preview (1/3 width) */}
+            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }} className="md:col-span-1 mb-10 md:mb-0 flex flex-col items-end items-start justify-start">
+              <div className="flex justify-center w-full">
+                <div className="relative bg-white rounded-t-2xl overflow-visible p-0 m-0" style={{ width: 280, height: 400, minHeight: 400, maxHeight: 400, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, boxSizing: 'border-box' }}>
+                  <HybridResumePreview 
+                    className="h-full w-full rounded-t-2xl p-0 m-0"
+                    width={320}
+                    height={400}
+                    scaleContent={true}
+                  />
                 </div>
               </div>
-              <div className="bg-blue-50 rounded-b-lg p-2 flex items-center justify-center text-sm text-blue-800 font-semibold -mt-1">
-                <svg className="w-4 h-4 mr-1 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                </svg>
-                <span>42% Higher response rate from recruiters</span>
+              <div className="text-right mt-3 w-full">
+                <button 
+                  className="text-blue-600 text-sm hover:text-blue-800 hover:underline bg-transparent font-normal px-0 py-0"
+                  onClick={() => setTemplateModalOpen(true)}
+                >
+                  Change template
+                </button>
               </div>
-            </div>
-            
-            {/* Resume Preview */}
-            <div className="border border-gray-200 overflow-hidden mx-auto" style={{ maxWidth: '280px' }}>
-              <div className="relative bg-white" style={{ height: '400px' }}>
-                <HybridResumePreview 
-                  className="h-full w-full" 
-                  width={280} 
-                  height={410}
-                  scaleContent={true}
-                />
-              </div>
-            </div>
-            
-            {/* Change template button */}
-            <div className="text-center mt-3">
-              <button 
-                className="text-blue-600 text-sm hover:text-blue-800 hover:underline bg-transparent font-normal px-0 py-0"
-                onClick={() => setTemplateModalOpen(true)}
-              >
-                Change template
-              </button>
-            </div>
-            
-            {/* Study disclaimer */}
-            <div className="mt-3 text-xs text-gray-500">
-              <p>¹ The results are based on a study with over 1000 participants, among whom 287 used resume tools provided on our family sites.</p>
-            </div>
+            </motion.div>
           </div>
         </div>
-      </div>
-      
+      </main>
       {/* Footer */}
       <footer className="py-4 border-t border-gray-200">
         <div className="container mx-auto px-4">
@@ -583,15 +535,13 @@ const PersonalInformationPage = () => {
           </div>
         </div>
       </footer>
-      
       {/* Template Selection Modal */}
       <TemplateSelectionModal 
         open={templateModalOpen} 
         onOpenChange={setTemplateModalOpen} 
       />
-      
       {/* Resume Preview Modal - Pass the most up-to-date data */}
-      {templates && Array.isArray(templates) && (
+      {Array.isArray(templates) ? (
         <ResumePreviewModal
           open={previewModalOpen}
           onOpenChange={setPreviewModalOpen}
@@ -599,7 +549,7 @@ const PersonalInformationPage = () => {
           selectedTemplateId={selectedTemplateId}
           templates={templates as ResumeTemplate[]}
         />
-      )}
+      ) : null}
     </div>
   );
 };

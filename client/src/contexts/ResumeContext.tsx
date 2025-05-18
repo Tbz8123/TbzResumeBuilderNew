@@ -45,7 +45,7 @@ export interface ResumeData {
 
 // Create initial state
 const initialResumeData: ResumeData = {
-  firstName: '',
+  firstName: "First Name T",
   surname: '',
   profession: '',
   city: '',
