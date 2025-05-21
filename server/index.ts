@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 
 const app = express();
+app.set('env', 'development'); // Explicitly set environment to development
 // Increase JSON payload size limit to 50MB for template content
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));

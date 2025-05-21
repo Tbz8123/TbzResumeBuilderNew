@@ -34,6 +34,7 @@ export const resumeTemplates = pgTable("resume_templates", {
   aspectRatio: text("aspect_ratio").default("0.73"),    // Width/height ratio
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  reactFramerContent: text("react_framer_content"),
 });
 
 export const resumeTemplateVersions = pgTable("resume_template_versions", {
@@ -45,6 +46,7 @@ export const resumeTemplateVersions = pgTable("resume_template_versions", {
   cssContent: text("css_content"),    // CSS for styling the HTML template
   jsContent: text("js_content"),      // Optional JavaScript for the template
   pdfContent: text("pdf_content"),    // PDF content for version history
+  reactFramerContent: text("react_framer_content"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   createdById: integer("created_by_id").references(() => users.id),
   changelog: text("changelog"),
@@ -99,6 +101,7 @@ export const resumeTemplateSchema = createInsertSchema(resumeTemplates, {
   width: (schema) => schema.optional(),
   height: (schema) => schema.optional(),
   aspectRatio: (schema) => schema.optional(),
+  reactFramerContent: (schema) => schema.optional(),
 });
 
 export const resumeTemplateVersionSchema = createInsertSchema(resumeTemplateVersions, {

@@ -1932,17 +1932,18 @@ router.post("/", isAdmin, async (req, res) => {
       name: req.body.name,
       description: req.body.description,
       category: req.body.category,
-      svgContent: req.body.svgContent,
-      // IMPORTANT: Preserve empty strings as valid content
-      htmlContent: req.body.htmlContent !== undefined ? req.body.htmlContent : null,
-      cssContent: req.body.cssContent !== undefined ? req.body.cssContent : null,
-      jsContent: req.body.jsContent !== undefined ? req.body.jsContent : null,
+      svgContent: req.body.svgContent || '', // Always ensure it's a string, never null
+      // CRITICAL FIX: Always preserve content as empty strings (not null)
+      htmlContent: req.body.htmlContent !== undefined ? req.body.htmlContent : '',
+      cssContent: req.body.cssContent !== undefined ? req.body.cssContent : '',
+      jsContent: req.body.jsContent !== undefined ? req.body.jsContent : '',
       pdfContent: req.body.pdfContent || null,
       isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       isPopular: req.body.isPopular !== undefined ? req.body.isPopular : false,
       primaryColor: req.body.primaryColor || "#5E17EB",
       secondaryColor: req.body.secondaryColor || "#4A11C0",
       thumbnailUrl: req.body.thumbnailUrl || null,
+      reactFramerContent: req.body.reactFramerContent !== undefined ? req.body.reactFramerContent : '',
     };
     
     const validatedData = resumeTemplateSchema.parse(templateData);
@@ -1963,6 +1964,7 @@ router.post("/", isAdmin, async (req, res) => {
       pdfContent: template.pdfContent || null,
       createdById: req.user?.id,
       changelog: "Initial version",
+      reactFramerContent: req.body.reactFramerContent !== undefined ? req.body.reactFramerContent : '',
     });
     
     res.status(201).json(template);
@@ -2056,6 +2058,7 @@ router.put("/:id", isAdmin, async (req, res) => {
       pdfContent: validatedData.pdfContent || null,
       createdById: req.user?.id,
       changelog: req.body.changelog || `Version ${nextVersionNumber}`,
+      reactFramerContent: req.body.reactFramerContent !== undefined ? req.body.reactFramerContent : '',
     });
     
     // Check if HTML or CSS content was updated - this would require thumbnail regeneration
@@ -2236,6 +2239,7 @@ router.post("/:id/versions/:versionNumber/restore", isAdmin, async (req, res) =>
       pdfContent: versions[0].pdfContent,
       createdById: req.user?.id,
       changelog: `Restored from version ${versionNumber}`,
+      reactFramerContent: req.body.reactFramerContent !== undefined ? req.body.reactFramerContent : '',
     });
     
     res.json(updatedTemplate);

@@ -7,10 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FileText, Palette, Code, Image, Save, Eye, RefreshCw, Download, RotateCw, PlusCircle, MinusCircle, Maximize2, Camera, Upload, ImageIcon, Link2 } from 'lucide-react';
+import { FileText, Palette, Code, Image, Save, Eye, RefreshCw, Download, RotateCw, PlusCircle, MinusCircle, Maximize2, Camera, Upload, ImageIcon, Link2, Mail, Phone, MapPin, Briefcase, GraduationCap } from 'lucide-react';
 import { TemplateBindingInterface } from '@/components/templates/TemplateBindingInterface';
 import { ResumeData, defaultResumeData } from './TemplateEngine';
 import TemplateEngine from './TemplateEngine';
+import { LiveProvider, LivePreview, LiveError } from 'react-live';
+import * as framerMotion from 'framer-motion';
+import indexCss from '../../index.css?raw';
+import templatePreviewCss from '../../styles/template-preview.css?raw';
 
 export const defaultResumeTemplate: ResumeTemplate = {
   id: 0,
@@ -32,7 +36,8 @@ export const defaultResumeTemplate: ResumeTemplate = {
   height: 1100,
   aspectRatio: '0.73',
   createdAt: new Date(),
-  updatedAt: new Date()
+  updatedAt: new Date(),
+  reactFramerContent: null,
 };
 
 interface TemplateBuilderProps {
@@ -95,6 +100,22 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
   const [thumbnailSourceType, setThumbnailSourceType] = useState<'html' | 'svg'>('html');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
+  // New editors
+  const [reactFramerContent, setReactFramerContent] = useState<string>(template.reactFramerContent || "");
+  const [threeFiberContent, setThreeFiberContent] = useState<string>("");
+  const [svelteKitContent, setSvelteKitContent] = useState<string>("");
+  const [reactGptContent, setReactGptContent] = useState<string>("");
+  const [reactPdfContent, setReactPdfContent] = useState<string>("");
+  const [svelteKit2Content, setSvelteKit2Content] = useState<string>("");
+  const [nextjsContent, setNextjsContent] = useState<string>("");
+  const [remixContent, setRemixContent] = useState<string>("");
+  const [gptChat, setGptChat] = useState<string>("");
+  const [gptResponse, setGptResponse] = useState<string>("");
+  const [gptLoading, setGptLoading] = useState<boolean>(false);
+  
+  // Preview source state
+  const [previewSource, setPreviewSource] = useState<string>('html');
+  
   // Reset state when template changes
   useEffect(() => {
     // Metadata fields
@@ -116,6 +137,19 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
     
     // Thumbnail
     setThumbnailUrl(template.thumbnailUrl);
+    
+    // New editors
+    setReactFramerContent(template.reactFramerContent || "");
+    setThreeFiberContent("");
+    setSvelteKitContent("");
+    setReactGptContent("");
+    setReactPdfContent("");
+    setSvelteKit2Content("");
+    setNextjsContent("");
+    setRemixContent("");
+    setGptChat("");
+    setGptResponse("");
+    setGptLoading(false);
     
     console.log("Template loaded:", template);
   }, [template]);
@@ -200,6 +234,59 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
       getValue: (t) => '', // Not used for bindings tab
       setValue: (value: string) => {} // Not used for bindings tab
     }
+  ];
+  
+  // New tabs
+  const advancedEditorTabs: EditorTab[] = [
+    ...editorTabs,
+    {
+      id: 'react-framer-editor',
+      label: 'React + Tailwind + Framer Motion',
+      icon: <Code className="h-4 w-4 mr-1" />, language: 'javascript',
+      getValue: () => reactFramerContent, setValue: setReactFramerContent
+    },
+    {
+      id: 'three-fiber-editor',
+      label: 'React Three Fiber + Drei + Tailwind',
+      icon: <Code className="h-4 w-4 mr-1" />, language: 'javascript',
+      getValue: () => threeFiberContent, setValue: setThreeFiberContent
+    },
+    {
+      id: 'sveltekit-editor',
+      label: 'SvelteKit + Tailwind + Motion One',
+      icon: <Code className="h-4 w-4 mr-1" />, language: 'svelte',
+      getValue: () => svelteKitContent, setValue: setSvelteKitContent
+    },
+    {
+      id: 'react-gpt-editor',
+      label: 'React + Tailwind + Monaco + GPT',
+      icon: <Code className="h-4 w-4 mr-1" />, language: 'javascript',
+      getValue: () => reactGptContent, setValue: setReactGptContent
+    },
+    {
+      id: 'react-pdf-editor',
+      label: 'React + Tailwind + html2pdf/Puppeteer/PDFKit',
+      icon: <Code className="h-4 w-4 mr-1" />, language: 'javascript',
+      getValue: () => reactPdfContent, setValue: setReactPdfContent
+    },
+    {
+      id: 'sveltekit2-editor',
+      label: 'SvelteKit + Tailwind + Motion One',
+      icon: <Code className="h-4 w-4 mr-1" />, language: 'svelte',
+      getValue: () => svelteKit2Content, setValue: setSvelteKit2Content
+    },
+    {
+      id: 'nextjs-editor',
+      label: 'Next.js + Tailwind + Framer Motion',
+      icon: <Code className="h-4 w-4 mr-1" />, language: 'javascript',
+      getValue: () => nextjsContent, setValue: setNextjsContent
+    },
+    {
+      id: 'remix-editor',
+      label: 'Remix + Tailwind + Framer Motion',
+      icon: <Code className="h-4 w-4 mr-1" />, language: 'javascript',
+      getValue: () => remixContent, setValue: setRemixContent
+    },
   ];
   
   // Refresh preview to show latest changes
@@ -311,7 +398,9 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
         aspectRatio,
         
         // Thumbnail (only include if already exists, otherwise use API endpoints)
-        ...(thumbnailUrl ? { thumbnailUrl } : {})
+        ...(thumbnailUrl ? { thumbnailUrl } : {}),
+        // Advanced editors
+        reactFramerContent,
       };
       
       console.log("Saving template:", updatedTemplate);
@@ -474,6 +563,46 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
     }
   };
   
+  // Utility to clean user code for react-live
+  function prepareLiveCode(rawCode: string): string {
+    // Remove import/export statements
+    let code = rawCode.replace(/^\s*import[^;]+;?/gm, '');
+    code = code.replace(/^\s*export\s+default\s+/gm, '');
+    code = code.replace(/^\s*export\s+\{[^}]+\};?/gm, '');
+    // If ResumeTemplate is defined, append render call if not present
+    if (/function\s+ResumeTemplate/.test(code) && !/render\(/.test(code)) {
+      code += '\nrender(<ResumeTemplate />);';
+    }
+    return code;
+  }
+  
+  // Custom wrapper to inject Tailwind and custom CSS into the live preview
+  const TailwindLivePreview = (props: any) => {
+    const ref = React.useRef<HTMLDivElement>(null);
+    React.useEffect(() => {
+      // Remove Tailwind CDN injection
+      // Only inject app's built CSS
+      if (ref.current && !ref.current.querySelector('#app-index-css')) {
+        const style = document.createElement('style');
+        style.id = 'app-index-css';
+        style.innerHTML = indexCss;
+        ref.current.appendChild(style);
+      }
+      if (ref.current && !ref.current.querySelector('#app-template-preview-css')) {
+        const style = document.createElement('style');
+        style.id = 'app-template-preview-css';
+        style.innerHTML = templatePreviewCss;
+        ref.current.appendChild(style);
+      }
+    }, []);
+    return (
+      <div ref={ref} className="h-full w-full bg-white rounded-lg p-4 overflow-auto">
+        <LivePreview {...props} />
+        <LiveError className="text-red-500 mt-2 text-xs" />
+      </div>
+    );
+  };
+  
   // Return rendered component
   return (
     <div className="template-builder h-full">
@@ -535,16 +664,18 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
               onValueChange={setActiveTab}
               className="flex-1 flex flex-col h-[calc(100%-60px)]"
             >
-              <TabsList className="mx-4 mt-2">
-                {editorTabs.map((tab) => (
-                  <TabsTrigger key={tab.id} value={tab.id} className="flex items-center">
-                    {tab.icon}
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              
-              {editorTabs.map((tab) => (
+              <div className="mb-2">
+                <select
+                  className="w-full border rounded p-2 bg-white text-left"
+                  value={activeTab}
+                  onChange={e => setActiveTab(e.target.value)}
+                >
+                  {advancedEditorTabs.map(tab => (
+                    <option key={tab.id} value={tab.id}>{tab.label}</option>
+                  ))}
+                </select>
+              </div>
+              {advancedEditorTabs.map((tab) => (
                 <TabsContent 
                   key={tab.id} 
                   value={tab.id}
@@ -562,31 +693,142 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                       </div>
                     )}
                     <CardContent className="p-0 flex-1">
-                      {tab.id === 'bindings-editor' ? (
-                        <div className="p-4 h-full">
-                          {template.id ? (
-                            <TemplateBindingInterface templateId={template.id.toString()} />
-                          ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
-                              <Link2 className="h-16 w-16 mb-4 text-muted-foreground" />
-                              <h3 className="text-lg font-medium mb-2">Template Binding Unavailable</h3>
-                              <p className="text-sm text-muted-foreground max-w-md mb-4">
-                                You need to save the template first before you can set up data bindings.
-                              </p>
-                            </div>
-                          )}
+                      {/* Advanced Editors */}
+                      {tab.id === 'react-framer-editor' && (
+                        <div className="h-full flex flex-col">
+                          <MonacoEditor
+                            height="300px"
+                            language="javascript"
+                            value={reactFramerContent}
+                            onChange={value => setReactFramerContent(value || "")}
+                            theme="vs-dark"
+                          />
+                          <LiveProvider
+                            code={prepareLiveCode(reactFramerContent)}
+                            scope={{ React, ...framerMotion, Mail, Phone, MapPin, Briefcase, GraduationCap }}
+                            noInline={true}
+                          >
+                            <TailwindLivePreview />
+                          </LiveProvider>
                         </div>
-                      ) : (
+                      )}
+                      {tab.id === 'three-fiber-editor' && (
+                        <div className="h-full flex flex-col">
+                          <MonacoEditor
+                            height="300px"
+                            language="javascript"
+                            value={threeFiberContent}
+                            onChange={value => setThreeFiberContent(value || "")}
+                            theme="vs-dark"
+                          />
+                          <div className="mt-2">[Three Fiber Canvas/WebGL Preview Here]</div>
+                        </div>
+                      )}
+                      {tab.id === 'sveltekit-editor' && (
+                        <div className="h-full flex flex-col">
+                          <MonacoEditor
+                            height="300px"
+                            language="svelte"
+                            value={svelteKitContent}
+                            onChange={value => setSvelteKitContent(value || "")}
+                            theme="vs-dark"
+                          />
+                          <div className="mt-2">[SvelteKit Preview (iframe or placeholder)]</div>
+                        </div>
+                      )}
+                      {tab.id === 'react-gpt-editor' && (
+                        <div className="h-full flex flex-col md:flex-row">
+                          <div className="flex-1">
+                            <MonacoEditor
+                              height="300px"
+                              language="javascript"
+                              value={reactGptContent}
+                              onChange={value => setReactGptContent(value || "")}
+                              theme="vs-dark"
+                            />
+                          </div>
+                          <div className="w-full md:w-1/3 p-2 border-l bg-gray-50">
+                            <div className="font-bold mb-2">GPT Bot</div>
+                            <textarea
+                              className="w-full border rounded p-2 mb-2"
+                              rows={3}
+                              value={gptChat}
+                              onChange={e => setGptChat(e.target.value)}
+                              placeholder="Ask GPT for code help..."
+                            />
+                            <Button
+                              size="sm"
+                              className="mb-2"
+                              onClick={async () => {
+                                setGptLoading(true);
+                                // Call your GPT API here
+                                setTimeout(() => {
+                                  setGptResponse('This is a mock GPT response.');
+                                  setGptLoading(false);
+                                }, 1000);
+                              }}
+                              disabled={gptLoading}
+                            >
+                              {gptLoading ? 'Loading...' : 'Ask GPT'}
+                            </Button>
+                            <div className="text-xs text-gray-600">{gptResponse}</div>
+                          </div>
+                        </div>
+                      )}
+                      {tab.id === 'react-pdf-editor' && (
+                        <div className="h-full flex flex-col">
+                          <MonacoEditor
+                            height="300px"
+                            language="javascript"
+                            value={reactPdfContent}
+                            onChange={value => setReactPdfContent(value || "")}
+                            theme="vs-dark"
+                          />
+                          <div className="mt-2">[PDF Preview/Generation Placeholder]</div>
+                        </div>
+                      )}
+                      {tab.id === 'sveltekit2-editor' && (
+                        <div className="h-full flex flex-col">
+                          <MonacoEditor
+                            height="300px"
+                            language="svelte"
+                            value={svelteKit2Content}
+                            onChange={value => setSvelteKit2Content(value || "")}
+                            theme="vs-dark"
+                          />
+                          <div className="mt-2">[SvelteKit (2) Preview Placeholder]</div>
+                        </div>
+                      )}
+                      {tab.id === 'nextjs-editor' && (
+                        <div className="h-full flex flex-col">
+                          <MonacoEditor
+                            height="300px"
+                            language="javascript"
+                            value={nextjsContent}
+                            onChange={value => setNextjsContent(value || "")}
+                            theme="vs-dark"
+                          />
+                          <div className="mt-2">[Next.js Preview Placeholder]</div>
+                        </div>
+                      )}
+                      {tab.id === 'remix-editor' && (
+                        <div className="h-full flex flex-col">
+                          <MonacoEditor
+                            height="300px"
+                            language="javascript"
+                            value={remixContent}
+                            onChange={value => setRemixContent(value || "")}
+                            theme="vs-dark"
+                          />
+                          <div className="mt-2">[Remix Preview Placeholder]</div>
+                        </div>
+                      )}
+                      {/* Default: existing editors */}
+                      {!(tab.id.startsWith('react-') || tab.id.startsWith('three-') || tab.id.startsWith('svelte') || tab.id.startsWith('nextjs') || tab.id.startsWith('remix')) && (
                         <MonacoEditor
                           height="100%"
                           language={tab.language}
-                          value={
-                            tab.id === 'html-editor' ? htmlContent :
-                            tab.id === 'css-editor' ? cssContent :
-                            tab.id === 'js-editor' ? jsContent :
-                            tab.id === 'svg-editor' ? svgContent :
-                            ''
-                          }
+                          value={getCurrentEditorValue(tab.id)}
                           onChange={(value) => handleEditorChange(value, tab.id)}
                           options={{
                             minimap: { enabled: false },
@@ -612,6 +854,27 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Template Preview</h3>
                 <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <label htmlFor="preview-source" className="text-sm font-medium">Preview Source:</label>
+                    <select
+                      id="preview-source"
+                      className="border rounded p-1 text-sm"
+                      value={previewSource}
+                      onChange={e => setPreviewSource(e.target.value)}
+                    >
+                      <option value="html">HTML</option>
+                      <option value="svg">SVG</option>
+                      <option value="react-framer-editor">React + Tailwind + Framer Motion</option>
+                      <option value="three-fiber-editor">React Three Fiber + Drei + Tailwind</option>
+                      <option value="sveltekit-editor">SvelteKit + Tailwind + Motion One</option>
+                      <option value="react-gpt-editor">React + Tailwind + Monaco + GPT</option>
+                      <option value="react-pdf-editor">React + Tailwind + html2pdf/Puppeteer/PDFKit</option>
+                      <option value="sveltekit2-editor">SvelteKit + Tailwind + Motion One (2)</option>
+                      <option value="nextjs-editor">Next.js + Tailwind + Framer Motion</option>
+                      <option value="remix-editor">Remix + Tailwind + Framer Motion</option>
+                    </select>
+                  </div>
+                  
                   <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'html' | 'svg')}>
                     <TabsList>
                       <TabsTrigger value="html">
@@ -986,14 +1249,38 @@ const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
               <Card className="h-full">
                 <CardContent className="p-2 h-full relative">
                   <div className="w-full h-full overflow-hidden bg-white admin-preview">
-                    <TemplateEngine
-                      key={previewKey}
-                      template={compiledTemplate()}
-                      data={defaultResumeData}
-                      previewMode={previewMode}
-                      scale={previewScale}
-                      className="h-full"
-                    />
+                    {previewSource === 'html' || previewSource === 'svg' ? (
+                      <TemplateEngine
+                        key={previewKey}
+                        template={compiledTemplate()}
+                        data={defaultResumeData}
+                        previewMode={previewSource as 'html' | 'svg'}
+                        scale={previewScale}
+                        className="h-full"
+                      />
+                    ) : previewSource === 'react-framer-editor' ? (
+                      <LiveProvider
+                        code={prepareLiveCode(reactFramerContent)}
+                        scope={{ React, ...framerMotion, Mail, Phone, MapPin, Briefcase, GraduationCap }}
+                        noInline={true}
+                      >
+                        <TailwindLivePreview />
+                      </LiveProvider>
+                    ) : previewSource === 'three-fiber-editor' ? (
+                      <div className="h-full flex items-center justify-center text-gray-500">[Three Fiber Canvas/WebGL Preview Coming Soon]</div>
+                    ) : previewSource === 'sveltekit-editor' ? (
+                      <div className="h-full flex items-center justify-center text-gray-500">[SvelteKit + Tailwind + Motion One Preview Coming Soon]</div>
+                    ) : previewSource === 'react-gpt-editor' ? (
+                      <div className="h-full flex items-center justify-center text-gray-500">[React + Tailwind + Monaco + GPT Preview Coming Soon]</div>
+                    ) : previewSource === 'react-pdf-editor' ? (
+                      <div className="h-full flex items-center justify-center text-gray-500">[React + Tailwind + html2pdf/Puppeteer/PDFKit Preview Coming Soon]</div>
+                    ) : previewSource === 'sveltekit2-editor' ? (
+                      <div className="h-full flex items-center justify-center text-gray-500">[SvelteKit + Tailwind + Motion One (2) Preview Coming Soon]</div>
+                    ) : previewSource === 'nextjs-editor' ? (
+                      <div className="h-full flex items-center justify-center text-gray-500">[Next.js + Tailwind + Framer Motion Preview Coming Soon]</div>
+                    ) : previewSource === 'remix-editor' ? (
+                      <div className="h-full flex items-center justify-center text-gray-500">[Remix + Tailwind + Framer Motion Preview Coming Soon]</div>
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
